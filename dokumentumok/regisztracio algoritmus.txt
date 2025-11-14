@@ -16,9 +16,9 @@ ciklus amíg (igaz)
 				HA email = ÜRES VAGY fnev = ÜRES VAGY jelszo = ÜRES VAGY jelszoMegerosites = ÜRES:  
 						KIÍR "Kérjük, töltsön ki minden mezőt!"  
 				HA fnev.hosszúság > 100 VAGY jelszo.hosszúság > 100:  
-						KIÍR "A felhasználónév vagy jelszó túl hosszú!"  
-				HA NEM(email megfelel email_formátumnak):  
-						KIÍR "Érvénytelen email cím!"  
+						KIÍR "A felhasználónév vagy jelszó túl hosszú!"    
+				HA NEM((email tartalmaz '@') ÉS (email tartalmaz '.com' VAGY email tartalmaz '.hu')):  
+						KIÍR "Érvénytelen email cím!"				
 				HA jelszo <> jelszoMegerosites:  
 						KIÍR "A jelszavak nem egyeznek!"  
 		ciklus vége  
