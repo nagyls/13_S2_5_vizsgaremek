@@ -1,27 +1,27 @@
 ALGORITMUS bejelentkezes
 VÁLTOZÓK:
-	String: fnev := ""
-	String: jelszo := ""
+	String: username := ""
+	String: password := ""
 	Adatbázis tábla: user
 	Adat: talalat
 		Bool: userOK := false
 
 ciklus amíg (igaz)
-		ciklus, amíg NEM(fnev = ÜRES VAGY jelszo = ÜRES VAGY fnev.hosszúság > 100 VAGY jelszo.hosszúság > 100)
-				BE: fnev [felhasználónév szövegdoboz]
-				BE: jelszo [jelszó szövegdoboz]
-				HA fnev = ÜRES VAGY jelszo = ÜRES:
+		ciklus, amíg NEM(username = ÜRES VAGY password = ÜRES VAGY username.hosszúság > 100 VAGY password.hosszúság > 100)
+				BE: username [felhasználónév szövegdoboz]
+				BE: password [jelszó szövegdoboz]
+				HA username = ÜRES VAGY password = ÜRES:
 				KIÍR "Adja meg a felhasználónevet és a jelszót!"
-				HA fnev.hosszúság > 100 VAGY jelszo.hosszúság > 100:
+				HA username.hosszúság > 100 VAGY password.hosszúság > 100:
 				KIÍR "A felhasználónév vagy a jelszó túl hosszú!"
 		ciklus vége
 		
-		talalat := LEKERDEZ("SELECT password FROM user WHERE username = fnev")  
+		talalat := LEKERDEZ("SELECT password FROM user WHERE username = username")  
 		HA talalat = ÜRES:  
 				KIÍR "Hibás felhasználónév!"  
 				CONTINUE  
 		
-		HA jelszo = talalat:  
+		HA password = talalat:  
 				userOK := true   
 				BREAK  
 		KÜLÖNBEN:  
