@@ -1,34 +1,34 @@
 ALGORITMUS: regisztracio
 VÁLTOZÓK:
 	String: email := ""
-	String: fnev := ""
-	String: jelszo := ""
-	String: jelszoMegerosites := ""
+	String: username := ""
+	String: password := ""
+	String: confirmPW := ""
 	Adatbázis tábla: user
 	Adat: talalat
 		Bool: userOK := false
 ciklus amíg (igaz)
-		ciklus, amíg NEM(email = ÜRES VAGY fnev = ÜRES VAGY jelszo = ÜRES VAGY jelszoMegerosites = ÜRES VAGY fnev.hosszúság > 100 VAGY jelszo.hosszúság > 100)
+		ciklus, amíg NEM(email = ÜRES VAGY username = ÜRES VAGY password = ÜRES VAGY confirmPW = ÜRES VAGY username.hosszúság > 100 VAGY password.hosszúság > 100)
 				BE: email [email szövegdoboz]
-				BE: fnev [felhasználónév szövegdoboz]
-				BE: jelszo [jelszó szövegdoboz]
-				BE: jelszoMegerosites [jelszó megerősítése szövegdoboz]
-				HA email = ÜRES VAGY fnev = ÜRES VAGY jelszo = ÜRES VAGY jelszoMegerosites = ÜRES:  
+				BE: username [felhasználónév szövegdoboz]
+				BE: password [jelszó szövegdoboz]
+				BE: confirmPW [jelszó megerősítése szövegdoboz]
+				HA email = ÜRES VAGY username = ÜRES VAGY password = ÜRES VAGY confirmPW = ÜRES:  
 						KIÍR "Kérjük, töltsön ki minden mezőt!"  
-				HA fnev.hosszúság > 100 VAGY jelszo.hosszúság > 100:  
-						KIÍR "A felhasználónév vagy jelszó túl hosszú!"    
-				HA NEM((email tartalmaz '@') ÉS (email tartalmaz '.com' VAGY email tartalmaz '.hu')):  
-						KIÍR "Érvénytelen email cím!"				
-				HA jelszo <> jelszoMegerosites:  
+				HA username.hosszúság > 100 VAGY password.hosszúság > 100:  
+						KIÍR "A felhasználónév vagy jelszó túl hosszú!"  
+				HA NEM(email megfelel email_formátumnak):  
+						KIÍR "Érvénytelen email cím!"  
+				HA password <> confirmPW:  
 						KIÍR "A jelszavak nem egyeznek!"  
 		ciklus vége  
 
-		talalat := LEKERDEZ("SELECT id FROM user WHERE username = fnev")  
+		talalat := LEKERDEZ("SELECT id FROM user WHERE username = username")  
 		HA talalat <> ÜRES:  
 				KIÍR "Ez a felhasználónév már létezik!"  
 				CONTINUE  
 		
-		BESZÚR("INSERT INTO user (email, username, password, created_at) VALUES (email, fnev, jelszo, MOST())")  
+		BESZÚR("INSERT INTO user (email, username, password, created_at) VALUES (email, username, password, MOST())")  
 		userOK := true
 		BREAK
 ciklus vége
