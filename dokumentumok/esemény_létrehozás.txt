@@ -1,0 +1,151 @@
+ALGORITMUS: Esemény létrehozás
+
+VÁLTOZÓK:
+    Integer: currentUserId
+    Integer: establishmentId
+    String: userRole := "" // "admin" vagy "teacher"
+    Lista<Integer>: elerhetoOsztalyokIds := ÜRES_LISTA
+    Lista<Integer>: valasztottOsztalyokIds := ÜRES_LISTA
+
+    String: eventType := "" // "local" vagy "global"
+    String: title := ""
+    String: description := ""
+    String: content := ""
+
+    DátumIdő: startDate
+    DátumIdő: endDate
+
+    String: status := "" // "open" vagy "closed"
+
+    Integer: ujEventId
+
+    Adatbázis tábla: personnel, class, event, event_shown_to
+    Adat: talalatPersonnel
+    Adat: talalatClassLista
+
+ciklus amíg (igaz)
+
+    currentUserId := LEKERDEZ_AKTÍV_FELHASZNÁLÓ_ID()
+
+    talalatPersonnel := LEKERDEZ(
+        "SELECT role, establishment_id
+         FROM personnel
+         WHERE user_id = currentUserId
+         LIMIT 1"
+    )
+
+    HA talalatPersonnel = ÜRES:
+        KIÍR "Nincs jogosultsága eseményt létrehozni."
+        KILÉP AZ ALGORITMUSBÓL
+    ELÁG:
+        userRole := talalatPersonnel.role
+        establishmentId := talalatPersonnel.establishment_id
+
+    HA NEM(userRole = "admin" VAGY userRole = "teacher"):
+        KIÍR "Csak admin vagy osztályfőnök hozhat létre eseményt."
+        KILÉP AZ ALGORITMUSBÓL
+
+    HA userRole = "admin":
+        talalatClassLista := LEKERDEZ(
+            "SELECT id
+             FROM class
+             WHERE establishment_id = establishmentId"
+        )
+    KÜLÖNBEN HA userRole = "teacher":
+        talalatClassLista := LEKERDEZ(
+            "SELECT id
+             FROM class
+             WHERE establishment_id = establishmentId
+             AND user_id = currentUserId"
+        )
+    ELÁG VÉGE
+
+    HA talalatClassLista = ÜRES:
+        KIÍR "Nincs egyetlen hozzárendelhető osztály sem."
+        KILÉP AZ ALGORITMUSBÓL
+
+    elerhetoOsztalyokIds := LISTA_KÉSZÍTÉSE(talalatClassLista.id)
+
+    ciklus, amíg NEM(
+        title <> ÜRES ÉS
+        description <> ÜRES ÉS
+        content <> ÜRES ÉS
+        eventType ∈ {"local","global"} ÉS
+        startDate ÉRVÉNYES ÉS
+        endDate ÉRVÉNYES ÉS
+        startDate <= endDate ÉS
+        (eventType = "global" VAGY (eventType = "local" ÉS valasztottOsztalyokIds NEM_ÜRES)) ÉS
+        MINDEN_ELEM(valasztottOsztalyokIds BENNE_VAN elerhetoOsztalyokIds)
+     )
+
+        BE: eventType [legördülő: "local" / "global"]
+        BE: title [cím Stringdoboz]
+        BE: description [rövid leírás Stringdoboz]
+        BE: content [részletes tartalom Stringdoboz]
+        BE: startDate [dátum-idő mező]
+        BE: endDate [dátum-idő mező]
+
+        HA eventType = "local":
+            BE: valasztottOsztalyokIds [jelölőnégyzet lista az elerhetoOsztalyokIds alapján]
+        KÜLÖNBEN HA eventType = "global":
+
+            valasztottOsztalyokIds := LISTA_MÁSOLÁSA(elerhetoOsztalyokIds)
+        ELÁG VÉGE
+
+        HA title = ÜRES VAGY description = ÜRES VAGY content = ÜRES:
+            KIÍR "Minden mező kitöltése kötelező!"
+
+        HA NEM(eventType = "local" VAGY eventType = "global"):
+            KIÍR "Az esemény típusának 'local' vagy 'global' értékűnek kell lennie!"
+
+        HA NEM(ÉRVÉNYES_DÁTUM(startDate) ÉS ÉRVÉNYES_DÁTUM(endDate)):
+            KIÍR "Érvénytelen dátumformátum!"
+
+        HA startDate > endDate:
+            KIÍR "A kezdő dátum nem lehet későbbi, mint a záró dátum!"
+
+        HA eventType = "local" ÉS valasztottOsztalyokIds = ÜRES_LISTA:
+            KIÍR "Helyi esemény esetén legalább egy osztályt ki kell választani!"
+
+        HA VAN_NEM_ENGEDÉLYEZETT_OSZTÁLY(valasztottOsztalyokIds, elerhetoOsztalyokIds):
+            KIÍR "Csak az Önhöz tartozó osztályok választhatók ki!"
+
+    ciklus vége
+
+    HA endDate < MOST():
+        status := "closed"
+    KÜLÖNBEN:
+        status := "open"
+
+    TRANZAKCIÓ_KEZD()
+
+    PRÓBÁLD
+        BESZÚR(
+            "INSERT INTO event
+             (type, title, description, content, user_id, start_date, end_date, status, created_at)
+             VALUES
+             (eventType, title, description, content, currentUserId, startDate, endDate, status, MOST())"
+        )
+
+        ujEventId := LEKERDEZ("SELECT LAST_INSERT_ID()")
+
+        Ciklus MINDEN classId ∈ valasztottOsztalyokIds
+            BESZÚR(
+                "INSERT INTO event_shown_to (event_id, user_id, class_id)
+                 VALUES (ujEventId, NULL, classId)"
+            )
+        Ciklus vége
+
+        TRANZAKCIÓ_ELKÖTELEZ()
+
+    ELKAP HIBA
+        TRANZAKCIÓ_VISSZAVON()
+        KIÍR "Hiba történt az esemény mentése közben. Kérjük, próbálja meg újra!"
+        FOLYTATÁS_KÖVETKEZŐ_KÖRRE
+    PRÓBA VÉGE
+
+    KIÍR "Az esemény sikeresen létrejött."
+    BREAK
+
+ciklus vége
+ALGORITMUS vége
