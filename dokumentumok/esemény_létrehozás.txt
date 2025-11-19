@@ -7,13 +7,13 @@ VÁLTOZÓK:
     Lista<Integer>: elerhetoOsztalyokIds := ÜRES_LISTA
     Lista<Integer>: valasztottOsztalyokIds := ÜRES_LISTA
 
-    String: eventType := "" // "local" vagy "global"
+    StringArray: eventType := []
     String: title := ""
     String: description := ""
     String: content := ""
 
-    DátumIdő: startDate
-    DátumIdő: endDate
+    DateTime: startDate
+    DateTime: endDate
 
     String: status := "" // "open" vagy "closed"
 
