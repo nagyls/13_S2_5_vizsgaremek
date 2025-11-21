@@ -1,13 +1,26 @@
 ALGORITMUS: Esemény létrehozás
 
+TÍPUS: Intezmeny
+    Egész: id
+    Szöveg: title
+    Szöveg: settlementTitle   // település neve
+    Szöveg: innerRegionTitle  // járás
+    Szöveg: regionTitle       // megye
+TÍPUS VÉGE
+
 VÁLTOZÓK:
     Integer: currentUserId
     Integer: establishmentId
-    String: userRole := "" // "admin" vagy "teacher"
-    Lista<Integer>: elerhetoOsztalyokIds := ÜRES_LISTA
-    Lista<Integer>: valasztottOsztalyokIds := ÜRES_LISTA
-
-    StringArray: eventType := []
+    Integer: ujEventId
+	 
+    List<Integer>: elerhetoOsztalyokIds := ÜRES_LISTA
+    List<Integer>: valasztottOsztalyokIds := ÜRES_LISTA
+	Lista<Intezmeny>: selectedEstablishments := ÜRES_LISTA
+	
+	StringArray: userRole[2] := ["sdmin","teacher"]
+	StringArray: status[2] := ["open","closed"]
+    StringArray: eventType[2] := ["local","global"]
+	
     String: title := ""
     String: description := ""
     String: content := ""
@@ -15,35 +28,27 @@ VÁLTOZÓK:
     DateTime: startDate
     DateTime: endDate
 
-    String: status := "" // "open" vagy "closed"
-
-    Integer: ujEventId
-
-    Adatbázis tábla: personnel, class, event, event_shown_to
+    Adatbázis tábla: personnel, class, event, event_shown_to, establishment, settlement, inner_region, region
     Adat: talalatPersonnel
     Adat: talalatClassLista
+	
+	
 
 ciklus amíg (igaz)
 
-    currentUserId := LEKERDEZ_AKTÍV_FELHASZNÁLÓ_ID()
+    currentUserId := LEKERDEZ(user_id)
 
     talalatPersonnel := LEKERDEZ(
         "SELECT role, establishment_id
          FROM personnel
-         WHERE user_id = currentUserId
-         LIMIT 1"
+         WHERE user_id = currentUserId"
     )
 
     HA talalatPersonnel = ÜRES:
-        KIÍR "Nincs jogosultsága eseményt létrehozni."
         KILÉP AZ ALGORITMUSBÓL
-    ELÁG:
+    KÜLÖNBEN
         userRole := talalatPersonnel.role
         establishmentId := talalatPersonnel.establishment_id
-
-    HA NEM(userRole = "admin" VAGY userRole = "teacher"):
-        KIÍR "Csak admin vagy osztályfőnök hozhat létre eseményt."
-        KILÉP AZ ALGORITMUSBÓL
 
     HA userRole = "admin":
         talalatClassLista := LEKERDEZ(
@@ -56,12 +61,11 @@ ciklus amíg (igaz)
             "SELECT id
              FROM class
              WHERE establishment_id = establishmentId
-             AND user_id = currentUserId"
         )
-    ELÁG VÉGE
+   
 
     HA talalatClassLista = ÜRES:
-        KIÍR "Nincs egyetlen hozzárendelhető osztály sem."
+        KIÍR "Nincs egyetlen osztály sem."
         KILÉP AZ ALGORITMUSBÓL
 
     elerhetoOsztalyokIds := LISTA_KÉSZÍTÉSE(talalatClassLista.id)
