@@ -1,0 +1,82 @@
+ALGORITMUS: KedvencHozzaadas
+
+TÍPUS: Favourite
+    Egész: id
+    Egész: eventId
+    Egész: userId
+TÍPUS VÉGE
+
+VÁLTOZÓK:
+    User: currentUser
+    Favourite: fav
+    Egész: eventId
+
+    Adat: eventTalalat
+    Adat: letezoKedvenc
+
+
+//Esemény ellenőrzése (létezik-e?)
+eventTalalat := LEKERDEZ(
+    "SELECT id FROM event WHERE id = eventId"
+)
+
+HA eventTalalat = ÜRES:
+    KIÍR "A kiválasztott esemény nem létezik!"
+    KILÉP AZ ALGORITMUSBÓL
+
+
+//Már szerepel-e kedvencek között?
+letezoKedvenc := LEKERDEZ(
+    "SELECT id FROM event_favourite
+     WHERE event_id = eventId AND user_id = currentUser.id"
+)
+
+HA letezoKedvenc <> ÜRES:
+    KIÍR "Ez az esemény már a kedvencei között van!"
+    KILÉP AZ ALGORITMUSBÓL
+
+
+//Favourite típus feltöltése
+fav.eventId := eventId
+fav.userId := currentUser.id
+
+
+//Beszúrás adatbázisba
+BESZÚR(
+    "INSERT INTO event_favourite (event_id, user_id)
+     VALUES (fav.eventId, fav.userId)"
+)
+
+KIÍR "Az esemény hozzáadva a kedvencekhez."
+ALGORITMUS VÉGE
+
+
+
+ALGORITMUS: KedvencTorles
+
+VÁLTOZÓK:
+    User: currentUser
+    Egész: eventId
+    Adat: letezoKedvenc
+
+
+//Kedvenc létezik-e?
+letezoKedvenc := LEKERDEZ(
+    "SELECT id FROM event_favourite
+     WHERE event_id = eventId AND user_id = currentUser.id"
+)
+
+HA letezoKedvenc = ÜRES:
+    KIÍR "Ez az esemény nem szerepel a kedvencek között."
+    KILÉP AZ ALGORITMUSBÓL
+
+
+//Törlés végrehajtása
+TÖRÖL(
+    "DELETE FROM event_favourite
+     WHERE event_id = eventId AND user_id = currentUser.id"
+)
+
+KIÍR "Az esemény eltávolítva a kedvencek közül."
+ALGORITMUS VÉGE
+

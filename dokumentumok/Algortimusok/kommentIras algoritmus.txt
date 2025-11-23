@@ -1,0 +1,62 @@
+ALGORITMUS: KommentIras
+
+TÍPUS: Comment
+    Egész: id
+    Egész: eventId
+    Egész: userId
+    Szöveg: content
+TÍPUS VÉGE
+
+
+VÁLTOZÓK:
+    User: currentUser          //Bejelentkezett felhasználó
+    Egész: eventId             //A megnyitott esemény azonosítója
+    Comment: ujKomment         //Új komment objektum
+    Szöveg: content := ""      //A felhasználó által írt komment
+
+    Adat: eventTalalat
+    Logikai: siker := HAMIS
+
+
+//Esemény ellenőrzése
+eventTalalat := LEKERDEZ(
+    "SELECT id FROM event WHERE id = eventId"
+)
+
+HA eventTalalat = ÜRES:
+    KIÍR "A kiválasztott esemény nem létezik!"
+    KILÉP AZ ALGORITMUSBÓL
+
+
+//Komment bekérése és validálása
+CIKLUS amíg (IGAZ)
+
+        BE: content
+
+        HA content = ÜRES:
+            KIÍR "A komment nem lehet üres!"
+            FOLYTAT
+
+        HA content.hosszúság > 500:
+            KIÍR "A komment túl hosszú! (max. 500 karakter)"
+            FOLYTAT
+
+
+        //A Comment típus feltöltése
+        ujKomment.eventId := eventId
+        ujKomment.userId := currentUser.id
+        ujKomment.content := content
+
+
+        //Beszúrás adatbázisba
+        BESZÚR(
+            "INSERT INTO event_msg (event_id, user_id, content, created_at)
+             VALUES (ujKomment.eventId, ujKomment.userId, ujKomment.content, MOST())"
+        )
+
+        KIÍR "A komment sikeresen elküldve."
+        siker := IGAZ
+        MEGSZAKÍT
+
+CIKLUS VÉGE
+ALGORITMUS VÉGE

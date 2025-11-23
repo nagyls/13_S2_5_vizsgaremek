@@ -1,0 +1,66 @@
+ALGORITMUS: Bejelentkezes
+
+TÍPUS: User
+    Egész: id
+    Szöveg: username
+    Szöveg: email
+TÍPUS VÉGE
+
+VÁLTOZÓK:
+    User: bejelentkezo
+    Szöveg: username := ""
+    Szöveg: password := ""
+
+    Adat: talalat
+    Logikai: userOK := HAMIS
+
+
+CIKLUS amíg (IGAZ)
+
+        //Adatok bekérése és alap ellenőrzések
+        CIKLUS amíg NEM(
+            username = ÜRES VAGY
+            password = ÜRES VAGY
+            username.hosszúság > 100 VAGY
+            password.hosszúság > 100
+        )
+
+                BE: username
+                BE: password
+
+                HA username = ÜRES VAGY password = ÜRES:
+                        KIÍR "Adja meg a felhasználónevet és a jelszót!"
+
+                HA username.hosszúság > 100 VAGY password.hosszúság > 100:
+                        KIÍR "A felhasználónév vagy a jelszó túl hosszú!"
+
+        CIKLUS VÉGE
+
+
+        //Lekérdezés a felhasználónévre
+        talalat := LEKERDEZ(
+            "SELECT id, email, password FROM user WHERE username = username"
+        )
+
+        HA talalat = ÜRES:
+                KIÍR "Hibás felhasználónév!"
+                FOLYTAT
+
+
+        //Felhasználó adatainak betöltése típusba
+        bejelentkezo.id := talalat.id
+        bejelentkezo.username := username
+        bejelentkezo.email := talalat.email
+
+
+        //Jelszó ellenőrzése
+        HA password = talalat.password:
+                userOK := IGAZ
+                KIÍR "Sikeres bejelentkezés!"
+                MEGSZAKÍT
+        KÜLÖNBEN:
+                KIÍR "Hibás jelszó!"
+
+
+CIKLUS VÉGE
+ALGORITMUS VÉGE

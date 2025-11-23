@@ -1,0 +1,63 @@
+ALGORITMUS: KommentModeralas
+
+TÍPUS: Personnel
+    Szöveg: role              // "admin" vagy "tanár"
+    Egész: establishmentId
+TÍPUS VÉGE
+TÍPUS: Comment
+    Egész: id
+    Egész: eventId
+    Egész: userId
+    Szöveg: content
+TÍPUS VÉGE
+
+VÁLTOZÓK:
+    User: moderator              // törlést végző felhasználó
+    Personnel: jog              // a felhasználó szerepköre (admin / tanár)
+    Egész: msgId                // törlendő komment azonosítója
+
+    Adat: roleTalalat
+    Adat: msgTalalat
+    Logikai: jogosult := HAMIS
+
+
+//Jogosultság ellenőrzése
+roleTalalat := LEKERDEZ(
+    "SELECT role, establishment_id
+     FROM personnel
+     WHERE user_id = moderator.id"
+)
+
+HA roleTalalat = ÜRES:
+    KIÍR "Nincs jogosultsága ehhez a művelethez!"
+    KILÉP AZ ALGORITMUSBÓL
+
+jog.role := roleTalalat.role
+jog.establishmentId := roleTalalat.establishment_id
+
+
+//Csak admin vagy tanár moderálhat
+HA jog.role = "admin" VAGY jog.role = "teacher":
+    jogosult := IGAZ
+KÜLÖNBEN:
+    KIÍR "Nincs megfelelő jogosultsága a komment törléséhez!"
+    KILÉP AZ ALGORITMUSBÓL
+
+
+//Komment létezésének ellenőrzése
+msgTalalat := LEKERDEZ(
+    "SELECT id FROM event_msg WHERE id = msgId"
+)
+
+HA msgTalalat = ÜRES:
+    KIÍR "A komment nem található!"
+    KILÉP AZ ALGORITMUSBÓL
+
+
+//Komment törlése
+TÖRÖL(
+    "DELETE FROM event_msg WHERE id = msgId"
+)
+
+KIÍR "A komment sikeresen törölve."
+ALGORITMUS VÉGE

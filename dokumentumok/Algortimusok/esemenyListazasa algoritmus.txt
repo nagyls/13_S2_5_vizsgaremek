@@ -1,0 +1,92 @@
+ALGORITMUS: EsemenyListazas
+
+TÍPUS: Event
+    Egész: id
+    Szöveg: type           // 'local' vagy 'global'
+    Szöveg: title
+    Szöveg: description
+    Szöveg: content
+    Egész: userId          // a szervező id-je
+    DateTime: startDate
+    DateTime: endDate
+    Szöveg: status         // 'open' vagy 'closed'
+TÍPUS VÉGE
+
+VÁLTOZÓK:
+    User: currentUser
+    Lista<Event>: talalatok := ÜRES_LISTA
+    Szöveg: filterType := ""         // "local", "global" vagy ÜRES
+    Szöveg: filterStatus := ""       // "open", "closed" vagy ÜRES
+    Egész: filterOrganizerId := 0    // tanár ID vagy 0
+    DateTime: filterStartDate        // opcionális
+    DateTime: filterEndDate          // opcionális
+
+    Szöveg: lekerdezes
+    Logikai: vanSzuro := HAMIS
+
+
+//1. Alap SQL lekérdezés összeállítása
+lekerdezes :=
+    "SELECT id, type, title, description, content,
+            user_id, start_date, end_date, status
+     FROM event
+     WHERE 1 = 1"       // mindenre igaz feltétel, erre építjük a szűrőket
+
+
+//2. Szűrők alkalmazása
+
+//2.1 Típus (local/global) szűrés
+HA filterType = "local" VAGY filterType = "global":
+    lekerdezes += " AND type = filterType"
+    vanSzuro := IGAZ
+
+
+//2.2 Státusz szűrés (open/closed)
+HA filterStatus = "open" VAGY filterStatus = "closed":
+    lekerdezes += " AND status = filterStatus"
+    vanSzuro := IGAZ
+
+
+//2.3 Szervező (tanár) szűrése
+HA filterOrganizerId > 0:
+    lekerdezes += " AND user_id = filterOrganizerId"
+    vanSzuro := IGAZ
+
+
+//2.4 Dátumtartomány szűrés
+HA ÉRVÉNYES_DÁTUM(filterStartDate):
+    lekerdezes += " AND start_date >= filterStartDate"
+    vanSzuro := IGAZ
+
+HA ÉRVÉNYES_DÁTUM(filterEndDate):
+    lekerdezes += " AND end_date <= filterEndDate"
+    vanSzuro := IGAZ
+
+
+//3. Rendezés (kezdődátum szerint növekvő)
+lekerdezes += " ORDER BY start_date ASC"
+
+
+//4. Lekérdezés futtatása
+talalatok := LEKERDEZ(lekerdezes)
+
+HA talalatok = ÜRES_LISTA ÉS vanSzuro = IGAZ:
+    KIÍR "Nincs esemény, ami megfelelne a szűrésnek."
+    KILÉP AZ ALGORITMUSBÓL
+
+HA talalatok = ÜRES_LISTA ÉS vanSzuro = HAMIS:
+    KIÍR "Nincs még egyetlen esemény sem a rendszerben."
+    KILÉP AZ ALGORITMUSBÓL
+
+
+//5. Események megjelenítése
+Ciklus MINDEN event ∈ talalatok
+    KIÍR "Cím: " + event.title
+    KIÍR "Típus: " + event.type
+    KIÍR "Kezdés: " + event.startDate
+    KIÍR "Lezárás: " + event.endDate
+    KIÍR "Státusz: " + event.status
+    KIÍR "---------------------------"
+	
+Ciklus vége
+ALGORITMUS VÉGE

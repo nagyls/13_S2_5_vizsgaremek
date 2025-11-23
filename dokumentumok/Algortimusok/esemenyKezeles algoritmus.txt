@@ -1,0 +1,84 @@
+ALGORITMUS: EsemenyJelentkezes
+
+TÍPUS: Feedback
+    Egész: eventId
+    Egész: userId
+    Karakter: answer     // 'y' = Ott leszek, 'n' = Nem megyek
+TÍPUS VÉGE
+
+VÁLTOZÓK:
+    User: currentUser          // bejelentkezett felhasználó
+    Feedback: response         // válasz objektum
+    Egész: eventId             // esemény azonosító
+    Karakter: valasz           // 'y' vagy 'n'
+
+    Adat: eventTalalat
+    Adat: feedbackTalalat
+
+
+//Esemény ellenőrzése
+eventTalalat := LEKERDEZ(
+    "SELECT id, status
+     FROM event
+     WHERE id = eventId"
+)
+
+HA eventTalalat = ÜRES:
+    KIÍR "A kiválasztott esemény nem létezik!"
+    KILÉP AZ ALGORITMUSBÓL
+
+HA eventTalalat.status = "closed":
+    KIÍR "Ez az esemény lezárt, nem lehet rá jelentkezni!"
+    KILÉP AZ ALGORITMUSBÓL
+
+
+//Válasz bekérése és validálása
+CIKLUS amíg (IGAZ)
+
+        BE: valasz      // 'y' vagy 'n'
+
+        HA NEM(valasz = 'y' VAGY valasz = 'n'):
+            KIÍR "Csak 'y' (Ott leszek) vagy 'n' (Nem megyek) adható meg!"
+            FOLYTAT
+
+
+        //Feedback típus feltöltése
+        response.eventId := eventId
+        response.userId := currentUser.id
+        response.answer := valasz
+
+
+        //Létezik-e korábbi válasz?
+        feedbackTalalat := LEKERDEZ(
+            "SELECT answer
+             FROM event_feedback
+             WHERE event_id = eventId
+               AND user_id = currentUser.id"
+        )
+
+
+        HA feedbackTalalat = ÜRES:
+
+            // → Új beszúrás
+            BESZÚR(
+                "INSERT INTO event_feedback (event_id, user_id, answer, updated_at)
+                 VALUES (response.eventId, response.userId, response.answer, MOST())"
+            )
+
+        KÜLÖNBEN:
+
+            // → Frissítés
+            FRISSÍT(
+                "UPDATE event_feedback
+                 SET answer = response.answer,
+                     updated_at = MOST()
+                 WHERE event_id = response.eventId
+                   AND user_id = response.userId"
+            )
+
+
+        KIÍR "Válasza sikeresen rögzítve."
+        MEGSZAKÍT
+
+CIKLUS VÉGE
+ALGORITMUS VÉGE
