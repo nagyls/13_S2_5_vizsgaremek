@@ -1,0 +1,76 @@
+ALGORITMUS: JelentkezesIntezmenyhez
+
+VÁLTOZÓK:
+    User: currentUser
+    Egész: selectedEstablishmentId
+    EstablishmentRequest: ujKerelmiBejegyzes
+
+    Adat: establishmentTalalat
+    Adat: vanMarTagsag
+    Adat: letezoKerelem
+
+
+//Intézmény kiválasztása a felhasználó felületéről
+BE: selectedEstablishmentId
+
+
+//Intézmény létezik-e?
+establishmentTalalat := LEKERDEZ(
+    "SELECT id
+     FROM establishment
+     WHERE id = selectedEstablishmentId"
+)
+
+HA establishmentTalalat = ÜRES:
+    KIÍR "A kiválasztott intézmény nem létezik!"
+    KILÉP AZ ALGORITMUSBÓL
+
+
+//Ellenőrzés: már tagja-e ennek az intézménynek?
+// (DE más intézménynél lehet tag!)
+vanMarTagsag := LEKERDEZ(
+    "SELECT user_id
+     FROM personnel
+     WHERE user_id = currentUser.id
+       AND establishment_id = selectedEstablishmentId"
+)
+
+HA vanMarTagsag <> ÜRES:
+    KIÍR "Ön már tagja ennek az intézménynek!"
+    KILÉP AZ ALGORITMUSBÓL
+
+
+//Függőben lévő vagy elutasított korábbi kérelem?
+letezoKerelem := LEKERDEZ(
+    "SELECT id, status
+     FROM establishment_request
+     WHERE user_id = currentUser.id
+       AND establishment_id = selectedEstablishmentId"
+)
+
+// ha már van pending kérelem → nem küldhet újra
+HA letezoKerelem <> ÜRES ÉS letezoKerelem.status = 'pending':
+    KIÍR "Már küldött jelentkezést ehhez az intézményhez. Jóváhagyásra vár."
+    KILÉP AZ ALGORITMUSBÓL
+
+// ha accepted → már tag lesz, de fentebb ezt lekezeltük
+HA letezoKerelem <> ÜRES ÉS letezoKerelem.status = 'accepted':
+    KIÍR "Ön már tagja az intézménynek."
+    KILÉP AZ ALGORITMUSBÓL
+
+// ha rejected → küldhet új kérelmet, semmi gond
+
+
+//Új jelentkezési kérelem létrehozása
+ujKerelmiBejegyzes.userId := currentUser.id
+ujKerelmiBejegyzes.establishmentId := selectedEstablishmentId
+ujKerelmiBejegyzes.status := "pending"
+
+BESZÚR(
+    "INSERT INTO establishment_request (user_id, establishment_id, status, created_at)
+     VALUES (ujKerelmiBejegyzes.userId, ujKerelmiBejegyzes.establishmentId,
+             'pending', MOST())"
+)
+
+KIÍR "A jelentkezési kérelme rögzítve. Az admin jóváhagyására vár."
+ALGORITMUS VÉGE
