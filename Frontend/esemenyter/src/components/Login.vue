@@ -1,176 +1,127 @@
 <template>
-    <form class="login" @submit.prevent="handleSubmit" novalidate>
-        <h2 class="title">Login</h2>
+    <div class="wrapper">
+        <form action="">
+            <h1>Bejelentkezés</h1>
+            <div class="input-box">
+                <input type="text" placeholder="Username" required>
 
-        <label class="field">
-            <span class="label-text">Email</span>
-            <input
-                type="email"
-                v-model="email"
-                :class="{ invalid: emailError }"
-                placeholder="you@example.com"
-                autocomplete="username"
-                required
-            />
-            <small v-if="emailError" class="error">{{ emailError }}</small>
-        </label>
-
-        <label class="field">
-            <span class="label-text">Password</span>
-            <div class="password-row">
-                <input
-                    :type="showPassword ? 'text' : 'password'"
-                    v-model="password"
-                    :class="{ invalid: passwordError }"
-                    placeholder="Enter your password"
-                    autocomplete="current-password"
-                    required
-                />
-                <button type="button" class="toggle" @click="showPassword = !showPassword" :aria-pressed="String(showPassword)">
-                    {{ showPassword ? 'Hide' : 'Show' }}
-                </button>
             </div>
-            <small v-if="passwordError" class="error">{{ passwordError }}</small>
-        </label>
+            <div class="input-box">
+                <input type="password" placeholder="Password" required>
+            </div>
+            <div class="remember.forgot">
+                <label><input type="checkbox">Emlékezz rám</label>
+                <a href="a">Elfelejtett jelszó</a>
+            </div>
 
-        <div class="actions">
-            <button type="submit" :disabled="!isValid" class="submit">Sign in</button>
-        </div>
+            <button type="submit" class="btn">Bejelentkezés</button>
 
-        <p v-if="formError" class="form-error" role="alert">{{ formError }}</p>
-    </form>
+            <div class="register-link">
+                <p>Nincs még fiókod? <a href="#">Regisztráció</a></p>
+            </div>
+        </form>
+    </div>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue'
-import { useEmitter } from 'vue' // placeholder if you use an event bus; not required
-
-// Props/Emit could be added if parent should handle login
-const email = ref('')
-const password = ref('')
-const showPassword = ref(false)
-const formError = ref('')
-
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const emailError = computed(() => {
-    if (!email.value) return 'Email is required.'
-    if (!emailRegex.test(email.value)) return 'Enter a valid email address.'
-    return ''
-})
-
-const passwordError = computed(() => {
-    if (!password.value) return 'Password is required.'
-    if (password.value.length < 6) return 'Password must be at least 6 characters.'
-    return ''
-})
-
-const isValid = computed(() => !emailError.value && !passwordError.value)
-
-const emit = defineEmits ? defineEmits(['login']) : (() => {}) // safe when using <script setup>
-
-function handleSubmit() {
-    formError.value = ''
-    if (!isValid.value) {
-        formError.value = 'Please fix the errors above.'
-        return
-    }
-
-    // Emit login event to parent with credentials (avoid logging sensitive info)
-    try {
-        if (typeof emit === 'function') {
-            emit('login', { email: email.value.trim(), password: password.value })
-        }
-        // Optionally clear password after emit
-        password.value = ''
-    } catch (err) {
-        formError.value = 'An unexpected error occurred.'
-    }
-}
+<script>
 </script>
 
 <style scoped>
-.login {
-    max-width: 360px;
-    margin: 16px auto;
-    padding: 18px;
-    border: 1px solid #e6e6e6;
-    border-radius: 8px;
-    background: #fff;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-}
-.title {
-    margin: 0 0 12px;
-    font-size: 1.25rem;
-    text-align: center;
-}
-.field {
-    display: block;
-    margin-bottom: 12px;
-}
-.label-text {
-    display: block;
-    font-size: 0.9rem;
-    margin-bottom: 6px;
-    color: #333;
-}
-input[type="email"],
-input[type="password"],
-input[type="text"] {
-    width: 100%;
+template {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
-    padding: 8px 10px;
-    border: 1px solid #cfcfcf;
-    border-radius: 6px;
-    font-size: 0.95rem;
-}
-.password-row {
+    font-family: "Poppins", sans-serif;
+
     display: flex;
-    gap: 8px;
+    justify-content: center;
     align-items: center;
+    min-height: 100vh;
+    background: seagreen;
+    /* background: url("img.jpg") no-repeat; */
+    /* background-position: center; */
 }
-.toggle {
-    padding: 6px 10px;
-    border: 1px solid #cfcfcf;
-    background: #fafafa;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85rem;
+.wrapper {
+    width: 420px;
+    background: purple;
+    border: 2px solid rgba(255, 255, 255, .2);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+    color: #fff;
+    border-radius: 10px;
+    padding: 30px 40px;
 }
-.toggle[aria-pressed="true"] {
-    background: #eef6ff;
-    border-color: #9fc7ff;
+
+.wrapper h1 {
+    font-size: 36px;
+    text-align:center;
 }
-.actions {
-    margin-top: 8px;
-    text-align: center;
+.wrapper .input-box {
+    width: 100%;
+    height: 50px;
+    background: salmon;
+    margin: 30px 0;
 }
-.submit {
-    padding: 9px 16px;
-    background: #0078d4;
+.input-box input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
     border: none;
-    color: white;
-    border-radius: 6px;
+    outline: none;
+    border: 2px solid rgba(255, 255, 255, .2);
+    border-radius: 40px;
+}
+
+.input-box input::placeholder {
+    color: #fff;
+}
+
+.input-box i {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+}
+.wrapper .remember-forgot {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14.5px;
+    margin: -15px 0 15px;
+}
+.remember-forgot label input {
+    accent-color: #fff;
+    margin-right: 3px;
+}
+.remember-forgot a:hover {
+    text-decoration: underline;
+}
+.wrapper .btn {
+    width: 100%;
+    height: 45px;
+    background: #fff;
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
     cursor: pointer;
+    font-size: 16px;
+    color: #333;
     font-weight: 600;
 }
-.submit:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-.error {
-    color: #b00020;
-    font-size: 0.8rem;
-    margin-top: 6px;
-    display: block;
-}
-.invalid {
-    border-color: #b00020;
-}
-.form-error {
-    margin-top: 10px;
-    color: #b00020;
+
+.wrapper .register-link {
+    font-size: 14.5px;
     text-align: center;
-    font-size: 0.9rem;
+    margin-top: 20px 0 15px;
 }
+.register-link p a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+}
+.register-link p a:hover {
+    text-decoration: underline;
+}
+
 </style>

@@ -5,5 +5,8 @@ import 'bootstrap'
 import './assets/main.css'
 import { createApp } from 'vue'
 import App from './App.vue'
+import Login from './components/Login.vue'
 
-createApp(App).mount('#app')
+const app = createApp(App)
+app.component('login', Login)
+app.mount('#app')
