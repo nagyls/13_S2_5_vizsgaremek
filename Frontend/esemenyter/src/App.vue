@@ -1,9 +1,10 @@
 <script>
     import { ssrContextKey } from 'vue';
+    export default {}
 </script>
 
 <template>
-    <login></login>
+    <router-view></router-view>
 </template>
 
 <style scoped>

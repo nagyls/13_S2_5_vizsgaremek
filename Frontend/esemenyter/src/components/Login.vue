@@ -4,10 +4,12 @@
             <form>
                 <h1>Bejelentkezés</h1>
                 <div class="input-box">
-                    <input type="text" placeholder="Felhasználónév" required />
+                    <input type="text" placeholder="Felhasználónév" required >
+                    <i class='bx  bx-user'></i> 
                 </div>
                 <div class="input-box">
-                    <input type="password" placeholder="Jelszó" required />
+                    <input type="password" placeholder="Jelszó" required >
+                    <i class='bx  bx-lock'></i>
                 </div>
                 <div class="remember-forgot">
                     <label>
@@ -19,7 +21,7 @@
                 <button type="submit" class="btn">Bejelentkezés</button>
 
                 <div class="register-link">
-                    <p>Nincs még fiókod? <a href="#">Regisztráció</a></p>
+                    <p>Nincs még fiókod? <router-link to="/register">Regisztráció</router-link></p>
                 </div>
             </form>
         </div>
@@ -37,22 +39,17 @@
     display: flex;
     justify-content: center;
     align-items: center;
-
+    
     min-height: 100vh;
     width: 100vw;
-    background: seagreen;
 
-    /*
-    margin: 0;
-    padding: 0;
-
-    background: url("img.jpg") no-repeat; 
-    background-position: center; 
-    */
+    background-image: url("./src/assets/login-img.jpg"); 
+    background-position: center;
+    background-size: cover; 
 }
 .login-wrapper {
     width: 420px;
-    background: lightblue;
+    background: transparent;
     border: 2px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(20px);
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -66,10 +63,11 @@
     text-align: center;
     font-weight: bold;
 }
+
 .login-wrapper .input-box {
+    position: relative;
     width: 100%;
     height: 50px;
-    /* background: salmon; */
     margin: 30px 0;
 }
 .input-box input {
@@ -78,7 +76,7 @@
     background: transparent;
     border: none;
     outline: none;
-    border: 4px solid rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.2);
     border-radius: 40px;
     padding-left: 20px;
     color: #fff;
@@ -95,6 +93,7 @@
     transform: translateY(-50%);
     font-size: 20px;
 }
+
 .login-wrapper .remember-forgot {
     display: flex;
     justify-content: space-between;
@@ -105,8 +104,9 @@
     accent-color: #fff;
     margin-right: 3px;
 }
-.remember-forgot a:hover {
+.remember-forgot a:hover , .remember-forgot a {
     text-decoration: underline;
+    color: #fff;
 }
 .login-wrapper .btn {
     width: 100%;
@@ -120,7 +120,10 @@
     font-size: 16px;
     color: #333;
     font-weight: 600;
+
+    transition: background 0.5s ease, color 0.5s ease;
 }
+
 
 .login-wrapper .register-link {
     font-size: 14.5px;
@@ -135,5 +138,9 @@
 .register-link p a:hover {
     text-decoration: underline;
 }
-
+    
+.btn:hover {
+  background: rgb(40, 40, 59);
+  color: #fff;
+}
 </style>
