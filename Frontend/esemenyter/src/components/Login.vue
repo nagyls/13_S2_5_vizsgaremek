@@ -1,25 +1,28 @@
 <template>
-    <div class="wrapper">
-        <form action="">
-            <h1>Bejelentkezés</h1>
-            <div class="input-box">
-                <input type="text" placeholder="Username" required>
+    <div class="login-page">
+        <div class="login-wrapper">
+            <form>
+                <h1>Bejelentkezés</h1>
+                <div class="input-box">
+                    <input type="text" placeholder="Felhasználónév" required />
+                </div>
+                <div class="input-box">
+                    <input type="password" placeholder="Jelszó" required />
+                </div>
+                <div class="remember-forgot">
+                    <label>
+                        <input type="checkbox" />Emlékezz rám
+                    </label>
+                    <a href="#">Elfelejtett jelszó</a>
+                </div>
 
-            </div>
-            <div class="input-box">
-                <input type="password" placeholder="Password" required>
-            </div>
-            <div class="remember.forgot">
-                <label><input type="checkbox">Emlékezz rám</label>
-                <a href="a">Elfelejtett jelszó</a>
-            </div>
+                <button type="submit" class="btn">Bejelentkezés</button>
 
-            <button type="submit" class="btn">Bejelentkezés</button>
-
-            <div class="register-link">
-                <p>Nincs még fiókod? <a href="#">Regisztráció</a></p>
-            </div>
-        </form>
+                <div class="register-link">
+                    <p>Nincs még fiókod? <a href="#">Regisztráció</a></p>
+                </div>
+            </form>
+        </div>
     </div>
 </template>
 
@@ -27,39 +30,46 @@
 </script>
 
 <style scoped>
-template {
-    margin: 0;
-    padding: 0;
+.login-page {
     box-sizing: border-box;
     font-family: "Poppins", sans-serif;
 
     display: flex;
     justify-content: center;
     align-items: center;
+
     min-height: 100vh;
+    width: 100vw;
     background: seagreen;
-    /* background: url("img.jpg") no-repeat; */
-    /* background-position: center; */
+
+    /*
+    margin: 0;
+    padding: 0;
+
+    background: url("img.jpg") no-repeat; 
+    background-position: center; 
+    */
 }
-.wrapper {
+.login-wrapper {
     width: 420px;
-    background: purple;
-    border: 2px solid rgba(255, 255, 255, .2);
+    background: lightblue;
+    border: 2px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(20px);
-    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     color: #fff;
     border-radius: 10px;
     padding: 30px 40px;
 }
 
-.wrapper h1 {
+.login-wrapper h1 {
     font-size: 36px;
-    text-align:center;
+    text-align: center;
+    font-weight: bold;
 }
-.wrapper .input-box {
+.login-wrapper .input-box {
     width: 100%;
     height: 50px;
-    background: salmon;
+    /* background: salmon; */
     margin: 30px 0;
 }
 .input-box input {
@@ -68,8 +78,10 @@ template {
     background: transparent;
     border: none;
     outline: none;
-    border: 2px solid rgba(255, 255, 255, .2);
+    border: 4px solid rgba(255, 255, 255, 0.2);
     border-radius: 40px;
+    padding-left: 20px;
+    color: #fff;
 }
 
 .input-box input::placeholder {
@@ -83,7 +95,7 @@ template {
     transform: translateY(-50%);
     font-size: 20px;
 }
-.wrapper .remember-forgot {
+.login-wrapper .remember-forgot {
     display: flex;
     justify-content: space-between;
     font-size: 14.5px;
@@ -96,24 +108,24 @@ template {
 .remember-forgot a:hover {
     text-decoration: underline;
 }
-.wrapper .btn {
+.login-wrapper .btn {
     width: 100%;
     height: 45px;
     background: #fff;
     border: none;
     outline: none;
     border-radius: 40px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     cursor: pointer;
     font-size: 16px;
     color: #333;
     font-weight: 600;
 }
 
-.wrapper .register-link {
+.login-wrapper .register-link {
     font-size: 14.5px;
     text-align: center;
-    margin-top: 20px 0 15px;
+    margin-top: 4px;
 }
 .register-link p a {
     color: #fff;
