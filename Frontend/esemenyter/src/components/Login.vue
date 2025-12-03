@@ -1,14 +1,14 @@
 <template>
     <div class="login-page">
         <div class="login-wrapper">
-            <form>
+            <form @submit.prevent="login">
                 <h1>Bejelentkezés</h1>
                 <div class="input-box">
-                    <input type="text" placeholder="Felhasználónév" required >
+                    <input type="text" placeholder="Felhasználónév" v-model="username" required >
                     <i class='bx  bx-user'></i> 
                 </div>
                 <div class="input-box">
-                    <input type="password" placeholder="Jelszó" required >
+                    <input type="password" placeholder="Jelszó" v-model="password" required >
                     <i class='bx  bx-lock'></i>
                 </div>
                 <div class="remember-forgot">
@@ -29,6 +29,32 @@
 </template>
 
 <script>
+import axios from "axios";
+
+export default {
+  data() {
+    return {
+      username: "",
+      password: ""
+    };
+  },
+  methods: {
+    async login() {
+      try {
+        const res = await axios.post("http://127.0.0.1:8000/api/login", {
+          username: this.username,
+          password: this.password
+        });
+
+        alert(res.data.message);
+        this.$router.push("/"); // később dashboard
+      } catch (err) {
+        console.log(err);
+        alert("Hibás felhasználónév vagy jelszó!");
+      }
+    }
+  }
+};
 </script>
 
 <style scoped>

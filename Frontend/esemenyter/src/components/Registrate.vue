@@ -1,22 +1,22 @@
 <template>
     <div class="register-page">
         <div class="register-wrapper">
-            <form>
+            <form @submit.prevent="register">
                 <h1>Regisztráció</h1>
                 <div class="input-box">
-                    <input type="text" placeholder="Felhasználónév" required >
+                    <input type="text" v-model="username" placeholder="Felhasználónév" required >
                     <i class='bx  bx-user'></i> 
                 </div>
                 <div class="input-box">
-                    <input type="email" placeholder="Email cím" required >
+                    <input type="email" v-model="email" placeholder="Email cím" required >
                     <i class='bxr  bx-envelope'></i> 
                 </div>
                 <div class="input-box pass-box">
-                    <input type="password" placeholder="Jelszó" required >
+                    <input type="password" v-model="jelszo" placeholder="Jelszó" required >
                     <i class='bx  bx-lock'></i>
                 </div>
                 <div class="input-box pass-box">
-                    <input type="password" placeholder="Jelszó megerősítése" required >
+                    <input type="password" v-model="jelszo_meg" placeholder="Jelszó megerősítése" required >
                     <i class='bx  bx-lock'></i>
                 </div>
                 <div class="aszf-check">
@@ -36,6 +36,41 @@
 </template>
 
 <script>
+import axios from "axios";
+
+export default {
+  data() {
+    return {
+      username: "",
+      email: "",
+      jelszo: "",
+      jelszo_meg: ""
+    };
+  },
+  methods: {
+    async register() {
+      if (this.jelszo !== this.jelszo_meg) {
+        alert("A jelszavak nem egyeznek!");
+        return;
+      }
+
+      try {
+        const res = await axios.post("http://127.0.0.1:8000/api/register", {
+          username: this.username,
+          email: this.email,
+          password: this.jelszo
+        });
+
+        alert(res.data.message);
+        this.$router.push("/");
+      } catch (err) {
+        console.log(err);
+        alert("Hiba a regisztráció során!");
+      }
+    }
+  }
+};
+
 </script>
 
 <style scoped>
