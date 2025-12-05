@@ -8,8 +8,8 @@
                     <i class='bx  bx-user'></i> 
                 </div>
                 <div class="input-box">
-                    <input type="password" placeholder="Jelszó" v-model="password" required >
-                    <i class='bx  bx-lock'></i>
+                    <input :type="showPassword ? 'text' : 'password'" placeholder="Jelszó" v-model="password" required >
+                    <i :class="showPassword ? 'bx bx-lock-open' : 'bx bx-lock'" @click="togglePassword" style="cursor: pointer;"></i>
                 </div>
                 <div class="remember-forgot">
                     <label>
@@ -35,10 +35,15 @@ export default {
   data() {
     return {
       username: "",
-      password: ""
+      password: "",
+      showPassword: false
     };
   },
   methods: {
+    togglePassword() {
+      this.showPassword = !this.showPassword;
+    },
+
     async login() {
       try {
         const res = await axios.post("http://127.0.0.1:8000/api/login", {
@@ -47,7 +52,7 @@ export default {
         });
 
         alert(res.data.message);
-        this.$router.push("/"); // később dashboard
+        this.$router.push("/");
       } catch (err) {
         console.log(err);
         alert("Hibás felhasználónév vagy jelszó!");

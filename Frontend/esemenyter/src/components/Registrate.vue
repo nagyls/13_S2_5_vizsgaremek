@@ -12,12 +12,12 @@
                     <i class='bxr  bx-envelope'></i> 
                 </div>
                 <div class="input-box pass-box">
-                    <input type="password" v-model="jelszo" placeholder="Jelszó" required >
-                    <i class='bx  bx-lock'></i>
+                    <input :type="showPass1 ? 'text' : 'password'" v-model="jelszo" placeholder="Jelszó" required >
+                    <i :class="showPass1 ? 'bx bx-lock-open' : 'bx bx-lock'" @click="showPass1 = !showPass1" style="cursor: pointer;"></i>
                 </div>
                 <div class="input-box pass-box">
-                    <input type="password" v-model="jelszo_meg" placeholder="Jelszó megerősítése" required >
-                    <i class='bx  bx-lock'></i>
+                    <input :type="showPass2 ? 'text' : 'password'" v-model="jelszo_meg" placeholder="Jelszó megerősítése" required >
+                    <i :class="showPass2 ? 'bx bx-lock-open' : 'bx bx-lock'" @click="showPass2 = !showPass2" style="cursor: pointer;"></i>
                 </div>
                 <div class="aszf-check">
                     <label>
@@ -44,7 +44,9 @@ export default {
       username: "",
       email: "",
       jelszo: "",
-      jelszo_meg: ""
+      jelszo_meg: "",
+      showPass1: false,
+      showPass2: false
     };
   },
   methods: {
