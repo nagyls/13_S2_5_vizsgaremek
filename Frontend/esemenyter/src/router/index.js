@@ -8,22 +8,26 @@ const routes = [
   {
     path: '/login',
     name: 'login',
-    component: Login
+    component: Login,
+    meta: { title: 'Bejelentkezés' }
   },
   {
     path: '/register',
     name: 'register',
-    component: Registrate
+    component: Registrate,
+    meta: { title: 'Regisztráció' }
   },
   {
     path: '/aszf',
     name: 'aszf',
-    component: Aszf
+    component: Aszf,
+    meta: { title: 'ÁSZF' }
   },
   {
     path: '/privacy',
     name: 'privacy',
-    component: Privacy
+    component: Privacy,
+    meta: { title: 'Adatvédelemi nyilatkozat' }
   }
 ]
 
@@ -31,5 +35,9 @@ const router = createRouter({
   history: createWebHistory(),
   routes
 })
+
+router.afterEach((to) => {
+  document.title = (to.meta.title ? to.meta.title + ' – EseményTér' : 'EseményTér');
+});
 
 export default router
