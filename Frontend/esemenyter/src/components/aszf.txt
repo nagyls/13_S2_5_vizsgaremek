@@ -1,0 +1,129 @@
+<template>
+  <div class="aszf-page">
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <div class="logo">
+        <img src="./logo.svg" alt="Logo" />
+        <span>EseményTér Wiki</span>
+      </div>
+    </nav>
+
+    <!-- CONTENT -->
+    <div class="content">
+      <h1>Általános Szerződési Feltételek</h1>
+
+      <p>
+        Az alábbi dokumentum az EseményTér szolgáltatás igénybevételére vonatkozó
+        Általános Szerződési Feltételeket (ÁSZF) tartalmazza. Kérjük, figyelmesen olvassa el.
+      </p>
+
+      <h2>1. Bevezetés</h2>
+      <p>
+        A szolgáltatás igénybevételével a felhasználó elfogadja jelen ÁSZF feltételeit.
+      </p>
+
+      <h2>2. Regisztráció és fiókhasználat</h2>
+      <p>
+        A regisztráció során megadott adatoknak valósnak és pontosnak kell lenniük.
+      </p>
+
+      <h2>3. Felhasználói felelősség</h2>
+      <p>
+        A felhasználó köteles megóvni belépési adatait, és felelős minden tevékenységért,
+        amely a fiókjához köthető.
+      </p>
+
+      <h2>4. Jogok és korlátozások</h2>
+      <p>
+        A szolgáltatás használata nem sértheti mások jogait vagy törvényt.
+      </p>
+
+      <h2>5. Kapcsolat</h2>
+      <p>
+        Ha kérdése van, keressen minket: support@esemenyter.hu
+      </p>
+    </div>
+
+  </div>
+</template>
+
+<script>
+export default {};
+</script>
+
+<style scoped>
+/* ---------- NAVBAR ---------- */
+.navbar {
+  display: flex;
+  align-items: center;
+  padding: 15px 25px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo img {
+  width: 40px;
+  height: auto;
+}
+
+.logo span {
+  font-size: 20px;
+  font-weight: bold;
+  color: white;
+}
+
+/* ---------- PAGE BACKGROUND ---------- */
+.aszf-page {
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    min-height: 100vh;
+    width: 100vw;
+
+    background-image: url("./src/assets/login-img.jpg"); 
+    background-position: center;
+    background-size: cover; 
+}
+
+/* ---------- CONTENT ---------- */
+.content {
+  max-width: 900px;
+  margin: 40px auto;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 35px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.content h1 {
+  text-align: center;
+  margin-bottom: 25px;
+  font-size: 36px;
+}
+
+.content h2 {
+  margin-top: 25px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.content p {
+  margin-top: 10px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+</style>
