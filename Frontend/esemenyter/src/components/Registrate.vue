@@ -37,6 +37,11 @@
 
 <script>
 import axios from "axios";
+import { ref } from "vue";
+
+const password = ref("");
+const isPasswordStrong = ref(false);
+
 
 export default {
   data() {
@@ -49,6 +54,10 @@ export default {
       showPass2: false
     };
   },
+  components: { jelszo },
+    data: () => ({
+      password: null
+    }),
   methods: {
     async register() {
       if (this.jelszo !== this.jelszo_meg) {
@@ -72,6 +81,7 @@ export default {
     }
   }
 };
+
 
 </script>
 
