@@ -1,14 +1,8 @@
 <template>
-    <div class="aszf-page">
-        <button
-            class="back-btn"
-            @click="$router.back()"
-            title="Vissza az előző oldalra"
-        >
-            ⟵ Vissza
-        </button>
+    <div class="privacy-page">
+        <button class="back-btn" @click="$router.back()" title="Vissza az előző oldalra">⟵ Vissza</button>
 
-        <div class="aszf-wrapper">
+        <div class="privacy-wrapper">
             <h1>Adatvédelmi Tájékoztató</h1>
 
             <p>
@@ -106,88 +100,71 @@
 </script>
 
 <style scoped>
+.privacy-page {
+  min-height: 100vh;
+  width: 100vw;
+
+  background-image: url("./src/assets/login-img.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  padding: 100px 20px 40px;
+  font-family: "Poppins", sans-serif;
+}
+
+
+
 .back-btn {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    background: rgba(255, 255, 255, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    color: #fff;
-
-    padding: 6px 14px;
-    font-size: 16px;
-    border-radius: 999px;
-    cursor: pointer;
-
-    backdrop-filter: blur(6px);
-    transition: 0.25s ease;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: rgba(255,255,255,0.25);
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
 }
 
-.back-btn:hover {
-    background: rgba(255, 255, 255, 0.4);
+.privacy-wrapper {
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(20px);
+  border-radius: 14px;
+  padding: 40px;
+  color: #fff;
 }
 
-.aszf-page {
-    box-sizing: border-box;
-    font-family: "Poppins", sans-serif;
 
-    display: flex;
-    justify-content: center;
-    align-items: center;
 
-    min-height: 100vh;
-    width: 100vw;
-
-    background-image: url("./src/assets/login-img.jpg");
-    background-position: center;
-    background-size: cover;
+.privacy-wrapper h1 {
+  text-align: center;
+  margin-bottom: 30px;
 }
 
-.aszf-wrapper {
-    width: 90vw;
-    max-height: 80vh;
-
-    background: transparent;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(20px);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    color: #fff;
-    border-radius: 10px;
-
-    padding: 30px 40px;
-
-    column-count: 2;
-    column-gap: 40px;
-
-    overflow-y: auto;
+.privacy-wrapper h2 {
+  margin-top: 30px;
 }
 
-.aszf-wrapper h1,
-.aszf-wrapper h2 {
-    break-inside: avoid;
-    break-after: avoid;
+.privacy-wrapper p,
+.privacy-wrapper li {
+  line-height: 1.7;
+  text-align: justify;
 }
 
-.aszf-wrapper p {
-    line-height: 1.6;
-    text-align: justify;
+.last-update {
+  margin-top: 40px;
+  text-align: center;
+  opacity: 0.8;
 }
 
-@media (max-width: 900px) {
-    .aszf-wrapper {
-        column-count: 1;
-        padding: 20px;
-    }
-}
-
-.aszf-wrapper h1 {
-    font-size: 36px;
-    text-align: center;
-    font-weight: bold;
+@media (max-width: 768px) {
+  .privacy-wrapper {
+    padding: 24px;
+  }
 }
 </style>

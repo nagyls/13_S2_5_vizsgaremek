@@ -3,6 +3,7 @@ import Login from '../components/Login.vue'
 import Registrate from '../components/Registrate.vue'
 import Aszf from '../components/Aszf.vue'
 import Privacy from '../components/Privacy.vue'
+import MainPage from '../components/MainPage.vue'
 
 const routes = [
   {
@@ -28,7 +29,13 @@ const routes = [
     name: 'privacy',
     component: Privacy,
     meta: { title: 'Adatvédelemi nyilatkozat' }
-  }
+  },
+  {
+    path: '/mainpage',
+    name: 'mainpage',
+    component: MainPage,
+    meta: { title: 'Főoldal' }
+  },
 ]
 
 const router = createRouter({
