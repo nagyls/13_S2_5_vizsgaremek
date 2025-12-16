@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-
             $table->enum('type', ['local', 'global'])->default('local');
             $table->string('title', 255)->nullable();
             $table->text('description')->nullable();

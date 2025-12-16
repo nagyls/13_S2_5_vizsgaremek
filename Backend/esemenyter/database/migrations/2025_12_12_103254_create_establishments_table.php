@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('establishments', function (Blueprint $table) {
             $table->id();
             $table->string('title', 255)->nullable();
-            $table->text('description')->nullable()->comment('Content of the post');
+            $table->text('description')->nullable();
             $table->unsignedBigInteger('settlements_id')->nullable();
             $table->timestamp('created_at')->nullable();
         });

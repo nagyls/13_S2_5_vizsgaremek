@@ -13,10 +13,13 @@ return new class extends Migration
     {
         Schema::create('event_msg', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('events_id')->constrained('events')->cascadeOnDelete();
+            $table->foreignId('users_id')->constrained('users')->cascadeOnDelete();
+            $table->text('content')->nullable();
             $table->timestamps();
         });
     }
-
+     
     /**
      * Reverse the migrations.
      */
