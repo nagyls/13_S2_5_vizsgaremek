@@ -4,12 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Establishment extends Model
+class Poll_option extends Model
 {
     //
     protected $fillable = [
-        'title',
-        'description',
-        'settlements_id',
+        'polls_id',
+        'option_text',
     ];
 }

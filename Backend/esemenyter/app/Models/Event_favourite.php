@@ -4,12 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Establishment extends Model
+class Event_favourite extends Model
 {
     //
     protected $fillable = [
-        'title',
-        'description',
-        'settlements_id',
+        'events_id',
+        'users_id',
     ];
 }

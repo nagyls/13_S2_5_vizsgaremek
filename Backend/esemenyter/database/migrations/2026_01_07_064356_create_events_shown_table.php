@@ -11,18 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('event_favourites', function (Blueprint $table) {
-            $table->id();
+        Schema::create('events_shown', function (Blueprint $table) {
             $table->foreignId('events_id')->constrained('events')->cascadeOnDelete();
             $table->foreignId('users_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('classes_id')->constrained('classes')->cascadeOnDelete();
             $table->timestamps();
         });
     }
+
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('event_favourites');
+        Schema::dropIfExists('events_shown');
     }
 };
