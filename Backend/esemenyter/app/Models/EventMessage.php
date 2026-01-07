@@ -4,12 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Event_Shown extends Model
+class EventMessage extends Model
 {
     //
     protected $fillable = [
         'events_id',
         'users_id',
-        'classes_id',
+        'content',
     ];
 }
