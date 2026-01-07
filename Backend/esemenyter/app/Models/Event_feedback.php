@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Event_feedback extends Model
+class Event_Feedback extends Model
 {
     //
     protected $fillable = [

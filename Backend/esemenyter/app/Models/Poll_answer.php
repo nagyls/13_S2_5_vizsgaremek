@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Poll_answer extends Model
+class Poll_Answer extends Model
 {
     //
     protected $fillable = [

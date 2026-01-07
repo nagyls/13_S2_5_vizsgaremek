@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Establishment_request extends Model
+class Establishment_Request extends Model
 {
     //
     protected $fillable = [

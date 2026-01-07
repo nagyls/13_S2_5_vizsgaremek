@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Event_favourite extends Model
+class Event_Favourite extends Model
 {
     //
     protected $fillable = [
