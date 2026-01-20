@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('title', 255)->nullable();
             $table->text('description')->nullable();
-            $table->unsignedBigInteger('settlements_id')->nullable();
+            $table->foreignId('settlements_id')->constrained('settlements')->cascadeOnDelete();
             $table->timestamp('created_at')->nullable();
         });
     }
