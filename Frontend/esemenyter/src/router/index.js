@@ -4,6 +4,7 @@ import Registrate from '../components/Registrate.vue'
 import Aszf from '../components/Aszf.vue'
 import Privacy from '../components/Privacy.vue'
 import MainPage from '../components/MainPage.vue'
+import EventCreator from '@/components/EventCreator.vue'
 
 const routes = [
   {
@@ -36,6 +37,12 @@ const routes = [
     component: MainPage,
     meta: { title: 'Főoldal' }
   },
+  {
+    path: '/event-creator',
+    name: 'event-creator',
+    component: EventCreator,
+    meta: { title: 'Esemény létrehozása' }
+  }
 ]
 
 const router = createRouter({
