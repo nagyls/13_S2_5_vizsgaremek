@@ -81,3 +81,24 @@ Route::post('/events', function (Request $request) {
         'event_id' => $eventId
     ], );
 });
+
+Route::post('/establishments', function (Request $request) {
+
+    $request->validate([
+        'title' => 'nullable|string|max:255',
+        'description' => 'nullable|string',
+        'settlements_id' => 'nullable|integer'
+    ]);
+
+    $establishmentId = DB::table('establishments')->insertGetId([
+        'title' => $request->title,
+        'description' => $request->description,
+        'settlements_id' => $request->settlements_id,
+        'created_at' => now(),
+    ]);
+
+    return response()->json([
+        'message' => 'Establishment created successfully',
+        'establishment_id' => $establishmentId
+    ], 201);
+});
