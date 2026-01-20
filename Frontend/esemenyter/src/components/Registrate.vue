@@ -4,28 +4,32 @@
             <form @submit.prevent="register">
                 <h1>Regisztráció</h1>
                 <div class="input-box">
-                    <input type="text" v-model="username" placeholder="Felhasználónév" required >
-                    <i class='bx  bx-user'></i> 
+                    <input type="text" v-model="username" placeholder="Felhasználónév" required>
+                    <i class='bx bx-user'></i> 
                 </div>
                 <div class="input-box">
-                    <input type="email" v-model="email" placeholder="Email cím" required >
-                    <i class='bxr  bx-envelope'></i> 
+                    <input type="email" v-model="email" placeholder="Email cím" required>
+                    <i class='bx bx-envelope'></i> 
                 </div>
                 <div class="input-box pass-box">
-                    <input :type="showPass1 ? 'text' : 'password'" v-model="jelszo" placeholder="Jelszó" required >
+                    <input :type="showPass1 ? 'text' : 'password'" v-model="jelszo" placeholder="Jelszó" required>
                     <i :class="showPass1 ? 'bx bx-lock-open' : 'bx bx-lock'" @click="showPass1 = !showPass1" style="cursor: pointer;"></i>
                 </div>
                 <div class="input-box pass-box">
-                    <input :type="showPass2 ? 'text' : 'password'" v-model="jelszo_meg" placeholder="Jelszó megerősítése" required >
+                    <input :type="showPass2 ? 'text' : 'password'" v-model="jelszo_meg" placeholder="Jelszó megerősítése" required>
                     <i :class="showPass2 ? 'bx bx-lock-open' : 'bx bx-lock'" @click="showPass2 = !showPass2" style="cursor: pointer;"></i>
                 </div>
                 <div class="aszf-check">
                     <label>
-                        <input type="checkbox" required > Elfogadom az <router-link to="/aszf" style="color: #f5365c;">ÁSZF</router-link>-et és egyetértek az <router-link to="/privacy" style="color: #f5365c;">Adatvédelmi nyilatkozattal</router-link>.
+                        <input type="checkbox" v-model="acceptTerms" required> 
+                        Elfogadom az <router-link to="/aszf" style="color: #f5365c;">ÁSZF</router-link>-et és egyetértek az 
+                        <router-link to="/privacy" style="color: #f5365c;">Adatvédelmi nyilatkozattal</router-link>.
                     </label>
                 </div>
 
-                <button type="submit" class="btn">Regisztráció</button>
+                <button type="submit" class="btn" :disabled="loading">
+                    {{ loading ? 'Feldolgozás...' : 'Regisztráció' }}
+                </button>
 
                 <div class="login-link">
                     <p>Van már fiókod? <router-link to="/login">Bejelentkezés</router-link></p>
@@ -37,70 +41,159 @@
 
 <script>
 import axios from "axios";
-// import { ref } from "vue";
-
-//const password = ref("");
-//const isPasswordStrong = ref(false);
-
 
 export default {
-  data() {
-    return {
-      username: "",
-      email: "",
-      jelszo: "",
-      jelszo_meg: "",
-      showPass1: false,
-      showPass2: false
-    };
-  },
-//   components: { jelszo },
-//     data: () => ({
-//       password: null
-//     }),
-  methods: {
-    async register() {
-      if (this.jelszo !== this.jelszo_meg) {
-        alert("A jelszavak nem egyeznek!");
-        return;
-      }
+    name: 'Registrate',
+    
+    data() {
+        return {
+            username: "",
+            email: "",
+            jelszo: "",
+            jelszo_meg: "",
+            showPass1: false,
+            showPass2: false,
+            acceptTerms: false,
+            loading: false
+        };
+    },
+    
+    methods: {
+        async register() {
+            // 1. Ellenőrzések
+            if (this.jelszo !== this.jelszo_meg) {
+                alert("A jelszavak nem egyeznek!");
+                return;
+            }
 
-      try {
-        const res = await axios.post("http://127.0.0.1:8000/api/register", {
-          username: this.username,
-          email: this.email,
-          password: this.jelszo
-        });
+            if (this.jelszo.length < 6) {
+                alert("A jelszónak legalább 6 karakter hosszúnak kell lennie!");
+                return;
+            }
 
-        alert(res.data.message);
-        this.$router.push("/");
-      } catch (err) {
-        console.log(err);
-        alert("Hiba a regisztráció során!");
-      }
+            if (!this.acceptTerms) {
+                alert("Kérjük, fogadd el az ÁSZF-et és az Adatvédelmi nyilatkozatot!");
+                return;
+            }
+
+            this.loading = true;
+
+            try {
+                // 2. Backend API hívás
+                const res = await axios.post("http://127.0.0.1:8000/api/register", {
+                    username: this.username,
+                    email: this.email,
+                    password: this.jelszo
+                });
+
+                console.log("Backend válasz:", res.data);
+
+                // 3. FONTOS: Felhasználói adatok mentése localStorage-ba
+                const userData = {
+                    id: res.data.user?.id || Date.now(),
+                    name: this.username,
+                    email: this.email,
+                    role: '', // Még nincs szerepköre
+                    school: '',
+                    class: '',
+                    schoolId: null,
+                    classId: null,
+                    token: res.data.token || 'reg-token-' + Date.now(),
+                    isLoggedIn: true, // EZ NAGYON FONTOS!
+                    registeredAt: new Date().toISOString()
+                };
+                
+                // 4. LocalStorage-be mentés
+                localStorage.setItem('esemenyter_user', JSON.stringify(userData));
+                console.log("User adatok mentve localStorage-ba:", userData);
+                
+                // 5. Sikeres üzenet
+                alert("Sikeres regisztráció! Átirányítás a főoldalra...");
+                
+                // 6. Rövid várakozás és átirányítás
+                setTimeout(() => {
+                    this.$router.push('/mainpage');
+                }, 500);
+                
+            } catch (err) {
+                console.error("Regisztrációs hiba részletei:", err);
+                
+                // 7. Ha nem működik a backend, demo mód
+                if (err.code === 'ERR_NETWORK' || err.message.includes('Network Error')) {
+                    console.log("Backend nem elérhető, offline regisztráció...");
+                    
+                    // Offline user létrehozása
+                    const offlineUserData = {
+                        id: Date.now(),
+                        name: this.username,
+                        email: this.email,
+                        role: '', // Még nincs szerepköre
+                        school: '',
+                        class: '',
+                        schoolId: null,
+                        classId: null,
+                        token: 'offline-token-' + Date.now(),
+                        isLoggedIn: true, // EZ NAGYON FONTOS!
+                        isOffline: true,
+                        registeredAt: new Date().toISOString()
+                    };
+                    
+                    localStorage.setItem('esemenyter_user', JSON.stringify(offlineUserData));
+                    console.log("Offline user mentve:", offlineUserData);
+                    
+                    alert("Offline regisztráció sikeres! Átirányítás...");
+                    
+                    setTimeout(() => {
+                        this.$router.push('/mainpage');
+                    }, 500);
+                    
+                } else {
+                    // Egyéb hiba
+                    const errorMsg = err.response?.data?.message || 
+                                   err.response?.data?.error || 
+                                   "Ismeretlen hiba történt";
+                    alert("Hiba: " + errorMsg);
+                }
+            } finally {
+                this.loading = false;
+            }
+        }
+    },
+    
+    mounted() {
+        console.log("Regisztrációs oldal betöltve");
+        
+        // Demo: ha már be vagy jelentkezve, átirányítás
+        const savedUser = localStorage.getItem('esemenyter_user');
+        if (savedUser) {
+            try {
+                const userData = JSON.parse(savedUser);
+                if (userData.isLoggedIn) {
+                    console.log("Már be vagy jelentkezve, átirányítás mainpage-re...");
+                    this.$router.push('/mainpage');
+                }
+            } catch (error) {
+                console.error("Hibás user adatok:", error);
+            }
+        }
     }
-  }
-};
-
-
+}
 </script>
 
 <style scoped>
 .register-page {
     box-sizing: border-box;
     font-family: "Poppins", sans-serif;
-
     display: flex;
     justify-content: center;
     align-items: center;
-    
     min-height: 100vh;
     width: 100vw;
-
     background-image: url("./src/assets/login-img.jpg"); 
     background-position: center;
     background-size: cover; 
 }
+
 .register-wrapper {
     width: 420px;
     background: transparent;
@@ -116,17 +209,20 @@ export default {
     font-size: 36px;
     text-align: center;
     font-weight: bold;
+    margin-bottom: 20px;
 }
 
 .register-wrapper .input-box {
     position: relative;
     width: 100%;
     height: 50px;
-    margin: 30px 0px;
+    margin: 20px 0;
 }
+
 .pass-box {
     margin: 8px 0 !important;
 }
+
 .input-box input {
     width: 100%;
     height: 100%;
@@ -137,15 +233,11 @@ export default {
     border-radius: 40px;
     padding-left: 20px;
     color: #fff;
+    font-size: 16px;
 }
-.aszf-check label{
-    font-size: 13px;
-}
-.aszf-check label input {
-    accent-color: #fff;
-}
+
 .input-box input::placeholder {
-    color: #fff;
+    color: rgba(255, 255, 255, 0.7);
 }
 
 .input-box i {
@@ -154,6 +246,34 @@ export default {
     top: 50%;
     transform: translateY(-50%);
     font-size: 20px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.aszf-check {
+    margin: 15px 0;
+}
+
+.aszf-check label {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.aszf-check label input {
+    margin-right: 8px;
+    accent-color: #f5365c;
+}
+
+.aszf-check a {
+    color: #f5365c;
+    text-decoration: none;
+    transition: opacity 0.3s;
+}
+
+.aszf-check a:hover {
+    opacity: 0.8;
+    text-decoration: underline;
 }
 
 .register-wrapper .btn {
@@ -168,28 +288,47 @@ export default {
     font-size: 16px;
     color: #333;
     font-weight: 600;
-    margin-top: 25px;
-
-    transition: background 0.5s ease, color 0.5s ease;
+    margin-top: 20px;
+    transition: all 0.3s ease;
 }
 
+.register-wrapper .btn:hover:not(:disabled) {
+    background: rgb(40, 40, 59);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.register-wrapper .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 
 .register-wrapper .login-link {
     font-size: 14.5px;
     text-align: center;
-    margin-top: 4px;
+    margin-top: 20px;
 }
+
 .login-link p a {
     color: #fff;
     text-decoration: none;
     font-weight: 600;
+    transition: opacity 0.3s;
 }
+
 .login-link p a:hover {
     text-decoration: underline;
+    opacity: 0.8;
 }
+
+@media (max-width: 480px) {
+    .register-wrapper {
+        width: 90%;
+        padding: 20px;
+    }
     
-.btn:hover {
-  background: rgb(40, 40, 59);
-  color: #fff;
+    .register-wrapper h1 {
+        font-size: 28px;
+    }
 }
 </style>

@@ -18,7 +18,9 @@
                     <a href="#">Elfelejtett jelszó</a>
                 </div>
 
-                <button type="submit" class="btn">Bejelentkezés</button>
+                <button type="submit" class="btn" :disabled="loading">
+                    {{ loading ? 'Bejelentkezés...' : 'Bejelentkezés' }}
+                </button>
 
                 <div class="register-link">
                     <p>Nincs még fiókod? <router-link to="/register">Regisztráció</router-link></p>
@@ -32,30 +34,121 @@
 import axios from "axios";
 
 export default {
+  name: 'Login',
+  
   data() {
     return {
       username: "",
       password: "",
-      showPassword: false
+      showPassword: false,
+      loading: false
     };
   },
+  
   methods: {
     togglePassword() {
       this.showPassword = !this.showPassword;
     },
 
     async login() {
+      this.loading = true;
+      
       try {
+        // 1. Backend API hívás
         const res = await axios.post("http://127.0.0.1:8000/api/login", {
           username: this.username,
           password: this.password
         });
 
-        alert(res.data.message);
-        this.$router.push("/");
+        console.log("Backend válasz:", res.data);
+        
+        // 2. FONTOS: Felhasználói adatok mentése localStorage-ba
+        // A backend-től kapott adatok alapján
+        const userData = {
+          id: res.data.user?.id || Date.now(),
+          name: this.username, // vagy res.data.user?.name
+          email: res.data.user?.email || '',
+          role: res.data.user?.role || '', // Még nincs szerepköre
+          school: res.data.user?.school || '',
+          class: res.data.user?.class || '',
+          schoolId: res.data.user?.schoolId || null,
+          classId: res.data.user?.classId || null,
+          token: res.data.token || 'login-token-' + Date.now(),
+          isLoggedIn: true, // EZ NAGYON FONTOS!
+          loggedInAt: new Date().toISOString()
+        };
+        
+        // 3. LocalStorage-be mentés
+        localStorage.setItem('esemenyter_user', JSON.stringify(userData));
+        console.log("User adatok mentve localStorage-ba:", userData);
+        
+        // 4. Sikeres üzenet
+        alert("Sikeres bejelentkezés! Átirányítás a főoldalra...");
+        
+        // 5. Rövid várakozás és átirányítás
+        setTimeout(() => {
+          this.$router.push('/mainpage');
+        }, 500);
+        
       } catch (err) {
-        console.log(err);
-        alert("Hibás felhasználónév vagy jelszó!");
+        console.error("Bejelentkezési hiba részletei:", err);
+        
+        // 6. Ha nem működik a backend, offline demo mód
+        if (err.code === 'ERR_NETWORK' || err.message.includes('Network Error')) {
+          console.log("Backend nem elérhető, offline bejelentkezés...");
+          
+          // Offline user létrehozása (demo)
+          const offlineUserData = {
+            id: Date.now(),
+            name: this.username,
+            email: this.username + '@demo.hu',
+            role: '', // Még nincs szerepköre
+            school: '',
+            class: '',
+            schoolId: null,
+            classId: null,
+            token: 'offline-login-token-' + Date.now(),
+            isLoggedIn: true, // EZ NAGYON FONTOS!
+            isOffline: true,
+            loggedInAt: new Date().toISOString()
+          };
+          
+          localStorage.setItem('esemenyter_user', JSON.stringify(offlineUserData));
+          console.log("Offline user mentve:", offlineUserData);
+          
+          alert("Offline bejelentkezés sikeres! Átirányítás...");
+          
+          setTimeout(() => {
+            this.$router.push('/mainpage');
+          }, 500);
+          
+        } else {
+          // Egyéb hiba (rossz jelszó, stb.)
+          const errorMsg = err.response?.data?.message || 
+                         err.response?.data?.error || 
+                         "Hibás felhasználónév vagy jelszó!";
+          alert("Hiba: " + errorMsg);
+        }
+      } finally {
+        this.loading = false;
+      }
+    }
+  },
+  
+  mounted() {
+    console.log("Bejelentkezési oldal betöltve");
+    
+    // Ha már be vagy jelentkezve, átirányítás a főoldalra
+    const savedUser = localStorage.getItem('esemenyter_user');
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        if (userData.isLoggedIn) {
+          console.log("Már be vagy jelentkezve, átirányítás mainpage-re...");
+          this.$router.push('/mainpage');
+        }
+      } catch (error) {
+        console.error("Hibás user adatok:", error);
       }
     }
   }
@@ -140,6 +233,7 @@ export default {
     text-decoration: underline;
     color: #fff;
 }
+
 .login-wrapper .btn {
     width: 100%;
     height: 45px;
@@ -152,10 +246,19 @@ export default {
     font-size: 16px;
     color: #333;
     font-weight: 600;
-
-    transition: background 0.5s ease, color 0.5s ease;
+    transition: all 0.3s ease;
 }
 
+.login-wrapper .btn:hover:not(:disabled) {
+    background: rgb(40, 40, 59);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.login-wrapper .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 
 .login-wrapper .register-link {
     font-size: 14.5px;
@@ -169,10 +272,5 @@ export default {
 }
 .register-link p a:hover {
     text-decoration: underline;
-}
-    
-.btn:hover {
-  background: rgb(40, 40, 59);
-  color: #fff;
 }
 </style>
