@@ -122,6 +122,7 @@ export default {
     right: 20px;
     top: 50%;
     transform: translateY(-50%);
+    
     font-size: 20px;
 }
 
