@@ -6,7 +6,7 @@
 
     <div class="event-creator-wrapper">
       <div class="creator-header">
-        <h1><i class='bx bx-calendar-plus'></i> Új Esemény</h1>
+        <h1><i class='bx bx-calendar-plus'></i> Új esemény létrehozása</h1>
         <p class="subtitle">{{ getRoleMessage }}</p>
       </div>
 
@@ -363,11 +363,11 @@ export default {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
-  padding: 20px;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  overflow-x: hidden;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100vw;
 }
 
 .back-btn {
