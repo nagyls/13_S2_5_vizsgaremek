@@ -4,64 +4,52 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
 
 class AuthController extends Controller
 {
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'username' => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        $user = User::create([
+            'name'     => $validated['username'],
+            'email'    => $validated['email'],
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return response()->json([
+            'message' => 'Sikeres regisztráció!',
+            'user_id' => $user->id
+        ], 201);
+    }
+
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
+        $validated = $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
         ]);
 
-        // Felhasználó lekérése email alapján
-        $user = DB::table('users')->where('email', $request->email)->first();
+        $user = User::where('name', $validated['username'])->first();
 
-        if (!$user) {
+        if (!$user || !Hash::check($validated['password'], $user->password)) {
             return response()->json([
-                'message' => 'Hibás email vagy jelszó!'
-            ], 401);
-        }
-
-        // Jelszó ellenőrzés
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'Hibás email vagy jelszó!'
+                'message' => 'Hibás felhasználónév vagy jelszó!'
             ], 401);
         }
 
         return response()->json([
             'message' => 'Sikeres bejelentkezés!',
-            'user' => $user
-        ]);
-    }
-    public function registrer(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
-
-        // Felhasználó lekérése email alapján
-        $user = DB::table('users')->where('email', $request->email)->first();
-
-        if (!$user) {
-            return response()->json([
-                'message' => 'Hibás email vagy jelszó!'
-            ], 401);
-        }
-
-        // Jelszó ellenőrzés
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'Hibás email vagy jelszó!'
-            ], 401);
-        }
-
-        return response()->json([
-            'message' => 'Sikeres bejelentkezés!',
-            'user' => $user
-        ]);
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ]
+        ], 200);
     }
 }
