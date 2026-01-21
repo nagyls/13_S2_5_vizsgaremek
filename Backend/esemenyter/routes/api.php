@@ -2,8 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-//use App\Http\Controllers\EventController;
-//use App\Http\Controllers\EstablishmentController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\EstablishmentController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
