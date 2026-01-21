@@ -21,9 +21,11 @@
                 </div>
                 <div class="aszf-check">
                     <label>
-                        <input type="checkbox" v-model="acceptTerms" required> 
-                        Elfogadom az <router-link to="/aszf" style="color: #f5365c;">ÁSZF</router-link>-et és egyetértek az 
-                        <router-link to="/privacy" style="color: #f5365c;">Adatvédelmi nyilatkozattal</router-link>.
+                        <input type="checkbox" v-model="acceptTerms" required>
+                        <span class="aszf-text">
+                            Elfogadom az <router-link to="/aszf" class="aszf-link">ÁSZF</router-link>-et
+                            és egyetértek az <router-link to="/privacy" class="aszf-link">Adatvédelmi nyilatkozattal</router-link>.
+                        </span>
                     </label>
                 </div>
 
@@ -251,29 +253,50 @@ export default {
 
 .aszf-check {
     margin: 15px 0;
+    text-align: left;
 }
 
 .aszf-check label {
-    font-size: 13px;
+    font-size: 14px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     cursor: pointer;
+    line-height: 1.5;
 }
 
 .aszf-check label input {
-    margin-right: 8px;
+    margin-top: 3px;
+    margin-right: 10px;
+    flex-shrink: 0;
     accent-color: #f5365c;
 }
 
-.aszf-check a {
-    color: #f5365c;
-    text-decoration: none;
-    transition: opacity 0.3s;
+.aszf-text {
+    flex: 1;
 }
 
-.aszf-check a:hover {
+.aszf-link {
+    color: #f5365c;
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+}
+
+.aszf-link:hover {
     opacity: 0.8;
     text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .aszf-check label {
+        font-size: 13px;
+        align-items: flex-start;
+    }
+    
+    .aszf-link {
+        white-space: normal;
+    }
 }
 
 .register-wrapper .btn {

@@ -1,492 +1,163 @@
 <template>
   <div class="event-creator-page">
-    <!-- Vissza gomb -->
-    <button class="back-btn" @click="$router.back()" title="Vissza az előző oldalra">
+    <button class="back-btn" @click="$router.back()">
       <i class='bx bx-arrow-back'></i> Vissza
     </button>
 
     <div class="event-creator-wrapper">
-      <!-- Fejléc -->
       <div class="creator-header">
-        <h1><i class='bx bx-calendar-plus'></i> Új Esemény Létrehozása</h1>
-        <p class="subtitle">Töltsd ki az alábbi űrlapot az eseményed részleteivel</p>
+        <h1><i class='bx bx-calendar-plus'></i> Új Esemény</h1>
+        <p class="subtitle">{{ getRoleMessage }}</p>
       </div>
 
-      <!-- Fő tartalom -->
-      <div class="creator-content">
-        
-        <!-- Bal oldal: Űrlap -->
-        <div class="form-side">
-          <!-- Intézmény kiválasztása -->
-          <div class="form-section">
-            <h3><i class='bx bx-building'></i> Intézmény kiválasztása</h3>
-            <div class="form-group">
-              <label for="establishment-select">Válassz intézményt:</label>
-              <div class="select-wrapper">
-                <i class='bx bx-school'></i>
-                <select 
-                  id="establishment-select" 
-                  v-model="selectedEstablishment"
-                  class="form-control"
-                  required
-                >
-                  <option value="">-- válassz intézményt --</option>
-                  <option v-for="establishment in establishments" :key="establishment.id" :value="establishment.id">
-                    {{ establishment.title }} ({{ getSettlementName(establishment.settlement_id) }})
-                  </option>
-                </select>
-              </div>
+      <!-- Nincs jogosultság -->
+      <div v-if="!hasPermission" class="no-permission">
+        <div class="permission-error">
+          <i class='bx bx-shield-x'></i>
+          <h3>Nincs jogosultságod eseményt létrehozni!</h3>
+          <p>Csak adminisztrátorok és osztályfőnökök hozhatnak létre eseményeket.</p>
+          <router-link to="/mainpage" class="btn btn-primary">
+            <i class='bx bx-home'></i> Vissza a főoldalra
+          </router-link>
+        </div>
+      </div>
+
+      <!-- Jogosult felhasználó -->
+      <div v-else class="creator-content">
+        <!-- LÉPTETŐ -->
+        <div class="step-navigation">
+          <div class="steps">
+            <div v-for="step in steps" :key="step.number" 
+                 class="step" 
+                 :class="{ 'active': currentStep >= step.number, 'completed': currentStep > step.number }">
+              <span class="step-number">{{ step.number }}</span>
+              <span class="step-label">{{ step.label }}</span>
             </div>
-          </div>
-
-          <!-- Esemény adatok -->
-          <div class="form-section">
-            <h3><i class='bx bx-detail'></i> Esemény részletei</h3>
-            
-            <!-- Cím -->
-            <div class="form-group">
-              <label for="event-title">Esemény címe *</label>
-              <div class="input-wrapper">
-                <i class='bx bx-edit'></i>
-                <input 
-                  id="event-title"
-                  type="text" 
-                  v-model="event.title" 
-                  placeholder="pl. Tavaszi kirándulás"
-                  class="form-control"
-                  required
-                >
-              </div>
-            </div>
-
-            <!-- Dátum és idő -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="start-date">Kezdés dátuma *</label>
-                <div class="input-wrapper">
-                  <i class='bx bx-calendar'></i>
-                  <input 
-                    id="start-date"
-                    type="date" 
-                    v-model="event.start_date" 
-                    class="form-control"
-                    required
-                  >
-                </div>
-              </div>
-              
-              <div class="form-group">
-                <label for="start-time">Kezdés időpontja *</label>
-                <div class="input-wrapper">
-                  <i class='bx bx-time'></i>
-                  <input 
-                    id="start-time"
-                    type="time" 
-                    v-model="event.start_time" 
-                    class="form-control"
-                    required
-                  >
-                </div>
-              </div>
-            </div>
-
-            <!-- Befejezés dátuma -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="end-date">Befejezés dátuma *</label>
-                <div class="input-wrapper">
-                  <i class='bx bx-calendar'></i>
-                  <input 
-                    id="end-date"
-                    type="date" 
-                    v-model="event.end_date" 
-                    class="form-control"
-                    required
-                  >
-                </div>
-              </div>
-              
-              <div class="form-group">
-                <label for="end-time">Befejezés időpontja *</label>
-                <div class="input-wrapper">
-                  <i class='bx bx-time-five'></i>
-                  <input 
-                    id="end-time"
-                    type="time" 
-                    v-model="event.end_time" 
-                    class="form-control"
-                    required
-                  >
-                </div>
-              </div>
-            </div>
-
-            <!-- Helyszín -->
-            <div class="form-group">
-              <label for="event-location">Helyszín *</label>
-              <div class="input-wrapper">
-                <i class='bx bx-map'></i>
-                <input 
-                  id="event-location"
-                  type="text" 
-                  v-model="event.location" 
-                  placeholder="pl. Iskola előtt vagy konkrét cím"
-                  class="form-control"
-                  required
-                >
-              </div>
-            </div>
-
-            <!-- Esemény típusa -->
-            <div class="form-group">
-              <label for="event-type">Esemény típusa *</label>
-              <div class="select-wrapper">
-                <i class='bx bx-category'></i>
-                <select 
-                  id="event-type"
-                  v-model="event.type" 
-                  class="form-control"
-                  required
-                >
-                  <option value="">-- válassz típust --</option>
-                  <option value="local">Helyi esemény</option>
-                  <option value="global">Globális esemény</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Leírás -->
-            <div class="form-group">
-              <label for="event-description">Leírás</label>
-              <div class="textarea-wrapper">
-                <i class='bx bx-note'></i>
-                <textarea 
-                  id="event-description"
-                  v-model="event.description" 
-                  rows="4" 
-                  placeholder="Részletes leírás az eseményről..."
-                  class="form-control"
-                ></textarea>
-              </div>
-            </div>
-
-            <!-- Tartalom (extra információk)
-            <div class="form-group">
-              <label for="event-content">További információk (JSON)</label>
-              <div class="textarea-wrapper">
-                <i class='bx bx-code'></i>
-                <textarea 
-                  id="event-content"
-                  v-model="event.content" 
-                  rows="3" 
-                  placeholder='{"maxParticipants": 30, "requirements": "...", "notes": "..."}'
-                  class="form-control"
-                ></textarea>
-              </div>
-              <small class="form-hint">JSON formátumban add meg a további információkat</small>
-            </div> -->
-
-            <!-- Max résztvevők -->
-            <div class="form-group">
-              <label for="max-participants">Max. résztvevők</label>
-              <div class="input-wrapper">
-                <i class='bx bx-group'></i>
-                <input 
-                  id="max-participants"
-                  type="number" 
-                  v-model="event.maxParticipants" 
-                  min="1"
-                  placeholder="pl. 30"
-                  class="form-control"
-                >
-              </div>
-            </div>
-
-            <!-- Megjelenítés kiknek -->
-            <div class="form-section">
-              <h4><i class='bx bx-show'></i> Megjelenítés kiknek</h4>
-              <div class="conditions">
-                <label class="condition-checkbox">
-                  <input type="checkbox" v-model="event.showTo.entireEstablishment">
-                  <span class="checkmark"></span>
-                  <span class="condition-text">Egész intézmény számára</span>
-                </label>
-                
-                <label class="condition-checkbox">
-                  <input type="checkbox" v-model="event.showTo.specificClasses">
-                  <span class="checkmark"></span>
-                  <span class="condition-text">Csak adott osztályok</span>
-                </label>
-                
-                <!-- Osztály választás -->
-                <div v-if="event.showTo.specificClasses && selectedEstablishment" class="class-selection">
-                  <label>Válassz osztályokat:</label>
-                  <div class="class-checkboxes">
-                    <label v-for="classItem in establishmentClasses" :key="classItem.id" class="class-checkbox">
-                      <input 
-                        type="checkbox" 
-                        v-model="event.selectedClasses" 
-                        :value="classItem.id"
-                      >
-                      <span class="checkmark"></span>
-                      <span class="class-text">{{ classItem.name }} ({{ classItem.grade }}. évf.)</span>
-                    </label>
-                  </div>
-                </div>
-                
-                <label class="condition-checkbox">
-                  <input type="checkbox" v-model="event.showTo.specificUsers">
-                  <span class="checkmark"></span>
-                  <span class="condition-text">Csak adott felhasználók</span>
-                </label>
-                
-                <!-- Felhasználó választás -->
-                <div v-if="event.showTo.specificUsers && selectedEstablishment" class="user-selection">
-                  <label>Válassz felhasználókat:</label>
-                  <div class="user-search">
-                    <div class="input-wrapper">
-                      <i class='bx bx-search'></i>
-                      <input 
-                        type="text" 
-                        v-model="userSearch" 
-                        placeholder="Keresés felhasználók között..."
-                        class="form-control"
-                        @input="searchUsers"
-                      >
-                    </div>
-                  </div>
-                  <div class="user-checkboxes">
-                    <label v-for="user in filteredUsers" :key="user.id" class="user-checkbox">
-                      <input 
-                        type="checkbox" 
-                        v-model="event.selectedUsers" 
-                        :value="user.id"
-                      >
-                      <span class="checkmark"></span>
-                      <span class="user-text">{{ user.username }} ({{ user.email }})</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Fájl feltöltés (content rész) -->
-            <div class="form-group">
-              <label for="file-upload">Dokumentumok feltöltése (content része)</label>
-              <div class="file-upload-area" @click="triggerFileInput" @dragover.prevent @drop="handleDrop">
-                <input 
-                  id="file-upload"
-                  ref="fileInput"
-                  type="file" 
-                  @change="handleFileUpload"
-                  multiple
-                  class="file-input"
-                  hidden
-                >
-                <div class="upload-content">
-                  <i class='bx bx-cloud-upload'></i>
-                  <p>Kattints ide vagy húzd ide a fájlokat</p>
-                  <p class="upload-info">Max. 5 fájl, egyenként max. 10MB</p>
-                </div>
-              </div>
-              
-              <!-- Feltöltött fájlok listája -->
-              <div v-if="uploadedFiles.length > 0" class="file-list">
-                <h5>Feltöltött fájlok:</h5>
-                <div class="file-items">
-                  <div v-for="(file, index) in uploadedFiles" :key="index" class="file-item">
-                    <div class="file-icon">
-                      <i class='bx bx-file'></i>
-                    </div>
-                    <div class="file-details">
-                      <span class="file-name">{{ file.name }}</span>
-                      <span class="file-size">{{ formatFileSize(file.size) }}</span>
-                    </div>
-                    <button 
-                      type="button" 
-                      @click.stop="removeFile(index)"
-                      class="remove-file-btn"
-                      title="Fájl eltávolítása"
-                    >
-                      <i class='bx bx-x'></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Gombok -->
-          <div class="form-actions">
-            <button 
-              type="button" 
-              @click="resetForm"
-              class="btn btn-secondary"
-            >
-              <i class='bx bx-reset'></i> Alaphelyzet
-            </button>
-            
-            <button 
-              type="button" 
-              @click="createEvent"
-              :disabled="!isFormValid"
-              class="btn btn-primary"
-            >
-              <i class='bx bx-check'></i> Esemény Létrehozása
-            </button>
           </div>
         </div>
 
-        <!-- Jobb oldal: Előnézet -->
-        <div class="preview-side">
-          <div class="preview-header">
-            <h3><i class='bx bx-show'></i> Előnézet</h3>
-            <p>Így fog kinézni az esemény</p>
+        <!-- 1. ESEMÉNY TÍPUSA -->
+        <div v-if="currentStep === 1 && userRole === 'admin'" class="form-section">
+          <h3><i class='bx bx-category'></i> 1. Esemény típusa</h3>
+          <div class="type-selection">
+            <label v-for="type in eventTypes" :key="type.value" 
+                   class="type-option" 
+                   :class="{ 'selected': eventType === type.value }">
+              <input type="radio" v-model="eventType" :value="type.value" hidden>
+              <div class="option-content">
+                <i :class="type.icon"></i>
+                <h4>{{ type.label }}</h4>
+                <p>{{ type.description }}</p>
+              </div>
+            </label>
           </div>
+        </div>
+
+        <!-- 2. CÉLCSOPORT -->
+        <div v-if="currentStep === 2 && shouldShowScopeSelection" class="form-section">
+          <h3><i class='bx bx-target-lock'></i> 2. Célcsoport kiválasztása</h3>
           
-          <div class="preview-card">
-            <!-- Esemény fejléc -->
-            <div class="preview-event-header">
-              <h4>{{ event.title || "Esemény címe" }}</h4>
-              <span class="event-type-badge" :class="event.type">
-                {{ getEventTypeLabel(event.type) }}
-              </span>
-              <span class="event-status-badge" :class="event.status">
-                {{ event.status === 'open' ? 'Nyitott' : 'Zárt' }}
-              </span>
+          <div v-if="isLocalEvent" class="scope-info">
+            <div class="info-box">
+              <i class='bx bx-info-circle'></i>
+              <p>Helyi eseményként automatikusan a saját intézményed lesz kiválasztva.</p>
             </div>
-            
-            <!-- Esemény részletek -->
-            <div class="preview-details">
-              <div class="preview-detail-row">
-                <div class="detail-item">
-                  <i class='bx bx-calendar'></i>
-                  <div>
-                    <span class="detail-label">Kezdés</span>
-                    <span class="detail-value">{{ formatDateTime(event.start_date, event.start_time) || "Nem megadva" }}</span>
-                  </div>
-                </div>
-                
-                <div class="detail-item">
-                  <i class='bx bx-time-five'></i>
-                  <div>
-                    <span class="detail-label">Befejezés</span>
-                    <span class="detail-value">{{ formatDateTime(event.end_date, event.end_time) || "Nem megadva" }}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="preview-detail-row">
-                <div class="detail-item">
-                  <i class='bx bx-map'></i>
-                  <div>
-                    <span class="detail-label">Helyszín</span>
-                    <span class="detail-value">{{ event.location || "Nem megadva" }}</span>
-                  </div>
-                </div>
-                
-                <div v-if="event.maxParticipants" class="detail-item">
-                  <i class='bx bx-group'></i>
-                  <div>
-                    <span class="detail-label">Max. résztvevők</span>
-                    <span class="detail-value">{{ event.maxParticipants }} fő</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="preview-detail-row">
-                <div v-if="selectedEstablishment" class="detail-item">
-                  <i class='bx bx-building'></i>
-                  <div>
-                    <span class="detail-label">Intézmény</span>
-                    <span class="detail-value">{{ getEstablishmentName(selectedEstablishment) }}</span>
-                  </div>
-                </div>
-                
-                <div class="detail-item">
-                  <i class='bx bx-user'></i>
-                  <div>
-                    <span class="detail-label">Létrehozó</span>
-                    <span class="detail-value">{{ currentUser.username }}</span>
-                  </div>
-                </div>
-              </div>
+            <div class="selected-establishment">
+              <i class='bx bx-check-circle'></i>
+              <span>{{ userEstablishment.title }}</span>
             </div>
-            
-            <!-- Leírás -->
-            <div v-if="event.description" class="preview-description">
-              <h5>Leírás:</h5>
-              <p>{{ event.description }}</p>
+          </div>
+
+          <div v-else class="scope-selection">
+            <!-- Tartalom a korábbi Step2 komponensből... -->
+            <div class="scope-options">
+              <label v-for="scope in scopeModes" :key="scope.value"
+                     class="scope-option"
+                     :class="{ 'selected': scopeMode === scope.value }">
+                <input type="radio" v-model="scopeMode" :value="scope.value" hidden>
+                <div class="option-content">
+                  <i :class="scope.icon"></i>
+                  <h4>{{ scope.label }}</h4>
+                  <p>{{ scope.description }}</p>
+                </div>
+              </label>
             </div>
-            
-            <!-- Tartalom (JSON) -->
-            <div v-if="event.content" class="preview-content">
-              <h5><i class='bx bx-code'></i> További információk</h5>
-              <pre class="json-content">{{ formatJSONContent(event.content) }}</pre>
+
+            <!-- Tartalom a további részekből... -->
+            <!-- Rövidítve a példa kedvéért -->
+            <div class="selection-hint">
+              {{ scopeMode === 'intezmeny_lista' ? 'Válassz intézményeket' : 'Válassz szűrőket' }}
             </div>
-            
-            <!-- Megjelenítés kiknek -->
-            <div class="preview-showto">
-              <h5><i class='bx bx-show-alt'></i> Megjelenítve a következőknek:</h5>
-              <ul class="showto-list">
-                <li v-if="event.showTo.entireEstablishment">
-                  <i class='bx bx-check'></i> Egész intézmény
-                </li>
-                <li v-if="event.showTo.specificClasses && event.selectedClasses.length > 0">
-                  <i class='bx bx-check'></i> {{ event.selectedClasses.length }} osztály
-                </li>
-                <li v-if="event.showTo.specificUsers && event.selectedUsers.length > 0">
-                  <i class='bx bx-check'></i> {{ event.selectedUsers.length }} felhasználó
-                </li>
-                <li v-if="!event.showTo.entireEstablishment && !event.showTo.specificClasses && !event.showTo.specificUsers">
-                  <i class='bx bx-x'></i> Nincs megadva, kiknek jelenjen meg
-                </li>
-              </ul>
+          </div>
+        </div>
+
+        <!-- 3. OSZTÁLYOK -->
+        <div v-if="currentStep === 3 && hasSelectedEstablishments" class="form-section">
+          <h3><i class='bx bx-group'></i> 3. Osztályok kiválasztása</h3>
+          <div class="selection-hint">
+            {{ selectedClasses.length }} osztály kiválasztva
+          </div>
+        </div>
+
+        <!-- 4. ESEMÉNY ADATAI -->
+        <div v-if="currentStep === 4 && hasSelectedClasses" class="form-section">
+          <h3><i class='bx bx-edit'></i> 4. Esemény adatai</h3>
+          <div class="event-details-form">
+            <div class="form-group">
+              <label>Cím *</label>
+              <input v-model="eventDetails.title" placeholder="Esemény címe" required>
             </div>
-            
-            <!-- Fájlok -->
-            <div v-if="uploadedFiles.length > 0" class="preview-files">
-              <h5><i class='bx bx-paperclip'></i> Csatolt fájlok (content része)</h5>
-              <div class="files-count">
-                {{ uploadedFiles.length }} fájl
+            <div class="form-group">
+              <label>Leírás *</label>
+              <textarea v-model="eventDetails.description" placeholder="Részletes leírás" required></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Kezdés *</label>
+                <input type="date" v-model="eventDetails.start_date" :min="today" required>
               </div>
-            </div>
-            
-            <!-- Statisztika -->
-            <div class="preview-stats">
-              <div class="stat-item">
-                <span class="stat-value">0</span>
-                <span class="stat-label">Jelentkezett</span>
-              </div>
-              <div v-if="event.maxParticipants" class="stat-item">
-                <span class="stat-value">{{ event.maxParticipants }}</span>
-                <span class="stat-label">Férőhely</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-value">{{ event.status === 'open' ? 'Nyitott' : 'Zárt' }}</span>
-                <span class="stat-label">Státusz</span>
+              <div class="form-group">
+                <label>Befejezés *</label>
+                <input type="date" v-model="eventDetails.end_date" :min="eventDetails.start_date || today" required>
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- 5. ÁTTEKINTÉS -->
+        <div v-if="currentStep === 5 && hasSelectedClasses" class="form-section">
+          <h3><i class='bx bx-check-circle'></i> 5. Áttekintés</h3>
+          <div class="overview">
+            <div class="summary-item">
+              <strong>Típus:</strong> {{ getEventTypeLabel(eventType) }}
+            </div>
+            <div class="summary-item">
+              <strong>Intézmények:</strong> {{ selectedEstablishments.length }}
+            </div>
+            <div class="summary-item">
+              <strong>Osztályok:</strong> {{ selectedClasses.length }}
+            </div>
+            <div class="summary-item">
+              <strong>Cím:</strong> {{ eventDetails.title || '(nincs megadva)' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- GOMBOK -->
+        <div class="form-actions">
+          <button @click="prevStep" :disabled="currentStep === 1" class="btn btn-secondary">
+            <i class='bx bx-chevron-left'></i> Előző
+          </button>
           
-          <!-- Adatbázis szerkezet info -->
-          <div class="database-info">
-            <h5><i class='bx bx-data'></i> Adatbázis szerkezet</h5>
-            <div class="db-structure">
-              <div class="db-field">
-                <span class="db-field-name">event.type</span>
-                <span class="db-field-value">ENUM('local', 'global')</span>
-              </div>
-              <div class="db-field">
-                <span class="db-field-name">event.status</span>
-                <span class="db-field-value">ENUM('open', 'closed')</span>
-              </div>
-              <div class="db-field">
-                <span class="db-field-name">event_shown_to</span>
-                <span class="db-field-value">Kapcsolótábla</span>
-              </div>
-            </div>
-          </div>
+          <button v-if="currentStep < 5" @click="nextStep" :disabled="!canProceedToNextStep" class="btn btn-primary">
+            Következő <i class='bx bx-chevron-right'></i>
+          </button>
+          
+          <button v-else @click="createEvent" :disabled="!isFormValid || loading" class="btn btn-success">
+            <i class='bx bx-check' v-if="!loading"></i>
+            <i class='bx bx-loader-circle bx-spin' v-else></i>
+            {{ loading ? 'Feldolgozás...' : 'Esemény létrehozása' }}
+          </button>
         </div>
       </div>
     </div>
@@ -499,412 +170,213 @@ export default {
   
   data() {
     return {
-      // Kiválasztott intézmény
-      selectedEstablishment: '',
-      
-      // Esemény adatok az SQL séma szerint
-      event: {
+      userRole: 'admin',
+      userEstablishment: { id: 1, title: 'Kossuth Lajos Gimnázium' },
+      eventType: 'local',
+      scopeMode: 'intezmeny_lista',
+      selectedEstablishments: [],
+      selectedClasses: [],
+      eventDetails: {
         title: '',
         description: '',
         content: '',
-        type: 'local',
-        status: 'open',
         start_date: '',
-        start_time: '',
-        end_date: '',
-        end_time: '',
-        location: '',
-        maxParticipants: null,
-        
-        // Megjelenítés kiknek
-        showTo: {
-          entireEstablishment: true,
-          specificClasses: false,
-          specificUsers: false
-        },
-        selectedClasses: [],
-        selectedUsers: []
+        end_date: ''
       },
+      currentStep: 1,
+      loading: false,
+      today: new Date().toISOString().split('T')[0],
       
-      // Feltöltött fájlok (content rész)
-      uploadedFiles: [],
-      
-      // Intézmények (demo adatok)
-      establishments: [
-        { id: 1, title: 'Kossuth Lajos Gimnázium', settlement_id: 1 },
-        { id: 2, title: 'Petőfi Sándor Általános Iskola', settlement_id: 1 },
-        { id: 3, title: 'Bolyai János Gimnázium', settlement_id: 2 },
-        { id: 4, title: 'Arany János Általános Iskola', settlement_id: 3 }
+      // Konfiguráció
+      steps: [
+        { number: 1, label: 'Típus' },
+        { number: 2, label: 'Célcsoport' },
+        { number: 3, label: 'Osztályok' },
+        { number: 4, label: 'Adatok' },
+        { number: 5, label: 'Létrehozás' }
       ],
       
-      // Települések (demo)
-      settlements: [
-        { id: 1, title: 'Budapest' },
-        { id: 2, title: 'Miskolc' },
-        { id: 3, title: 'Szeged' }
+      eventTypes: [
+        { value: 'local', label: 'Helyi esemény', icon: 'bx bx-building', description: 'Csak a saját intézményedben' },
+        { value: 'global', label: 'Globális esemény', icon: 'bx bx-world', description: 'Több intézményben' }
       ],
       
-      // Osztályok a kiválasztott intézményhez
-      establishmentClasses: [],
-      
-      // Felhasználók
-      users: [],
-      filteredUsers: [],
-      userSearch: '',
-      
-      // Jelenlegi felhasználó
-      currentUser: {
-        id: 1,
-        username: 'admin_user',
-        email: 'admin@example.com'
-      },
-      
-      // Esemény típusok leírása
-      eventTypes: {
-        local: 'Helyi esemény',
-        global: 'Globális esemény'
-      }
+      scopeModes: [
+        { value: 'intezmeny_lista', label: 'Intézmény lista', icon: 'bx bx-list-ol', description: 'Kézzel válaszd ki' },
+        { value: 'teruleti_szures', label: 'Területi szűrés', icon: 'bx bx-filter-alt', description: 'Szűrés alapján' }
+      ]
     }
   },
   
   computed: {
-    // Form validáció
+    hasPermission() {
+      return this.userRole === 'admin' || this.userRole === 'teacher'
+    },
+    
+    getRoleMessage() {
+      if (this.userRole === 'teacher') return 'Osztályfőnökként helyi eseményt hozhatsz létre'
+      if (this.userRole === 'admin') return 'Adminisztrátorként helyi vagy globális eseményt hozhatsz létre'
+      return 'Nincs jogosultságod eseményt létrehozni'
+    },
+    
+    isLocalEvent() {
+      return this.eventType === 'local' || this.userRole === 'teacher'
+    },
+    
+    shouldShowScopeSelection() {
+      if (this.userRole === 'teacher') return false
+      return this.currentStep >= 2
+    },
+    
+    hasSelectedEstablishments() {
+      return this.selectedEstablishments.length > 0 || this.isLocalEvent
+    },
+    
+    hasSelectedClasses() {
+      return this.selectedClasses.length > 0 || this.currentStep < 3
+    },
+    
+    canProceedToNextStep() {
+      switch (this.currentStep) {
+        case 1: return true
+        case 2: return this.isLocalEvent || this.selectedEstablishments.length > 0
+        case 3: return this.selectedClasses.length > 0 || true // Demo
+        case 4: return this.validateEventDetails()
+        default: return true
+      }
+    },
+    
     isFormValid() {
-      return (
-        this.selectedEstablishment &&
-        this.event.title.trim() &&
-        this.event.type &&
-        this.event.start_date &&
-        this.event.start_time &&
-        this.event.end_date &&
-        this.event.end_time &&
-        this.event.location.trim()
-      )
+      return this.validateEventDetails() && this.currentStep === 5
     }
   },
   
   watch: {
-    // Amikor intézmény változik, betöltjük az osztályait
-    selectedEstablishment(newVal) {
-      if (newVal) {
-        this.loadEstablishmentClasses(newVal)
-        this.loadEstablishmentUsers(newVal)
+    eventType(newVal) {
+      if (newVal === 'local') {
+        this.selectedEstablishments = [this.userEstablishment]
+      } else {
+        this.selectedEstablishments = []
       }
     }
   },
   
+  created() {
+    this.initializeDemoData()
+  },
+  
   methods: {
-    // Település neve
-    getSettlementName(settlementId) {
-      const settlement = this.settlements.find(s => s.id === settlementId)
-      return settlement ? settlement.title : 'Ismeretlen'
-    },
-    
-    // Intézmény neve
-    getEstablishmentName(establishmentId) {
-      const establishment = this.establishments.find(e => e.id == establishmentId)
-      return establishment ? `${establishment.title} (${this.getSettlementName(establishment.settlement_id)})` : 'Ismeretlen intézmény'
-    },
-    
-    // Intézmény osztályainak betöltése
-    loadEstablishmentClasses(establishmentId) {
+    initializeDemoData() {
       // Demo adatok
-      this.establishmentClasses = [
-        { id: 1, name: '9.A', grade: 9, establishment_id: establishmentId },
-        { id: 2, name: '9.B', grade: 9, establishment_id: establishmentId },
-        { id: 3, name: '10.A', grade: 10, establishment_id: establishmentId },
-        { id: 4, name: '10.B', grade: 10, establishment_id: establishmentId },
-        { id: 5, name: '11.A', grade: 11, establishment_id: establishmentId },
-        { id: 6, name: '12.A', grade: 12, establishment_id: establishmentId }
-      ].filter(c => c.establishment_id == establishmentId)
-    },
-    
-    // Intézmény felhasználóinak betöltése
-    loadEstablishmentUsers(establishmentId) {
-      // Demo adatok
-      this.users = [
-        { id: 1, username: 'tanar1', email: 'tanar1@example.com', role: 'teacher' },
-        { id: 2, username: 'tanar2', email: 'tanar2@example.com', role: 'teacher' },
-        { id: 3, username: 'diak1', email: 'diak1@example.com', role: 'student' },
-        { id: 4, username: 'diak2', email: 'diak2@example.com', role: 'student' },
-        { id: 5, username: 'diak3', email: 'diak3@example.com', role: 'student' },
-        { id: 6, username: 'szulo1', email: 'szulo1@example.com', role: 'parent' }
-      ]
-      this.filteredUsers = [...this.users]
-    },
-    
-    // Felhasználók keresése
-    searchUsers() {
-      if (!this.userSearch.trim()) {
-        this.filteredUsers = [...this.users]
-        return
-      }
-      
-      const searchTerm = this.userSearch.toLowerCase()
-      this.filteredUsers = this.users.filter(user =>
-        user.username.toLowerCase().includes(searchTerm) ||
-        user.email.toLowerCase().includes(searchTerm)
-      )
-    },
-    
-    // Fájl input trigger
-    triggerFileInput() {
-      this.$refs.fileInput.click()
-    },
-    
-    // Fájl feltöltés kezelése
-    handleFileUpload(event) {
-      const files = Array.from(event.target.files)
-      
-      // Méret és szám ellenőrzés
-      const validFiles = files.filter(file => {
-        const isValidSize = file.size <= 10 * 1024 * 1024 // 10MB
-        const isValidType = ['image/jpeg', 'image/png', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)
-        return isValidSize && isValidType
-      })
-      
-      // Max 5 fájl
-      const remainingSlots = 5 - this.uploadedFiles.length
-      const filesToAdd = validFiles.slice(0, remainingSlots)
-      
-      this.uploadedFiles.push(...filesToAdd)
-      
-      // Reset file input
-      event.target.value = ''
-      
-      // Ha túl sok fájl
-      if (files.length !== filesToAdd.length) {
-        alert('Max. 5 fájl tölthető fel, és csak támogatott formátumok (max. 10MB/fájl).')
+      if (this.userRole === 'teacher') {
+        this.eventType = 'local'
+        this.selectedEstablishments = [this.userEstablishment]
       }
     },
     
-    // Drag & drop
-    handleDrop(event) {
-      event.preventDefault()
-      const files = Array.from(event.dataTransfer.files)
-      const fileInput = { files: files }
-      this.handleFileUpload({ target: fileInput })
-    },
-    
-    // Fájl eltávolítása
-    removeFile(index) {
-      this.uploadedFiles.splice(index, 1)
-    },
-    
-    // Fájlméret formázása
-    formatFileSize(bytes) {
-      if (bytes === 0) return '0 Bytes'
-      const k = 1024
-      const sizes = ['Bytes', 'KB', 'MB', 'GB']
-      const i = Math.floor(Math.log(bytes) / Math.log(k))
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-    },
-    
-    // Esemény típus label
     getEventTypeLabel(type) {
-      return this.eventTypes[type] || type
+      const typeObj = this.eventTypes.find(t => t.value === type)
+      return typeObj ? typeObj.label : type
     },
     
-    // Dátum és idő formázása
-    formatDateTime(dateString, timeString) {
-      if (!dateString || !timeString) return ''
-      const date = new Date(`${dateString}T${timeString}:00`)
-      return date.toLocaleString('hu-HU', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        weekday: 'short'
-      })
+    validateEventDetails() {
+      const { title, description, start_date, end_date } = this.eventDetails
+      return title.trim() !== '' && 
+             description.trim() !== '' && 
+             start_date !== '' && 
+             end_date !== '' &&
+             new Date(start_date) <= new Date(end_date)
     },
     
-    // JSON content formázása
-    formatJSONContent(content) {
-      try {
-        const parsed = JSON.parse(content)
-        return JSON.stringify(parsed, null, 2)
-      } catch (e) {
-        return content
-      }
-    },
-    
-    // Form reset
-    resetForm() {
-      if (confirm('Biztosan törlöd az összes kitöltött adatot?')) {
-        this.selectedEstablishment = ''
-        this.event = {
-          title: '',
-          description: '',
-          content: '',
-          type: 'local',
-          status: 'open',
-          start_date: '',
-          start_time: '',
-          end_date: '',
-          end_time: '',
-          location: '',
-          maxParticipants: null,
-          showTo: {
-            entireEstablishment: true,
-            specificClasses: false,
-            specificUsers: false
-          },
-          selectedClasses: [],
-          selectedUsers: []
+    nextStep() {
+      if (this.currentStep < 5 && this.canProceedToNextStep) {
+        this.currentStep++
+        
+        // Demo: automatikus kitöltés
+        if (this.currentStep === 3) {
+          this.selectedClasses = [1, 2, 3] // Demo osztály ID-k
         }
-        this.uploadedFiles = []
-        this.establishmentClasses = []
-        this.filteredUsers = []
-        this.userSearch = ''
+        if (this.currentStep === 4 && !this.eventDetails.title) {
+          this.eventDetails = {
+            title: 'Tavaszi kirándulás',
+            description: 'Éves tavaszi kirándulás a természetben',
+            content: 'Hozz magaddal kenyeret és vizet!',
+            start_date: this.today,
+            end_date: this.getNextWeekDate()
+          }
+        }
       }
     },
     
-    // Esemény létrehozása
+    getNextWeekDate() {
+      const date = new Date()
+      date.setDate(date.getDate() + 7)
+      return date.toISOString().split('T')[0]
+    },
+    
+    prevStep() {
+      if (this.currentStep > 1) {
+        this.currentStep--
+      }
+    },
+    
     async createEvent() {
       if (!this.isFormValid) {
         alert('Kérjük, töltsd ki az összes kötelező mezőt!')
         return
       }
       
-      // Content összeállítása
-      let contentObj = {}
+      this.loading = true
+      
       try {
-        if (this.event.content) {
-          contentObj = JSON.parse(this.event.content)
-        }
-      } catch (e) {
-        alert('Érvénytelen JSON formátum a tartalom mezőben!')
-        return
-      }
-      
-      // Fájlok hozzáadása a contenthez
-      if (this.uploadedFiles.length > 0) {
-        contentObj.files = this.uploadedFiles.map(file => ({
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          lastModified: file.lastModified
-        }))
-      }
-      
-      // Max résztvevők hozzáadása
-      if (this.event.maxParticipants) {
-        contentObj.maxParticipants = this.event.maxParticipants
-      }
-      
-      // Helyszín hozzáadása
-      contentObj.location = this.event.location
-      
-      // Adatbázis kompatibilis esemény adatok
-      const eventData = {
-        title: this.event.title,
-        description: this.event.description,
-        content: JSON.stringify(contentObj),
-        type: this.event.type,
-        status: 'open', // Mindig open-ként jön létre
-        user_id: this.currentUser.id, // Létrehozó felhasználó
-        start_date: `${this.event.start_date} ${this.event.start_time}:00`,
-        end_date: `${this.event.end_date} ${this.event.end_time}:00`,
-        created_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
-      }
-      
-      console.log('Esemény adatok (adatbázis):', eventData)
-      
-      // Megjelenítés kiknek
-      const showToData = []
-      
-      if (this.event.showTo.entireEstablishment) {
-        // Egész intézmény -> minden osztályt hozzáadunk
-        this.establishmentClasses.forEach(classItem => {
-          showToData.push({
-            event_id: null, // Ezt majd a backend állítja be
-            class_id: classItem.id,
-            user_id: null
+        // Demo működés
+        setTimeout(() => {
+          this.loading = false
+          
+          // Mentés localStorage-ba (demo)
+          const events = JSON.parse(localStorage.getItem('events') || '[]')
+          events.push({
+            id: Date.now(),
+            ...this.eventDetails,
+            type: this.eventType,
+            created_at: new Date().toISOString()
           })
-        })
+          localStorage.setItem('events', JSON.stringify(events))
+          
+          alert('✅ Esemény sikeresen létrehozva!')
+          this.$router.push('/esemenyek')
+        }, 1500)
+        
+      } catch (error) {
+        console.error('Hiba:', error)
+        this.loading = false
+        alert('Hiba történt: ' + error.message)
       }
-      
-      if (this.event.showTo.specificClasses && this.event.selectedClasses.length > 0) {
-        this.event.selectedClasses.forEach(classId => {
-          showToData.push({
-            event_id: null,
-            class_id: classId,
-            user_id: null
-          })
-        })
-      }
-      
-      if (this.event.showTo.specificUsers && this.event.selectedUsers.length > 0) {
-        this.event.selectedUsers.forEach(userId => {
-          showToData.push({
-            event_id: null,
-            class_id: null,
-            user_id: userId
-          })
-        })
-      }
-      
-      console.log('Megjelenítés adatok:', showToData)
-      
-      // Itt jönne a backend API hívás
-      // try {
-      //   // 1. Esemény létrehozása
-      //   const eventResponse = await axios.post('http://127.0.0.1:8000/api/events', eventData)
-      //   const eventId = eventResponse.data.id
-      //   
-      //   // 2. Megjelenítés adatok küldése
-      //   if (showToData.length > 0) {
-      //     const showToPromises = showToData.map(data => {
-      //       data.event_id = eventId
-      //       return axios.post('http://127.0.0.1:8000/api/event-shown-to', data)
-      //     })
-      //     await Promise.all(showToPromises)
-      //   }
-      //   
-      //   alert('Esemény sikeresen létrehozva!')
-      //   this.$router.push('/esemenyek')
-      // } catch (error) {
-      //   console.error('Hiba az esemény létrehozásakor:', error)
-      //   alert('Hiba történt az esemény létrehozásakor.')
-      // }
-      
-      // Demo
-      alert('Esemény sikeresen létrehozva! (DEMO - Adatbázis kompatibilis)')
-      console.log('Létrehozott esemény:', eventData)
-      console.log('Megjelenítés adatok:', showToData)
-      this.resetForm()
     }
-  },
-  
-  mounted() {
-    console.log('EventCreator komponens betöltve - SQL séma kompatibilis')
   }
 }
 </script>
 
 <style scoped>
-/* ====================
-   ALAP STÍLUSOK
-   ==================== */
+/* ALAP STÍLUSOK */
 .event-creator-page {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-sizing: border-box;
   font-family: "Poppins", sans-serif;
+  min-height: 100vh;
+  padding: 20px;
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  width: 99vw;
+  align-items: flex-start;
+  overflow-x: hidden;
 }
 
 .back-btn {
-  position: fixed;
+  position: absolute;
   top: 20px;
   left: 20px;
   background: rgba(255, 255, 255, 0.9);
   border: none;
-  padding: 10px 20px;
+  padding: 10px 15px;
   border-radius: 50px;
   cursor: pointer;
   display: flex;
@@ -915,6 +387,8 @@ export default {
   z-index: 100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s;
+  max-width: 120px;
+  white-space: nowrap;
 }
 
 .back-btn:hover {
@@ -922,382 +396,387 @@ export default {
   transform: translateX(-5px);
 }
 
-.back-btn i {
-  font-size: 20px;
-}
-
-/* ====================
-   TARTALOM BURKOLÓ
-   ==================== */
 .event-creator-wrapper {
-  max-width: 1400px;
-  margin: 60px auto 40px;
-  background: rgba(255, 255, 255, 0.95);
+  max-width: 900px;
+  width: 100%;
+  background: white;
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
+  margin: 60px 20px 20px;
+  box-sizing: border-box;
 }
 
-/* ====================
-   FEJLÉC
-   ==================== */
 .creator-header {
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
-  padding: 30px 40px;
+  padding: 25px 30px;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .creator-header h1 {
-  font-size: 32px;
-  margin-bottom: 10px;
+  font-size: 28px;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 15px;
-}
-
-.creator-header h1 i {
-  font-size: 40px;
+  gap: 12px;
 }
 
 .subtitle {
   opacity: 0.9;
-  font-size: 16px;
+  font-size: 14px;
 }
 
-/* ====================
-   FŐ TARTALOM
-   ==================== */
+/* TARTALOM */
 .creator-content {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 0;
-  min-height: 800px;
+  padding: 25px;
+  box-sizing: border-box;
 }
 
-/* ====================
-   BAL OLDAL - ŰRLAP
-   ==================== */
-.form-side {
-  padding: 40px;
-  border-right: 1px solid #e0e0e0;
-  background: white;
-  overflow-y: auto;
-  max-height: 800px;
+/* NINCS JOGOSULTSÁG */
+.no-permission {
+  padding: 30px;
+  text-align: center;
+  box-sizing: border-box;
 }
 
+.permission-error {
+  padding: 25px;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-radius: 15px;
+  border-left: 5px solid #ef4444;
+  box-sizing: border-box;
+}
+
+.permission-error i {
+  font-size: 48px;
+  color: #ef4444;
+  margin-bottom: 15px;
+}
+
+.permission-error h3 {
+  color: #dc2626;
+  margin-bottom: 10px;
+  font-size: 20px;
+}
+
+.permission-error p {
+  color: #7f1d1d;
+  margin-bottom: 20px;
+  font-size: 15px;
+}
+
+/* LÉPTETŐ */
+.step-navigation {
+  margin-bottom: 25px;
+}
+
+.steps {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-width: 70px;
+}
+
+.step-number {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+.step.active .step-number {
+  background: #4f46e5;
+  color: white;
+  transform: scale(1.1);
+}
+
+.step.completed .step-number {
+  background: #10b981;
+  color: white;
+}
+
+.step-label {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  word-break: break-word;
+  max-width: 80px;
+}
+
+.step.active .step-label {
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+/* FORM SECTION */
 .form-section {
-  margin-bottom: 30px;
-  padding-bottom: 25px;
-  border-bottom: 1px solid #eee;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e5e7eb;
+  box-sizing: border-box;
 }
 
-.form-section h3,
-.form-section h4 {
-  color: #333;
+.form-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.form-section h3 {
+  color: #1f2937;
   margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 10px;
+  font-size: 20px;
 }
 
-.form-section h3 i,
-.form-section h4 i {
+.form-section h3 i {
   color: #4f46e5;
 }
 
-/* Form elemek */
+/* TYPE SELECTION */
+.type-selection, .scope-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  margin-top: 15px;
+  box-sizing: border-box;
+}
+
+.type-option, .scope-option {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: white;
+  box-sizing: border-box;
+}
+
+.type-option:hover, .scope-option:hover {
+  border-color: #c7d2fe;
+  transform: translateY(-2px);
+}
+
+.type-option.selected, .scope-option.selected {
+  border-color: #4f46e5;
+  background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+}
+
+.option-content {
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.option-content i {
+  font-size: 36px;
+  color: #4f46e5;
+  margin-bottom: 10px;
+}
+
+.option-content h4 {
+  color: #1f2937;
+  margin-bottom: 5px;
+  font-size: 18px;
+}
+
+.option-content p {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* SCOPE INFO */
+.scope-info {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 15px;
+  box-sizing: border-box;
+}
+
+.info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  border-left: 4px solid #0ea5e9;
+  box-sizing: border-box;
+}
+
+.info-box i {
+  color: #0ea5e9;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.info-box p {
+  color: #0369a1;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.selected-establishment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #10b981;
+  box-sizing: border-box;
+}
+
+.selected-establishment i {
+  color: #10b981;
+  font-size: 20px;
+}
+
+.selected-establishment span {
+  font-weight: 600;
+  color: #047857;
+  font-size: 16px;
+}
+
+/* FORM ELEMENTS */
+.selection-hint {
+  padding: 15px;
+  background: #f9fafb;
+  border-radius: 8px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+  margin-top: 15px;
+  box-sizing: border-box;
+}
+
+.event-details-form {
+  margin-top: 20px;
+  box-sizing: border-box;
+}
+
 .form-group {
-  margin-bottom: 25px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 8px;
+  color: #374151;
   font-weight: 600;
-  color: #555;
   font-size: 14px;
 }
 
-.form-hint {
-  display: block;
-  margin-top: 5px;
-  color: #666;
-  font-size: 12px;
-  font-style: italic;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-/* Input és select wrapper */
-.input-wrapper,
-.select-wrapper,
-.textarea-wrapper {
-  position: relative;
-}
-
-.input-wrapper i,
-.select-wrapper i,
-.textarea-wrapper i {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #667eea;
-  font-size: 20px;
-}
-
-.textarea-wrapper i {
-  top: 20px;
-  transform: none;
-}
-
-.form-control {
+.form-group input, .form-group textarea {
   width: 100%;
-  padding: 12px 15px 12px 45px;
-  border: 2px solid #e0e0e0;
+  padding: 10px 12px;
+  border: 2px solid #e5e7eb;
   border-radius: 10px;
-  font-size: 16px;
+  font-size: 15px;
+  font-family: inherit;
   transition: all 0.3s;
-  background: white;
+  box-sizing: border-box;
 }
 
-.form-control:focus {
+.form-group input:focus, .form-group textarea:focus {
   outline: none;
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
-textarea.form-control {
-  min-height: 120px;
+.form-group textarea {
+  min-height: 100px;
   resize: vertical;
-  padding-top: 15px;
 }
 
-.select-wrapper .form-control {
-  appearance: none;
-  padding-right: 40px;
-}
-
-/* Megjelenítés kiknek */
-.conditions {
-  display: flex;
-  flex-direction: column;
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 15px;
+  box-sizing: border-box;
 }
 
-.condition-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  padding: 10px;
-  border-radius: 8px;
-  transition: background 0.3s;
-}
-
-.condition-checkbox:hover {
-  background: #f8f9fa;
-}
-
-.condition-checkbox input {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.condition-text {
-  font-weight: 500;
-}
-
-/* Osztály választás */
-.class-selection,
-.user-selection {
-  margin-top: 15px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 10px;
-}
-
-.class-selection label,
-.user-selection label {
-  display: block;
-  margin-bottom: 15px;
-  font-weight: 600;
-}
-
-.class-checkboxes,
-.user-checkboxes {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.class-checkbox,
-.user-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: white;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.class-checkbox:hover,
-.user-checkbox:hover {
-  background: #f1f5f9;
-}
-
-.class-checkbox input,
-.user-checkbox input {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.class-text,
-.user-text {
-  font-size: 14px;
-}
-
-.user-search {
-  margin-bottom: 15px;
-}
-
-.user-search .input-wrapper i {
-  left: 12px;
-}
-
-/* Fájl feltöltés */
-.file-upload-area {
-  border: 2px dashed #cbd5e1;
-  border-radius: 10px;
-  padding: 40px 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  background: #f8fafc;
-}
-
-.file-upload-area:hover {
-  border-color: #4f46e5;
-  background: #f1f5f9;
-}
-
-.upload-content i {
-  font-size: 48px;
-  color: #94a3b8;
-  margin-bottom: 15px;
-}
-
-.upload-content p {
-  margin: 5px 0;
-  color: #64748b;
-}
-
-.upload-info {
-  font-size: 14px;
-  color: #94a3b8;
-}
-
-/* Fájl lista */
-.file-list {
-  margin-top: 20px;
-}
-
-.file-list h5 {
-  margin-bottom: 15px;
-  color: #333;
-}
-
-.file-items {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.file-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+/* OVERVIEW */
+.overview {
+  background: #f9fafb;
+  border-radius: 12px;
   padding: 15px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  margin-top: 15px;
+  box-sizing: border-box;
 }
 
-.file-icon i {
-  font-size: 24px;
-  color: #4f46e5;
+.summary-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 15px;
+  line-height: 1.4;
 }
 
-.file-details {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.summary-item:last-child {
+  border-bottom: none;
 }
 
-.file-name {
-  font-weight: 500;
-  color: #334155;
+.summary-item strong {
+  color: #374151;
+  margin-right: 8px;
 }
 
-.file-size {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.remove-file-btn {
-  background: none;
-  border: none;
-  color: #ef4444;
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 4px;
-  transition: background 0.3s;
-}
-
-.remove-file-btn:hover {
-  background: #fee2e2;
-}
-
-.remove-file-btn i {
-  font-size: 20px;
-}
-
-/* Gombok */
+/* FORM ACTIONS */
 .form-actions {
   display: flex;
-  gap: 20px;
-  margin-top: 40px;
-  padding-top: 30px;
-  border-top: 1px solid #e0e0e0;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 25px;
+  padding-top: 15px;
+  border-top: 2px solid #e5e7eb;
+  box-sizing: border-box;
 }
 
 .btn {
-  flex: 1;
-  padding: 16px 30px;
+  padding: 10px 20px;
   border: none;
   border-radius: 10px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 6px;
   transition: all 0.3s;
+  text-decoration: none;
+  box-sizing: border-box;
+  flex: 1;
 }
 
 .btn-primary {
@@ -1307,12 +786,7 @@ textarea.form-control {
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
 }
 
 .btn-secondary {
@@ -1321,347 +795,45 @@ textarea.form-control {
   border: 2px solid #e2e8f0;
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   background: #e2e8f0;
 }
 
-/* ====================
-   JOBB OLDAL - ELŐNÉZET
-   ==================== */
-.preview-side {
-  padding: 40px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  overflow-y: auto;
-  max-height: 800px;
-}
-
-.preview-header {
-  margin-bottom: 30px;
-}
-
-.preview-header h3 {
-  color: #333;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 5px;
-}
-
-.preview-header p {
-  color: #64748b;
-  font-size: 14px;
-}
-
-/* Előnézet kártya */
-.preview-card {
-  background: white;
-  border-radius: 15px;
-  padding: 30px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-  margin-bottom: 30px;
-}
-
-.preview-event-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 25px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.preview-event-header h4 {
-  font-size: 24px;
-  color: #1e293b;
-  margin: 0;
-  flex: 1;
-  min-width: 200px;
-}
-
-.event-type-badge,
-.event-status-badge {
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.event-type-badge.local {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+.btn-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
 }
 
-.event-type-badge.global {
-  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-  color: white;
+.btn-success:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
 }
 
-.event-status-badge {
-  background: #f1f5f9;
-  color: #475569;
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-.event-status-badge.open {
-  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-  color: white;
-}
-
-.event-status-badge.closed {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-}
-
-/* Részletek */
-.preview-details {
-  margin-bottom: 25px;
-}
-
-.preview-detail-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.detail-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.detail-item i {
-  font-size: 24px;
-  color: #6366f1;
-  width: 30px;
-}
-
-.detail-label {
-  display: block;
-  font-size: 12px;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-}
-
-.detail-value {
-  display: block;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-/* Leírás */
-.preview-description {
-  margin-bottom: 25px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.preview-description h5 {
-  color: #334155;
-  margin-bottom: 10px;
-  font-size: 16px;
-}
-
-.preview-description p {
-  color: #475569;
-  line-height: 1.6;
-  white-space: pre-line;
-}
-
-/* Tartalom (JSON) */
-.preview-content {
-  margin-bottom: 25px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.preview-content h5 {
-  color: #334155;
-  margin-bottom: 10px;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.json-content {
-  background: #1e293b;
-  color: #e2e8f0;
-  padding: 15px;
-  border-radius: 8px;
-  font-size: 13px;
-  overflow-x: auto;
-  font-family: 'Courier New', monospace;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-/* Megjelenítés kiknek */
-.preview-showto {
-  margin-bottom: 25px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.preview-showto h5 {
-  color: #334155;
-  margin-bottom: 15px;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.showto-list {
-  list-style: none;
-  padding: 0;
-}
-
-.showto-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  color: #475569;
-}
-
-.showto-list li i {
-  color: #10b981;
-}
-
-.showto-list li:last-child i {
-  color: #ef4444;
-}
-
-/* Fájlok */
-.preview-files {
-  margin-bottom: 25px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.preview-files h5 {
-  color: #334155;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 16px;
-}
-
-.files-count {
-  background: #f1f5f9;
-  padding: 8px 16px;
-  border-radius: 20px;
-  display: inline-block;
-  font-size: 14px;
-  color: #475569;
-}
-
-/* Statisztika */
-.preview-stats {
-  display: flex;
-  gap: 20px;
-  margin-top: 25px;
-  padding-top: 20px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.stat-item {
-  flex: 1;
-  text-align: center;
-  padding: 15px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 10px;
-}
-
-.stat-value {
-  display: block;
-  font-size: 28px;
-  font-weight: 700;
-  color: #4f46e5;
-  margin-bottom: 5px;
-}
-
-.stat-label {
-  display: block;
-  font-size: 12px;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-/* Adatbázis info */
-.database-info {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border-radius: 15px;
-  padding: 25px;
-  border-left: 5px solid #0ea5e9;
-}
-
-.database-info h5 {
-  color: #0369a1;
-  margin-bottom: 15px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 18px;
-}
-
-.db-structure {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.db-field {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: white;
-  border-radius: 6px;
-  border-left: 3px solid #0ea5e9;
-}
-
-.db-field-name {
-  font-family: 'Courier New', monospace;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.db-field-value {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  color: #64748b;
-  background: #f1f5f9;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-/* ====================
-   RESZPONZÍV DESIGN
-   ==================== */
-@media (max-width: 1200px) {
-  .creator-content {
-    grid-template-columns: 1fr;
-  }
-  
-  .form-side {
-    border-right: none;
-    border-bottom: 1px solid #e0e0e0;
-  }
-}
-
+/* RESZPONZÍV */
 @media (max-width: 768px) {
-  .event-creator-wrapper {
-    margin: 40px 10px;
+  .event-creator-page {
+    padding: 15px;
+    align-items: flex-start;
   }
   
-  .form-side,
-  .preview-side {
-    padding: 20px;
+  .event-creator-wrapper {
+    margin: 50px 15px 15px;
+    max-width: 100%;
+  }
+  
+  .back-btn {
+    top: 15px;
+    left: 15px;
+    padding: 8px 12px;
+    font-size: 14px;
+    max-width: 110px;
   }
   
   .creator-header {
@@ -1669,38 +841,80 @@ textarea.form-control {
   }
   
   .creator-header h1 {
-    font-size: 24px;
-    flex-direction: column;
+    font-size: 22px;
+    flex-direction: row;
     gap: 10px;
   }
   
-  .form-row,
-  .preview-detail-row {
-    grid-template-columns: 1fr;
-    gap: 15px;
+  .creator-content {
+    padding: 20px;
   }
   
-  .form-actions {
-    flex-direction: column;
+  .steps {
+    gap: 5px;
+  }
+  
+  .step {
+    min-width: 60px;
+  }
+  
+  .step-number {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .step-label {
+    font-size: 11px;
+    max-width: 70px;
+  }
+  
+  .form-section h3 {
+    font-size: 18px;
+  }
+  
+  .option-content h4 {
+    font-size: 16px;
+  }
+  
+  .option-content i {
+    font-size: 32px;
+  }
+  
+  .form-group label {
+    font-size: 13px;
+  }
+  
+  .form-group input, .form-group textarea {
+    font-size: 14px;
+    padding: 9px 11px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   
   .btn {
-    width: 100%;
+    padding: 9px 16px;
+    font-size: 14px;
   }
   
-  .back-btn {
-    position: absolute;
-    top: 10px;
-    left: 10px;
+  .form-actions {
+    flex-direction: row;
+    gap: 10px;
   }
   
-  .preview-event-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .permission-error {
+    padding: 20px;
   }
   
-  .preview-event-header h4 {
-    min-width: auto;
+  .permission-error i {
+    font-size: 40px;
+  }
+  
+  .permission-error h3 {
+    font-size: 18px;
   }
 }
 
@@ -1709,9 +923,124 @@ textarea.form-control {
     padding: 10px;
   }
   
-  .class-checkboxes,
-  .user-checkboxes {
-    max-height: 150px;
+  .event-creator-wrapper {
+    margin: 45px 10px 10px;
+    border-radius: 15px;
+  }
+  
+  .back-btn {
+    top: 10px;
+    left: 10px;
+    padding: 7px 10px;
+    font-size: 13px;
+    max-width: 100px;
+  }
+  
+  .creator-header {
+    padding: 15px;
+  }
+  
+  .creator-header h1 {
+    font-size: 18px;
+    gap: 8px;
+  }
+  
+  .subtitle {
+    font-size: 12px;
+  }
+  
+  .creator-content {
+    padding: 15px;
+  }
+  
+  .step {
+    min-width: 50px;
+  }
+  
+  .step-number {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+  
+  .step-label {
+    font-size: 10px;
+    max-width: 60px;
+  }
+  
+  .form-section h3 {
+    font-size: 16px;
+    gap: 8px;
+  }
+  
+  .form-section h3 i {
+    font-size: 18px;
+  }
+  
+  .type-selection, .scope-options {
+    gap: 10px;
+  }
+  
+  .type-option, .scope-option {
+    padding: 12px;
+  }
+  
+  .option-content i {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+  
+  .option-content h4 {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  
+  .option-content p {
+    font-size: 12px;
+  }
+  
+  .scope-info {
+    padding: 15px;
+  }
+  
+  .info-box, .selected-establishment {
+    padding: 12px;
+  }
+  
+  .selection-hint {
+    padding: 12px;
+    font-size: 13px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .btn {
+    width: 100%;
+    padding: 10px;
+  }
+}
+
+@media (min-width: 769px) {
+  .type-selection, .scope-options {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .form-actions .btn {
+    flex: none;
+    min-width: 140px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .event-creator-wrapper {
+    max-width: 950px;
+  }
+  
+  .creator-content {
+    padding: 30px;
   }
 }
 </style>

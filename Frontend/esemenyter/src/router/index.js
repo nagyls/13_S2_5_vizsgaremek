@@ -32,7 +32,7 @@ const routes = [
     meta: { title: 'Adatvédelemi nyilatkozat' }
   },
   {
-    path: '/mainpage',
+    path: '/',
     name: 'mainpage',
     component: MainPage,
     meta: { title: 'Főoldal' }
@@ -42,6 +42,10 @@ const routes = [
     name: 'event-creator',
     component: EventCreator,
     meta: { title: 'Esemény létrehozása' }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
   }
 ]
 

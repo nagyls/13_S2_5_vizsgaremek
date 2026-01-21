@@ -935,7 +935,7 @@ export default {
     align-items: center;
     
     min-height: 100vh;
-    width: 100vw;
+    width: 99vw;
 }
 
 .header-content {
