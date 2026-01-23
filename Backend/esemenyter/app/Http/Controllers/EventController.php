@@ -4,39 +4,74 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Event;
+use Carbon\Carbon;
 
 class EventController extends Controller
 {
-    //
-    public function event_create(Request $request)
+    private function determineStatus($start, $end)
     {
-         $request->validate([
-            'type'        => 'required|in:local,global',
-            'title'       => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'content'     => 'nullable|string',
-            'users_id'    => 'required|exists:users,id',
-            'start_date'  => 'nullable|date',
-            'end_date'    => 'nullable|date|after_or_equal:start_date',
-            'status'      => 'in:open,closed'
+        $now = Carbon::now();
+
+        if ($now->lt($start)) {
+            return 'upcoming';
+        }
+
+        if ($now->between($start, $end)) {
+            return 'ongoing';
+        }
+
+        return 'ended';
+    }
+    //
+    public function store(Request $request)
+    {
+        $user = auth()->user();
+
+        $validated = $request->validate([
+            'type' => 'required|in:local,global',
+            'scope_mode' => 'nullable|string',
+            'establishment_ids' => 'required|array',
+            'establishment_ids.*' => 'integer|exists:establishments,id',
+            'class_ids' => 'nullable|array',
+            'class_ids.*' => 'integer|exists:classes,id',
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'content' => 'nullable|string',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
-        $eventId = DB::table('events')->insertGetId([
-            'type'        => $request->type,
-            'title'       => $request->title,
-            'description' => $request->description,
-            'content'     => $request->content,
-            'users_id'    => $request->users_id,
-            'start_date'  => $request->start_date,
-            'end_date'    => $request->end_date,
-            'status'      => $request->status ?? 'open',
-            'created_at'  => now(),
+        if ($user->role === 'teacher' && $validated['type'] !== 'local') {
+            return response()->json([
+                'message' => 'Tanár csak helyi eseményt hozhat létre'
+            ], 403);
+        }
+
+        $status = $this->determineStatus(
+            Carbon::parse($validated['start_date']),
+            Carbon::parse($validated['end_date'])
+        );
+
+        $event = Event::create([
+            'users_id' => $user->id,
+            'type' => $validated['type'],
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'content' => $validated['content'] ?? null,
+            'start_date' => $validated['start_date'],
+            'end_date' => $validated['end_date'],
+            'status' => $status,
         ]);
+
+        $event->establishments()->sync($validated['establishment_ids']);
+        $event->classes()->sync($validated['class_ids'] ?? []);
+
         return response()->json([
-            'message' => 'Event created successfully',
-            'event_id' => $eventId
-        ], );
-       
+            'message' => 'Esemény létrehozva',
+            'event' => $event
+        ], 201);
     }
     
 }

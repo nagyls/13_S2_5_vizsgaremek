@@ -20,8 +20,8 @@ return new class extends Migration
             $table->foreignId('users_id')->constrained('users')->cascadeOnDelete();
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date')->nullable();
-            $table->enum('status', ['open', 'closed'])->default('open');
-            $table->timestamp('created_at')->nullable();
+            $table->enum('status', ['upcoming', 'ongoing', 'ended'])->default('upcoming');
+            $table->timestamps();
         });
     }
 

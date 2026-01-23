@@ -165,6 +165,9 @@
 </template>
 
 <script>
+import axios from 'axios';
+
+
 export default {
   name: 'EventCreator',
   
@@ -325,32 +328,44 @@ export default {
         alert('Kérjük, töltsd ki az összes kötelező mezőt!')
         return
       }
-      
+
       this.loading = true
-      
+
       try {
-        // Demo működés
-        setTimeout(() => {
-          this.loading = false
-          
-          // Mentés localStorage-ba (demo)
-          const events = JSON.parse(localStorage.getItem('events') || '[]')
-          events.push({
-            id: Date.now(),
-            ...this.eventDetails,
-            type: this.eventType,
-            created_at: new Date().toISOString()
-          })
-          localStorage.setItem('events', JSON.stringify(events))
-          
-          alert('✅ Esemény sikeresen létrehozva!')
-          this.$router.push('/esemenyek')
-        }, 1500)
-        
+        const payload = {
+          type: this.eventType,
+          scope_mode: this.scopeMode,
+          establishment_ids: this.isLocalEvent
+            ? [this.userEstablishment.id]
+            : this.selectedEstablishments.map(e => e.id),
+          class_ids: this.selectedClasses,
+          title: this.eventDetails.title,
+          description: this.eventDetails.description,
+          content: this.eventDetails.content,
+          start_date: this.eventDetails.start_date,
+          end_date: this.eventDetails.end_date,
+        }
+
+        await axios.post('http://127.0.0.1:8000/api/events', payload, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Accept: 'application/json'
+          }
+        })
+
+        alert('✅ Esemény sikeresen létrehozva!')
+        this.$router.push('/esemenyek')
+
       } catch (error) {
-        console.error('Hiba:', error)
+        console.error(error)
+
+        if (error.response?.data?.message) {
+          alert('Hiba: ' + error.response.data.message)
+        } else {
+          alert('Ismeretlen hiba történt')
+        }
+      } finally {
         this.loading = false
-        alert('Hiba történt: ' + error.message)
       }
     }
   }
@@ -360,7 +375,7 @@ export default {
 <style scoped>
 /* ALAP STÍLUSOK */
 .event-creator-page {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8c8c8f 0%, #764ba2 100%);
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
   display: flex;
