@@ -12,18 +12,16 @@ class AuthController extends Controller
     //
     public function register(Request $request)
     {
-        $request->validate([
-            'username' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6'
+       $request->validate([
+        'username' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email',
+        'password' => 'required|string|min:6'
         ]);
 
-        DB::table('users')->insert([
+        User::create([
             'name' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'created_at' => now(),
-            'updated_at' => now()
         ]);
 
         return response()->json(['message' => 'Sikeres regisztráció!']);
@@ -36,8 +34,7 @@ class AuthController extends Controller
         ]);
 
         // Felhasználó lekérése username alapján
-        $user = DB::table('users')->where('name', $request->username)->first();
-
+        $user = User::where('name', $request->username)->first();
         if (!$user) {
             return response()->json(['message' => 'Hibás felhasználónév!'], 401);
         }
