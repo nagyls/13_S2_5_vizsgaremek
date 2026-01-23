@@ -3,60 +3,45 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    //
+    public function register(Request $request)
+    {
+       $request->validate([
+        'username' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email',
+        'password' => 'required|string|min:6'
+        ]);
+
+        User::create([
+            'name' => $request->username,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        return response()->json(['message' => 'Sikeres regisztráció!']);
+    }
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
+            'username' => 'required|string',
+            'password' => 'required|string'
         ]);
 
-        // Felhasználó lekérése email alapján
-        $user = DB::table('users')->where('email', $request->email)->first();
-
+        // Felhasználó lekérése username alapján
+        $user = User::where('name', $request->username)->first();
         if (!$user) {
-            return response()->json([
-                'message' => 'Hibás email vagy jelszó!'
-            ], 401);
+            return response()->json(['message' => 'Hibás felhasználónév!'], 401);
         }
 
         // Jelszó ellenőrzés
         if (!Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'Hibás email vagy jelszó!'
-            ], 401);
-        }
-
-        return response()->json([
-            'message' => 'Sikeres bejelentkezés!',
-            'user' => $user
-        ]);
-    }
-    public function registrer(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
-
-        // Felhasználó lekérése email alapján
-        $user = DB::table('users')->where('email', $request->email)->first();
-
-        if (!$user) {
-            return response()->json([
-                'message' => 'Hibás email vagy jelszó!'
-            ], 401);
-        }
-
-        // Jelszó ellenőrzés
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'Hibás email vagy jelszó!'
-            ], 401);
+            return response()->json(['message' => 'Hibás jelszó!'], 401);
         }
 
         return response()->json([
