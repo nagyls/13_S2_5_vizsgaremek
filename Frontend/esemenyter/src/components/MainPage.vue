@@ -344,6 +344,26 @@
                         </div>
                       </div>
                     </div>
+                    
+                    <!-- Események listája -->
+                    <div class="esemenyek-lista">
+                      <h4 class="mb-3">Legfrissebb események</h4>
+                      <div class="event-list">
+                        <div v-for="event in recommendedEvents" :key="event.id" class="event-card">
+                          <div class="event-header">
+                            <h5>{{ event.title }}</h5>
+                            <span class="event-date">{{ event.date }}</span>
+                          </div>
+                          <p class="event-location">{{ event.location }}</p>
+                          <div class="event-actions">
+                            <router-link :to="`/esemenyek/${event.id}`" class="btn btn-sm btn-outline-primary">
+                              Részletek
+                            </router-link>
+                            <button class="btn btn-sm btn-primary">Jelentkezés</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
                   <!-- Ajánlott események -->

@@ -5,6 +5,8 @@ import Aszf from '../components/Aszf.vue'
 import Privacy from '../components/Privacy.vue'
 import MainPage from '../components/MainPage.vue'
 import EventCreator from '@/components/EventCreator.vue'
+import CommentBox from '@/components/CommentBox.vue'
+import EventDetails from '@/components/EventDetails.vue'
 
 const routes = [
   {
@@ -42,6 +44,20 @@ const routes = [
     name: 'event-creator',
     component: EventCreator,
     meta: { title: 'Esemény létrehozása' }
+  },
+  {
+    // FONTOS: Ez az útvonal ID paraméterrel kell legyen
+    path: '/esemenyek/:id',  // VÁLTOZOTT
+    name: 'event-details',
+    component: EventDetails,
+    meta: { title: 'Esemény részletei' },
+    props: true  // Opcionális: átadja a paramétereket props-ként
+  },
+  {
+    path: '/comment-box',
+    name: 'comment-box',
+    component: CommentBox,
+    meta: { title: 'Kommentszekció'}
   },
   {
     path: '/:pathMatch(.*)*',

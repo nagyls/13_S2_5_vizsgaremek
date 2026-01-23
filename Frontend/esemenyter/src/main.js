@@ -12,6 +12,8 @@ import Aszf from './components/Aszf.vue'
 import Privacy from './components/Privacy.vue'
 import MainPage from './components/MainPage.vue'
 import EventCreator from './components/EventCreator.vue'
+import CommentBox from './components/CommentBox.vue'
+import EventDetails from './components/EventDetails.vue'
 import './style.css'
 
 const app = createApp(App)
@@ -21,6 +23,8 @@ app.component('aszf', Aszf)
 app.component('privacy', Privacy)
 app.component('mainpage', MainPage)
 app.component('event-creator', EventCreator)
+app.component('comment-box', CommentBox)
+app.component('event-details', EventDetails)
 app.use(router)
 app.mount('#app')
 
