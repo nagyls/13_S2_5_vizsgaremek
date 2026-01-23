@@ -4,52 +4,51 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
     //
     public function register(Request $request)
     {
-        // Validate the request
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
+        $request->validate([
+            'username' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'required|string|min:6'
         ]);
 
-        // Create the user
-        User::create([
-            'name' => $validatedData['name'],
-            'email' => $validatedData['email'],
-            'password' => $validatedData['password'],
+        DB::table('users')->insert([
+            'name' => $request->username,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'created_at' => now(),
+            'updated_at' => now()
         ]);
-        // Generate token
-        $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-        ], 201);
+        return response()->json(['message' => 'Sikeres regisztráció!']);
     }
     public function login(Request $request)
     {
-        // Validate the request
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
+        $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string'
         ]);
 
-        // Attempt to authenticate the user
-        if (auth()->attempt($credentials)) {
-            $user = auth()->user();
-            $token = $user->createToken('auth_token')->plainTextToken;
+        // Felhasználó lekérése username alapján
+        $user = DB::table('users')->where('name', $request->username)->first();
 
-            return response()->json([
-                'access_token' => $token,
-                'token_type' => 'Bearer',
-            ]);
+        if (!$user) {
+            return response()->json(['message' => 'Hibás felhasználónév!'], 401);
         }
 
-        return response()->json(['message' => 'Invalid credentials'], 401);
+        // Jelszó ellenőrzés
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Hibás jelszó!'], 401);
+        }
+
+        return response()->json([
+            'message' => 'Sikeres bejelentkezés!',
+            'user' => $user
+        ]);
     }
 }
