@@ -1,22 +1,19 @@
 <template>
   <div class="esemeny-reszletek-oldal">
-    <!-- VISSZA GOMB -->
-    <button class="vissza-gomb" @click="goBackToEvents">
+    <button class="vissza-gomb" @click="visszaAzEsemenyekhez">
       <i class='bx bx-arrow-back'></i> Vissza az eseményekhez
     </button>
 
-    <!-- BETÖLTÉS -->
-    <div v-if="betoltas" class="betoltas-container">
+    <div v-if="betoltesKozben" class="betoltas-container">
       <i class='bx bx-loader-circle bx-spin'></i>
       <p>Esemény betöltése...</p>
     </div>
 
-    <!-- HIBÁK -->
-    <div v-else-if="hiba" class="hiba-container">
+    <div v-else-if="hibaUzenet" class="hiba-container">
       <div class="hiba-kartya">
         <i class='bx bx-error-circle'></i>
         <h3>Hiba történt</h3>
-        <p>{{ hiba }}</p>
+        <p>{{ hibaUzenet }}</p>
         <div class="hiba-gombok">
           <button @click="$router.back()" class="btn btn-outline">
             <i class='bx bx-arrow-back'></i> Vissza
@@ -28,29 +25,30 @@
       </div>
     </div>
 
-    <!-- ESEMÉNY TARTALMA -->
-    <div v-else-if="esemeny" class="esemeny-tartalom">
-      <!-- FEJLÉC -->
+    <div v-else-if="esemenyAdatok" class="esemeny-tartalom">
+      <!-- fejlec -->
       <div class="esemeny-fejlec">
         <div class="esemeny-cim">
-          <h1>{{ esemeny.title }}</h1>
+          <h1>{{ esemenyAdatok.title }}</h1>
           <div class="esemeny-meta">
-            <span class="meta-cimke" :class="esemeny.type">
-              <i class='bx bx-building' v-if="esemeny.type === 'local'"></i>
+            <!-- tipus -->
+            <span class="meta-cimke" :class="esemenyAdatok.type">
+              <i class='bx bx-building' v-if="esemenyAdatok.type === 'local'"></i>
               <i class='bx bx-world' v-else></i>
-              {{ esemeny.type === 'local' ? 'Helyi' : 'Globális' }}
+              {{ esemenyAdatok.type === 'local' ? 'Helyi' : 'Globális' }}
             </span>
-            <span class="meta-cimke" :class="esemeny.status">
-              <i class='bx bx-calendar-event' v-if="esemeny.status === 'open'"></i>
+            <!-- allapot -->
+            <span class="meta-cimke" :class="esemenyAdatok.status">
+              <i class='bx bx-calendar-event' v-if="esemenyAdatok.status === 'open'"></i>
               <i class='bx bx-calendar-x' v-else></i>
-              {{ esemeny.status === 'open' ? 'Aktív' : 'Lezárva' }}
+              {{ esemenyAdatok.status === 'open' ? 'Aktív' : 'Lezárva' }}
             </span>
           </div>
         </div>
         
         <div class="esemeny-muveletek">
-          <button v-if="currentUser" class="muvelet-gomb" @click="kedvencBeallitas">
-            <i class='bx bx-star' :class="{ 'kedvenc': esemeny.isFavorite }"></i>
+          <button v-if="aktualisFelhasznalo" class="muvelet-gomb" @click="kedvencBeallitas">
+            <i class='bx bx-star' :class="{ 'kedvenc': esemenyAdatok.isFavorite }"></i>
           </button>
           <button class="muvelet-gomb" @click="megosztas">
             <i class='bx bx-share-alt'></i>
@@ -58,14 +56,14 @@
         </div>
       </div>
 
-      <!-- INFORMÁCIÓK -->
+      <!-- alap infok -->
       <div class="info-kartya">
         <div class="info-grid">
           <div class="info-elem">
             <i class='bx bx-user'></i>
             <div>
               <small>Szervező</small>
-              <strong>{{ esemeny.creator_name || 'Ismeretlen' }}</strong>
+              <strong>{{ esemenyAdatok.creator_name || 'Ismeretlen' }}</strong>
             </div>
           </div>
           
@@ -73,7 +71,7 @@
             <i class='bx bx-calendar'></i>
             <div>
               <small>Kezdés</small>
-              <strong>{{ formatDate(esemeny.start_date) }}</strong>
+              <strong>{{ formatDatum(esemenyAdatok.start_date) }}</strong>
             </div>
           </div>
           
@@ -81,7 +79,7 @@
             <i class='bx bx-calendar-check'></i>
             <div>
               <small>Befejezés</small>
-              <strong>{{ formatDate(esemeny.end_date) }}</strong>
+              <strong>{{ formatDatum(esemenyAdatok.end_date) }}</strong>
             </div>
           </div>
           
@@ -89,49 +87,49 @@
             <i class='bx bx-time'></i>
             <div>
               <small>Létrehozva</small>
-              <strong>{{ formatDate(esemeny.created_at) }}</strong>
+              <strong>{{ formatDatum(esemenyAdatok.created_at) }}</strong>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- TARTALOM -->
+      <!-- SZÖVEGES TARTALOM -->
       <div class="tartalom-kartya">
         <div class="tartalom-blokk">
           <h3><i class='bx bx-detail'></i> Leírás</h3>
-          <p class="leiras">{{ esemeny.description }}</p>
+          <p class="leiras">{{ esemenyAdatok.description }}</p>
         </div>
         
-        <div v-if="esemeny.content" class="tartalom-blokk">
+        <!-- RÉSZLETES TARTALOM -->
+        <div v-if="esemenyAdatok.content" class="tartalom-blokk">
           <h3><i class='bx bx-file'></i> Részletek</h3>
-          <div class="tartalom">{{ esemeny.content }}</div>
+          <div class="tartalom">{{ esemenyAdatok.content }}</div>
         </div>
       </div>
 
-      <!-- KÉP (ha van) -->
-      <div v-if="esemeny.image_url" class="kep-container">
-        <img :src="esemeny.image_url" :alt="esemeny.title" class="esemeny-kep">
+      <!-- KÉP MEGJELENÍTÉSE -->
+      <div v-if="esemenyAdatok.image_url" class="kep-container">
+        <img :src="esemenyAdatok.image_url" :alt="esemenyAdatok.title" class="esemeny-kep">
       </div>
 
-      <!-- RÉSZTVÉTEL -->
-      <div v-if="esemeny.status === 'open' && currentUser" class="resztvetel-kartya">
+      <!-- RÉSZTVÉTELI ŰRLAP -->
+      <div v-if="esemenyAdatok.status === 'open' && aktualisFelhasznalo" class="resztvetel-kartya">
         <h3><i class='bx bx-check-circle'></i> Részvételi visszajelzés</h3>
         <p class="resztvetel-info">Jelentkezz, hogy részt veszel-e az eseményen:</p>
         <div class="resztvetel-gombok">
           <button @click="resztvetelKuldes('y')" 
                   class="btn resztvesz" 
-                  :class="{ 'active': userResztvetel === 'y' }">
+                  :class="{ 'active': felhasznaloResztvetel === 'y' }">
             <i class='bx bx-check'></i> Részvétel
           </button>
           <button @click="resztvetelKuldes('n')" 
                   class="btn nem-resztvesz" 
-                  :class="{ 'active': userResztvetel === 'n' }">
+                  :class="{ 'active': felhasznaloResztvetel === 'n' }">
             <i class='bx bx-x'></i> Nem veszek részt
           </button>
         </div>
       </div>
 
-      <!-- STATISZTIKA -->
       <div class="statisztika-kartya">
         <h3><i class='bx bx-stats'></i> Statisztika</h3>
         <div class="statisztika-grid">
@@ -158,17 +156,15 @@
         </div>
       </div>
 
-      <!-- KOMMENT SZEKCIÓ -->
       <div class="komment-szekcio-kartya">
         <div class="szekcio-fejlec">
           <h3><i class='bx bx-message-square-detail'></i> Kommentek</h3>
           <span class="komment-szam">{{ kommentekSzama }}</span>
         </div>
         
-        <!-- COMMENTBOX KOMPONENS -->
         <CommentBox 
           :esemenyId="parseInt(esemenyId)"
-          :currentUser="currentUser"
+          :currentUser="aktualisFelhasznalo"
           @komment-sikeres="ujKommentHozzaadva"
         />
       </div>
@@ -188,60 +184,65 @@ export default {
   
   data() {
     return {
-      esemenyId: this.$route.params.id,
-      esemeny: null,
-      currentUser: null,
-      betoltas: true,
-      hiba: '',
-      kommentekSzama: 0,
-      resztvevokSzama: 0,
-      nemResztvevokSzama: 0,
-      kedvencekSzama: 0,
-      userResztvetel: null
+      esemenyId: this.$route.params.id,        // URL-ből kapott esemény azonosító
+      esemenyAdatok: null,                     // Esemény adatai
+      aktualisFelhasznalo: null,               // Bejelentkezett felhasználó
+      betoltesKozben: true,                     // Betöltés állapota
+      hibaUzenet: '',                          // Hibák megjelenítéséhez
+      kommentekSzama: 0,                       // Összes komment száma
+      resztvevokSzama: 0,                      // Résztvevők száma
+      nemResztvevokSzama: 0,                   // Nem résztvevők száma
+      kedvencekSzama: 0,                       // Kedvencként jelölők száma
+      felhasznaloResztvetel: null              // Felhasználó részvételi állapota
     }
   },
   
   created() {
-    this.betoltasEsemenyt()
-    this.betoltasFelhasznalot()
+    this.betoltEsemenyt()    
+    this.betoltFelhasznalot()
   },
   
   methods: {
-    goBackToEvents() {
+    visszaAzEsemenyekhez() {
       this.$router.push('/esemenyek')
     },
 
-    async betoltasEsemenyt() {
+    async betoltEsemenyt() {
       try {
-        this.betoltas = true
+        this.betoltesKozben = true
         
-        // 1. ELLENŐRZÉS: Létezik-e az esemény? (LEKERDEZ)
-        const esemenyTalalat = await this.lekerdezEsemenyt(this.esemenyId)
+        // 1.Ellenőrizzük, hogy létezik-e az esemény (LEKERDEZ)
+        const esemenyMegtalalva = await this.lekerdezEsemenyt(this.esemenyId)
         
-        if (!esemenyTalalat) {
-          this.hiba = 'A kiválasztott esemény nem létezik!'
-          this.betoltas = false
+        if (!esemenyMegtalalva) {
+          this.hibaUzenet = 'A kiválasztott esemény nem létezik!'
+          this.betoltesKozben = false
           return
         }
         
-        this.esemeny = esemenyTalalat
+        this.esemenyAdatok = esemenyMegtalalva
         
-        // 2. Statisztikák betöltése
-        await this.betoltasStatisztikakat()
+        // 2.Statisztikák betöltése
+        await this.betoltStatisztikakat()
         
-        // 3. Felhasználó részvételi állapota
-        await this.betoltasResztveteliAllapot()
+        // 3.Felhasználó részvételi állapota
+        await this.betoltResztveteliAllapotot()
         
-      } catch (error) {
-        console.error('Hiba az esemény betöltésekor:', error)
-        this.hiba = 'Nem sikerült betölteni az eseményt.'
+      } catch (hiba) {
+        console.error('Hiba az esemény betöltésekor:', hiba)
+        this.hibaUzenet = 'Nem sikerült betölteni az eseményt.'
       } finally {
-        this.betoltas = false
+        this.betoltesKozben = false
       }
     },
     
+    /**
+     Esemény lekérdezése adatbázisból vagy mock adatokból
+     @param {number} esemenyId - Az esemény azonosítója
+     @returns {Object|null} - Az esemény adatai vagy null
+    */
     async lekerdezEsemenyt(esemenyId) {
-      // Mock: betöltés localStorage-ból
+      // DEMO: localStorage-ból betöltés
       const osszesEsemeny = JSON.parse(localStorage.getItem('esemenyek') || '[]')
       let esemeny = osszesEsemeny.find(e => e.id == esemenyId)
       
@@ -264,12 +265,12 @@ export default {
       return esemeny
     },
     
-    async betoltasFelhasznalot() {
-      // Mock: bejelentkezett felhasználó
+    async betoltFelhasznalot() {
+      // DEMO: localStorage-ból felhasználó betöltése
       const mentettFelhasznalo = JSON.parse(localStorage.getItem('esemenyter_user') || 'null')
       
       if (mentettFelhasznalo && mentettFelhasznalo.isLoggedIn) {
-        this.currentUser = {
+        this.aktualisFelhasznalo = {
           id: mentettFelhasznalo.id || 1,
           username: mentettFelhasznalo.name || 'Felhasználó',
           name: mentettFelhasznalo.name || 'Felhasználó',
@@ -277,146 +278,164 @@ export default {
           role: mentettFelhasznalo.role || 'student'
         }
       } else {
-        // Ha nincs bejelentkezve, alap felhasználó
-        this.currentUser = null
+        // Ha nincs bejelentkezve, null érték
+        this.aktualisFelhasznalo = null
       }
     },
     
-    async betoltasStatisztikakat() {
+    async betoltStatisztikakat() {
       try {
-        // Mock statisztikák
+        // Kommente számának kiszámítása
         const kommentek = JSON.parse(localStorage.getItem('esemeny_kommentek') || '[]')
         this.kommentekSzama = kommentek.filter(k => k.event_id == this.esemenyId).length
         
-        // Mock részvétel
+        // DEMO: random statisztikák (valós esetben API hívás)
         this.resztvevokSzama = Math.floor(Math.random() * 50) + 10
         this.nemResztvevokSzama = Math.floor(Math.random() * 20) + 5
         this.kedvencekSzama = Math.floor(Math.random() * 15) + 3
         
-      } catch (error) {
-        console.error('Hiba a statisztikák betöltésekor:', error)
+      } catch (hiba) {
+        console.error('Hiba a statisztikák betöltésekor:', hiba)
       }
     },
     
-    async betoltasResztveteliAllapot() {
-      if (!this.currentUser) return
+    /**
+     * Felhasználó részvételi állapotának betöltése
+     */
+    async betoltResztveteliAllapotot() {
+      if (!this.aktualisFelhasznalo) return
       
-      // Mock: részvétel adatok
+      // DEMO: localStorage-ból részvételi adatok
       const resztveteliAdatok = JSON.parse(localStorage.getItem('esemeny_resztvetel') || '[]')
-      const userResztvetel = resztveteliAdatok.find(
-        r => r.event_id == this.esemenyId && r.user_id == this.currentUser.id
+      const felhasznaloResztvetelAdat = resztveteliAdatok.find(
+        r => r.event_id == this.esemenyId && r.user_id == this.aktualisFelhasznalo.id
       )
       
-      this.userResztvetel = userResztvetel ? userResztvetel.answer : null
+      this.felhasznaloResztvetel = felhasznaloResztvetelAdat ? felhasznaloResztvetelAdat.valasz : null
     },
     
+    /**
+     * Részvételi válasz küldése
+     * @param {string} valasz - 'y' (részvétel) vagy 'n' (nem részvétel)
+    */
     async resztvetelKuldes(valasz) {
-      if (!this.currentUser) {
+      if (!this.aktualisFelhasznalo) {
         alert('A részvételhez be kell jelentkezned!')
         this.$router.push('/login')
         return
       }
       
       try {
-        // Részvétel mentése
+        // Részvételi adatok betöltése
         const resztveteliAdatok = JSON.parse(localStorage.getItem('esemeny_resztvetel') || '[]')
         
-        // Régi adat törlése
+        // Régi adat törlése (ha van)
         const ujAdatok = resztveteliAdatok.filter(
-          r => !(r.event_id == this.esemenyId && r.user_id == this.currentUser.id)
+          r => !(r.event_id == this.esemenyId && r.user_id == this.aktualisFelhasznalo.id)
         )
         
-        // Új adat hozzáadása
+        // Új adat hozzáadása (BESZÚR művelet)
         ujAdatok.push({
           event_id: this.esemenyId,
-          user_id: this.currentUser.id,
-          answer: valasz,
-          updated_at: new Date().toISOString()
+          user_id: this.aktualisFelhasznalo.id,
+          valasz: valasz,
+          frissitve: new Date().toISOString()
         })
         
+        // Adatok mentése
         localStorage.setItem('esemeny_resztvetel', JSON.stringify(ujAdatok))
-        this.userResztvetel = valasz
+        this.felhasznaloResztvetel = valasz
         
-        // Statisztika frissítése
+        // Statisztikák frissítése
         if (valasz === 'y') {
           this.resztvevokSzama++
-          if (this.userResztvetel === 'n') this.nemResztvevokSzama--
+          if (this.felhasznaloResztvetel === 'n') this.nemResztvevokSzama--
         } else {
           this.nemResztvevokSzama++
-          if (this.userResztvetel === 'y') this.resztvevokSzama--
+          if (this.felhasznaloResztvetel === 'y') this.resztvevokSzama--
         }
         
-        // Értesítés
+        // Sikeres üzenet
         alert(valasz === 'y' ? 'Részvétel rögzítve!' : 'Nem részvétel rögzítve!')
         
-      } catch (error) {
-        console.error('Hiba a részvétel küldésekor:', error)
+      } catch (hiba) {
+        console.error('Hiba a részvétel küldésekor:', hiba)
         alert('Hiba történt a részvétel küldésekor')
       }
     },
     
+    /**
+     * Új komment hozzáadásakor meghívott metódus
+     * @param {Object} ujKomment - Az új komment adatai
+    */
     ujKommentHozzaadva(ujKomment) {
-      // Kommentszám növelése
       this.kommentekSzama++
       
-      // Értesítés
       this.mutatSikerUzenetet('Komment sikeresen hozzáadva!')
     },
     
     async kedvencBeallitas() {
-      if (!this.currentUser) {
+      if (!this.aktualisFelhasznalo) {
         alert('A kedvencekhez adáshoz be kell jelentkezned!')
         return
       }
       
       try {
+        // Kedvencek betöltése
         const kedvencek = JSON.parse(localStorage.getItem('esemeny_kedvencek') || '[]')
         const index = kedvencek.findIndex(
-          k => k.event_id == this.esemenyId && k.user_id == this.currentUser.id
+          k => k.event_id == this.esemenyId && k.user_id == this.aktualisFelhasznalo.id
         )
         
         if (index === -1) {
-          // Hozzáadás
+          // Hozzáadás kedvencekhez (BESZÚR)
           kedvencek.push({
             event_id: this.esemenyId,
-            user_id: this.currentUser.id,
-            created_at: new Date().toISOString()
+            user_id: this.aktualisFelhasznalo.id,
+            letrehozva: new Date().toISOString()
           })
           this.kedvencekSzama++
           this.mutatSikerUzenetet('Hozzáadva a kedvencekhez!')
         } else {
-          // Törlés
+          // Törlés a kedvencekből (TÖRÖL)
           kedvencek.splice(index, 1)
           this.kedvencekSzama--
           this.mutatSikerUzenetet('Eltávolítva a kedvencekből!')
         }
         
+        // Frissített adatok mentése
         localStorage.setItem('esemeny_kedvencek', JSON.stringify(kedvencek))
         
-      } catch (error) {
-        console.error('Hiba a kedvenc beállításakor:', error)
+      } catch (hiba) {
+        console.error('Hiba a kedvenc beállításakor:', hiba)
         alert('Hiba történt')
       }
     },
     
     megosztas() {
+      // Ellenőrizzük, támogatja-e a böngésző a megosztási API-t
       if (navigator.share) {
         navigator.share({
-          title: this.esemeny.title,
-          text: this.esemeny.description,
+          cim: this.esemenyAdatok.title,
+          szoveg: this.esemenyAdatok.description,
           url: window.location.href
         })
       } else {
-        // Vágólapra másolás
+        // Ha nem támogatja, akkor vágólapra másolás
         navigator.clipboard.writeText(window.location.href)
         this.mutatSikerUzenetet('Link másolva a vágólapra!')
       }
     },
     
-    formatDate(dateString) {
-      if (!dateString) return '-'
-      const date = new Date(dateString)
-      return date.toLocaleDateString('hu-HU', {
+    /**
+     * Dátum formázása magyar nyelven
+     * @param {string} datumString - ISO dátum string
+     * @returns {string} - Formázott dátum
+     */
+    formatDatum(datumString) {
+      if (!datumString) return '-'
+      const datum = new Date(datumString)
+      return datum.toLocaleDateString('hu-HU', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -425,8 +444,11 @@ export default {
       })
     },
     
+    /**
+     * Sikeres művelet üzenet megjelenítése
+     * @param {string} uzenet - A megjelenítendő üzenet
+     */
     mutatSikerUzenetet(uzenet) {
-      // Egyszerű alert, de lehetne szebb értesítő komponens is
       alert('✅ ' + uzenet)
     }
   }
@@ -437,10 +459,6 @@ export default {
 .esemeny-reszletek-oldal {
   box-sizing: border-box;
   font-family: "Poppins", sans-serif;
-  padding: 20px 0;
-  /* display: flex; */
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
   width: 100vw;
   background: #f8f9fa;
@@ -462,15 +480,13 @@ export default {
 }
 
 .vissza-gomb:hover {
-  background: #f5f5f5;
-  transform: translateX(-5px);
+  background: #f0f0f0;
+  border-color: #ccc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.vissza-gomb i {
-  font-size: 20px;
-}
-
-/* Betöltés */
+/* Betöltés konténer */
 .betoltas-container {
   text-align: center;
   padding: 60px 20px;
@@ -478,7 +494,7 @@ export default {
 
 .betoltas-container i {
   font-size: 48px;
-  color: #667eea;
+  color: #4a6cf7;
   margin-bottom: 20px;
 }
 
@@ -487,11 +503,12 @@ export default {
   font-size: 18px;
 }
 
-/* Hiba */
+/* Hiba konténer */
 .hiba-container {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 40px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
 }
 
 .hiba-kartya {
@@ -499,13 +516,14 @@ export default {
   border-radius: 12px;
   padding: 40px;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  border-left: 5px solid #f44336;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  width: 100%;
 }
 
 .hiba-kartya i {
-  font-size: 60px;
-  color: #f44336;
+  font-size: 64px;
+  color: #ff4757;
   margin-bottom: 20px;
 }
 
@@ -517,87 +535,101 @@ export default {
 .hiba-kartya p {
   color: #666;
   margin-bottom: 30px;
-  font-size: 16px;
 }
 
 .hiba-gombok {
   display: flex;
-  gap: 15px;
+  gap: 10px;
   justify-content: center;
 }
 
-/* Esemény tartalom */
-.esemeny-tartalom {
-  animation: slideUp 0.5s ease;
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+  border: none;
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.btn-outline {
+  background: white;
+  border: 2px solid #e0e0e0;
+  color: #333;
 }
 
-/* Fejléc */
+.btn-outline:hover {
+  background: #f8f9fa;
+  border-color: #ccc;
+}
+
+.btn-primary {
+  background: #4a6cf7;
+  color: white;
+  border: 2px solid #4a6cf7;
+}
+
+.btn-primary:hover {
+  background: #3a5ce5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 108, 247, 0.3);
+}
+
+/* Esemény fejléc */
 .esemeny-fejlec {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   background: white;
   border-radius: 12px;
   padding: 30px;
   margin-bottom: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .esemeny-cim h1 {
-  margin: 0 0 15px 0;
   color: #333;
-  font-size: 32px;
-  line-height: 1.2;
+  margin-bottom: 15px;
+  font-size: 28px;
 }
 
 .esemeny-meta {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .meta-cimke {
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .meta-cimke.local {
   background: #e3f2fd;
-  color: #1565c0;
-  border: 1px solid #bbdefb;
+  color: #1976d2;
 }
 
 .meta-cimke.global {
   background: #f3e5f5;
   color: #7b1fa2;
-  border: 1px solid #e1bee7;
 }
 
 .meta-cimke.open {
   background: #e8f5e9;
   color: #2e7d32;
-  border: 1px solid #c8e6c9;
 }
 
 .meta-cimke.closed {
   background: #ffebee;
   color: #c62828;
-  border: 1px solid #ffcdd2;
 }
 
 .esemeny-muveletek {
@@ -609,8 +641,8 @@ export default {
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  background: #f8f9fa;
   border: 2px solid #e0e0e0;
-  background: white;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -619,8 +651,9 @@ export default {
 }
 
 .muvelet-gomb:hover {
-  border-color: #667eea;
-  background: #f8f9ff;
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .muvelet-gomb i {
@@ -628,12 +661,8 @@ export default {
   color: #666;
 }
 
-.muvelet-gomb:hover i {
-  color: #667eea;
-}
-
-.kedvenc {
-  color: #ff9800 !important;
+.muvelet-gomb i.kedvenc {
+  color: #ffd700;
 }
 
 /* Info kártya */
@@ -642,7 +671,7 @@ export default {
   border-radius: 12px;
   padding: 25px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .info-grid {
@@ -655,38 +684,32 @@ export default {
   display: flex;
   align-items: center;
   gap: 15px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
 }
 
 .info-elem i {
   font-size: 24px;
-  color: #667eea;
-  width: 40px;
-  height: 40px;
-  background: white;
-  border-radius: 50%;
+  color: #4a6cf7;
+  background: #f0f5ff;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
 .info-elem div {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .info-elem small {
-  display: block;
   color: #666;
   font-size: 12px;
   margin-bottom: 4px;
 }
 
 .info-elem strong {
-  display: block;
   color: #333;
   font-size: 16px;
 }
@@ -697,7 +720,7 @@ export default {
   border-radius: 12px;
   padding: 30px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .tartalom-blokk {
@@ -711,72 +734,53 @@ export default {
 .tartalom-blokk h3 {
   color: #333;
   margin-bottom: 15px;
-  font-size: 20px;
   display: flex;
   align-items: center;
   gap: 10px;
+  font-size: 20px;
 }
 
 .tartalom-blokk h3 i {
-  color: #667eea;
+  color: #4a6cf7;
 }
 
 .leiras {
-  color: #444;
+  color: #555;
   line-height: 1.6;
   font-size: 16px;
-  white-space: pre-wrap;
 }
 
 .tartalom {
   color: #555;
   line-height: 1.6;
   font-size: 15px;
-  white-space: pre-wrap;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border-left: 4px solid #667eea;
 }
 
-/* Kép */
+/* Kép konténer */
 .kep-container {
-  margin: 20px 0;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
 }
 
 .esemeny-kep {
   width: 100%;
-  height: auto;
-  display: block;
-  transition: transform 0.3s;
-}
-
-.esemeny-kep:hover {
-  transform: scale(1.02);
+  max-height: 500px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 /* Részvétel kártya */
 .resztvetel-kartya {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: white;
   border-radius: 12px;
   padding: 30px;
-  margin: 20px 0;
-  color: white;
-}
-
-.resztvetel-kartya h3 {
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .resztvetel-info {
-  opacity: 0.9;
-  margin-bottom: 25px;
+  color: #666;
+  margin-bottom: 20px;
 }
 
 .resztvetel-gombok {
@@ -786,48 +790,34 @@ export default {
 
 .resztvetel-gombok .btn {
   flex: 1;
-  padding: 15px 25px;
-  border: none;
-  border-radius: 8px;
+  padding: 12px 24px;
   font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: all 0.3s;
 }
 
 .resztvetel-gombok .resztvesz {
-  background: white;
-  color: #4CAF50;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 2px solid #c8e6c9;
 }
 
-.resztvetel-gombok .resztvesz:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
-}
-
+.resztvetel-gombok .resztvesz:hover,
 .resztvetel-gombok .resztvesz.active {
-  background: #4CAF50;
+  background: #2e7d32;
   color: white;
+  border-color: #2e7d32;
 }
 
 .resztvetel-gombok .nem-resztvesz {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  backdrop-filter: blur(10px);
+  background: #ffebee;
+  color: #c62828;
+  border: 2px solid #ffcdd2;
 }
 
-.resztvetel-gombok .nem-resztvesz:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-3px);
-}
-
+.resztvetel-gombok .nem-resztvesz:hover,
 .resztvetel-gombok .nem-resztvesz.active {
-  background: #f44336;
+  background: #c62828;
   color: white;
+  border-color: #c62828;
 }
 
 /* Statisztika kártya */
@@ -835,21 +825,17 @@ export default {
   background: white;
   border-radius: 12px;
   padding: 30px;
-  margin: 20px 0;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .statisztika-kartya h3 {
   color: #333;
   margin-bottom: 25px;
-  font-size: 20px;
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.statisztika-kartya h3 i {
-  color: #667eea;
+  font-size: 20px;
 }
 
 .statisztika-grid {
@@ -859,29 +845,28 @@ export default {
 }
 
 .stat {
-  text-align: center;
-  padding: 20px;
   background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-  transition: all 0.3s;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s;
 }
 
 .stat:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-  border-color: #667eea;
+  background: white;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .stat i {
   font-size: 32px;
-  color: #667eea;
+  color: #4a6cf7;
   margin-bottom: 10px;
 }
 
-.szam {
+.stat .szam {
   display: block;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: #333;
   margin-bottom: 5px;
@@ -897,8 +882,7 @@ export default {
   background: white;
   border-radius: 12px;
   padding: 30px;
-  margin: 20px 0;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .szekcio-fejlec {
@@ -906,69 +890,26 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #f0f0f0;
 }
 
 .szekcio-fejlec h3 {
   color: #333;
-  font-size: 20px;
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0;
-}
-
-.szekcio-fejlec h3 i {
-  color: #667eea;
+  font-size: 20px;
 }
 
 .komment-szam {
-  background: #667eea;
+  background: #4a6cf7;
   color: white;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
   font-size: 14px;
-}
-
-/* Gombok */
-.btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
   font-weight: 600;
-  transition: all 0.3s;
-  font-family: inherit;
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
-}
-
-.btn-outline {
-  background: white;
-  border: 2px solid #667eea;
-  color: #667eea;
-}
-
-.btn-outline:hover {
-  background: #667eea;
-  color: white;
-}
-
-/* Responsive */
+/* Responsive design */
 @media (max-width: 768px) {
   .esemeny-reszletek-oldal {
     padding: 15px;
@@ -979,8 +920,8 @@ export default {
     gap: 20px;
   }
   
-  .esemeny-cim h1 {
-    font-size: 24px;
+  .esemeny-muveletek {
+    align-self: flex-start;
   }
   
   .info-grid {
@@ -992,21 +933,20 @@ export default {
   }
   
   .statisztika-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
   
-  .hiba-gombok {
-    flex-direction: column;
-  }
-  
-  .hiba-gombok .btn {
-    width: 100%;
+  .tartalom-kartya,
+  .info-kartya,
+  .statisztika-kartya,
+  .komment-szekcio-kartya {
+    padding: 20px;
   }
 }
 
 @media (max-width: 480px) {
   .esemeny-cim h1 {
-    font-size: 20px;
+    font-size: 24px;
   }
   
   .meta-cimke {
@@ -1022,7 +962,20 @@ export default {
   .info-kartya,
   .statisztika-kartya,
   .komment-szekcio-kartya {
+    padding: 15px;
+  }
+  
+  .btn {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+  
+  .hiba-kartya {
     padding: 20px;
+  }
+  
+  .hiba-kartya i {
+    font-size: 48px;
   }
 }
 </style>
