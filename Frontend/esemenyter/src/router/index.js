@@ -7,6 +7,7 @@ import MainPage from '../components/MainPage.vue'
 import EventCreator from '@/components/EventCreator.vue'
 import CommentBox from '@/components/CommentBox.vue'
 import EventDetails from '@/components/EventDetails.vue'
+import EventsList from '@/components/EventsList.vue'
 
 const routes = [
   {
@@ -58,6 +59,12 @@ const routes = [
     name: 'comment-box',
     component: CommentBox,
     meta: { title: 'Kommentszekció'}
+  },
+  {
+    path: '/events-list',
+    name: 'events-list',
+    component: EventsList,
+    meta: { title: 'Eventek listázása' }
   },
   {
     path: '/:pathMatch(.*)*',

@@ -14,6 +14,7 @@ import MainPage from './components/MainPage.vue'
 import EventCreator from './components/EventCreator.vue'
 import CommentBox from './components/CommentBox.vue'
 import EventDetails from './components/EventDetails.vue'
+import EventsList from './components/EventsList.vue'
 import './style.css'
 
 const app = createApp(App)
@@ -25,6 +26,7 @@ app.component('mainpage', MainPage)
 app.component('event-creator', EventCreator)
 app.component('comment-box', CommentBox)
 app.component('event-details', EventDetails)
+app.component('events-list', EventsList)
 app.use(router)
 app.mount('#app')
 

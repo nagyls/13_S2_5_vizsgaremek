@@ -135,7 +135,7 @@
                 <i class='bx bx-arrow-back'></i> Vissza
               </button>
               <button class="btn btn-primary" @click="saveStudentSetup" :disabled="!selectedClass">
-                <i class='bx bx-check'></i> Mentés
+                <i class='bx bx-check'></i> Mentés és tovább
               </button>
             </div>
           </div>
@@ -191,7 +191,7 @@
               <i class='bx bx-arrow-back'></i> Vissza
             </button>
             <button class="btn btn-primary" @click="saveTeacherSetup" :disabled="teacherSchools.length === 0">
-              <i class='bx bx-check'></i> Mentés
+              <i class='bx bx-check'></i> Mentés és tovább
             </button>
           </div>
         </div>
@@ -253,240 +253,8 @@
                 <i class='bx bx-arrow-back'></i> Vissza
               </button>
               <button class="btn btn-primary" @click="saveAdminSetup" :disabled="!isNewSchoolValid">
-                <i class='bx bx-check'></i> Iskola létrehozása
+                <i class='bx bx-check'></i> Mentés és tovább
               </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Főoldal (ha már beállította a profilját) -->
-        <div v-if="profileConfigured" class="dashboard">
-          <!-- Oldalsáv + Tartalom -->
-          <div class="row">
-            <!-- Oldalsáv -->
-            <div class="col-md-3">
-              <div class="sidebar">
-                <nav class="nav flex-column">
-                  <router-link to="/mainpage" class="nav-link" active-class="active">
-                    <i class='bx bx-home'></i> Kezdőlap
-                  </router-link>
-                  
-                  <router-link to="/esemenyek" class="nav-link" active-class="active">
-                    <i class='bx bx-calendar'></i> Események
-                  </router-link>
-                  
-                  <router-link v-if="user.role === 'teacher' || user.role === 'admin'" 
-                             to="/event-creator" 
-                             class="nav-link" 
-                             active-class="active">
-                    <i class='bx bx-plus-circle'></i> Új esemény
-                  </router-link>
-                  
-                  <router-link v-if="user.role === 'admin'" 
-                             to="/admin" 
-                             class="nav-link" 
-                             active-class="active">
-                    <i class='bx bx-cog'></i> Admin panel
-                  </router-link>
-                  
-                  <router-link to="/profil" class="nav-link" active-class="active">
-                    <i class='bx bx-user'></i> Profil
-                  </router-link>
-                </nav>
-              </div>
-            </div>
-            
-            <!-- Tartalom -->
-            <div class="col-md-9">
-              <div class="dashboard-content">
-                <!-- Üdvözlés -->
-                <div class="welcome-card mb-4">
-                  <h3>Üdvözöljük újra, {{ user.name }}!</h3>
-                  <p class="text-muted">
-                    <i class='bx bx-building'></i> {{ user.school }}
-                    <span v-if="user.class"> | <i class='bx bx-group'></i> {{ user.class }}. osztály</span>
-                  </p>
-                </div>
-                
-                <!-- Diák dashboard -->
-                <div v-if="user.role === 'student'" class="student-dashboard">
-                  <div class="row mb-4">
-                    <div class="col-md-4">
-                      <div class="stat-card">
-                        <div class="stat-icon">
-                          <i class='bx bx-calendar'></i>
-                        </div>
-                        <div class="stat-info">
-                          <h4>{{ stats.upcomingEvents }}</h4>
-                          <p>Közelgő esemény</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="stat-card">
-                        <div class="stat-icon">
-                          <i class='bx bx-check-circle'></i>
-                        </div>
-                        <div class="stat-info">
-                          <h4>{{ stats.registeredEvents }}</h4>
-                          <p>Jelentkezve</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="stat-card">
-                        <div class="stat-icon">
-                          <i class='bx bx-poll'></i>
-                        </div>
-                        <div class="stat-info">
-                          <h4>{{ stats.activePolls }}</h4>
-                          <p>Aktív szavazás</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- Események listája -->
-                    <div class="esemenyek-lista">
-                      <h4 class="mb-3">Legfrissebb események</h4>
-                      <div class="event-list">
-                        <div v-for="event in recommendedEvents" :key="event.id" class="event-card">
-                          <div class="event-header">
-                            <h5>{{ event.title }}</h5>
-                            <span class="event-date">{{ event.date }}</span>
-                          </div>
-                          <p class="event-location">{{ event.location }}</p>
-                          <div class="event-actions">
-                            <router-link :to="`/esemenyek/${event.id}`" class="btn btn-sm btn-outline-primary">
-                              Részletek
-                            </router-link>
-                            <button class="btn btn-sm btn-primary">Jelentkezés</button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Ajánlott események -->
-                  <div class="recommended-events">
-                    <h4 class="mb-3">Ajánlott események</h4>
-                    <div class="event-list">
-                      <div v-for="event in recommendedEvents" :key="event.id" class="event-card">
-                        <div class="event-header">
-                          <h5>{{ event.title }}</h5>
-                          <span class="event-date">{{ event.date }}</span>
-                        </div>
-                        <p class="event-location">{{ event.location }}</p>
-                        <div class="event-actions">
-                          <button class="btn btn-sm btn-outline-primary">Részletek</button>
-                          <button class="btn btn-sm btn-primary">Jelentkezés</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Tanár dashboard -->
-                <div v-if="user.role === 'teacher'" class="teacher-dashboard">
-                  <div class="row mb-4">
-                    <div class="col-md-6">
-                      <div class="teacher-stat-card">
-                        <h4>Szervezett események</h4>
-                        <h2 class="text-primary">{{ stats.organizedEvents }}</h2>
-                        <button class="btn btn-primary mt-2" @click="goToEventCreator">
-                          <i class='bx bx-plus'></i> Új esemény
-                        </button>
-                      </div>
-                    </div>
-                    <div class="col-md-6">
-                      <div class="teacher-stat-card">
-                        <h4>Aktív szavazások</h4>
-                        <h2 class="text-success">{{ stats.teacherPolls }}</h2>
-                        <button class="btn btn-outline-success mt-2" @click="startPoll">
-                          <i class='bx bx-poll'></i> Szavazás indítása
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Gyors műveletek -->
-                  <div class="quick-actions mb-4">
-                    <h4 class="mb-3">Gyors műveletek</h4>
-                    <div class="d-flex gap-2 flex-wrap">
-                      <button class="btn btn-outline-primary">
-                        <i class='bx bx-list-check'></i> Résztvevők listája
-                      </button>
-                      <button class="btn btn-outline-primary">
-                        <i class='bx bx-bell'></i> Értesítés küldése
-                      </button>
-                      <button class="btn btn-outline-primary">
-                        <i class='bx bx-download'></i> Exportálás
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Admin dashboard -->
-                <div v-if="user.role === 'admin'" class="admin-dashboard">
-                  <div class="admin-header mb-4">
-                    <h3>Adminisztráció - {{ user.school }}</h3>
-                    <p class="text-muted">Iskola kezelése és konfigurálása</p>
-                  </div>
-                  
-                  <div class="row">
-                    <div class="col-md-3 mb-3">
-                      <div class="admin-card" @click="manageUsers">
-                        <div class="admin-card-icon">
-                          <i class='bx bx-user'></i>
-                        </div>
-                        <h5>Felhasználók</h5>
-                        <p>{{ stats.schoolUsers }} felhasználó</p>
-                      </div>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                      <div class="admin-card" @click="manageClasses">
-                        <div class="admin-card-icon">
-                          <i class='bx bx-building'></i>
-                        </div>
-                        <h5>Osztályok</h5>
-                        <p>{{ stats.classesCount }} osztály</p>
-                      </div>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                      <div class="admin-card" @click="manageEvents">
-                        <div class="admin-card-icon">
-                          <i class='bx bx-calendar'></i>
-                        </div>
-                        <h5>Események</h5>
-                        <p>{{ stats.totalEvents }} esemény</p>
-                      </div>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                      <div class="admin-card" @click="goToSettings">
-                        <div class="admin-card-icon">
-                          <i class='bx bx-cog'></i>
-                        </div>
-                        <h5>Beállítások</h5>
-                        <p>Iskola konfigurálása</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Iskola információk -->
-                  <div class="school-info-card mt-4">
-                    <h5>Iskola információk</h5>
-                    <div class="row mt-3">
-                      <div class="col-md-6">
-                        <p><strong>Város:</strong> {{ newSchool.city }}</p>
-                        <p><strong>Megye:</strong> {{ getCountyName(newSchool.county) }}</p>
-                      </div>
-                      <div class="col-md-6">
-                        <p><strong>Típus:</strong> {{ getSchoolTypeLabel(newSchool.type) }}</p>
-                        <p><strong>Évfolyamok:</strong> {{ newSchool.grades }}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -533,6 +301,18 @@
             </div>
           </div>
         </div>
+
+        <!-- Ha már beállította a profilját, de még a MainPage-en van -->
+        <div v-if="profileConfigured && isLoggedIn" class="profile-ready-section">
+          <div class="profile-ready-content">
+            <i class='bx bx-check-circle'></i>
+            <h3>Profilja sikeresen beállítva!</h3>
+            <p>Kattintson az alábbi gombra az események megtekintéséhez.</p>
+            <button class="btn btn-primary mt-3" @click="goToEvents">
+              <i class='bx bx-calendar'></i> Események megtekintése
+            </button>
+          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -544,7 +324,6 @@ export default {
   
   data() {
     return {
-      // Felhasználó állapot
       isLoggedIn: false,
       user: {
         id: null,
@@ -558,21 +337,16 @@ export default {
       },
       profileConfigured: false,
       
-      // Szerepkör választás
       selectedRole: '',
-      
-      // Diák adatok
       selectedCounty: '',
       selectedCity: '',
       selectedSchool: '',
       selectedClass: '',
       
-      // Tanár adatok
       teacherSchools: [],
       isClassTeacher: 'no',
       classTeacherClass: '',
       
-      // Admin adatok
       newSchool: {
         name: '',
         county: '',
@@ -583,7 +357,6 @@ export default {
         type: 'gimnazium'
       },
       
-      // Adatbázis adatok (demo)
       counties: [
         { id: 1, name: 'Budapest' },
         { id: 2, name: 'Bács-Kiskun' },
@@ -611,31 +384,11 @@ export default {
         { id: 2, name: 'B', grade: 9, school_id: 1 },
         { id: 3, name: 'A', grade: 10, school_id: 1 },
         { id: 4, name: 'B', grade: 10, school_id: 1 }
-      ],
-      
-      // Statisztikák
-      stats: {
-        upcomingEvents: 3,
-        registeredEvents: 2,
-        activePolls: 1,
-        organizedEvents: 5,
-        teacherPolls: 2,
-        schoolUsers: 125,
-        classesCount: 24,
-        totalEvents: 15
-      },
-      
-      // Ajánlott események
-      recommendedEvents: [
-        { id: 1, title: 'Tavaszi kirándulás', date: '2024. április 15.', location: 'Balaton' },
-        { id: 2, title: 'Iskolai verseny', date: '2024. április 20.', location: 'Iskola tornaterme' },
-        { id: 3, title: 'Tavaszi ünnepség', date: '2024. április 25.', location: 'Iskola udvara' }
       ]
     }
   },
   
   computed: {
-    // Szűrt adatok
     filteredCities() {
       if (!this.selectedCounty) return []
       return this.cities.filter(city => city.county_id == this.selectedCounty)
@@ -671,14 +424,11 @@ export default {
   },
   
   methods: {
-    // FONTOS: Bejelentkezés ellenőrzése
+    // Ellenőrizzük a bejelentkezést
     checkLoginStatus() {
-      console.log('Bejelentkezési állapot ellenőrzése...');
-      
       const savedUser = localStorage.getItem('esemenyter_user');
       
       if (!savedUser) {
-        console.log('❌ Nincs user a localStorage-ban - nincs bejelentkezve');
         this.isLoggedIn = false;
         this.profileConfigured = false;
         return;
@@ -686,10 +436,8 @@ export default {
       
       try {
         const userData = JSON.parse(savedUser);
-        console.log('Parsed user data:', userData);
         
-        // Fontos: csak akkor tekintjük bejelentkezettnek, ha explicit van isLoggedIn flag
-        if (userData.isLoggedIn === true || userData.token) {
+        if (userData.isLoggedIn === true) {
           this.user = {
             id: userData.id || Date.now(),
             name: userData.name || 'Felhasználó',
@@ -702,71 +450,74 @@ export default {
           };
           
           this.isLoggedIn = true;
-          this.profileConfigured = !!userData.role; // Ha van role, akkor be van állítva
-          
-          console.log('✅ Bejelentkezve:', this.isLoggedIn);
-          console.log('✅ User neve:', this.user.name);
-          console.log('✅ Profil beállítva:', this.profileConfigured);
+          this.profileConfigured = !!userData.role;
           
         } else {
-          console.log('❌ User nincs bejelentkezve (nincs isLoggedIn flag)');
           this.isLoggedIn = false;
           this.profileConfigured = false;
-          // Töröljük a hibás adatot
           localStorage.removeItem('esemenyter_user');
         }
         
       } catch (error) {
-        console.error('❌ Hibás JSON a localStorage-ban:', error);
         localStorage.removeItem('esemenyter_user');
         this.isLoggedIn = false;
         this.profileConfigured = false;
       }
     },
     
+    // Navigáció az eseményekhez
+    goToEvents() {
+      this.$router.push('/events-list');
+    },
+    
     // Navigáció
     goToLogin() {
-      this.$router.push('/login')
+      this.$router.push('/login');
     },
     
     goToRegister() {
-      this.$router.push('/register')
-    },
-    
-    goToEventCreator() {
-      this.$router.push('/event-creator')
+      this.$router.push('/register');
     },
     
     // Diák beállítás
     setupStudent() {
-      this.selectedRole = 'student'
+      this.selectedRole = 'student';
     },
     
     saveStudentSetup() {
-      const selectedSchool = this.schools.find(s => s.id == this.selectedSchool)
-      const selectedClass = this.classes.find(c => c.id == this.selectedClass)
+      const selectedSchool = this.schools.find(s => s.id == this.selectedSchool);
+      const selectedClass = this.classes.find(c => c.id == this.selectedClass);
       
-      this.user.role = 'student'
-      this.user.school = selectedSchool ? selectedSchool.name : 'Ismeretlen'
-      this.user.class = selectedClass ? `${selectedClass.grade}.${selectedClass.name}` : ''
-      this.user.schoolId = this.selectedSchool
-      this.user.classId = this.selectedClass
+      this.user.role = 'student';
+      this.user.school = selectedSchool ? selectedSchool.name : 'Ismeretlen';
+      this.user.class = selectedClass ? `${selectedClass.grade}.${selectedClass.name}` : '';
+      this.user.schoolId = this.selectedSchool;
+      this.user.classId = this.selectedClass;
       
-      this.profileConfigured = true
-      alert('Diák profil sikeresen beállítva!')
+      const savedUser = JSON.parse(localStorage.getItem('esemenyter_user') || '{}');
+      savedUser.role = 'student';
+      savedUser.school = this.user.school;
+      savedUser.class = this.user.class;
+      savedUser.schoolId = this.user.schoolId;
+      savedUser.classId = this.user.classId;
+      savedUser.isLoggedIn = true;
+      localStorage.setItem('esemenyter_user', JSON.stringify(savedUser));
+      
+      this.profileConfigured = true;
+      this.goToEvents();
     },
     
     // Tanár beállítás
     setupTeacher() {
-      this.selectedRole = 'teacher'
+      this.selectedRole = 'teacher';
     },
     
     toggleTeacherSchool(schoolId) {
-      const index = this.teacherSchools.indexOf(schoolId)
+      const index = this.teacherSchools.indexOf(schoolId);
       if (index === -1) {
-        this.teacherSchools.push(schoolId)
+        this.teacherSchools.push(schoolId);
       } else {
-        this.teacherSchools.splice(index, 1)
+        this.teacherSchools.splice(index, 1);
       }
     },
     
@@ -774,119 +525,91 @@ export default {
       const schoolNames = this.schools
         .filter(s => this.teacherSchools.includes(s.id))
         .map(s => s.name)
-        .join(', ')
+        .join(', ');
       
-      this.user.role = 'teacher'
-      this.user.school = schoolNames
-      this.user.schoolId = this.teacherSchools[0]
+      this.user.role = 'teacher';
+      this.user.school = schoolNames;
+      this.user.schoolId = this.teacherSchools[0];
       
       if (this.isClassTeacher === 'yes' && this.classTeacherClass) {
-        const selectedClass = this.classes.find(c => c.id == this.classTeacherClass)
-        this.user.class = selectedClass ? `${selectedClass.grade}.${selectedClass.name}` : ''
-        this.user.classId = this.classTeacherClass
+        const selectedClass = this.classes.find(c => c.id == this.classTeacherClass);
+        this.user.class = selectedClass ? `${selectedClass.grade}.${selectedClass.name}` : '';
+        this.user.classId = this.classTeacherClass;
       }
       
-      this.profileConfigured = true
-      alert('Tanár profil sikeresen beállítva!')
+      const savedUser = JSON.parse(localStorage.getItem('esemenyter_user') || '{}');
+      savedUser.role = 'teacher';
+      savedUser.school = this.user.school;
+      savedUser.class = this.user.class;
+      savedUser.schoolId = this.user.schoolId;
+      savedUser.classId = this.user.classId;
+      savedUser.isLoggedIn = true;
+      localStorage.setItem('esemenyter_user', JSON.stringify(savedUser));
+      
+      this.profileConfigured = true;
+      this.goToEvents();
     },
     
     // Admin beállítás
     setupAdmin() {
-      this.selectedRole = 'admin'
+      this.selectedRole = 'admin';
     },
     
     saveAdminSetup() {
-      // Új iskola létrehozása
-      const newSchoolId = this.schools.length + 1
+      const newSchoolId = this.schools.length + 1;
       this.schools.push({
         id: newSchoolId,
         name: this.newSchool.name,
-        city_id: 1, // Demo
+        city_id: 1,
         county_id: this.newSchool.county
-      })
+      });
       
-      // Osztályok generálása
       for (let grade = 1; grade <= this.newSchool.grades; grade++) {
         for (let i = 0; i < this.newSchool.classesPerGrade; i++) {
-          const className = String.fromCharCode(65 + i) // A, B, C...
+          const className = String.fromCharCode(65 + i);
           this.classes.push({
             id: this.classes.length + 1,
             name: className,
             grade: grade,
             school_id: newSchoolId
-          })
+          });
         }
       }
       
-      this.user.role = 'admin'
-      this.user.school = this.newSchool.name
-      this.user.schoolId = newSchoolId
+      this.user.role = 'admin';
+      this.user.school = this.newSchool.name;
+      this.user.schoolId = newSchoolId;
       
-      this.profileConfigured = true
-      this.stats.classesCount = this.newSchool.grades * this.newSchool.classesPerGrade
+      const savedUser = JSON.parse(localStorage.getItem('esemenyter_user') || '{}');
+      savedUser.role = 'admin';
+      savedUser.school = this.user.school;
+      savedUser.schoolId = this.user.schoolId;
+      savedUser.isLoggedIn = true;
+      localStorage.setItem('esemenyter_user', JSON.stringify(savedUser));
       
-      alert(`Sikeresen létrehoztad a(z) ${this.newSchool.name} iskolát!`)
+      this.profileConfigured = true;
+      this.goToEvents();
     },
     
     // Segéd függvények
-    getCountyName(countyId) {
-      const county = this.counties.find(c => c.id == countyId)
-      return county ? county.name : ''
-    },
-    
-    getSchoolTypeLabel(type) {
-      const types = {
-        gimnazium: 'Gimnázium',
-        altalanos: 'Általános iskola',
-        szakkozep: 'Szakközépiskola',
-        szakiskola: 'Szakiskola'
-      }
-      return types[type] || type
-    },
-    
-    // Demo adatok betöltése
     loadCities() {
-      this.selectedCity = ''
-      this.selectedSchool = ''
-      this.selectedClass = ''
+      this.selectedCity = '';
+      this.selectedSchool = '';
+      this.selectedClass = '';
     },
     
     loadSchools() {
-      this.selectedSchool = ''
-      this.selectedClass = ''
+      this.selectedSchool = '';
+      this.selectedClass = '';
     },
     
     loadClasses() {
-      this.selectedClass = ''
-    },
-    
-    // Admin műveletek
-    manageUsers() {
-      alert('Felhasználók kezelése (demo)')
-    },
-    
-    manageClasses() {
-      alert('Osztályok kezelése (demo)')
-    },
-    
-    manageEvents() {
-      alert('Események kezelése (demo)')
-    },
-    
-    goToSettings() {
-      alert('Beállítások (demo)')
-    },
-    
-    startPoll() {
-      alert('Szavazás indítása (demo)')
+      this.selectedClass = '';
     },
     
     // Kijelentkezés
     logout() {
-      // 1. Töröld a felhasználói adatokat a localStorage-ből
       localStorage.removeItem('esemenyter_user');
-      
-      // 2. Reseteld az összes állapotváltozót
       this.isLoggedIn = false;
       this.user = {
         id: null,
@@ -900,41 +623,16 @@ export default {
       };
       this.profileConfigured = false;
       this.selectedRole = '';
-      
-      // 3. Opcionális: visszaugrás a kezdőlap tetejére
       window.scrollTo(0, 0);
       
-      console.log('✅ Sikeres kijelentkezés, localStorage törölve');
+      if (this.$route.path !== '/') {
+        this.$router.push('/');
+      }
     }
   },
 
-  // Lifecycle hooks
   created() {
-    console.log('=== MAINPAGE CREATED - BEJELENTKEZÉS ELLENŐRZÉS ===');
     this.checkLoginStatus();
-  },
-  
-  beforeMount() {
-    console.log('=== BEFORE MOUNT - FRISSÍTÉS ===');
-    // Ellenőrizzük, hogy a localStorage és a komponens állapota szinkronban van-e
-    const savedUser = localStorage.getItem('esemenyter_user');
-    if (!savedUser && this.isLoggedIn) {
-      console.log('⚠️ Inkonzistens állapot: nincs localStorage, de isLoggedIn=true');
-      this.isLoggedIn = false;
-      this.profileConfigured = false;
-    }
-  },
-  
-  mounted() {
-    console.log('MainPage mounted');
-  },
-
-  // Watch - UTOLSÓ
-  watch: {
-    '$route'() {
-      console.log('Route changed, checking login...');
-      this.checkLoginStatus();
-    }
   }
 }
 </script>
@@ -947,15 +645,14 @@ export default {
 /* Fejléc */
 .main-header {
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  padding: 20px 0;
   box-sizing: border-box;
     font-family: "Poppins", sans-serif;
-
     display: flex;
     justify-content: center;
     align-items: center;
-    
-    min-height: 100vh;
     width: 99vw;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
@@ -968,12 +665,14 @@ export default {
   margin: 0;
   font-size: 1.8rem;
   font-weight: 700;
+  color: white;
 }
 
 .site-subtitle {
   margin: 0;
   opacity: 0.9;
   font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* Szerepkör kártyák */
@@ -1062,182 +761,6 @@ export default {
   background: #f8f9ff;
 }
 
-/* Oldalsáv */
-.sidebar {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  height: fit-content;
-}
-
-.nav-link {
-  color: #495057;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  transition: all 0.3s ease;
-}
-
-.nav-link:hover {
-  background: #f8f9fa;
-  color: #4f46e5;
-}
-
-.nav-link.active {
-  background: #4f46e5;
-  color: white;
-}
-
-.nav-link i {
-  font-size: 1.25rem;
-}
-
-/* Dashboard tartalom */
-.dashboard-content {
-  padding-left: 2rem;
-}
-
-.welcome-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 2rem;
-  border-radius: 12px;
-}
-
-/* Statisztika kártyák */
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  height: 100%;
-}
-
-.stat-icon {
-  font-size: 2.5rem;
-  color: #4f46e5;
-}
-
-.stat-info h4 {
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 0;
-  color: #333;
-}
-
-.stat-info p {
-  margin: 0;
-  color: #666;
-}
-
-.teacher-stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  height: 100%;
-}
-
-/* Esemény kártyák */
-.event-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.event-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid #dee2e6;
-  transition: all 0.3s ease;
-}
-
-.event-card:hover {
-  border-color: #4f46e5;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.event-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.75rem;
-}
-
-.event-header h5 {
-  margin: 0;
-  color: #333;
-}
-
-.event-date {
-  background: #f8f9fa;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  color: #666;
-}
-
-.event-location {
-  color: #666;
-  margin-bottom: 1rem;
-}
-
-.event-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* Admin kártyák */
-.admin-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-  height: 100%;
-}
-
-.admin-card:hover {
-  border-color: #4f46e5;
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-}
-
-.admin-card-icon {
-  font-size: 2.5rem;
-  color: #4f46e5;
-  margin-bottom: 1rem;
-}
-
-.admin-card h5 {
-  margin-bottom: 0.5rem;
-  color: #333;
-}
-
-.admin-card p {
-  color: #666;
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-.school-info-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
 /* Kezdőlap */
 .hero-section {
   background: white;
@@ -1277,25 +800,189 @@ export default {
   margin: 0;
 }
 
-/* Reszponzív */
+/* Profil kész üzenet */
+.profile-ready-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.profile-ready-content {
+  text-align: center;
+  padding: 3rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.profile-ready-content i {
+  font-size: 60px;
+  color: #28a745;
+  margin-bottom: 20px;
+}
+
+.profile-ready-content h3 {
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.profile-ready-content p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+/* Gomb stílusok finomítása */
+.btn-primary {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c73ff 100%);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+}
+
+.btn-outline-primary {
+  border-color: #4f46e5;
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.btn-outline-primary:hover {
+  background-color: #4f46e5;
+  color: white;
+}
+
+.btn-outline-danger {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.btn-outline-danger:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.25rem;
+}
+
+/* User section */
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.user-name {
+  font-weight: 600;
+  color: white;
+  font-size: 0.95rem;
+}
+
+.user-role {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.2rem;
+  text-transform: capitalize;
+}
+
+/* Form elemek */
+.form-control {
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-label {
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 0.5rem;
+}
+
+/* Reszponzív design */
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;
-    gap: 1rem;
     text-align: center;
+    gap: 1rem;
   }
   
   .role-cards {
     grid-template-columns: 1fr;
   }
   
-  .dashboard-content {
-    padding-left: 0;
-    margin-top: 2rem;
-  }
-  
   .hero-section {
     padding: 2rem 1rem !important;
   }
+  
+  .cta-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .cta-buttons .btn {
+    width: 100%;
+    margin: 0 !important;
+  }
+  
+  .school-selection {
+    grid-template-columns: 1fr;
+  }
+  
+  .user-section {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .user-info {
+    align-items: center;
+  }
+}
+
+/* Animációk */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.role-card, .feature-card, .setup-section, .profile-ready-content {
+  animation: fadeIn 0.5s ease-out;
 }
 </style>
