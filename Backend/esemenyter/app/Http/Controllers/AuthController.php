@@ -49,4 +49,36 @@ class AuthController extends Controller
             'user' => $user
         ]);
     }
+    public function chechkuserRole()
+    {
+        $user = Auth::user();
+
+        $user->load(['student', 'personel']);
+        
+ 
+        $isStudent = $user->student !== null;
+        $isPersonel = $user->personel !== null;
+        
+        $role = 'user'; 
+        $establishmentId = null;
+        
+        if ($isStudent) {
+            $role = 'student';
+            $establishmentId = $user->student->establishment_id;
+        } elseif ($isPersonel) {
+            $role = $user->personel->role;
+            $establishmentId = $user->personel->establishment_id;
+        }
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+            'role' => $role,
+
+            'establishmentId' => $establishmentId,
+        ]);
+    }
 }
