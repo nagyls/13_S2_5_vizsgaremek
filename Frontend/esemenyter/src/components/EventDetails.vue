@@ -1,8 +1,8 @@
 <template>
   <div class="esemeny-reszletek-oldal">
     <!-- VISSZA GOMB -->
-    <button class="vissza-gomb" @click="$router.back()">
-      <i class='bx bx-arrow-back'></i> Vissza
+    <button class="vissza-gomb" @click="goBackToEvents">
+      <i class='bx bx-arrow-back'></i> Vissza az eseményekhez
     </button>
 
     <!-- BETÖLTÉS -->
@@ -207,6 +207,10 @@ export default {
   },
   
   methods: {
+    goBackToEvents() {
+      this.$router.push('/esemenyek')
+    },
+
     async betoltasEsemenyt() {
       try {
         this.betoltas = true
@@ -433,7 +437,8 @@ export default {
 .esemeny-reszletek-oldal {
   box-sizing: border-box;
   font-family: "Poppins", sans-serif;
-  display: flex;
+  padding: 20px 0;
+  /* display: flex; */
   justify-content: center;
   align-items: center;
   min-height: 100vh;
