@@ -88,19 +88,75 @@
           <div class="setup-steps">
             <!-- 1. Megye -->
             <div class="form-group mb-3">
-              <label class="form-label">1. Válassz megyét:</label>
-              <select v-model="selectedCounty" @change="loadCities" class="form-control">
-                <option value="">-- válassz megyét --</option>
-                <option v-for="county in counties" :key="county.id" :value="county.id">
-                  {{ county.name }}
-                </option>
-              </select>
+              <label class="form-label">1. Válassz régiót:</label>
+              
+              <!-- Autocomplete input -->
+              <div class="autocomplete-wrapper">
+                <input
+                  type="text"
+                  v-model="searchQuery"
+                  @input="onInput"
+                  @focus="showDropdown = true"
+                  @blur="onBlur"
+                  @keydown.down="highlightNext"
+                  @keydown.up="highlightPrev"
+                  @keydown.enter="selectHighlighted"
+                  placeholder="Kezdj el gépelni a régió nevéből..."
+                  class="form-control"
+                  :class="{ 'is-loading': isLoading }"
+                />
+                
+                <!-- Loading indicator -->
+                <div v-if="isLoading" class="autocomplete-loading">
+                  <span class="spinner-border spinner-border-sm"></span>
+                </div>
+                
+                <!-- Clear button -->
+                <button 
+                  v-if="searchQuery" 
+                  @click="clearSearch"
+                  class="autocomplete-clear"
+                  type="button"
+                >
+                  &times;
+                </button>
+                
+                <!-- Dropdown with suggestions -->
+                <div 
+                  v-if="showDropdown && filteredRegions.length > 0" 
+                  class="autocomplete-dropdown"
+                >
+                  <ul class="autocomplete-list">
+                    <li 
+                      v-for="(region, index) in filteredRegions" 
+                      :key="region.id"
+                      @click="selectRegion(region)"
+                      @mouseenter="highlightedIndex = index"
+                      :class="{ 
+                        'highlighted': index === highlightedIndex,
+                        'selected': region.id === selectedRegionId
+                      }"
+                      class="autocomplete-item"
+                    >
+                      {{ region.title }}
+                    </li>
+                  </ul>
+                </div>
+                
+                <!-- No results message -->
+                <div 
+                  v-if="showDropdown && !isLoading && filteredRegions.length === 0 && searchQuery" 
+                  class="autocomplete-no-results"
+                >
+                  Nincs találat a(z) "{{ searchQuery }}" kifejezésre
+                </div>
+              </div>
             </div>
             
             <!-- 2. Város -->
             <div class="form-group mb-3">
               <label class="form-label">2. Válassz várost:</label>
-              <select v-model="selectedCity" @change="loadSchools" :disabled="!selectedCounty" class="form-control">
+              <select v-model="selectedCity" @change="loadSchools" :disabled="!selectedRegionId" class="form-control">
                 <option value="">-- válassz várost --</option>
                 <option v-for="city in filteredCities" :key="city.id" :value="city.id">
                   {{ city.name }}
@@ -214,13 +270,67 @@
             
             <div class="row mb-3">
               <div class="col-md-6">
-                <label class="form-label">Megye *</label>
-                <select v-model="newSchool.county" class="form-control" required>
-                  <option value="">-- válassz megyét --</option>
-                  <option v-for="county in counties" :key="county.id" :value="county.id">
-                    {{ county.name }}
-                  </option>
-                </select>
+                <label class="form-label">Régió *</label>
+                <div class="autocomplete-wrapper">
+                  <input
+                    type="text"
+                    v-model="adminRegionSearch"
+                    @input="onAdminRegionInput"
+                    @focus="adminShowDropdown = true"
+                    @blur="onAdminRegionBlur"
+                    @keydown.down="highlightAdminNext"
+                    @keydown.up="highlightAdminPrev"
+                    @keydown.enter="selectAdminHighlighted"
+                    placeholder="Kezdj el gépelni a régió nevéből..."
+                    class="form-control"
+                    :class="{ 'is-loading': adminIsLoading }"
+                  />
+                  
+                  <!-- Loading indicator -->
+                  <div v-if="adminIsLoading" class="autocomplete-loading">
+                    <span class="spinner-border spinner-border-sm"></span>
+                  </div>
+                  
+                  <!-- Clear button -->
+                  <button 
+                    v-if="adminRegionSearch" 
+                    @click="clearAdminRegionSearch"
+                    class="autocomplete-clear"
+                    type="button"
+                  >
+                    &times;
+                  </button>
+                  
+                  <!-- Dropdown with suggestions -->
+                  <div 
+                    v-if="adminShowDropdown && adminFilteredRegions.length > 0" 
+                    class="autocomplete-dropdown"
+                  >
+                    <ul class="autocomplete-list">
+                      <li 
+                        v-for="(region, index) in adminFilteredRegions" 
+                        :key="region.id"
+                        @click="selectAdminRegion(region)"
+                        @mouseenter="adminHighlightedIndex = index"
+                        :class="{ 
+                          'highlighted': index === adminHighlightedIndex,
+                          'selected': region.id === newSchool.regionId
+                        }"
+                        class="autocomplete-item"
+                      >
+                        {{ region.title }}
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <!-- No results message -->
+                  <div 
+                    v-if="adminShowDropdown && !adminIsLoading && adminFilteredRegions.length === 0 && adminRegionSearch" 
+                    class="autocomplete-no-results"
+                  >
+                    Nincs találat a(z) "{{ adminRegionSearch }}" kifejezésre
+                  </div>
+                </div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Járás (opcionális)</label>

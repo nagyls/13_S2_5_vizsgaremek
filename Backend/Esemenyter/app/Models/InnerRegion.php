@@ -4,12 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Region extends Model
+
+class InnerRegion extends Model
 {
-    //
     protected $fillable = [
         'title',
+        'region_id',
     ];
-
-
 }
