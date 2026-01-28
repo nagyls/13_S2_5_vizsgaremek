@@ -4,7 +4,7 @@
             <form @submit.prevent="login">
                 <h1>Bejelentkezés</h1>
                 <div class="input-box">
-                    <input type="text" placeholder="Felhasználónév" v-model="username" required >
+                    <input type="text" placeholder="Email cím" v-model="email" required >
                     <i class='bx  bx-user'></i> 
                 </div>
                 <div class="input-box">
@@ -38,7 +38,7 @@ export default {
   
   data() {
     return {
-      username: "",
+      email: "", // Csak a változó neve változott
       password: "",
       showPassword: false,
       loading: false
@@ -54,27 +54,27 @@ export default {
       this.loading = true;
       
       try {
-        // 1. Backend API hívás
+        // 1. Backend API hívás - csak itt változott az email mező
         const res = await axios.post("http://127.0.0.1:8000/api/login", {
-          username: this.username,
+          email: this.email, // username helyett email
           password: this.password
         });
 
         console.log("Backend válasz:", res.data);
         
-        // 2. FONTOS: Felhasználói adatok mentése localStorage-ba
-        // A backend-től kapott adatok alapján
+        // 2. Felhasználói adatok mentése localStorage-ba
+        // Még mindig a user.name-t használjuk, csak a bejelentkezés email alapú
         const userData = {
           id: res.data.user?.id || Date.now(),
-          name: this.username, // vagy res.data.user?.name
-          email: res.data.user?.email || '',
-          role: res.data.user?.role || '', // Még nincs szerepköre
+          name: res.data.user?.name || this.email.split('@')[0], // emailből veszünk nevet
+          email: this.email, // itt mentjük az emailt is
+          role: res.data.user?.role || '',
           school: res.data.user?.school || '',
           class: res.data.user?.class || '',
           schoolId: res.data.user?.schoolId || null,
           classId: res.data.user?.classId || null,
           token: res.data.token || 'login-token-' + Date.now(),
-          isLoggedIn: true, // EZ NAGYON FONTOS!
+          isLoggedIn: true,
           loggedInAt: new Date().toISOString()
         };
         
@@ -100,15 +100,15 @@ export default {
           // Offline user létrehozása (demo)
           const offlineUserData = {
             id: Date.now(),
-            name: this.username,
-            email: this.username + '@demo.hu',
+            name: this.email.split('@')[0], // emailből név
+            email: this.email, // itt emailt mentünk
             role: '', // Még nincs szerepköre
             school: '',
             class: '',
             schoolId: null,
             classId: null,
             token: 'offline-login-token-' + Date.now(),
-            isLoggedIn: true, // EZ NAGYON FONTOS!
+            isLoggedIn: true,
             isOffline: true,
             loggedInAt: new Date().toISOString()
           };
@@ -126,7 +126,7 @@ export default {
           // Egyéb hiba (rossz jelszó, stb.)
           const errorMsg = err.response?.data?.message || 
                          err.response?.data?.error || 
-                         "Hibás felhasználónév vagy jelszó!";
+                         "Hibás email cím vagy jelszó!"; // Csak a hibaüzenet változott
           alert("Hiba: " + errorMsg);
         }
       } finally {
@@ -156,6 +156,7 @@ export default {
 </script>
 
 <style scoped>
+/* Stílusok változatlanok */
 .login-page {
     box-sizing: border-box;
     font-family: "Poppins", sans-serif;

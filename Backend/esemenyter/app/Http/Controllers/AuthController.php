@@ -29,14 +29,13 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'username' => 'required|string',
+            'email' => 'required|email',
             'password' => 'required|string'
         ]);
 
-        // Felhasználó lekérése username alapján
-        $user = User::where('name', $request->username)->first();
+        $user = User::where('email', $request->email)->first(); 
         if (!$user) {
-            return response()->json(['message' => 'Hibás felhasználónév!'], 401);
+            return response()->json(['message' => 'Hibás email cím!'], 401); 
         }
 
         // Jelszó ellenőrzés

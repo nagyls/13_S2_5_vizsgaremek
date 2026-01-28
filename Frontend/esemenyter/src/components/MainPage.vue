@@ -1,320 +1,415 @@
 <template>
   <div class="main-page">
-    <!-- Fejléc -->
     <header class="main-header">
       <div class="container">
         <div class="header-content">
-          <div class="logo-section">
-            <h1 class="site-title">EseményTér</h1>
-            <p class="site-subtitle">Ahol minden program helyet kap</p>
-          </div>
-          
-          <!-- Bejelentkezés/Regisztráció -->
-          <div v-if="!isLoggedIn" class="auth-buttons">
-            <button class="btn btn-outline-primary" @click="goToLogin">
-              <i class='bx bx-log-in'></i> Bejelentkezés
-            </button>
-            <button class="btn btn-primary" @click="goToRegister">
-              <i class='bx bx-user-plus'></i> Regisztráció
-            </button>
-          </div>
-          
-          <!-- Bejelentkezett felhasználó -->
-          <div v-else class="user-section">
-            <div class="user-info">
-              <span class="user-name">{{ user.name }}</span>
-              <span class="user-role">{{ user.role }}</span>
+          <div class="logo-section" @click="$router.push('/')">
+            <div class="logo-icon">
+              <i class='bx bx-calendar-heart'></i>
             </div>
-            <button class="btn btn-outline-danger btn-sm" @click="logout">
-              <i class='bx bx-log-out'></i> Kijelentkezés
+            <div class="logo-text">
+              <h1 class="site-title">EseményTér</h1>
+              <p class="site-subtitle">Ahol minden esemény helyet kap</p>
+            </div>
+          </div>
+          
+          <!-- Navigációs gombok -->
+          <div v-if="!isLoggedIn" class="nav-buttons">
+            <button class="nav-btn login-btn" @click="goToLogin">
+              <i class='bx bx-log-in'></i>
+              <span>Bejelentkezés</span>
             </button>
+            <button class="nav-btn register-btn" @click="goToRegister">
+              <i class='bx bx-user-plus'></i>
+              <span>Regisztráció</span>
+            </button>
+          </div>
+          
+          <!-- felhasznaloi profil -->
+          <div v-else class="user-profile">
+            <div class="user-avatar" @click="toggleUserMenu">
+              <div class="avatar-circle">
+                <span>{{ userInitials }}</span>
+              </div>
+              <div class="user-status">
+                <div class="status-dot online"></div>
+              </div>
+            </div>
+            
+            <transition name="slide-fade">
+              <div v-if="showUserMenu" class="user-menu">
+                <div class="menu-header">
+                  <div class="menu-user-info">
+                    <h4>{{ user.name }}</h4>
+                    <p class="user-email">{{ user.email }}</p>
+                  </div>
+                  <div class="role-badge" :class="user.role">
+                    {{ roleDisplayName }}
+                  </div>
+                </div>
+                <div class="menu-items">
+                  <router-link to="/profile" class="menu-item">
+                    <i class='bx bx-user'></i>
+                    <span>Profilom</span>
+                  </router-link>
+                  <router-link to="/events-list" class="menu-item">
+                    <i class='bx bx-calendar'></i>
+                    <span>Események</span>
+                  </router-link>
+                  <div class="menu-divider"></div>
+                  <button class="menu-item logout-btn" @click="logout">
+                    <i class='bx bx-log-out'></i>
+                    <span>Kijelentkezés</span>
+                  </button>
+                </div>
+              </div>
+            </transition>
           </div>
         </div>
       </div>
     </header>
 
-    <!-- Fő tartalom -->
+    <!-- fo tartalom -->
     <main class="main-content">
       <div class="container">
-        
-        <!-- Szerepkör kiválasztás (ha nincs beállítva) -->
+        <div v-if="!isLoggedIn" class="welcome-section">
+          <div class="hero-container">
+            <div class="hero-content">
+              <div class="hero-text">
+                <h1 class="hero-title">
+                  <span class="gradient-text">Ismerj meg egy</span>
+                  <br>
+                  <span class="hero-highlight">új dimenziót</span>
+                  <br>
+                  <span class="hero-subtitle">az iskolai életben</span>
+                </h1>
+                <p class="hero-description">
+                  Az EseményTér egy olyan platform, ahol tanárok, diákok 
+                  zökkenőmentesen együttműködhetnek. <br> Hozz létre eseményeket, szavazzatok közösen, 
+                  vagy egyszerűen tarts naprakészen magad!
+                </p>
+                <div class="hero-actions">
+                  <button class="btn-primary btn-hero" @click="goToRegister">
+                    <i class='bx bx-rocket'></i>
+                    <span>Kezdjük el!</span>
+                  </button>
+                  <button class="btn-secondary btn-hero" @click="scrollToFeatures">
+                    <i class='bx bx-info-circle'></i>
+                    <span>További információk</span>
+                  </button>
+                </div>
+              </div>
+              <div class="hero-visual">
+                <div class="floating-cards">
+                  <div class="card card-1 floating">
+                    <i class='bx bx-calendar-star'></i>
+                    <h4>Események</h4>
+                    <p>Könnyed tervezés</p>
+                  </div>
+                  <div class="card card-2 floating delayed">
+                    <i class='bx bx-group'></i>
+                    <h4>Közösség</h4>
+                    <p>Interaktív részvétel</p>
+                  </div>
+                  <div class="card card-3 floating delayed-2">
+                    <i class='bx bx-bell-ring'></i>
+                    <h4>Értesítések</h4>
+                    <p>Időben informálás</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Szerepkör kiválasztás (bejelentkezett felhasználónak) -->
         <div v-if="isLoggedIn && !profileConfigured" class="role-selection-section">
-          <h2 class="text-center mb-4">Válaszd ki a szerepkörödet</h2>
+          <div class="section-header">
+            <div class="header-icon">
+              <i class='bx bx-cast'></i>
+            </div>
+            <h2>Válassz szerepkört</h2>
+            <p class="section-subtitle">
+              Az alábbi lehetőségek közül választhatod ki, hogyan szeretnél részt venni az EseményTérben
+            </p>
+          </div>
           
-          <div class="role-cards">
-            <!-- Diák -->
-            <div class="role-card" :class="{ 'selected': selectedRole === 'student' }" @click="selectedRole = 'student'">
+          <div class="role-cards-grid">
+            <!-- Diák kártya -->
+            <div class="role-card student" :class="{ 'selected': selectedRole === 'student' }" 
+                 @click="selectedRole = 'student'">
+              <div class="card-decoration">
+                <div class="decoration-circle"></div>
+                <div class="decoration-circle small"></div>
+              </div>
               <div class="role-icon">
-                <i class='bx bx-user'></i>
+                <i class='bx bx-graduation'></i>
               </div>
               <h3>Diák</h3>
-              <p>Eseményekre jelentkezhetsz, szavazhatsz, hozzászólhatsz.</p>
-              <button v-if="selectedRole === 'student'" class="btn btn-primary mt-3" @click="setupStudent">
-                Diákként folytatás
+              <p class="role-description">
+                Eseményekre jelentkezhetsz, részt vehetsz szavazásokon és hozzászólhatsz a közösségben.
+              </p>
+              <ul class="role-features">
+                <li><i class='bx bx-check'></i> Eseményekre jelentkezés</li>
+                <li><i class='bx bx-check'></i> Szavazások részvétel</li>
+                <li><i class='bx bx-check'></i> Közösségi interakció</li>
+              </ul>
+              <button v-if="selectedRole === 'student'" class="card-action-btn" @click.stop="setupStudent">
+                <span>Diákként folytatás</span>
+                <i class='bx bx-chevron-right'></i>
               </button>
             </div>
             
-            <!-- Tanár -->
-            <div class="role-card" :class="{ 'selected': selectedRole === 'teacher' }" @click="selectedRole = 'teacher'">
+            <!-- Tanár kártya -->
+            <div class="role-card teacher" :class="{ 'selected': selectedRole === 'teacher' }" 
+                 @click="selectedRole = 'teacher'">
+              <div class="card-decoration">
+                <div class="decoration-circle"></div>
+                <div class="decoration-circle small"></div>
+              </div>
               <div class="role-icon">
                 <i class='bx bx-chalkboard'></i>
               </div>
               <h3>Tanár</h3>
-              <p>Eseményeket hozhatsz létre, szavazásokat indíthatsz.</p>
-              <button v-if="selectedRole === 'teacher'" class="btn btn-primary mt-3" @click="setupTeacher">
-                Tanárként folytatás
+              <p class="role-description">
+                Hozz létre eseményeket, indíts szavazásokat és koordináld az osztályod tevékenységeit.
+              </p>
+              <ul class="role-features">
+                <li><i class='bx bx-check'></i> Események létrehozása</li>
+                <li><i class='bx bx-check'></i> Szavazások kezelése</li>
+                <li><i class='bx bx-check'></i> Osztálykoordináció</li>
+              </ul>
+              <button v-if="selectedRole === 'teacher'" class="card-action-btn" @click.stop="setupTeacher">
+                <span>Tanárként folytatás</span>
+                <i class='bx bx-chevron-right'></i>
               </button>
             </div>
             
-            <!-- Admin -->
-            <div class="role-card" :class="{ 'selected': selectedRole === 'admin' }" @click="selectedRole = 'admin'">
+            <!-- Admin kártya -->
+            <div class="role-card admin" :class="{ 'selected': selectedRole === 'admin' }" 
+                 @click="selectedRole = 'admin'">
+              <div class="card-decoration">
+                <div class="decoration-circle"></div>
+                <div class="decoration-circle small"></div>
+              </div>
               <div class="role-icon">
                 <i class='bx bx-cog'></i>
               </div>
               <h3>Adminisztrátor</h3>
-              <p>Iskolákat regisztrálhatsz, felhasználókat kezelhetsz.</p>
-              <button v-if="selectedRole === 'admin'" class="btn btn-primary mt-3" @click="setupAdmin">
-                Adminisztrátorként folytatás
+              <p class="role-description">
+                Kezeld az iskolákat, felhasználókat és a rendszer teljes működését.
+              </p>
+              <ul class="role-features">
+                <li><i class='bx bx-check'></i> Iskola regisztrálás</li>
+                <li><i class='bx bx-check'></i> Felhasználókezelés</li>
+                <li><i class='bx bx-check'></i> Rendszeradminisztráció</li>
+              </ul>
+              <button v-if="selectedRole === 'admin'" class="card-action-btn" @click.stop="setupAdmin">
+                <span>Adminisztrátorként folytatás</span>
+                <i class='bx bx-chevron-right'></i>
               </button>
             </div>
           </div>
         </div>
 
         <!-- Diák beállítás -->
-        <div v-if="selectedRole === 'student' && !profileConfigured" class="setup-section">
-          <h3 class="mb-4">Diák beállítás</h3>
-          <p class="mb-4">Válaszd ki az iskolád és osztályod:</p>
-          
-          <div class="setup-steps">
-            <!-- 1. Megye -->
-            <div class="form-group mb-3">
-              <label class="form-label">1. Válassz megyét:</label>
-              <select v-model="selectedCounty" @change="loadCities" class="form-control">
-                <option value="">-- válassz megyét --</option>
-                <option v-for="county in counties" :key="county.id" :value="county.id">
-                  {{ county.name }}
-                </option>
-              </select>
-            </div>
-            
-            <!-- 2. Város -->
-            <div class="form-group mb-3">
-              <label class="form-label">2. Válassz várost:</label>
-              <select v-model="selectedCity" @change="loadSchools" :disabled="!selectedCounty" class="form-control">
-                <option value="">-- válassz várost --</option>
-                <option v-for="city in filteredCities" :key="city.id" :value="city.id">
-                  {{ city.name }}
-                </option>
-              </select>
-            </div>
-            
-            <!-- 3. Iskola -->
-            <div class="form-group mb-3">
-              <label class="form-label">3. Válassz iskolát:</label>
-              <select v-model="selectedSchool" @change="loadClasses" :disabled="!selectedCity" class="form-control">
-                <option value="">-- válassz iskolát --</option>
-                <option v-for="school in filteredSchools" :key="school.id" :value="school.id">
-                  {{ school.name }}
-                </option>
-              </select>
-            </div>
-            
-            <!-- 4. Osztály -->
-            <div class="form-group mb-4">
-              <label class="form-label">4. Válassz osztályt:</label>
-              <select v-model="selectedClass" :disabled="!selectedSchool" class="form-control">
-                <option value="">-- válassz osztályt --</option>
-                <option v-for="classItem in filteredClasses" :key="classItem.id" :value="classItem.id">
-                  {{ classItem.grade }}. évfolyam {{ classItem.name }} osztály
-                </option>
-              </select>
-            </div>
-            
-            <div class="d-flex gap-2">
-              <button class="btn btn-secondary" @click="selectedRole = ''">
-                <i class='bx bx-arrow-back'></i> Vissza
-              </button>
-              <button class="btn btn-primary" @click="saveStudentSetup" :disabled="!selectedClass">
-                <i class='bx bx-check'></i> Mentés és tovább
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tanár beállítás -->
-        <div v-if="selectedRole === 'teacher' && !profileConfigured" class="setup-section">
-          <h3 class="mb-4">Tanár beállítás</h3>
-          
-          <div class="form-group mb-3">
-            <label class="form-label">Válassz iskolá(ka)t ahol tanítasz:</label>
-            <div class="school-selection">
-              <div v-for="school in allSchools" :key="school.id" 
-                   class="school-option" 
-                   :class="{ 'selected': teacherSchools.includes(school.id) }"
-                   @click="toggleTeacherSchool(school.id)">
-                <input type="checkbox" :value="school.id" v-model="teacherSchools" hidden>
-                <div class="school-info">
-                  <h5>{{ school.name }}</h5>
-                  <p>{{ school.city }}, {{ school.county }}</p>
+        <transition name="slide-up">
+          <div v-if="selectedRole === 'student' && !profileConfigured" class="setup-wizard">
+            <div class="wizard-header">
+              <div class="wizard-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" :style="{ width: '25%' }"></div>
+                </div>
+                <div class="step-indicators">
+                  <div class="step active">1</div>
+                  <div class="step">2</div>
+                  <div class="step">3</div>
+                  <div class="step">4</div>
                 </div>
               </div>
-            </div>
-          </div>
-          
-          <div class="form-group mb-4">
-            <label class="form-label">Osztályfőnök vagy?</label>
-            <div class="d-flex gap-3">
-              <div class="form-check">
-                <input class="form-check-input" type="radio" v-model="isClassTeacher" value="yes" id="ct-yes">
-                <label class="form-check-label" for="ct-yes">Igen</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" v-model="isClassTeacher" value="no" id="ct-no">
-                <label class="form-check-label" for="ct-no">Nem</label>
-              </div>
+              <h3>Diák profil beállítása</h3>
+              <p>Néhány lépésben állítsd be profilodat a teljes funkcionalitás érdekében</p>
             </div>
             
-            <!-- Ha osztályfőnök -->
-            <div v-if="isClassTeacher === 'yes'" class="mt-3">
-              <label class="form-label">Melyik osztály osztályfőnöke vagy?</label>
-              <select v-model="classTeacherClass" class="form-control">
-                <option value="">-- válassz osztályt --</option>
-                <option v-for="classItem in allClasses" :key="classItem.id" :value="classItem.id">
-                  {{ classItem.school }} - {{ classItem.grade }}.{{ classItem.name }}
-                </option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="d-flex gap-2">
-            <button class="btn btn-secondary" @click="selectedRole = ''">
-              <i class='bx bx-arrow-back'></i> Vissza
-            </button>
-            <button class="btn btn-primary" @click="saveTeacherSetup" :disabled="teacherSchools.length === 0">
-              <i class='bx bx-check'></i> Mentés és tovább
-            </button>
-          </div>
-        </div>
-
-        <!-- Admin beállítás (iskola létrehozás) -->
-        <div v-if="selectedRole === 'admin' && !profileConfigured" class="setup-section">
-          <h3 class="mb-4">Adminisztrátor - Új iskola létrehozása</h3>
-          
-          <div class="school-creation-form">
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label">Iskola neve *</label>
-                <input type="text" v-model="newSchool.name" class="form-control" placeholder="pl. Kossuth Lajos Gimnázium" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Város *</label>
-                <input type="text" v-model="newSchool.city" class="form-control" placeholder="pl. Budapest" required>
-              </div>
-            </div>
-            
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label">Megye *</label>
-                <select v-model="newSchool.county" class="form-control" required>
-                  <option value="">-- válassz megyét --</option>
-                  <option v-for="county in counties" :key="county.id" :value="county.id">
-                    {{ county.name }}
-                  </option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Járás (opcionális)</label>
-                <input type="text" v-model="newSchool.district" class="form-control" placeholder="pl. III. kerület">
-              </div>
-            </div>
-            
-            <div class="row mb-4">
-              <div class="col-md-4">
-                <label class="form-label">Évfolyamok száma</label>
-                <input type="number" v-model="newSchool.grades" min="1" max="12" class="form-control" value="12">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Osztályok/évfolyam</label>
-                <input type="number" v-model="newSchool.classesPerGrade" min="1" max="10" class="form-control" value="3">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Iskola típusa</label>
-                <select v-model="newSchool.type" class="form-control">
-                  <option value="gimnazium">Gimnázium</option>
-                  <option value="altalanos">Általános iskola</option>
-                  <option value="szakkozep">Szakközépiskola</option>
-                  <option value="szakiskola">Szakiskola</option>
-                </select>
-              </div>
-            </div>
-            
-            <div class="d-flex gap-2">
-              <button class="btn btn-secondary" @click="selectedRole = ''">
-                <i class='bx bx-arrow-back'></i> Vissza
-              </button>
-              <button class="btn btn-primary" @click="saveAdminSetup" :disabled="!isNewSchoolValid">
-                <i class='bx bx-check'></i> Mentés és tovább
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Kezdőlap (ha nincs bejelentkezve) -->
-        <div v-if="!isLoggedIn" class="homepage">
-          <div class="hero-section text-center py-5">
-            <h1 class="display-4 mb-4">Üdvözöljük az EseményTérben!</h1>
-            <p class="lead mb-4">Az iskolai események egyszerű kezelése és kommunikációja</p>
-            
-            <div class="features mb-5">
-              <div class="row">
-                <div class="col-md-4 mb-3">
-                  <div class="feature-card">
-                    <i class='bx bx-calendar-event'></i>
-                    <h4>Események kezelése</h4>
-                    <p>Könnyedén hozz létre és kezelj iskolai eseményeket</p>
-                  </div>
+            <div class="wizard-content">
+              <div class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-map'></i>
                 </div>
-                <div class="col-md-4 mb-3">
-                  <div class="feature-card">
-                    <i class='bx bx-group'></i>
-                    <h4>Jelentkezés és szavazás</h4>
-                    <p>Diákok egyszerűen jelentkezhetnek és szavazhatnak</p>
-                  </div>
+                <h4>Válassz régiót</h4>
+                <p>Először válaszd ki a régiót, ahol az iskolád található</p>
+                
+                <div class="search-wrapper">
+                  <i class='bx bx-search'></i>
+                  <input 
+                    type="text" 
+                    v-model="searchQuery"
+                    placeholder="Kezdj el gépelni a régió nevéből..."
+                    class="search-input"
+                  />
                 </div>
-                <div class="col-md-4 mb-3">
-                  <div class="feature-card">
-                    <i class='bx bx-bell'></i>
-                    <h4>Értesítések</h4>
-                    <p>Mindig értesülj a fontos változásokról</p>
+                
+                <div class="suggestions-grid">
+                  <div 
+                    v-for="region in filteredRegions" 
+                    :key="region.id"
+                    class="suggestion-card"
+                    :class="{ 'selected': region.id === selectedRegionId }"
+                    @click="selectRegion(region)"
+                  >
+                    <div class="suggestion-icon">
+                      <i class='bx bx-current-location'></i>
+                    </div>
+                    <div class="suggestion-text">
+                      <h5>{{ region.title }}</h5>
+                      <p>{{ region.cityCount }} település</p>
+                    </div>
                   </div>
                 </div>
               </div>
+              
+              <div class="wizard-actions">
+                <button class="btn-outline" @click="selectedRole = ''">
+                  <i class='bx bx-arrow-back'></i>
+                  Vissza
+                </button>
+                <button class="btn-primary" @click="nextStep" :disabled="!selectedRegionId">
+                  Következő lépés
+                  <i class='bx bx-chevron-right'></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Funkciók (nem bejelentkezett felhasználóknak) -->
+        <div v-if="!isLoggedIn" ref="featuresSection" class="features-section">
+          <div class="section-header">
+            <h2>Miért válassz minket?</h2>
+            <p class="section-subtitle">
+              Az EseményTér egyedülálló funkciókat kínál az iskolai élet szervezéséhez
+            </p>
+          </div>
+          
+          <div class="features-grid">
+            <div class="feature-item">
+              <div class="feature-icon-container">
+                <div class="icon-wrapper">
+                  <i class='bx bx-calendar-check'></i>
+                </div>
+              </div>
+              <h4>Intelligens eseménykezelés</h4>
+              <p>Könnyedén hozz létre, szerkessz és oszd meg az eseményeket valós idejű frissítésekkel.</p>
             </div>
             
-            <div class="cta-buttons">
-              <button class="btn btn-primary btn-lg me-3" @click="goToLogin">
-                <i class='bx bx-log-in'></i> Bejelentkezés
-              </button>
-              <button class="btn btn-outline-primary btn-lg" @click="goToRegister">
-                <i class='bx bx-user-plus'></i> Regisztráció
-              </button>
+            <div class="feature-item">
+              <div class="feature-icon-container">
+                <div class="icon-wrapper">
+                  <i class='bx bx-chart'></i>
+                </div>
+              </div>
+              <h4>Élő szavazás és statisztika</h4>
+              <p>Indíts szavazásokat és kövesd nyomon az eredményeket részletes statisztikákkal.</p>
+            </div>
+            
+            <div class="feature-item">
+              <div class="feature-icon-container">
+                <div class="icon-wrapper">
+                  <i class='bx bx-bell'></i>
+                </div>
+              </div>
+              <h4>Okos értesítési rendszer</h4>
+              <p>Kapj időben értesítéseket a számodra fontos eseményekről és változásokról.</p>
+            </div>
+            
+            <div class="feature-item">
+              <div class="feature-icon-container">
+                <div class="icon-wrapper">
+                  <i class='bx bx-shield'></i>
+                </div>
+              </div>
+              <h4>Biztonságos környezet</h4>
+              <p>Adataid védelme és biztonságos kommunikáció a legmagasabb szintű titkosítással.</p>
             </div>
           </div>
         </div>
 
-        <!-- Ha már beállította a profilját, de még a MainPage-en van -->
-        <div v-if="profileConfigured && isLoggedIn" class="profile-ready-section">
-          <div class="profile-ready-content">
-            <i class='bx bx-check-circle'></i>
-            <h3>Profilja sikeresen beállítva!</h3>
-            <p>Kattintson az alábbi gombra az események megtekintéséhez.</p>
-            <button class="btn btn-primary mt-3" @click="goToEvents">
-              <i class='bx bx-calendar'></i> Események megtekintése
+        <!-- Profil beállítva üzenet -->
+        <div v-if="profileConfigured && isLoggedIn" class="success-section">
+          <div class="success-card">
+            <div class="success-icon">
+              <i class='bx bx-party'></i>
+            </div>
+            <h3>Profilod kész!</h3>
+            <p>Sikeresen beállítottad a profilodat. Most már teljes mértékben használhatod az EseményTér funkcióit.</p>
+            <button class="btn-primary btn-success" @click="goToEvents">
+              <i class='bx bx-calendar'></i>
+              Események megtekintése
             </button>
+            <div class="success-actions">
+              <button class="btn-text" @click="goToProfile">
+                <i class='bx bx-user'></i>
+                Profil szerkesztése
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </main>
+
+    <!-- Lábléc -->
+    <footer class="main-footer" v-if="!isLoggedIn">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-brand">
+            <div class="footer-logo">
+              <i class='bx bx-calendar-heart'></i>
+              <span>EseményTér</span>
+            </div>
+            <p class="footer-tagline">
+              Az iskolai események digitális otthona
+            </p>
+            <div class="social-links">
+              <a href="#" class="social-link"><i class='bx bxl-facebook'></i></a>
+              <a href="#" class="social-link"><i class='bx bxl-twitter'></i></a>
+              <a href="#" class="social-link"><i class='bx bxl-instagram'></i></a>
+              <a href="#" class="social-link"><i class='bx bxl-linkedin'></i></a>
+            </div>
+          </div>
+          
+          <div class="footer-links">
+            <div class="link-column">
+              <h5>Termék</h5>
+              <a href="#">Funkciók</a>
+              <a href="#">Árak</a>
+              <a href="#">Gyakori kérdések</a>
+            </div>
+            <div class="link-column">
+              <h5>Rólunk</h5>
+              <a href="#">Cégünk</a>
+              <a href="#">Karrier</a>
+              <a href="#">Blog</a>
+            </div>
+            <div class="link-column">
+              <h5>Jogi információk</h5>
+              <a href="/privacy">Adatvédelem</a>
+              <a href="#">Felhasználási feltételek</a>
+              <a href="#">Cookie-k</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="footer-bottom">
+          <p>&copy; 2024 EseményTér. Minden jog fenntartva.</p>
+          <p>Készítve <i class='bx bx-heart'></i> a magyar oktatásért</p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Floating Action Button -->
+    <button v-if="showScrollTop" class="fab" @click="scrollToTop">
+      <i class='bx bx-chevron-up'></i>
+    </button>
   </div>
 </template>
 
@@ -327,8 +422,8 @@ export default {
       isLoggedIn: false,
       user: {
         id: null,
-        name: '',
-        email: '',
+        name: 'Kovács János',
+        email: 'janos.kovacs@example.com',
         role: '',
         school: '',
         class: '',
@@ -336,141 +431,102 @@ export default {
         classId: null
       },
       profileConfigured: false,
+      showUserMenu: false,
+      showScrollTop: false,
       
       selectedRole: '',
-      selectedCounty: '',
-      selectedCity: '',
-      selectedSchool: '',
-      selectedClass: '',
       
-      teacherSchools: [],
-      isClassTeacher: 'no',
-      classTeacherClass: '',
-      
-      newSchool: {
-        name: '',
-        county: '',
-        city: '',
-        district: '',
-        grades: 12,
-        classesPerGrade: 3,
-        type: 'gimnazium'
-      },
-      
-      counties: [
-        { id: 1, name: 'Budapest' },
-        { id: 2, name: 'Bács-Kiskun' },
-        { id: 3, name: 'Baranya' },
-        { id: 4, name: 'Békés' },
-        { id: 5, name: 'Borsod-Abaúj-Zemplén' }
-      ],
-      
-      cities: [
-        { id: 1, name: 'Budapest', county_id: 1 },
-        { id: 2, name: 'Kecskemét', county_id: 2 },
-        { id: 3, name: 'Pécs', county_id: 3 },
-        { id: 4, name: 'Békéscsaba', county_id: 4 },
-        { id: 5, name: 'Miskolc', county_id: 5 }
-      ],
-      
-      schools: [
-        { id: 1, name: 'Kossuth Lajos Gimnázium', city_id: 1, county_id: 1 },
-        { id: 2, name: 'Petőfi Sándor Általános Iskola', city_id: 1, county_id: 1 },
-        { id: 3, name: 'Bolyai János Gimnázium', city_id: 5, county_id: 5 }
-      ],
-      
-      classes: [
-        { id: 1, name: 'A', grade: 9, school_id: 1 },
-        { id: 2, name: 'B', grade: 9, school_id: 1 },
-        { id: 3, name: 'A', grade: 10, school_id: 1 },
-        { id: 4, name: 'B', grade: 10, school_id: 1 }
+      // Minta adatok
+      searchQuery: '',
+      selectedRegionId: null,
+      regions: [
+        { id: 1, title: 'Budapest', cityCount: 1 },
+        { id: 2, title: 'Pest megye', cityCount: 42 },
+        { id: 3, title: 'Bács-Kiskun', cityCount: 28 },
+        { id: 4, title: 'Baranya', cityCount: 17 },
+        { id: 5, title: 'Békés', cityCount: 21 },
+        { id: 6, title: 'Borsod-Abaúj-Zemplén', cityCount: 35 },
+        { id: 7, title: 'Csongrád', cityCount: 16 },
+        { id: 8, title: 'Fejér', cityCount: 22 }
       ]
     }
   },
   
   computed: {
-    filteredCities() {
-      if (!this.selectedCounty) return []
-      return this.cities.filter(city => city.county_id == this.selectedCounty)
+    userInitials() {
+      return this.user.name
+        .split(' ')
+        .map(word => word[0])
+        .join('')
+        .toUpperCase()
+        .substring(0, 2);
     },
     
-    filteredSchools() {
-      if (!this.selectedCity) return []
-      return this.schools.filter(school => school.city_id == this.selectedCity)
+    roleDisplayName() {
+      const roles = {
+        'student': 'Diák',
+        'teacher': 'Tanár',
+        'admin': 'Adminisztrátor'
+      };
+      return roles[this.user.role] || this.user.role;
     },
     
-    filteredClasses() {
-      if (!this.selectedSchool) return []
-      return this.classes.filter(classItem => classItem.school_id == this.selectedSchool)
-    },
-    
-    allSchools() {
-      return this.schools
-    },
-    
-    allClasses() {
-      return this.classes.map(classItem => {
-        const school = this.schools.find(s => s.id === classItem.school_id)
-        return {
-          ...classItem,
-          school: school ? school.name : 'Ismeretlen'
-        }
-      })
-    },
-    
-    isNewSchoolValid() {
-      return this.newSchool.name && this.newSchool.county && this.newSchool.city
+    filteredRegions() {
+      if (!this.searchQuery) return this.regions;
+      return this.regions.filter(region =>
+        region.title.toLowerCase().includes(this.searchQuery.toLowerCase())
+      );
     }
   },
   
   methods: {
-    // Ellenőrizzük a bejelentkezést
     checkLoginStatus() {
       const savedUser = localStorage.getItem('esemenyter_user');
-      
-      if (!savedUser) {
-        this.isLoggedIn = false;
-        this.profileConfigured = false;
-        return;
-      }
-      
-      try {
+      if (savedUser) {
         const userData = JSON.parse(savedUser);
-        
-        if (userData.isLoggedIn === true) {
-          this.user = {
-            id: userData.id || Date.now(),
-            name: userData.name || 'Felhasználó',
-            email: userData.email || '',
-            role: userData.role || '',
-            school: userData.school || '',
-            class: userData.class || '',
-            schoolId: userData.schoolId || null,
-            classId: userData.classId || null
-          };
-          
+        if (userData.isLoggedIn) {
           this.isLoggedIn = true;
+          this.user = { ...this.user, ...userData };
           this.profileConfigured = !!userData.role;
-          
-        } else {
-          this.isLoggedIn = false;
-          this.profileConfigured = false;
-          localStorage.removeItem('esemenyter_user');
         }
-        
-      } catch (error) {
-        localStorage.removeItem('esemenyter_user');
-        this.isLoggedIn = false;
-        this.profileConfigured = false;
       }
     },
     
-    // Navigáció az eseményekhez
-    goToEvents() {
-      this.$router.push('/events-list');
+    toggleUserMenu() {
+      this.showUserMenu = !this.showUserMenu;
     },
     
-    // Navigáció
+    setupStudent() {
+      this.selectedRole = 'student';
+    },
+    
+    setupTeacher() {
+      this.selectedRole = 'teacher';
+    },
+    
+    setupAdmin() {
+      this.selectedRole = 'admin';
+    },
+    
+    nextStep() {
+      // Jelenleg csak demo
+      this.profileConfigured = true;
+      this.user.role = this.selectedRole;
+      this.saveUserData();
+    },
+    
+    saveUserData() {
+      const userData = {
+        ...this.user,
+        isLoggedIn: true
+      };
+      localStorage.setItem('esemenyter_user', JSON.stringify(userData));
+    },
+    
+    selectRegion(region) {
+      this.selectedRegionId = region.id;
+    },
+    
     goToLogin() {
       this.$router.push('/login');
     },
@@ -479,180 +535,82 @@ export default {
       this.$router.push('/register');
     },
     
-    // Diák beállítás
-    setupStudent() {
-      this.selectedRole = 'student';
+    goToEvents() {
+      this.$router.push('/events-list');
     },
     
-    saveStudentSetup() {
-      const selectedSchool = this.schools.find(s => s.id == this.selectedSchool);
-      const selectedClass = this.classes.find(c => c.id == this.selectedClass);
-      
-      this.user.role = 'student';
-      this.user.school = selectedSchool ? selectedSchool.name : 'Ismeretlen';
-      this.user.class = selectedClass ? `${selectedClass.grade}.${selectedClass.name}` : '';
-      this.user.schoolId = this.selectedSchool;
-      this.user.classId = this.selectedClass;
-      
-      const savedUser = JSON.parse(localStorage.getItem('esemenyter_user') || '{}');
-      savedUser.role = 'student';
-      savedUser.school = this.user.school;
-      savedUser.class = this.user.class;
-      savedUser.schoolId = this.user.schoolId;
-      savedUser.classId = this.user.classId;
-      savedUser.isLoggedIn = true;
-      localStorage.setItem('esemenyter_user', JSON.stringify(savedUser));
-      
-      this.profileConfigured = true;
-      this.goToEvents();
+    goToProfile() {
+      this.$router.push('/profile');
     },
     
-    // Tanár beállítás
-    setupTeacher() {
-      this.selectedRole = 'teacher';
-    },
-    
-    toggleTeacherSchool(schoolId) {
-      const index = this.teacherSchools.indexOf(schoolId);
-      if (index === -1) {
-        this.teacherSchools.push(schoolId);
-      } else {
-        this.teacherSchools.splice(index, 1);
-      }
-    },
-    
-    saveTeacherSetup() {
-      const schoolNames = this.schools
-        .filter(s => this.teacherSchools.includes(s.id))
-        .map(s => s.name)
-        .join(', ');
-      
-      this.user.role = 'teacher';
-      this.user.school = schoolNames;
-      this.user.schoolId = this.teacherSchools[0];
-      
-      if (this.isClassTeacher === 'yes' && this.classTeacherClass) {
-        const selectedClass = this.classes.find(c => c.id == this.classTeacherClass);
-        this.user.class = selectedClass ? `${selectedClass.grade}.${selectedClass.name}` : '';
-        this.user.classId = this.classTeacherClass;
-      }
-      
-      const savedUser = JSON.parse(localStorage.getItem('esemenyter_user') || '{}');
-      savedUser.role = 'teacher';
-      savedUser.school = this.user.school;
-      savedUser.class = this.user.class;
-      savedUser.schoolId = this.user.schoolId;
-      savedUser.classId = this.user.classId;
-      savedUser.isLoggedIn = true;
-      localStorage.setItem('esemenyter_user', JSON.stringify(savedUser));
-      
-      this.profileConfigured = true;
-      this.goToEvents();
-    },
-    
-    // Admin beállítás
-    setupAdmin() {
-      this.selectedRole = 'admin';
-    },
-    
-    saveAdminSetup() {
-      const newSchoolId = this.schools.length + 1;
-      this.schools.push({
-        id: newSchoolId,
-        name: this.newSchool.name,
-        city_id: 1,
-        county_id: this.newSchool.county
-      });
-      
-      for (let grade = 1; grade <= this.newSchool.grades; grade++) {
-        for (let i = 0; i < this.newSchool.classesPerGrade; i++) {
-          const className = String.fromCharCode(65 + i);
-          this.classes.push({
-            id: this.classes.length + 1,
-            name: className,
-            grade: grade,
-            school_id: newSchoolId
-          });
-        }
-      }
-      
-      this.user.role = 'admin';
-      this.user.school = this.newSchool.name;
-      this.user.schoolId = newSchoolId;
-      
-      const savedUser = JSON.parse(localStorage.getItem('esemenyter_user') || '{}');
-      savedUser.role = 'admin';
-      savedUser.school = this.user.school;
-      savedUser.schoolId = this.user.schoolId;
-      savedUser.isLoggedIn = true;
-      localStorage.setItem('esemenyter_user', JSON.stringify(savedUser));
-      
-      this.profileConfigured = true;
-      this.goToEvents();
-    },
-    
-    // Segéd függvények
-    loadCities() {
-      this.selectedCity = '';
-      this.selectedSchool = '';
-      this.selectedClass = '';
-    },
-    
-    loadSchools() {
-      this.selectedSchool = '';
-      this.selectedClass = '';
-    },
-    
-    loadClasses() {
-      this.selectedClass = '';
-    },
-    
-    // Kijelentkezés
     logout() {
       localStorage.removeItem('esemenyter_user');
       this.isLoggedIn = false;
-      this.user = {
-        id: null,
-        name: '',
-        email: '',
-        role: '',
-        school: '',
-        class: '',
-        schoolId: null,
-        classId: null
-      };
       this.profileConfigured = false;
-      this.selectedRole = '';
-      window.scrollTo(0, 0);
-      
-      if (this.$route.path !== '/') {
-        this.$router.push('/');
-      }
+      this.showUserMenu = false;
+      this.user.role = '';
+    },
+    
+    scrollToFeatures() {
+      this.$refs.featuresSection?.scrollIntoView({ behavior: 'smooth' });
+    },
+    
+    scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    
+    handleScroll() {
+      this.showScrollTop = window.scrollY > 300;
     }
   },
-
-  created() {
+  
+  mounted() {
     this.checkLoginStatus();
+    window.addEventListener('scroll', this.handleScroll);
+    
+    // Close user menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.user-profile')) {
+        this.showUserMenu = false;
+      }
+    });
+  },
+  
+  beforeUnmount() {
+    window.removeEventListener('scroll', this.handleScroll);
   }
 }
 </script>
 
 <style scoped>
 /* ====================
-   SAJÁT STÍLUSOK
+   ÁLTALÁNOS STÍLUSOK
    ==================== */
-
-/* Fejléc */
-.main-header {
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-  padding: 20px 0;
+.main-page {
   box-sizing: border-box;
-    font-family: "Poppins", sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 99vw;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-family: "Poppins", sans-serif;
+  min-height: 100vh;
+  width: 100vw;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ====================
+   FEJLÉC
+   ==================== */
+.main-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 16px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .header-content {
@@ -661,316 +619,1116 @@ export default {
   align-items: center;
 }
 
-.logo-section h1 {
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.logo-section:hover {
+  opacity: 0.8;
+}
+
+.logo-icon {
+  font-size: 32px;
+  color: #4f46e5;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.logo-text h1 {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 24px;
   font-weight: 700;
-  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .site-subtitle {
   margin: 0;
-  opacity: 0.9;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
 }
 
-/* Szerepkör kártyák */
-.role-cards {
+/* Navigációs gombok */
+.nav-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 50px;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-btn {
+  background: transparent;
+  color: #4f46e5;
+  border: 2px solid #4f46e5;
+}
+
+.login-btn:hover {
+  background: #4f46e5;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+.register-btn {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c73ff 100%);
+  color: white;
+  border: 2px solid transparent;
+}
+
+.register-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+/* Felhasználó profil */
+.user-profile {
+  position: relative;
+}
+
+.user-avatar {
+  cursor: pointer;
+  position: relative;
+}
+
+.avatar-circle {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.user-avatar:hover .avatar-circle {
+  transform: scale(1.05);
+}
+
+.user-status {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.status-dot.online {
+  background: #10b981;
+}
+
+/* Felhasználó menü */
+.user-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  width: 300px;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.menu-header {
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.menu-user-info h4 {
+  margin: 0 0 5px 0;
+  font-size: 18px;
+}
+
+.user-email {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.role-badge.student {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.role-badge.teacher {
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.role-badge.admin {
+  background: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+}
+
+.menu-items {
+  padding: 10px 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  text-align: left;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.menu-item:hover {
+  background: #f3f4f6;
+}
+
+.menu-item i {
+  font-size: 20px;
+  color: #6b7280;
+}
+
+.menu-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 10px 20px;
+}
+
+.logout-btn {
+  color: #ef4444;
+}
+
+.logout-btn i {
+  color: #ef4444;
+}
+
+/* Animációk */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* ====================
+   ÜDVÖZLŐ SZEKCIÓ
+   ==================== */
+.welcome-section {
+  padding: 80px 0;
+}
+
+.hero-container {
+  background: white;
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+}
+
+.hero-content {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-top: 2rem;
+  grid-template-columns: 1fr 1fr;  /* Két egyenlő oszlop */
+  gap: 60px;
+  align-items: center;  /* Vertikálisan középre igazít */
+  min-height: 500px;    /* Minimum magasság */
+  padding: 60px;
+}
+
+.hero-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;  /* Vertikálisan középre igazítja a tartalmat */
+}
+
+.hero-title {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 24px;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-highlight {
+  color: #111827;
+  position: relative;
+  display: inline-block;
+}
+
+.hero-highlight::after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  opacity: 0.3;
+  z-index: -1;
+}
+
+.hero-subtitle {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.hero-description {
+  font-size: 18px;
+  line-height: 1.6;
+  color: #4b5563;
+  margin-bottom: 32px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.btn-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 32px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c73ff 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+}
+
+.btn-secondary {
+  background: white;
+  color: #4f46e5;
+  border: 2px solid #4f46e5;
+}
+
+.btn-secondary:hover {
+  background: #4f46e5;
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.2);
+}
+
+/* Floating cards */
+.floating-cards {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;  /* Teljes magasságot elfoglal */
+  position: relative;
+}
+
+.card {
+  position: absolute;
+  width: 200px;
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.card i {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.card-1 {
+  top: 20%;
+  left: 10%;
+}
+
+.card-2 {
+  top: 30%;
+  right: 15%;
+}
+
+.card-3 {
+  bottom: 10%;
+  left: 20%;
+}
+
+.floating {
+  animation: float 6s ease-in-out infinite;
+}
+
+.delayed {
+  animation-delay: 2s;
+}
+
+.delayed-2 {
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+/* ====================
+   SZEREPKÖR VÁLASZTÁS
+   ==================== */
+.role-selection-section {
+  padding: 80px 0;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.header-icon {
+  font-size: 48px;
+  color: #4f46e5;
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #111827;
+}
+
+.section-subtitle {
+  font-size: 18px;
+  color: #6b7280;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.role-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 30px;
 }
 
 .role-card {
   background: white;
-  border: 2px solid #dee2e6;
-  border-radius: 12px;
-  padding: 2rem;
-  text-align: center;
+  border-radius: 24px;
+  padding: 40px 30px;
+  position: relative;
+  overflow: hidden;
   cursor: pointer;
   transition: all 0.3s ease;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  border: 2px solid transparent;
 }
 
 .role-card:hover {
-  border-color: #4f46e5;
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 
 .role-card.selected {
   border-color: #4f46e5;
-  background: #f8f9ff;
+  box-shadow: 0 20px 40px rgba(79, 70, 229, 0.1);
+}
+
+.card-decoration {
+  position: absolute;
+  top: -50px;
+  right: -50px;
+}
+
+.decoration-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  opacity: 0.1;
+}
+
+.decoration-circle.small {
+  width: 60px;
+  height: 60px;
+  position: absolute;
+  top: 30px;
+  right: 30px;
+}
+
+.role-card.student .decoration-circle {
+  background: #10b981;
+}
+
+.role-card.teacher .decoration-circle {
+  background: #f97316;
+}
+
+.role-card.admin .decoration-circle {
+  background: #8b5cf6;
 }
 
 .role-icon {
-  font-size: 3rem;
-  color: #4f46e5;
-  margin-bottom: 1rem;
+  font-size: 48px;
+  margin-bottom: 24px;
+}
+
+.role-card.student .role-icon {
+  color: #10b981;
+}
+
+.role-card.teacher .role-icon {
+  color: #f97316;
+}
+
+.role-card.admin .role-icon {
+  color: #8b5cf6;
 }
 
 .role-card h3 {
-  margin-bottom: 1rem;
-  color: #333;
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #111827;
 }
 
-.role-card p {
-  color: #666;
-  flex-grow: 1;
+.role-description {
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 24px;
 }
 
-/* Beállítás szekciók */
-.setup-section {
-  background: white;
+.role-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 30px 0;
+}
+
+.role-features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.role-features i {
+  color: #10b981;
+}
+
+.card-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
   border-radius: 12px;
-  padding: 2rem;
-  margin-top: 2rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.school-selection {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 1rem;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-}
-
-.school-option {
-  padding: 1rem;
-  border: 2px solid #dee2e6;
-  border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.school-option:hover {
-  border-color: #adb5bd;
+.card-action-btn:hover {
+  transform: translateX(5px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
 }
 
-.school-option.selected {
-  border-color: #4f46e5;
-  background: #f8f9ff;
-}
-
-/* Kezdőlap */
-.hero-section {
+/* ====================
+   WIZARD
+   ==================== */
+.setup-wizard {
   background: white;
-  border-radius: 20px;
-  padding: 4rem 2rem !important;
-  margin-top: 2rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  margin: 40px 0;
 }
 
-.feature-card {
-  background: #f8f9ff;
-  border-radius: 12px;
-  padding: 2rem;
-  text-align: center;
-  height: 100%;
-  transition: all 0.3s ease;
+.wizard-header {
+  padding: 40px 40px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
 }
 
-.feature-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+.wizard-progress {
+  margin-bottom: 24px;
 }
 
-.feature-card i {
-  font-size: 3rem;
-  color: #4f46e5;
-  margin-bottom: 1rem;
-}
-
-.feature-card h4 {
-  margin-bottom: 1rem;
-  color: #333;
-}
-
-.feature-card p {
-  color: #666;
-  margin: 0;
-}
-
-/* Profil kész üzenet */
-.profile-ready-section {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-}
-
-.profile-ready-content {
-  text-align: center;
-  padding: 3rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-
-.profile-ready-content i {
-  font-size: 60px;
-  color: #28a745;
-  margin-bottom: 20px;
-}
-
-.profile-ready-content h3 {
-  color: #333;
+.progress-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
   margin-bottom: 10px;
 }
 
-.profile-ready-content p {
-  color: #666;
-  margin-bottom: 20px;
+.progress-fill {
+  height: 100%;
+  background: white;
+  border-radius: 3px;
+  transition: width 0.3s ease;
 }
 
-/* Gomb stílusok finomítása */
-.btn-primary {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c73ff 100%);
-  border: none;
-  padding: 0.75rem 1.5rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
+.step-indicators {
+  display: flex;
+  justify-content: space-between;
 }
 
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
-}
-
-.btn-outline-primary {
-  border-color: #4f46e5;
-  color: #4f46e5;
-  font-weight: 600;
-}
-
-.btn-outline-primary:hover {
-  background-color: #4f46e5;
-  color: white;
-}
-
-.btn-outline-danger {
-  border-color: #ef4444;
-  color: #ef4444;
-}
-
-.btn-outline-danger:hover {
-  background-color: #ef4444;
-  color: white;
-}
-
-.btn-sm {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-}
-
-.btn-lg {
-  padding: 0.75rem 1.5rem;
-  font-size: 1.25rem;
-}
-
-/* User section */
-.user-section {
+.step {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
-  gap: 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 0.75rem 1.25rem;
-  border-radius: 8px;
-  backdrop-filter: blur(10px);
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.user-name {
-  font-weight: 600;
+  justify-content: center;
   color: white;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: 14px;
 }
 
-.user-role {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.15);
-  padding: 0.1rem 0.5rem;
-  border-radius: 4px;
-  margin-top: 0.2rem;
-  text-transform: capitalize;
+.step.active {
+  background: white;
+  color: #4f46e5;
 }
 
-/* Form elemek */
-.form-control {
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
+.wizard-header h3 {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.wizard-header p {
+  opacity: 0.9;
+  font-size: 16px;
+}
+
+.wizard-content {
+  padding: 40px;
+}
+
+.step-content {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.step-icon {
+  font-size: 64px;
+  color: #4f46e5;
+  margin-bottom: 24px;
+}
+
+.step-content h4 {
+  font-size: 24px;
+  margin-bottom: 12px;
+  color: #111827;
+}
+
+.step-content p {
+  color: #6b7280;
+  margin-bottom: 32px;
+}
+
+.search-wrapper {
+  position: relative;
+  max-width: 400px;
+  margin: 0 auto 32px;
+}
+
+.search-wrapper i {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 20px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 16px 16px 16px 52px;
+  border: 2px solid #e5e7eb;
+  border-radius: 50px;
+  font-size: 16px;
   transition: all 0.3s ease;
 }
 
-.form-control:focus {
+.search-input:focus {
+  outline: none;
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
-.form-label {
+.suggestions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.suggestion-card {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.suggestion-card:hover {
+  border-color: #4f46e5;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.suggestion-card.selected {
+  border-color: #4f46e5;
+  background: #f8f9ff;
+}
+
+.suggestion-icon {
+  font-size: 24px;
+  color: #4f46e5;
+}
+
+.suggestion-text h5 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
   font-weight: 600;
-  color: #4a5568;
-  margin-bottom: 0.5rem;
+  color: #111827;
 }
 
-/* Reszponzív design */
+.suggestion-text p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.wizard-actions {
+  display: flex;
+  justify-content: space-between;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.btn-outline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: transparent;
+  border: 2px solid #4f46e5;
+  color: #4f46e5;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-outline:hover {
+  background: #4f46e5;
+  color: white;
+}
+
+/* ====================
+   FUNKCIÓK
+   ==================== */
+.features-section {
+  padding: 80px 0;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 32px;
+}
+
+.feature-item {
+  text-align: center;
+  padding: 40px 24px;
+  background: white;
+  border-radius: 24px;
+  transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon-container {
+  margin-bottom: 24px;
+}
+
+.icon-wrapper {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-wrapper i {
+  font-size: 36px;
+  color: white;
+}
+
+.feature-item h4 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #111827;
+}
+
+.feature-item p {
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* ====================
+   SIKER SZEKCIÓ
+   ==================== */
+.success-section {
+  padding: 80px 0;
+}
+
+.success-card {
+  text-align: center;
+  background: white;
+  border-radius: 32px;
+  padding: 60px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+}
+
+.success-icon {
+  font-size: 80px;
+  color: #10b981;
+  margin-bottom: 32px;
+}
+
+.success-card h3 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #111827;
+}
+
+.success-card p {
+  font-size: 18px;
+  color: #6b7280;
+  max-width: 500px;
+  margin: 0 auto 32px;
+  line-height: 1.6;
+}
+
+.btn-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 36px;
+  font-size: 18px;
+}
+
+.success-actions {
+  margin-top: 24px;
+}
+
+.btn-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #4f46e5;
+  font-size: 16px;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.btn-text:hover {
+  color: #7c73ff;
+}
+
+/* ====================
+   LÁBLÉC
+   ==================== */
+.main-footer {
+  background: #111827;
+  color: white;
+  padding: 60px 0 30px;
+}
+
+.footer-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 60px;
+  margin-bottom: 40px;
+}
+
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.footer-tagline {
+  color: #9ca3af;
+  font-size: 16px;
+}
+
+.social-links {
+  display: flex;
+  gap: 16px;
+}
+
+.social-link {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.social-link:hover {
+  background: #4f46e5;
+  transform: translateY(-3px);
+}
+
+.footer-links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.link-column h5 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: white;
+}
+
+.link-column a {
+  display: block;
+  color: #9ca3af;
+  text-decoration: none;
+  margin-bottom: 12px;
+  transition: color 0.3s;
+}
+
+.link-column a:hover {
+  color: #4f46e5;
+}
+
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.footer-bottom i {
+  color: #ef4444;
+}
+
+/* ====================
+   FLOATING ACTION BUTTON
+   ==================== */
+.fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.fab:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+}
+
+/* ====================
+   RESZPONZÍV DESIGN
+   ==================== */
+@media (max-width: 1024px) {
+  .hero-content {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 40px;
+  }
+  
+  .hero-title {
+    font-size: 36px;
+  }
+  
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
 @media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    text-align: center;
-    gap: 1rem;
+  .nav-buttons {
+    display: none;
   }
   
-  .role-cards {
+  .role-cards-grid {
     grid-template-columns: 1fr;
   }
   
-  .hero-section {
-    padding: 2rem 1rem !important;
-  }
-  
-  .cta-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .cta-buttons .btn {
-    width: 100%;
-    margin: 0 !important;
-  }
-  
-  .school-selection {
+  .features-grid {
     grid-template-columns: 1fr;
   }
   
-  .user-section {
-    flex-direction: column;
-    text-align: center;
+  .stats-container {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 40px 20px;
   }
   
-  .user-info {
-    align-items: center;
+  .footer-links {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .footer-bottom {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
   }
 }
 
-/* Animációk */
+@media (max-width: 480px) {
+  .hero-content {
+    padding: 30px 20px;
+  }
+  
+  .hero-title {
+    font-size: 28px;
+  }
+  
+  .hero-actions {
+    flex-direction: column;
+  }
+  
+  .btn-hero {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .stats-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .wizard-content {
+    padding: 30px 20px;
+  }
+  
+  .suggestions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ====================
+   ANIMÁCIÓK
+   ==================== */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.5s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -982,7 +1740,23 @@ export default {
   }
 }
 
-.role-card, .feature-card, .setup-section, .profile-ready-content {
-  animation: fadeIn 0.5s ease-out;
+/* ====================
+   SCROLLBAR
+   ==================== */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a5ba6 100%);
 }
 </style>
