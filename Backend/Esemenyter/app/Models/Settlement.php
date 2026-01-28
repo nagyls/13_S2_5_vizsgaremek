@@ -4,15 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Region extends Model
+class Settlement extends Model
 {
     //
     protected $fillable = [
         'title',
+        'inner_region_id',
     ];
-
-    public function innerregions()
-    {
-        return $this->hasMany(InnerRegion::class);
-    }
 }

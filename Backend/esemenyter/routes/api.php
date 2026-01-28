@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\RegionController;
 
@@ -15,7 +15,11 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/events', [EventController::class, 'store']);
 
 Route::prefix('regions')->group(function () {
-    Route::get('/', [RegionController::class, 'index']); // With search
-    Route::get('/all', [RegionController::class, 'getAll']); // All regions
-    Route::get('/{id}', [RegionController::class, 'show']); // Single region
+    Route::get('/', [RegionController::class, 'regions']); // With search
+    Route::get('/all', [RegionController::class, 'getallregions']); // All regions
+    Route::get('/{id}', [RegionController::class, 'region']); // Single region
+});
+Route::prefix('subregions')->group(function () {
+    Route::get('/', [RegionController::class, 'subregions']); 
+    Route::get('/all', [RegionController::class, 'getallinnerregions']); 
 });

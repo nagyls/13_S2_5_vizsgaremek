@@ -11,4 +11,8 @@ class InnerRegion extends Model
         'title',
         'region_id',
     ];
+    public function settlements()
+    {
+        return $this->hasMany(Settlement::class);
+    }
 }
