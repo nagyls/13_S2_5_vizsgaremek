@@ -85,29 +85,28 @@ export default {
                 const res = await axios.post("http://127.0.0.1:8000/api/register", {
                     username: this.username,
                     email: this.email,
-                    password: this.jelszo
+                    password: this.jelszo,
+                    password_confirmation: this.jelszo_meg
+                    
                 });
 
                 console.log("Backend válasz:", res.data);
 
-                // 3. FONTOS: Felhasználói adatok mentése localStorage-ba
+                // 3. Felhasználói adatok mentése localStorage-ba az API válaszból
                 const userData = {
-                    id: res.data.user?.id || Date.now(),
-                    name: this.username,
-                    email: this.email,
-                    role: '', // Még nincs szerepköre
-                    school: '',
-                    class: '',
-                    schoolId: null,
-                    classId: null,
-                    token: res.data.token || 'reg-token-' + Date.now(),
-                    isLoggedIn: true, // EZ NAGYON FONTOS!
+                    id: res.data.user.id,
+                    name: res.data.user.name,
+                    email: res.data.user.email,
+                    token: res.data.token,
+                    isLoggedIn: true,
                     registeredAt: new Date().toISOString()
                 };
                 
                 // 4. LocalStorage-be mentés
                 localStorage.setItem('esemenyter_user', JSON.stringify(userData));
+                localStorage.setItem('esemenyter_token', res.data.token);
                 console.log("User adatok mentve localStorage-ba:", userData);
+                console.log("Token mentve:", res.data.token);
                 
                 // 5. Sikeres üzenet
                 alert("Sikeres regisztráció! Átirányítás a főoldalra...");
@@ -120,42 +119,11 @@ export default {
             } catch (err) {
                 console.error("Regisztrációs hiba részletei:", err);
                 
-                // 7. Ha nem működik a backend, demo mód
-                if (err.code === 'ERR_NETWORK' || err.message.includes('Network Error')) {
-                    console.log("Backend nem elérhető, offline regisztráció...");
-                    
-                    // Offline user létrehozása
-                    const offlineUserData = {
-                        id: Date.now(),
-                        name: this.username,
-                        email: this.email,
-                        role: '', // Még nincs szerepköre
-                        school: '',
-                        class: '',
-                        schoolId: null,
-                        classId: null,
-                        token: 'offline-token-' + Date.now(),
-                        isLoggedIn: true, // EZ NAGYON FONTOS!
-                        isOffline: true,
-                        registeredAt: new Date().toISOString()
-                    };
-                    
-                    localStorage.setItem('esemenyter_user', JSON.stringify(offlineUserData));
-                    console.log("Offline user mentve:", offlineUserData);
-                    
-                    alert("Offline regisztráció sikeres! Átirányítás...");
-                    
-                    setTimeout(() => {
-                        this.$router.push('/mainpage');
-                    }, 500);
-                    
-                } else {
-                    // Egyéb hiba
-                    const errorMsg = err.response?.data?.message || 
-                                   err.response?.data?.error || 
-                                   "Ismeretlen hiba történt";
-                    alert("Hiba: " + errorMsg);
-                }
+                // Hibaüzenet megjelenítése
+                const errorMsg = err.response?.data?.message || 
+                               err.response?.data?.error || 
+                               "Ismeretlen hiba történt";
+                alert("Hiba: " + errorMsg);
             } finally {
                 this.loading = false;
             }

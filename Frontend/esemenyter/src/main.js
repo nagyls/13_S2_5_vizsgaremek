@@ -6,6 +6,7 @@ import './assets/main.css'
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+import axios from 'axios'
 import Login from './components/Login.vue'
 import Registrate from './components/Registrate.vue'
 import Aszf from './components/Aszf.vue'
@@ -16,6 +17,19 @@ import CommentBox from './components/CommentBox.vue'
 import EventDetails from './components/EventDetails.vue'
 import EventsList from './components/EventsList.vue'
 import './style.css'
+
+// Axios interceptor - automatikusan csatolja a tokent az Authorization header-be
+axios.interceptors.request.use(config => {
+  try {
+    const userData = JSON.parse(localStorage.getItem('esemenyter_user') || '{}');
+    if (userData.token) {
+      config.headers.Authorization = `Bearer ${userData.token}`;
+    }
+  } catch (error) {
+    console.error('Token lekérési hiba:', error);
+  }
+  return config;
+});
 
 const app = createApp(App)
 app.component('login', Login)
