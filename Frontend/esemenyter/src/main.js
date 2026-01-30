@@ -28,5 +28,6 @@ app.component('comment-box', CommentBox)
 app.component('event-details', EventDetails)
 app.component('events-list', EventsList)
 app.use(router)
+
 app.mount('#app')
 

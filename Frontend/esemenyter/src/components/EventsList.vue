@@ -1,62 +1,62 @@
 <template>
   <div class="esemenyek-oldal">
-    <fejlec class="esemenyek-fejlec">
+    <header class="esemenyek-fejlec">
       <div class="kontener">
         <div class="fejlec-tartalom">
-          <gomb class="vissza-gomb" @click="$router.push('/mainpage')">
-            <ikon class='bx bx-arrow-back'></ikon> Főoldal
-          </gomb>
+          <button class="vissza-gomb" @click="$router.push('/mainpage')">
+            <i class='bx bx-arrow-back'></i> Főoldal
+          </button>
           
-          <cim><ikon class='bx bx-calendar'></ikon> Események</cim>
+          <h1><i class='bx bx-calendar'></i> Események</h1>
           
           <div class="felhasznalo-info" v-if="aktualisFelhasznalo">
             <span>{{ aktualisFelhasznalo.nev }}</span>
           </div>
         </div>
       </div>
-    </fejlec>
+    </header>
 
     <main class="esemenyek-tartalom">
       <div class="kontener">
         <div class="szurok-resz">
           <div class="szuro-sor">
             <div class="szuro-csoport">
-              <cimke><ikon class='bx bx-filter-alt'></ikon> Típus:</cimke>
-              <valaszto v-model="szurok.tipus" @change="esemenyekBetoltese">
+              <label><i class='bx bx-filter-alt'></i> Típus:</label>
+              <select v-model="szurok.tipus" @change="esemenyekBetoltese">
                 <option value="">Összes</option>
                 <option value="local">Helyi</option>
                 <option value="global">Globális</option>
-              </valaszto>
+              </select>
             </div>
             
             <div class="szuro-csoport">
-              <cimke><ikon class='bx bx-calendar'></ikon> Állapot:</cimke>
-              <valaszto v-model="szurok.allapot" @change="esemenyekBetoltese">
+              <label><i class='bx bx-calendar'></i> Állapot:</label>
+              <select v-model="szurok.allapot" @change="esemenyekBetoltese">
                 <option value="">Összes</option>
                 <option value="open">Aktív</option>
                 <option value="closed">Lezárt</option>
-              </valaszto>
+              </select>
             </div>
             
             <div class="szuro-csoport">
-              <cimke><ikon class='bx bx-sort'></ikon> Rendezés:</cimke>
-              <valaszto v-model="szurok.rendezes" @change="esemenyekBetoltese">
+              <label><i class='bx bx-sort'></i> Rendezés:</label>
+              <select v-model="szurok.rendezes" @change="esemenyekBetoltese">
                 <option value="newest">Legújabb</option>
                 <option value="oldest">Legrégebbi</option>
                 <option value="start_date">Kezdés dátuma</option>
-              </valaszto>
+              </select>
             </div>
           </div>
         </div>
 
         <div class="esemeny-lista">
           <div v-if="betoltesKozben" class="betoltes">
-            <ikon class='bx bx-loader-circle bx-spin'></ikon>
+            <i class='bx bx-loader-circle bx-spin'></i>
             <p>Események betöltése...</p>
           </div>
           
           <div v-else-if="esemenyek.length === 0" class="nincs-esemeny">
-            <ikon class='bx bx-calendar-x'></ikon>
+            <i class='bx bx-calendar-x'></i>
             <h3>Nincsenek események</h3>
             <p>Még nem hoztak létre eseményeket az iskoládban.</p>
           </div>
@@ -65,8 +65,8 @@
             <div v-for="esemeny in esemenyek" :key="esemeny.id" class="esemeny-kartya">
               <div class="esemeny-fejlec">
                 <div class="esemeny-tipus" :class="esemeny.type">
-                  <ikon class='bx bx-building' v-if="esemeny.type === 'local'"></ikon>
-                  <ikon class='bx bx-world' v-else></ikon>
+                  <i class='bx bx-building' v-if="esemeny.type === 'local'"></i>
+                  <i class='bx bx-world' v-else></i>
                   {{ esemeny.type === 'local' ? 'Helyi' : 'Globális' }}
                 </div>
                 <div class="esemeny-allapot" :class="esemeny.status">
@@ -80,15 +80,15 @@
                 
                 <div class="esemeny-meta">
                   <div class="meta-elem">
-                    <ikon class='bx bx-calendar'></ikon>
+                    <i class='bx bx-calendar'></i>
                     <span>{{ formatDatum(esemeny.start_date) }}</span>
                   </div>
                   <div class="meta-elem">
-                    <ikon class='bx bx-user'></ikon>
+                    <i class='bx bx-user'></i>
                     <span>{{ esemeny.creator_name }}</span>
                   </div>
                   <div class="meta-elem">
-                    <ikon class='bx bx-message-square-detail'></ikon>
+                    <i class='bx bx-message-square-detail'></i>
                     <span>{{ esemeny.comment_count || 0 }} hozzászólás</span>
                   </div>
                 </div>
@@ -99,15 +99,15 @@
                   :to="`/esemenyek/${esemeny.id}`" 
                   class="gomb gomb-primary"
                 >
-                  <ikon class='bx bx-show'></ikon> Részletek
+                  <i class='bx bx-show'></i> Részletek
                 </router-link>
 
                 <div class="esemeny-statisztika">
                   <span class="stat">
-                    <ikon class='bx bx-user-check'></ikon> {{ esemeny.participants || 0 }}
+                    <i class='bx bx-user-check'></i> {{ esemeny.participants || 0 }}
                   </span>
                   <span class="stat">
-                    <ikon class='bx bx-star'></ikon> {{ esemeny.favorites || 0 }}
+                    <i class='bx bx-star'></i> {{ esemeny.favorites || 0 }}
                   </span>
                 </div>
               </div>
@@ -118,7 +118,7 @@
         <div v-if="aktualisFelhasznalo && (aktualisFelhasznalo.role === 'teacher' || aktualisFelhasznalo.role === 'admin')" 
              class="uj-esemeny-gomb">
           <router-link to="/event-creator" class="gomb gomb-siker">
-            <ikon class='bx bx-plus'></ikon> Új esemény létrehozása
+            <i class='bx bx-plus'></i> Új esemény létrehozása
           </router-link>
         </div>
       </div>
@@ -164,13 +164,13 @@ export default {
       try {
         this.betoltesKozben = true;
         
-        // 1.Ellenőrizzük, hogy van-e bejelentkezett felhasználó
+        // 1. Ellenőrizzük, hogy van-e bejelentkezett felhasználó
         if (!this.aktualisFelhasznalo) {
           this.esemenyek = [];
           return;
         }
         
-        // 2.API hívás az eseményekért a szűrőkkel
+        // 2. API hívás az eseményekért a szűrőkkel
         this.esemenyek = await this.apiEsemenyekLekerese();
         
       } catch (hiba) {

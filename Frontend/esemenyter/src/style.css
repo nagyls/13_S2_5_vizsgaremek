@@ -6,4 +6,5 @@ html, body, #app {
 body {
   display: block !important;
   place-items: initial !important;
+  overflow-x: hidden;
 }
