@@ -12,4 +12,14 @@ class Establishment extends Model
         'description',
         'settlements_id',
     ];
+
+    public function students()
+    {
+        return $this->hasMany(Student::class);
+    }
+
+    public function personels()
+    {
+        return $this->hasMany(Personel::class);
+    }
 }
