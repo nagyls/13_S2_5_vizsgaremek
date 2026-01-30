@@ -13,9 +13,14 @@ return new class extends Migration
     {
         Schema::create('establishments', function (Blueprint $table) {
             $table->id();
-            $table->string('title', 255)->nullable();
+            $table->string('title', 255)->unique();
             $table->text('description')->nullable();
-            $table->foreignId('settlements_id')->constrained('settlements')->onDelete('cascade');
+            $table->string('website', 255)->nullable();
+            $table->string('email', 255)->nullable();
+            $table->string('phone', 32)->nullable();
+            $table->string('address', 255)->nullable();
+            $table->boolean('verified')->default(false);
+            $table->foreignId('settlement_id')->constrained('settlements')->onDelete('cascade');
             $table->timestamps();
         });
     }

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('users_id')->constrained('users')->cascadeOnDelete();
             $table->string('name', 255)->nullable();
             $table->integer('grade')->nullable();
-            $table->foreignId('establishments_id')->constrained('establishments')->cascadeOnDelete();
+            $table->foreignId('establishment_id')->constrained('establishments')->cascadeOnDelete();
             $table->timestamp('created_at')->nullable();
         });
     }

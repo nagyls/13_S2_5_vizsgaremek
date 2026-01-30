@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('title', 255)->nullable();
             $table->text('description')->nullable();
             $table->text('content')->nullable();
-            $table->foreignId('users_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date')->nullable();
             $table->enum('status', ['upcoming', 'ongoing', 'ended'])->default('upcoming');

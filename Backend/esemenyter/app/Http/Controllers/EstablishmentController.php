@@ -21,7 +21,12 @@ class EstablishmentController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255', Rule::unique('establishments', 'title')],
             'description' => ['nullable', 'string'],
-            'settlements_id' => ['required', 'exists:settlements,id'],
+            'settlement_id' => ['required', 'exists:settlements,id'],
+            'website' => ['nullable', 'url', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'verified' => ['sometimes', 'boolean'],
         ]);
 
         $establishment = Establishment::create($validated);

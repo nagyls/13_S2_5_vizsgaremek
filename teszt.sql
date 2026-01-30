@@ -2,18 +2,18 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- Clear existing test data
 TRUNCATE TABLE `poll_answers`;
-TRUNCATE TABLE `establishment_requests`;
+TRUNCATE TABLE `poll_options`;
+TRUNCATE TABLE `polls`;
 TRUNCATE TABLE `event_shows`;
 TRUNCATE TABLE `event_messages`;
 TRUNCATE TABLE `event_favourites`;
 TRUNCATE TABLE `event_feedbacks`;
 TRUNCATE TABLE `class_students`;
-TRUNCATE TABLE `poll_options`;
-TRUNCATE TABLE `polls`;
 TRUNCATE TABLE `events`;
 TRUNCATE TABLE `classes`;
 TRUNCATE TABLE `students`;
 TRUNCATE TABLE `personels`;
+TRUNCATE TABLE `establishment_requests`;
 TRUNCATE TABLE `establishments`;
 TRUNCATE TABLE `settlements`;
 TRUNCATE TABLE `inner_regions`;
@@ -41,7 +41,7 @@ INSERT INTO `settlements` (`id`, `inner_region_id`, `title`, `number`, `created_
 (3, 3, 'Debrecen', '4000', NOW(), NOW());
 
 -- Insert establishments
-INSERT INTO `establishments` (`id`, `title`, `description`, `settlements_id`, `created_at`) VALUES
+INSERT INTO `establishments` (`id`, `title`, `description`, `settlement_id`, `created_at`) VALUES
 (1, 'Teszt Általános Iskola', 'Egy teszt általános iskola Budapesten', 1, NOW()),
 (2, 'Gödöllői Gimnázium', 'Teszt gimnázium Gödöllőn', 2, NOW()),
 (3, 'Debreceni Szakközépiskola', 'Teszt szakközépiskola Debrecenben', 3, NOW());
@@ -66,57 +66,57 @@ INSERT INTO `students` (`id`, `alias`, `establishment_id`, `user_id`, `created_a
 (2, 'KK Alias', 2, 3, NOW(), NOW());
 
 -- Insert classes
-INSERT INTO `classes` (`id`, `users_id`, `name`, `grade`, `establishments_id`, `created_at`) VALUES
+INSERT INTO `classes` (`id`, `users_id`, `name`, `grade`, `establishment_id`, `created_at`) VALUES
 (1, 1, '5.A osztály', 5, 1, NOW()),
 (2, 5, '9.B osztály', 9, 2, NOW()),
 (3, 3, '11.C osztály', 11, 3, NOW());
 
 -- Insert class_students
-INSERT INTO `class_students` (`classes_id`, `users_id`, `created_at`, `updated_at`) VALUES
+INSERT INTO `class_students` (`class_id`, `user_id`, `created_at`, `updated_at`) VALUES
 (1, 2, NOW(), NOW()),
 (2, 3, NOW(), NOW());
 
 -- Insert events
-INSERT INTO `events` (`id`, `type`, `title`, `description`, `content`, `users_id`, `start_date`, `end_date`, `status`, `created_at`, `updated_at`) VALUES
+INSERT INTO `events` (`id`, `type`, `title`, `description`, `content`, `user_id`, `start_date`, `end_date`, `status`, `created_at`, `updated_at`) VALUES
 (1, 'local', 'Osztálykirándulás', 'Kirándulás a Budai várba', 'Részletes program: Találkozás a Budavári-palota előtt 10 órakor...', 1, DATE_ADD(NOW(), INTERVAL 7 DAY), DATE_ADD(NOW(), INTERVAL 8 DAY), 'upcoming', NOW(), NOW()),
 (2, 'global', 'Iskolai Farsang', 'Farsangi bál minden diáknak', 'Jelmezverseny és tánc a tornateremben...', 5, DATE_ADD(NOW(), INTERVAL 14 DAY), DATE_ADD(NOW(), INTERVAL 14 DAY), 'upcoming', NOW(), NOW());
 
 -- Insert event_shows
-INSERT INTO `event_shows` (`events_id`, `users_id`, `classes_id`, `created_at`, `updated_at`) VALUES
+INSERT INTO `event_shows` (`event_id`, `user_id`, `class_id`, `created_at`, `updated_at`) VALUES
 (1, 1, 1, NOW(), NOW()),
 (2, 5, 2, NOW(), NOW());
 
 -- Insert polls
-INSERT INTO `polls` (`id`, `events_id`, `title`, `users_id`, `created_at`, `updated_at`) VALUES
+INSERT INTO `polls` (`id`, `event_id`, `title`, `user_id`, `created_at`, `updated_at`) VALUES
 (1, 1, 'Melyik dátum megfelelő?', 1, NOW(), NOW());
 
 -- Insert poll_options
-INSERT INTO `poll_options` (`id`, `polls_id`, `title`, `created_at`, `updated_at`) VALUES
+INSERT INTO `poll_options` (`id`, `poll_id`, `title`, `created_at`, `updated_at`) VALUES
 (1, 1, 'Március 15.', NOW(), NOW()),
 (2, 1, 'Március 22.', NOW(), NOW()),
 (3, 1, 'Március 29.', NOW(), NOW());
 
 -- Insert poll_answers
-INSERT INTO `poll_answers` (`polls_id`, `users_id`, `poll_options_id`) VALUES
+INSERT INTO `poll_answers` (`poll_id`, `user_id`, `poll_options_id`) VALUES
 (1, 2, 1);
 
 -- Insert event_feedbacks
-INSERT INTO `event_feedbacks` (`id`, `events_id`, `answer`, `users_id`, `created_at`, `updated_at`) VALUES
+INSERT INTO `event_feedbacks` (`id`, `event_id`, `answer`, `user_id`, `created_at`, `updated_at`) VALUES
 (1, 1, 'y', 2, NOW(), NOW()),
 (2, 2, 'y', 3, NOW(), NOW());
 
 -- Insert event_messages
-INSERT INTO `event_messages` (`id`, `events_id`, `users_id`, `content`, `created_at`, `updated_at`) VALUES
+INSERT INTO `event_messages` (`id`, `event_id`, `user_id`, `content`, `created_at`, `updated_at`) VALUES
 (1, 1, 2, 'Nagyon várom már!', NOW(), NOW()),
 (2, 1, 1, 'Ne felejtsétek el a csomagokat!', NOW(), NOW());
 
 -- Insert event_favourites
-INSERT INTO `event_favourites` (`id`, `events_id`, `users_id`, `created_at`, `updated_at`) VALUES
+INSERT INTO `event_favourites` (`id`, `event_id`, `user_id`, `created_at`, `updated_at`) VALUES
 (1, 1, 2, NOW(), NOW()),
 (2, 2, 3, NOW(), NOW());
 
 -- Insert establishment_requests
-INSERT INTO `establishment_requests` (`id`, `users_id`, `establishments_id`, `status`, `created_at`, `updated_at`) VALUES
+INSERT INTO `establishment_requests` (`id`, `user_id`, `establishments_id`, `status`, `created_at`, `updated_at`) VALUES
 (1, 4, 1, 'pending', NOW(), NOW());
 
 -- Test credentials and expected results:
