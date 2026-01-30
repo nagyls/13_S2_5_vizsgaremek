@@ -10,7 +10,11 @@ class Establishment extends Model
     protected $fillable = [
         'title',
         'description',
-        'settlements_id',
+        'settlement_id',
+        'website',
+        'email',
+        'phone',
+        'address',
     ];
 
     public function students()

@@ -26,7 +26,6 @@ class EstablishmentController extends Controller
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:32'],
             'address' => ['nullable', 'string', 'max:255'],
-            'verified' => ['sometimes', 'boolean'],
         ]);
 
         $establishment = Establishment::create($validated);

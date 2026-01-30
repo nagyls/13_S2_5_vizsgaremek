@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+
 use App\Models\Region;
 use App\Models\InnerRegion;
+use App\Models\Settlement;
+
 use Illuminate\Http\Request;
 
 class RegionController extends Controller
@@ -52,12 +55,12 @@ class RegionController extends Controller
     }
 
 
-    public function subregions(Request $request)
+    public function innerregions(Request $request)
     {
         $query = InnerRegion::query();
         if ($request->has('search') && !empty($request->search) && $request->has('region_id') && !empty($request->region_id)) {
             $search = $request->search;
-            $query->where('title', 'LIKE', "{$search}%")->having('region_id', '=', "{$request->region_id}");
+            $query->where('title', 'LIKE', "{$search}%")->where('region_id', '=', "{$request->region_id}");
         }
         
         $innerRegions = $query->orderBy('title')->get();
@@ -85,32 +88,32 @@ class RegionController extends Controller
 
     public function settlements(Request $request)
     {
-        $query = Settlements::query();
-        if ($request->has('search') && !empty($request->search) && $request->has('region_id') && !empty($request->region_id)) {
+        $query = Settlement::query();
+        if ($request->has('search') && !empty($request->search) && $request->has('inner_region_id') && !empty($request->inner_region_id)) {
             $search = $request->search;
-            $query->where('title', 'LIKE', "{$search}%")->having('region_id', '=', "{$request->region_id}");
+            $query->where('title', 'LIKE', "{$search}%")->where('inner_region_id', '=', "{$request->inner_region_id}");
         }
         
-        $innerRegions = $query->orderBy('title')->get();
+        $settlements = $query->orderBy('title')->get();
         
         return response()->json([
             'success' => true,
-            'data' => $innerRegions
+            'data' => $settlements
         ]);
     }
     public function getallsettlements(Request $request)
     {
-        $query = Settlements::query();
+        $query = Settlement::query();
 
-        if ($request->has('region_id') && !empty($request->region_id)) {
-            $query->where('region_id', $request->region_id);
+        if ($request->has('inner_region_id') && !empty($request->inner_region_id)) {
+            $query->where('inner_region_id', $request->inner_region_id);
         }
 
-        $innerRegions = $query->orderBy('title')->get();
+        $settlements = $query->orderBy('title')->get();
 
         return response()->json([
             'success' => true,
-            'data' => $innerRegions
+            'data' => $settlements
         ]);
     }
 }
