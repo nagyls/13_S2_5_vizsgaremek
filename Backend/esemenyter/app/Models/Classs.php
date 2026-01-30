@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Classe extends Model
+class Classs extends Model
 {
     //
     protected $fillable = [
@@ -13,4 +13,8 @@ class Classe extends Model
         'grade',
         'establishments_id',
     ];
+    public function getEstablishment()
+    {
+        return $this->belongsTo(Establishment::class);
+    }
 }

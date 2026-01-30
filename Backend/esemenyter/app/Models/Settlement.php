@@ -11,4 +11,8 @@ class Settlement extends Model
         'title',
         'inner_region_id',
     ];
+    public function getInnerRegion()
+    {
+        return $this->belongsTo(InnerRegion::class);
+    }
 }

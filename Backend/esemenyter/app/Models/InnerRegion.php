@@ -15,4 +15,8 @@ class InnerRegion extends Model
     {
         return $this->hasMany(Settlement::class);
     }
+    public function getRegion()
+    {
+        return $this->belongsTo(Region::class);
+    }
 }

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\RegionController;
+use App\Http\Controllers\EstablishmentController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -33,4 +34,5 @@ Route::prefix('subregions')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/event', [EventController::class, 'store']);
+    Route::post('/establishment', [EstablishmentController::class, 'store']);
 });

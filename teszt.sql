@@ -41,7 +41,7 @@ INSERT INTO `settlements` (`id`, `inner_region_id`, `title`, `number`, `created_
 (3, 3, 'Debrecen', '4000', NOW(), NOW());
 
 -- Insert establishments
-INSERT INTO `establishments` (`id`, `title`, `description`, `settlement_id`, `created_at`) VALUES
+INSERT INTO `establishments` (`id`, `title`, `description`, `settlements_id`, `created_at`) VALUES
 (1, 'Teszt Általános Iskola', 'Egy teszt általános iskola Budapesten', 1, NOW()),
 (2, 'Gödöllői Gimnázium', 'Teszt gimnázium Gödöllőn', 2, NOW()),
 (3, 'Debreceni Szakközépiskola', 'Teszt szakközépiskola Debrecenben', 3, NOW());

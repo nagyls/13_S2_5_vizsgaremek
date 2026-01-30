@@ -85,7 +85,7 @@ class RegionController extends Controller
 
     public function settlements(Request $request)
     {
-        $query = InnerRegion::query();
+        $query = Settlements::query();
         if ($request->has('search') && !empty($request->search) && $request->has('region_id') && !empty($request->region_id)) {
             $search = $request->search;
             $query->where('title', 'LIKE', "{$search}%")->having('region_id', '=', "{$request->region_id}");
@@ -100,7 +100,7 @@ class RegionController extends Controller
     }
     public function getallsettlements(Request $request)
     {
-        $query = InnerRegion::query();
+        $query = Settlements::query();
 
         if ($request->has('region_id') && !empty($request->region_id)) {
             $query->where('region_id', $request->region_id);

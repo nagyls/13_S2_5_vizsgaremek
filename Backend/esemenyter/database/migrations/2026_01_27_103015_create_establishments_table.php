@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('title', 255)->nullable();
             $table->text('description')->nullable();
-            $table->foreignId('settlement_id')->constrained('settlements')->onDelete('cascade');
+            $table->foreignId('settlements_id')->constrained('settlements')->onDelete('cascade');
             $table->timestamp('created_at')->nullable();
         });
     }
