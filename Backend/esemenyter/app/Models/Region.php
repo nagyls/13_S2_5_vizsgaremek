@@ -8,6 +8,11 @@ class Region extends Model
 {
     //
     protected $fillable = [
-       
+        'title',
     ];
+
+    public function innerregions()
+    {
+        return $this->hasMany(InnerRegion::class);
+    }
 }

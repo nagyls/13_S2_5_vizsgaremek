@@ -12,4 +12,14 @@ class Student extends Model
         'establishment_id',
         'user_id',
     ];
+
+    public function getUser()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function getEstablishment()
+    {
+        return $this->belongsTo(Establishment::class);
+    }
 }

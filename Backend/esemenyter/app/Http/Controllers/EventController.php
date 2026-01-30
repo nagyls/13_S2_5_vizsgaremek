@@ -3,14 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Event;
 use Carbon\Carbon;
 
 class EventController extends Controller
 {
-    private function determineStatus($start, $end)
+    private function getStatus($start, $end)
     {
         $now = Carbon::now();
 
@@ -24,32 +22,29 @@ class EventController extends Controller
 
         return 'ended';
     }
-    //
+
     public function store(Request $request)
     {
-        $user = auth()->user();
+        $user = $request->user(); 
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
 
         $validated = $request->validate([
             'type' => 'required|in:local,global',
-            'scope_mode' => 'nullable|string',
-            'establishment_ids' => 'required|array',
-            'establishment_ids.*' => 'integer|exists:establishments,id',
-            'class_ids' => 'nullable|array',
-            'class_ids.*' => 'integer|exists:classes,id',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'content' => 'nullable|string',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'establishment_ids' => 'required|array',
+            'establishment_ids.*' => 'integer|exists:establishments,id',
+            'class_ids' => 'nullable|array',
+            'class_ids.*' => 'integer|exists:classes,id',
         ]);
 
-        if ($user->role === 'teacher' && $validated['type'] !== 'local') {
-            return response()->json([
-                'message' => 'Tanár csak helyi eseményt hozhat létre'
-            ], 403);
-        }
-
-        $status = $this->determineStatus(
+        $status = $this->getStatus(
             Carbon::parse($validated['start_date']),
             Carbon::parse($validated['end_date'])
         );
@@ -65,13 +60,9 @@ class EventController extends Controller
             'status' => $status,
         ]);
 
-        $event->establishments()->sync($validated['establishment_ids']);
-        $event->classes()->sync($validated['class_ids'] ?? []);
-
         return response()->json([
             'message' => 'Esemény létrehozva',
             'event' => $event
         ], 201);
     }
-    
 }
