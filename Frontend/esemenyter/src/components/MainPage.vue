@@ -13,7 +13,6 @@
             </div>
           </div>
           
-          <!-- Navigációs gombok -->
           <div v-if="!isLoggedIn" class="nav-buttons">
             <button class="nav-btn login-btn" @click="goToLogin">
               <i class='bx bx-log-in'></i>
@@ -25,7 +24,6 @@
             </button>
           </div>
           
-          <!-- felhasznaloi profil -->
           <div v-else class="user-profile">
             <div class="user-avatar" @click="toggleUserMenu">
               <div class="avatar-circle">
@@ -69,7 +67,6 @@
       </div>
     </header>
 
-    <!-- fo tartalom -->
     <main class="main-content">
       <div class="container">
         <div v-if="!isLoggedIn" class="welcome-section">
@@ -86,7 +83,7 @@
                 <p class="hero-description">
                   Az EseményTér egy olyan platform, ahol tanárok, diákok 
                   zökkenőmentesen együttműködhetnek. <br> Hozz létre eseményeket, szavazzatok közösen, 
-                  vagy egyszerűen tarts naprakészen magad!
+                  vagy egyszerűen tartsd naprakészen magad!
                 </p>
                 <div class="hero-actions">
                   <button class="btn-primary btn-hero" @click="goToRegister">
@@ -122,7 +119,6 @@
           </div>
         </div>
 
-        <!-- Szerepkör kiválasztás (bejelentkezett felhasználónak) -->
         <div v-if="isLoggedIn && !profileConfigured" class="role-selection-section">
           <div class="section-header">
             <div class="header-icon">
@@ -135,7 +131,6 @@
           </div>
           
           <div class="role-cards-grid">
-            <!-- Diák kártya -->
             <div class="role-card student" :class="{ 'selected': selectedRole === 'student' }" 
                  @click="selectedRole = 'student'">
               <div class="card-decoration">
@@ -160,7 +155,6 @@
               </button>
             </div>
             
-            <!-- Tanár kártya -->
             <div class="role-card teacher" :class="{ 'selected': selectedRole === 'teacher' }" 
                  @click="selectedRole = 'teacher'">
               <div class="card-decoration">
@@ -172,12 +166,12 @@
               </div>
               <h3>Tanár</h3>
               <p class="role-description">
-                Hozz létre eseményeket, indíts szavazásokat és koordináld az osztályod tevékenységeit.
+                Hozz létre eseményeket, indíts szavazásokat és koordináld az iskolád tevékenységeit.
               </p>
               <ul class="role-features">
                 <li><i class='bx bx-check'></i> Események létrehozása</li>
                 <li><i class='bx bx-check'></i> Szavazások kezelése</li>
-                <li><i class='bx bx-check'></i> Osztálykoordináció</li>
+                <li><i class='bx bx-check'></i> Iskolakoordináció</li>
               </ul>
               <button v-if="selectedRole === 'teacher'" class="card-action-btn" @click.stop="setupTeacher">
                 <span>Tanárként folytatás</span>
@@ -185,7 +179,6 @@
               </button>
             </div>
             
-            <!-- Admin kártya -->
             <div class="role-card admin" :class="{ 'selected': selectedRole === 'admin' }" 
                  @click="selectedRole = 'admin'">
               <div class="card-decoration">
@@ -218,13 +211,14 @@
             <div class="wizard-header">
               <div class="wizard-progress">
                 <div class="progress-bar">
-                  <div class="progress-fill" :style="{ width: '25%' }"></div>
+                  <div class="progress-fill" :style="{ width: progressWidth }"></div>
                 </div>
                 <div class="step-indicators">
-                  <div class="step active">1</div>
-                  <div class="step">2</div>
-                  <div class="step">3</div>
-                  <div class="step">4</div>
+                  <div class="step" :class="{ 'active': currentStep >= 1 }">1</div>
+                  <div class="step" :class="{ 'active': currentStep >= 2 }">2</div>
+                  <div class="step" :class="{ 'active': currentStep >= 3 }">3</div>
+                  <div class="step" :class="{ 'active': currentStep >= 4 }">4</div>
+                  <div class="step" :class="{ 'active': currentStep >= 5 }">5</div>
                 </div>
               </div>
               <h3>Diák profil beállítása</h3>
@@ -232,7 +226,8 @@
             </div>
             
             <div class="wizard-content">
-              <div class="step-content">
+              <!-- 1. lépés: Régió kiválasztása -->
+              <div v-if="currentStep === 1" class="step-content">
                 <div class="step-icon">
                   <i class='bx bx-map'></i>
                 </div>
@@ -262,19 +257,189 @@
                     </div>
                     <div class="suggestion-text">
                       <h5>{{ region.title }}</h5>
-                      <p>{{ region.cityCount }} település</p>
+                      <p>{{ region.districtCount }} járás</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 2. lépés: Járás kiválasztása -->
+              <div v-if="currentStep === 2" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-map-alt'></i>
+                </div>
+                <h4>Válassz járást</h4>
+                <p>Válaszd ki a járást, ahol a városod található</p>
+                
+                <div class="search-wrapper">
+                  <i class='bx bx-search'></i>
+                  <input 
+                    type="text" 
+                    v-model="districtSearchQuery"
+                    placeholder="Keresd a járásod..."
+                    class="search-input"
+                  />
+                </div>
+                
+                <div class="suggestions-grid">
+                  <div 
+                    v-for="district in filteredDistricts" 
+                    :key="district.id"
+                    class="suggestion-card"
+                    :class="{ 'selected': district.id === selectedDistrictId }"
+                    @click="selectDistrict(district)"
+                  >
+                    <div class="suggestion-icon">
+                      <i class='bx bx-map-pin'></i>
+                    </div>
+                    <div class="suggestion-text">
+                      <h5>{{ district.name }}</h5>
+                      <p>{{ district.cityCount }} város/település</p>
+                    </div>
+                  </div>
+                  <div v-if="filteredDistricts.length === 0" class="no-results">
+                    <i class='bx bx-search-alt'></i>
+                    <p>Nincs találat</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 3. lépés: Város kiválasztása -->
+              <div v-if="currentStep === 3" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-building-house'></i>
+                </div>
+                <h4>Válassz várost</h4>
+                <p>Válaszd ki a várost, ahol az iskolád található</p>
+                
+                <div class="search-wrapper">
+                  <i class='bx bx-search'></i>
+                  <input 
+                    type="text" 
+                    v-model="citySearchQuery"
+                    placeholder="Keresd a városod..."
+                    class="search-input"
+                  />
+                </div>
+                
+                <div class="suggestions-grid">
+                  <div 
+                    v-for="city in filteredCities" 
+                    :key="city.id"
+                    class="suggestion-card"
+                    :class="{ 'selected': city.id === selectedCityId }"
+                    @click="selectCity(city)"
+                  >
+                    <div class="suggestion-icon">
+                      <i class='bx bx-city'></i>
+                    </div>
+                    <div class="suggestion-text">
+                      <h5>{{ city.name }}</h5>
+                      <p>{{ city.schoolCount }} iskola</p>
+                    </div>
+                  </div>
+                  <div v-if="filteredCities.length === 0" class="no-results">
+                    <i class='bx bx-search-alt'></i>
+                    <p>Nincs találat</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 4. lépés: Iskola kiválasztása -->
+              <div v-if="currentStep === 4" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-school'></i>
+                </div>
+                <h4>Válassz iskolát</h4>
+                <p>Válaszd ki az iskoládat a listából</p>
+                
+                <div class="search-wrapper">
+                  <i class='bx bx-search'></i>
+                  <input 
+                    type="text" 
+                    v-model="schoolSearchQuery"
+                    placeholder="Keresd az iskolád..."
+                    class="search-input"
+                  />
+                </div>
+                
+                <div class="suggestions-grid">
+                  <div 
+                    v-for="school in filteredSchools" 
+                    :key="school.id"
+                    class="suggestion-card"
+                    :class="{ 'selected': school.id === selectedSchoolId }"
+                    @click="selectSchool(school)"
+                  >
+                    <div class="suggestion-icon">
+                      <i class='bx bx-book'></i>
+                    </div>
+                    <div class="suggestion-text">
+                      <h5>{{ school.name }}</h5>
+                      <p>{{ school.type }}</p>
+                    </div>
+                  </div>
+                  <div v-if="filteredSchools.length === 0" class="no-results">
+                    <i class='bx bx-search-alt'></i>
+                    <p>Nincs találat</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 5. lépés: Megerősítés -->
+              <div v-if="currentStep === 5" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-check-circle'></i>
+                </div>
+                <h4>Profil beállítása</h4>
+                <p>Ellenőrizd a megadott adatokat és fejezd be a profilod beállítását</p>
+                
+                <div class="confirmation-card">
+                  <div class="confirmation-item">
+                    <i class='bx bx-user'></i>
+                    <div>
+                      <h5>Név</h5>
+                      <p>{{ user.name }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-map'></i>
+                    <div>
+                      <h5>Régió</h5>
+                      <p>{{ selectedRegion?.title }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-map-alt'></i>
+                    <div>
+                      <h5>Járás</h5>
+                      <p>{{ selectedDistrict?.name }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-city'></i>
+                    <div>
+                      <h5>Város</h5>
+                      <p>{{ selectedCity?.name }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-school'></i>
+                    <div>
+                      <h5>Iskola</h5>
+                      <p>{{ selectedSchool?.name }}</p>
                     </div>
                   </div>
                 </div>
               </div>
               
               <div class="wizard-actions">
-                <button class="btn-outline" @click="selectedRole = ''">
+                <button class="btn-outline" @click="prevStep">
                   <i class='bx bx-arrow-back'></i>
-                  Vissza
+                  {{ currentStep === 1 ? 'Vissza' : 'Előző lépés' }}
                 </button>
-                <button class="btn-primary" @click="nextStep" :disabled="!selectedRegionId">
-                  Következő lépés
+                <button class="btn-primary" @click="nextStep" :disabled="!isStepValid">
+                  {{ currentStep === 5 ? 'Profil mentése' : 'Következő lépés' }}
                   <i class='bx bx-chevron-right'></i>
                 </button>
               </div>
@@ -282,7 +447,713 @@
           </div>
         </transition>
 
-        <!-- Funkciók (nem bejelentkezett felhasználóknak) -->
+        <!-- Tanár beállítás -->
+        <transition name="slide-up">
+          <div v-if="selectedRole === 'teacher' && !profileConfigured" class="setup-wizard">
+            <div class="wizard-header">
+              <div class="wizard-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" :style="{ width: teacherProgressWidth }"></div>
+                </div>
+                <div class="step-indicators">
+                  <div class="step" :class="{ 'active': teacherCurrentStep >= 1 }">1</div>
+                  <div class="step" :class="{ 'active': teacherCurrentStep >= 2 }">2</div>
+                  <div class="step" :class="{ 'active': teacherCurrentStep >= 3 }">3</div>
+                  <div class="step" :class="{ 'active': teacherCurrentStep >= 4 }">4</div>
+                  <div class="step" :class="{ 'active': teacherCurrentStep >= 5 }">5</div>
+                  <div class="step" :class="{ 'active': teacherCurrentStep >= 6 }">6</div>
+                </div>
+              </div>
+              <h3>Tanár profil beállítása</h3>
+              <p>Néhány lépésben állítsd be profilodat a teljes funkcionalitás érdekében</p>
+            </div>
+            
+            <div class="wizard-content">
+              <!-- 1. lépés: Régió kiválasztása -->
+              <div v-if="teacherCurrentStep === 1" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-map'></i>
+                </div>
+                <h4>Válassz régiót</h4>
+                <p>Először válaszd ki a régiót, ahol az iskolád található</p>
+                
+                <div class="search-wrapper">
+                  <i class='bx bx-search'></i>
+                  <input 
+                    type="text" 
+                    v-model="teacherSearchQuery"
+                    placeholder="Kezdj el gépelni a régió nevéből..."
+                    class="search-input"
+                  />
+                </div>
+                
+                <div class="suggestions-grid">
+                  <div 
+                    v-for="region in filteredTeacherRegions" 
+                    :key="region.id"
+                    class="suggestion-card"
+                    :class="{ 'selected': region.id === teacherSelectedRegionId }"
+                    @click="teacherSelectRegion(region)"
+                  >
+                    <div class="suggestion-icon">
+                      <i class='bx bx-current-location'></i>
+                    </div>
+                    <div class="suggestion-text">
+                      <h5>{{ region.title }}</h5>
+                      <p>{{ region.districtCount }} járás</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 2. lépés: Járás kiválasztása -->
+              <div v-if="teacherCurrentStep === 2" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-map-alt'></i>
+                </div>
+                <h4>Válassz járást</h4>
+                <p>Válaszd ki a járást, ahol a városod található</p>
+                
+                <div class="search-wrapper">
+                  <i class='bx bx-search'></i>
+                  <input 
+                    type="text" 
+                    v-model="teacherDistrictSearchQuery"
+                    placeholder="Keresd a járásod..."
+                    class="search-input"
+                  />
+                </div>
+                
+                <div class="suggestions-grid">
+                  <div 
+                    v-for="district in filteredTeacherDistricts" 
+                    :key="district.id"
+                    class="suggestion-card"
+                    :class="{ 'selected': district.id === teacherSelectedDistrictId }"
+                    @click="teacherSelectDistrict(district)"
+                  >
+                    <div class="suggestion-icon">
+                      <i class='bx bx-map-pin'></i>
+                    </div>
+                    <div class="suggestion-text">
+                      <h5>{{ district.name }}</h5>
+                      <p>{{ district.cityCount }} város/település</p>
+                    </div>
+                  </div>
+                  <div v-if="filteredTeacherDistricts.length === 0" class="no-results">
+                    <i class='bx bx-search-alt'></i>
+                    <p>Nincs találat</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 3. lépés: Város kiválasztása -->
+              <div v-if="teacherCurrentStep === 3" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-building-house'></i>
+                </div>
+                <h4>Válassz várost</h4>
+                <p>Válaszd ki a várost, ahol az iskolád található</p>
+                
+                <div class="search-wrapper">
+                  <i class='bx bx-search'></i>
+                  <input 
+                    type="text" 
+                    v-model="teacherCitySearchQuery"
+                    placeholder="Keresd a városod..."
+                    class="search-input"
+                  />
+                </div>
+                
+                <div class="suggestions-grid">
+                  <div 
+                    v-for="city in filteredTeacherCities" 
+                    :key="city.id"
+                    class="suggestion-card"
+                    :class="{ 'selected': city.id === teacherSelectedCityId }"
+                    @click="teacherSelectCity(city)"
+                  >
+                    <div class="suggestion-icon">
+                      <i class='bx bx-city'></i>
+                    </div>
+                    <div class="suggestion-text">
+                      <h5>{{ city.name }}</h5>
+                      <p>{{ city.schoolCount }} iskola</p>
+                    </div>
+                  </div>
+                  <div v-if="filteredTeacherCities.length === 0" class="no-results">
+                    <i class='bx bx-search-alt'></i>
+                    <p>Nincs találat</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 4. lépés: Iskola kiválasztása -->
+              <div v-if="teacherCurrentStep === 4" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-school'></i>
+                </div>
+                <h4>Válassz iskolát</h4>
+                <p>Válaszd ki az iskoládat a listából</p>
+                
+                <div class="search-wrapper">
+                  <i class='bx bx-search'></i>
+                  <input 
+                    type="text" 
+                    v-model="teacherSchoolSearchQuery"
+                    placeholder="Keresd az iskolád..."
+                    class="search-input"
+                  />
+                </div>
+                
+                <div class="suggestions-grid">
+                  <div 
+                    v-for="school in filteredTeacherSchools" 
+                    :key="school.id"
+                    class="suggestion-card"
+                    :class="{ 'selected': school.id === teacherSelectedSchoolId }"
+                    @click="teacherSelectSchool(school)"
+                  >
+                    <div class="suggestion-icon">
+                      <i class='bx bx-book'></i>
+                    </div>
+                    <div class="suggestion-text">
+                      <h5>{{ school.name }}</h5>
+                      <p>{{ school.type }}</p>
+                    </div>
+                  </div>
+                  <div v-if="filteredTeacherSchools.length === 0" class="no-results">
+                    <i class='bx bx-search-alt'></i>
+                    <p>Nincs találat</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 5. lépés: Osztályok és osztályfőnöki státusz -->
+              <div v-if="teacherCurrentStep === 5" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-group'></i>
+                </div>
+                <h4>Osztályok és státusz</h4>
+                <p>Add meg, melyik osztály(ok)ban tanítasz és osztályfőnök vagy-e</p>
+                
+                <div class="class-selection">
+                  <!-- Osztályfőnöki státusz -->
+                  <div class="form-group">
+                    <label class="form-label">
+                      <input 
+                        type="checkbox" 
+                        v-model="isClassTeacher"
+                        class="checkbox-input"
+                      />
+                      <span class="checkbox-label">Osztályfőnök vagyok</span>
+                    </label>
+                  </div>
+
+                  <!-- Osztály kiválasztása -->
+                  <div v-if="isClassTeacher" class="form-group">
+                    <h5 class="form-subtitle">Osztályfőnöki osztály</h5>
+                    <div class="class-select">
+                      <select v-model="selectedMainClass" class="select-input">
+                        <option value="">Válassz osztályt...</option>
+                        <option v-for="grade in availableGrades" :value="grade">{{ grade }}. osztály</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Tanított osztályok -->
+                  <div class="form-group">
+                    <h5 class="form-subtitle">Mely osztályokban tanítasz?</h5>
+                    <p class="form-description">Válaszd ki az összes osztályt, ahol tanítasz</p>
+                    
+                    <div class="search-wrapper">
+                      <i class='bx bx-search'></i>
+                      <input 
+                        type="text" 
+                        v-model="classSearchQuery"
+                        placeholder="Keresd az osztályt (pl. 9.A)..."
+                        class="search-input"
+                      />
+                    </div>
+                    
+                    <div class="classes-grid">
+                      <div 
+                        v-for="classItem in filteredClasses" 
+                        :key="classItem.id"
+                        class="class-card"
+                        :class="{ 'selected': selectedClasses.includes(classItem.id) }"
+                        @click="toggleClassSelection(classItem.id)"
+                      >
+                        <div class="class-icon">
+                          <i class='bx bx-chalkboard'></i>
+                        </div>
+                        <div class="class-text">
+                          <h5>{{ classItem.name }}</h5>
+                          <p>{{ classItem.studentCount }} tanuló</p>
+                        </div>
+                        <div class="class-check">
+                          <i class='bx bx-check'></i>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Kiválasztott osztályok -->
+                    <div v-if="selectedClasses.length > 0" class="selected-classes">
+                      <h5>Kiválasztott osztályok:</h5>
+                      <div class="selected-tags">
+                        <span 
+                          v-for="classId in selectedClasses" 
+                          :key="classId"
+                          class="class-tag"
+                        >
+                          {{ getClassName(classId) }}
+                          <button @click="removeClass(classId)" class="tag-remove">
+                            <i class='bx bx-x'></i>
+                          </button>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Speciális tanítási formák -->
+                  <div class="form-group">
+                    <h5 class="form-subtitle">Speciális tanítási formák</h5>
+                    <div class="special-teaching-grid">
+                      <label class="special-option">
+                        <input 
+                          type="checkbox" 
+                          v-model="specialTeaching.specialNeeds"
+                          class="checkbox-input"
+                        />
+                        <span class="checkbox-label">Speciális nevelési igényű tanulók</span>
+                      </label>
+                      <label class="special-option">
+                        <input 
+                          type="checkbox" 
+                          v-model="specialTeaching.talentManagement"
+                          class="checkbox-input"
+                        />
+                        <span class="checkbox-label">Tehetséggondozás</span>
+                      </label>
+                      <label class="special-option">
+                        <input 
+                          type="checkbox" 
+                          v-model="specialTeaching.extraCurricular"
+                          class="checkbox-input"
+                        />
+                        <span class="checkbox-label">Szakkör vezetése</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 6. lépés: Megerősítés -->
+              <div v-if="teacherCurrentStep === 6" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-check-circle'></i>
+                </div>
+                <h4>Profil beállítása</h4>
+                <p>Ellenőrizd a megadott adatokat és fejezd be a profilod beállítását</p>
+                
+                <div class="confirmation-card">
+                  <div class="confirmation-item">
+                    <i class='bx bx-user'></i>
+                    <div>
+                      <h5>Név</h5>
+                      <p>{{ user.name }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-school'></i>
+                    <div>
+                      <h5>Iskola</h5>
+                      <p>{{ teacherSelectedSchool?.name }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-crown'></i>
+                    <div>
+                      <h5>Osztályfőnöki státusz</h5>
+                      <p>{{ isClassTeacher ? 'Osztályfőnök' : 'Nem osztályfőnök' }}</p>
+                    </div>
+                  </div>
+                  <div v-if="isClassTeacher && selectedMainClass" class="confirmation-item">
+                    <i class='bx bx-chalkboard'></i>
+                    <div>
+                      <h5>Osztályfőnöki osztály</h5>
+                      <p>{{ selectedMainClass }}. osztály</p>
+                    </div>
+                  </div>
+                  <div v-if="selectedClasses.length > 0" class="confirmation-item">
+                    <i class='bx bx-group'></i>
+                    <div>
+                      <h5>Tanított osztályok</h5>
+                      <div class="classes-summary">
+                        <span 
+                          v-for="classId in selectedClasses" 
+                          :key="classId"
+                          class="class-summary-tag"
+                        >
+                          {{ getClassName(classId) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="hasSpecialTeaching" class="confirmation-item">
+                    <i class='bx bx-star'></i>
+                    <div>
+                      <h5>Speciális feladatok</h5>
+                      <div class="special-summary">
+                        <span v-if="specialTeaching.specialNeeds">Speciális nevelés</span>
+                        <span v-if="specialTeaching.talentManagement">Tehetséggondozás</span>
+                        <span v-if="specialTeaching.extraCurricular">Szakkör vezetés</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="wizard-actions">
+                <button class="btn-outline" @click="teacherPrevStep">
+                  <i class='bx bx-arrow-back'></i>
+                  {{ teacherCurrentStep === 1 ? 'Vissza' : 'Előző lépés' }}
+                </button>
+                <button class="btn-primary" @click="teacherNextStep" :disabled="!isTeacherStepValid">
+                  {{ teacherCurrentStep === 6 ? 'Profil mentése' : 'Következő lépés' }}
+                  <i class='bx bx-chevron-right'></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Admin beállítás -->
+        <transition name="slide-up">
+          <div v-if="selectedRole === 'admin' && !profileConfigured" class="setup-wizard">
+            <div class="wizard-header">
+              <div class="wizard-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" :style="{ width: adminProgressWidth }"></div>
+                </div>
+                <div class="step-indicators">
+                  <div class="step" :class="{ 'active': adminCurrentStep >= 1 }">1</div>
+                  <div class="step" :class="{ 'active': adminCurrentStep >= 2 }">2</div>
+                  <div class="step" :class="{ 'active': adminCurrentStep >= 3 }">3</div>
+                  <div class="step" :class="{ 'active': adminCurrentStep >= 4 }">4</div>
+                  <div class="step" :class="{ 'active': adminCurrentStep >= 5 }">5</div>
+                </div>
+              </div>
+              <h3>Iskola regisztrálása</h3>
+              <p>Regisztrálj egy új iskolát a rendszerbe</p>
+            </div>
+            
+            <div class="wizard-content">
+              <!-- 1. lépés: Régió kiválasztása -->
+              <div v-if="adminCurrentStep === 1" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-map'></i>
+                </div>
+                <h4>Válassz régiót</h4>
+                <p>Először válaszd ki a régiót, ahol az iskola található</p>
+                
+                <div class="search-wrapper">
+                  <i class='bx bx-search'></i>
+                  <input 
+                    type="text" 
+                    v-model="adminSearchQuery"
+                    placeholder="Kezdj el gépelni a régió nevéből..."
+                    class="search-input"
+                  />
+                </div>
+                
+                <div class="suggestions-grid">
+                  <div 
+                    v-for="region in filteredAdminRegions" 
+                    :key="region.id"
+                    class="suggestion-card"
+                    :class="{ 'selected': region.id === adminSelectedRegionId }"
+                    @click="adminSelectRegion(region)"
+                  >
+                    <div class="suggestion-icon">
+                      <i class='bx bx-current-location'></i>
+                    </div>
+                    <div class="suggestion-text">
+                      <h5>{{ region.title }}</h5>
+                      <p>{{ region.districtCount }} járás</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 2. lépés: Járás kiválasztása -->
+              <div v-if="adminCurrentStep === 2" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-map-alt'></i>
+                </div>
+                <h4>Válassz járást</h4>
+                <p>Válaszd ki a járást, ahol a város található</p>
+                
+                <div class="search-wrapper">
+                  <i class='bx bx-search'></i>
+                  <input 
+                    type="text" 
+                    v-model="adminDistrictSearchQuery"
+                    placeholder="Keresd a járást..."
+                    class="search-input"
+                  />
+                </div>
+                
+                <div class="suggestions-grid">
+                  <div 
+                    v-for="district in filteredAdminDistricts" 
+                    :key="district.id"
+                    class="suggestion-card"
+                    :class="{ 'selected': district.id === adminSelectedDistrictId }"
+                    @click="adminSelectDistrict(district)"
+                  >
+                    <div class="suggestion-icon">
+                      <i class='bx bx-map-pin'></i>
+                    </div>
+                    <div class="suggestion-text">
+                      <h5>{{ district.name }}</h5>
+                      <p>{{ district.cityCount }} város/település</p>
+                    </div>
+                  </div>
+                  <div v-if="filteredAdminDistricts.length === 0" class="no-results">
+                    <i class='bx bx-search-alt'></i>
+                    <p>Nincs találat</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 3. lépés: Város kiválasztása -->
+              <div v-if="adminCurrentStep === 3" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-building-house'></i>
+                </div>
+                <h4>Válassz várost</h4>
+                <p>Válaszd ki a várost, ahol az iskola található</p>
+                
+                <div class="search-wrapper">
+                  <i class='bx bx-search'></i>
+                  <input 
+                    type="text" 
+                    v-model="adminCitySearchQuery"
+                    placeholder="Keresd a várost..."
+                    class="search-input"
+                  />
+                </div>
+                
+                <div class="suggestions-grid">
+                  <div 
+                    v-for="city in filteredAdminCities" 
+                    :key="city.id"
+                    class="suggestion-card"
+                    :class="{ 'selected': city.id === adminSelectedCityId }"
+                    @click="adminSelectCity(city)"
+                  >
+                    <div class="suggestion-icon">
+                      <i class='bx bx-city'></i>
+                    </div>
+                    <div class="suggestion-text">
+                      <h5>{{ city.name }}</h5>
+                      <p>{{ city.schoolCount }} iskola</p>
+                    </div>
+                  </div>
+                  <div v-if="filteredAdminCities.length === 0" class="no-results">
+                    <i class='bx bx-search-alt'></i>
+                    <p>Nincs találat</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 4. lépés: Iskola adatainak megadása -->
+              <div v-if="adminCurrentStep === 4" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-school'></i>
+                </div>
+                <h4>Iskola adatai</h4>
+                <p>Add meg az iskola részletes adatait</p>
+                
+                <div class="school-form">
+                  <div class="form-group">
+                    <label class="form-label">
+                      <span>Iskola neve *</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      v-model="schoolForm.name"
+                      placeholder="Pl.: Kossuth Lajos Általános Iskola"
+                      class="form-input"
+                      :class="{ 'error': schoolFormErrors.name }"
+                    />
+                    <span v-if="schoolFormErrors.name" class="error-message">{{ schoolFormErrors.name }}</span>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label class="form-label">
+                      <span>Rövid leírás *</span>
+                    </label>
+                    <textarea 
+                      v-model="schoolForm.description"
+                      placeholder="Rövid leírás az iskoláról..."
+                      class="form-textarea"
+                      :class="{ 'error': schoolFormErrors.description }"
+                      rows="4"
+                    ></textarea>
+                    <span v-if="schoolFormErrors.description" class="error-message">{{ schoolFormErrors.description }}</span>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label class="form-label">
+                      <span>Iskola címe *</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      v-model="schoolForm.address"
+                      placeholder="Pl.: Fő út 1."
+                      class="form-input"
+                      :class="{ 'error': schoolFormErrors.address }"
+                    />
+                    <span v-if="schoolFormErrors.address" class="error-message">{{ schoolFormErrors.address }}</span>
+                  </div>
+                  
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">
+                        <span>Telefonszám</span>
+                      </label>
+                      <input 
+                        type="tel" 
+                        v-model="schoolForm.phone"
+                        placeholder="Pl.: +36 1 234 5678"
+                        class="form-input"
+                      />
+                    </div>
+                    
+                    <div class="form-group">
+                      <label class="form-label">
+                        <span>Email cím</span>
+                      </label>
+                      <input 
+                        type="email" 
+                        v-model="schoolForm.email"
+                        placeholder="Pl.: info@iskola.edu.hu"
+                        class="form-input"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label class="form-label">
+                      <span>Weboldal</span>
+                    </label>
+                    <input 
+                      type="url" 
+                      v-model="schoolForm.website"
+                      placeholder="Pl.: https://www.iskola.edu.hu"
+                      class="form-input"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 5. lépés: Megerősítés -->
+              <div v-if="adminCurrentStep === 5" class="step-content">
+                <div class="step-icon">
+                  <i class='bx bx-check-circle'></i>
+                </div>
+                <h4>Megerősítés</h4>
+                <p>Ellenőrizd az iskola adatait és fejezd be a regisztrációt</p>
+                
+                <div class="confirmation-card">
+                  <div class="confirmation-item">
+                    <i class='bx bx-map'></i>
+                    <div>
+                      <h5>Régió</h5>
+                      <p>{{ adminSelectedRegion?.title }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-map-alt'></i>
+                    <div>
+                      <h5>Járás</h5>
+                      <p>{{ adminSelectedDistrict?.name }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-city'></i>
+                    <div>
+                      <h5>Város</h5>
+                      <p>{{ adminSelectedCity?.name || adminNewCityName }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-school'></i>
+                    <div>
+                      <h5>Iskola neve</h5>
+                      <p>{{ schoolForm.name }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-note'></i>
+                    <div>
+                      <h5>Leírás</h5>
+                      <p class="description-text">{{ schoolForm.description }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-map-pin'></i>
+                    <div>
+                      <h5>Cím</h5>
+                      <p>{{ schoolForm.address }}</p>
+                    </div>
+                  </div>
+                  <div v-if="schoolForm.director" class="confirmation-item">
+                    <i class='bx bx-user'></i>
+                    <div>
+                      <h5>Igazgató</h5>
+                      <p>{{ schoolForm.director }}</p>
+                    </div>
+                  </div>
+                  <div v-if="schoolForm.phone" class="confirmation-item">
+                    <i class='bx bx-phone'></i>
+                    <div>
+                      <h5>Telefonszám</h5>
+                      <p>{{ schoolForm.phone }}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="admin-agreement">
+                  <label class="form-label">
+                    <input 
+                      type="checkbox" 
+                      v-model="adminAgreement"
+                      class="checkbox-input"
+                    />
+                    <span class="checkbox-label">
+                      Elfogadom, hogy az iskola adatait hozzáadom a rendszerhez és vállalom a felelősséget a helyes adatok megadásáért.
+                    </span>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="wizard-actions">
+                <button class="btn-outline" @click="adminPrevStep">
+                  <i class='bx bx-arrow-back'></i>
+                  {{ adminCurrentStep === 1 ? 'Vissza' : 'Előző lépés' }}
+                </button>
+                <button class="btn-primary" @click="adminNextStep" :disabled="!isAdminStepValid">
+                  {{ adminCurrentStep === 5 ? 'Iskola regisztrálása' : 'Következő lépés' }}
+                  <i class='bx bx-chevron-right'></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </transition>
+
         <div v-if="!isLoggedIn" ref="featuresSection" class="features-section">
           <div class="section-header">
             <h2>Miért válassz minket?</h2>
@@ -334,7 +1205,6 @@
           </div>
         </div>
 
-        <!-- Profil beállítva üzenet -->
         <div v-if="profileConfigured && isLoggedIn" class="success-section">
           <div class="success-card">
             <div class="success-icon">
@@ -357,7 +1227,6 @@
       </div>
     </main>
 
-    <!-- Lábléc -->
     <footer class="main-footer" v-if="!isLoggedIn">
       <div class="container">
         <div class="footer-content">
@@ -394,7 +1263,6 @@
               <h5>Jogi információk</h5>
               <a href="/privacy">Adatvédelem</a>
               <a href="#">Felhasználási feltételek</a>
-              <a href="#">Cookie-k</a>
             </div>
           </div>
         </div>
@@ -406,7 +1274,6 @@
       </div>
     </footer>
 
-    <!-- Floating Action Button -->
     <button v-if="showScrollTop" class="fab" @click="scrollToTop">
       <i class='bx bx-chevron-up'></i>
     </button>
@@ -425,10 +1292,15 @@ export default {
         name: 'Kovács János',
         email: 'janos.kovacs@example.com',
         role: '',
+        region: '',
+        district: '',
+        city: '',
         school: '',
-        class: '',
         schoolId: null,
-        classId: null
+        isClassTeacher: false,
+        mainClass: '',
+        teachingClasses: [],
+        specialTeaching: {}
       },
       profileConfigured: false,
       showUserMenu: false,
@@ -436,19 +1308,109 @@ export default {
       
       selectedRole: '',
       
-      // Minta adatok
+      // Diák beállítás adatai
+      currentStep: 1,
       searchQuery: '',
+      districtSearchQuery: '',
+      citySearchQuery: '',
+      schoolSearchQuery: '',
       selectedRegionId: null,
+      selectedDistrictId: null,
+      selectedCityId: null,
+      selectedSchoolId: null,
+      
+      // Tanár beállítás adatai
+      teacherCurrentStep: 1,
+      teacherSearchQuery: '',
+      teacherDistrictSearchQuery: '',
+      teacherCitySearchQuery: '',
+      teacherSchoolSearchQuery: '',
+      teacherSelectedRegionId: null,
+      teacherSelectedDistrictId: null,
+      teacherSelectedCityId: null,
+      teacherSelectedSchoolId: null,
+      isClassTeacher: false,
+      selectedMainClass: '',
+      selectedClasses: [],
+      classSearchQuery: '',
+      availableGrades: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+      schoolClasses: [
+        { id: 101, name: '9.A', grade: 9, studentCount: 28 },
+        { id: 102, name: '9.B', grade: 9, studentCount: 25 },
+        { id: 103, name: '9.C', grade: 9, studentCount: 30 },
+        { id: 104, name: '10.A', grade: 10, studentCount: 27 },
+        { id: 105, name: '10.B', grade: 10, studentCount: 26 },
+        { id: 106, name: '11.A', grade: 11, studentCount: 24 },
+        { id: 107, name: '11.B', grade: 11, studentCount: 29 },
+        { id: 108, name: '12.A', grade: 12, studentCount: 22 },
+        { id: 109, name: '12.B', grade: 12, studentCount: 25 },
+        { id: 110, name: '5.A', grade: 5, studentCount: 20 },
+        { id: 111, name: '5.B', grade: 5, studentCount: 22 },
+        { id: 112, name: '6.A', grade: 6, studentCount: 24 },
+        { id: 113, name: '6.B', grade: 6, studentCount: 23 },
+        { id: 114, name: '7.A', grade: 7, studentCount: 26 },
+        { id: 115, name: '7.B', grade: 7, studentCount: 25 },
+        { id: 116, name: '8.A', grade: 8, studentCount: 27 },
+        { id: 117, name: '8.B', grade: 8, studentCount: 28 },
+      ],
+      specialTeaching: {
+        specialNeeds: false,
+        talentManagement: false,
+        extraCurricular: false
+      },
+      
+      // Admin beállítás adatai
+      adminCurrentStep: 1,
+      adminSearchQuery: '',
+      adminDistrictSearchQuery: '',
+      adminCitySearchQuery: '',
+      adminSelectedRegionId: null,
+      adminSelectedDistrictId: null,
+      adminSelectedCityId: null,
+      adminNewCityName: '',
+      adminNewCityZip: '',
+      adminNewCityError: '',
+      showAddCityModal: false,
+      schoolForm: {
+        name: '',
+        description: '',
+        type: '',
+        foundedYear: '',
+        address: '',
+        phone: '',
+        email: '',
+        website: '',
+        director: '',
+        hasDormitory: false
+      },
+      schoolFormErrors: {},
+      adminAgreement: false,
+      
+      // Közös adatlisták
       regions: [
-        { id: 1, title: 'Budapest', cityCount: 1 },
-        { id: 2, title: 'Pest megye', cityCount: 42 },
-        { id: 3, title: 'Bács-Kiskun', cityCount: 28 },
-        { id: 4, title: 'Baranya', cityCount: 17 },
-        { id: 5, title: 'Békés', cityCount: 21 },
-        { id: 6, title: 'Borsod-Abaúj-Zemplén', cityCount: 35 },
-        { id: 7, title: 'Csongrád', cityCount: 16 },
-        { id: 8, title: 'Fejér', cityCount: 22 }
-      ]
+        { id: 1, title: 'Budapest', districtCount: 0 },
+        { id: 2, title: 'Pest megye', districtCount: 18 },
+        { id: 3, title: 'Bács-Kiskun', districtCount: 11 },
+        { id: 4, title: 'Baranya', districtCount: 10 },
+        { id: 5, title: 'Békés', districtCount: 9 },
+        { id: 6, title: 'Borsod-Abaúj-Zemplén', districtCount: 16 },
+        { id: 7, title: 'Csongrád', districtCount: 7 },
+        { id: 8, title: 'Fejér', districtCount: 8 }
+      ],
+      
+      // Diák adatai
+      districts: [],
+      cities: [],
+      schools: [],
+      
+      // Tanár adatai
+      teacherDistricts: [],
+      teacherCities: [],
+      teacherSchools: [],
+      
+      // Admin adatai
+      adminDistricts: [],
+      adminCities: []
     }
   },
   
@@ -471,11 +1433,198 @@ export default {
       return roles[this.user.role] || this.user.role;
     },
     
+    // Diák kiválasztott elemek
+    selectedRegion() {
+      return this.regions.find(r => r.id === this.selectedRegionId);
+    },
+    
+    selectedDistrict() {
+      return this.districts.find(d => d.id === this.selectedDistrictId);
+    },
+    
+    selectedCity() {
+      return this.cities.find(c => c.id === this.selectedCityId);
+    },
+    
+    selectedSchool() {
+      return this.schools.find(s => s.id === this.selectedSchoolId);
+    },
+    
+    // Tanár kiválasztott elemek
+    teacherSelectedRegion() {
+      return this.regions.find(r => r.id === this.teacherSelectedRegionId);
+    },
+    
+    teacherSelectedDistrict() {
+      return this.teacherDistricts.find(d => d.id === this.teacherSelectedDistrictId);
+    },
+    
+    teacherSelectedCity() {
+      return this.teacherCities.find(c => c.id === this.teacherSelectedCityId);
+    },
+    
+    teacherSelectedSchool() {
+      return this.teacherSchools.find(s => s.id === this.teacherSelectedSchoolId);
+    },
+    
+    // Admin kiválasztott elemek
+    adminSelectedRegion() {
+      return this.regions.find(r => r.id === this.adminSelectedRegionId);
+    },
+    
+    adminSelectedDistrict() {
+      return this.adminDistricts.find(d => d.id === this.adminSelectedDistrictId);
+    },
+    
+    adminSelectedCity() {
+      return this.adminCities.find(c => c.id === this.adminSelectedCityId);
+    },
+    
+    // Osztályok szűrt listája
+    filteredClasses() {
+      if (!this.classSearchQuery) return this.schoolClasses;
+      const query = this.classSearchQuery.toLowerCase();
+      return this.schoolClasses.filter(classItem =>
+        classItem.name.toLowerCase().includes(query) ||
+        classItem.grade.toString().includes(query)
+      );
+    },
+    
+    // Van-e speciális tanítási forma
+    hasSpecialTeaching() {
+      return this.specialTeaching.specialNeeds || 
+             this.specialTeaching.talentManagement || 
+             this.specialTeaching.extraCurricular;
+    },
+    
+    // Diák szűrt listák
     filteredRegions() {
       if (!this.searchQuery) return this.regions;
       return this.regions.filter(region =>
         region.title.toLowerCase().includes(this.searchQuery.toLowerCase())
       );
+    },
+    
+    filteredDistricts() {
+      if (!this.districtSearchQuery) return this.districts;
+      return this.districts.filter(district =>
+        district.name.toLowerCase().includes(this.districtSearchQuery.toLowerCase())
+      );
+    },
+    
+    filteredCities() {
+      if (!this.citySearchQuery) return this.cities;
+      return this.cities.filter(city =>
+        city.name.toLowerCase().includes(this.citySearchQuery.toLowerCase())
+      );
+    },
+    
+    filteredSchools() {
+      if (!this.schoolSearchQuery) return this.schools;
+      return this.schools.filter(school =>
+        school.name.toLowerCase().includes(this.schoolSearchQuery.toLowerCase()) ||
+        school.type.toLowerCase().includes(this.schoolSearchQuery.toLowerCase())
+      );
+    },
+    
+    // Tanár szűrt listák
+    filteredTeacherRegions() {
+      if (!this.teacherSearchQuery) return this.regions;
+      return this.regions.filter(region =>
+        region.title.toLowerCase().includes(this.teacherSearchQuery.toLowerCase())
+      );
+    },
+    
+    filteredTeacherDistricts() {
+      if (!this.teacherDistrictSearchQuery) return this.teacherDistricts;
+      return this.teacherDistricts.filter(district =>
+        district.name.toLowerCase().includes(this.teacherDistrictSearchQuery.toLowerCase())
+      );
+    },
+    
+    filteredTeacherCities() {
+      if (!this.teacherCitySearchQuery) return this.teacherCities;
+      return this.teacherCities.filter(city =>
+        city.name.toLowerCase().includes(this.teacherCitySearchQuery.toLowerCase())
+      );
+    },
+    
+    filteredTeacherSchools() {
+      if (!this.teacherSchoolSearchQuery) return this.teacherSchools;
+      return this.teacherSchools.filter(school =>
+        school.name.toLowerCase().includes(this.teacherSchoolSearchQuery.toLowerCase()) ||
+        school.type.toLowerCase().includes(this.teacherSchoolSearchQuery.toLowerCase())
+      );
+    },
+    
+    // Admin szűrt listák
+    filteredAdminRegions() {
+      if (!this.adminSearchQuery) return this.regions;
+      return this.regions.filter(region =>
+        region.title.toLowerCase().includes(this.adminSearchQuery.toLowerCase())
+      );
+    },
+    
+    filteredAdminDistricts() {
+      if (!this.adminDistrictSearchQuery) return this.adminDistricts;
+      return this.adminDistricts.filter(district =>
+        district.name.toLowerCase().includes(this.adminDistrictSearchQuery.toLowerCase())
+      );
+    },
+    
+    filteredAdminCities() {
+      if (!this.adminCitySearchQuery) return this.adminCities;
+      return this.adminCities.filter(city =>
+        city.name.toLowerCase().includes(this.adminCitySearchQuery.toLowerCase())
+      );
+    },
+    
+    // Progress barok
+    progressWidth() {
+      return `${(this.currentStep / 5) * 100}%`;
+    },
+    
+    teacherProgressWidth() {
+      return `${(this.teacherCurrentStep / 6) * 100}%`;
+    },
+    
+    adminProgressWidth() {
+      return `${(this.adminCurrentStep / 5) * 100}%`;
+    },
+    
+    // Validációs ellenőrzések
+    isStepValid() {
+      switch (this.currentStep) {
+        case 1: return !!this.selectedRegionId;
+        case 2: return !!this.selectedDistrictId;
+        case 3: return !!this.selectedCityId;
+        case 4: return !!this.selectedSchoolId;
+        case 5: return true;
+        default: return false;
+      }
+    },
+    
+    isTeacherStepValid() {
+      switch (this.teacherCurrentStep) {
+        case 1: return !!this.teacherSelectedRegionId;
+        case 2: return !!this.teacherSelectedDistrictId;
+        case 3: return !!this.teacherSelectedCityId;
+        case 4: return !!this.teacherSelectedSchoolId;
+        case 5: return this.selectedClasses.length > 0;
+        case 6: return true;
+        default: return false;
+      }
+    },
+    
+    isAdminStepValid() {
+      switch (this.adminCurrentStep) {
+        case 1: return !!this.adminSelectedRegionId;
+        case 2: return !!this.adminSelectedDistrictId;
+        case 3: return !!this.adminSelectedCityId || this.adminNewCityName;
+        case 4: return this.validateSchoolForm();
+        case 5: return this.adminAgreement;
+        default: return false;
+      }
     }
   },
   
@@ -496,22 +1645,539 @@ export default {
       this.showUserMenu = !this.showUserMenu;
     },
     
+    // Diák beállítás
     setupStudent() {
       this.selectedRole = 'student';
+      this.currentStep = 1;
+      this.resetStudentSetup();
     },
     
+    // Tanár beállítás
     setupTeacher() {
       this.selectedRole = 'teacher';
+      this.teacherCurrentStep = 1;
+      this.resetTeacherSetup();
     },
     
+    // Admin beállítás
     setupAdmin() {
       this.selectedRole = 'admin';
+      this.adminCurrentStep = 1;
+      this.resetAdminSetup();
     },
     
+    // Diák lépésenkénti navigáció
     nextStep() {
-      // Jelenleg csak demo
+      if (this.currentStep === 1) {
+        if (!this.selectedRegionId) {
+          alert('Kérjük válassz egy régiót!');
+          return;
+        }
+        this.loadDistrictsForSelectedRegion();
+        this.currentStep = 2;
+      }
+      else if (this.currentStep === 2) {
+        if (!this.selectedDistrictId) {
+          alert('Kérjük válassz egy járást!');
+          return;
+        }
+        this.loadCitiesForSelectedDistrict();
+        this.currentStep = 3;
+      }
+      else if (this.currentStep === 3) {
+        if (!this.selectedCityId) {
+          alert('Kérjük válassz egy várost!');
+          return;
+        }
+        this.loadSchoolsForSelectedCity();
+        this.currentStep = 4;
+      }
+      else if (this.currentStep === 4) {
+        if (!this.selectedSchoolId) {
+          alert('Kérjük válassz egy iskolát!');
+          return;
+        }
+        this.currentStep = 5;
+      }
+      else if (this.currentStep === 5) {
+        this.completeStudentProfileSetup();
+      }
+    },
+    
+    prevStep() {
+      if (this.currentStep > 1) {
+        this.currentStep--;
+      } else {
+        this.selectedRole = '';
+        this.currentStep = 1;
+        this.resetStudentSetup();
+      }
+    },
+    
+    // Tanár lépésenkénti navigáció
+    teacherNextStep() {
+      if (this.teacherCurrentStep === 1) {
+        if (!this.teacherSelectedRegionId) {
+          alert('Kérjük válassz egy régiót!');
+          return;
+        }
+        this.loadTeacherDistrictsForSelectedRegion();
+        this.teacherCurrentStep = 2;
+      }
+      else if (this.teacherCurrentStep === 2) {
+        if (!this.teacherSelectedDistrictId) {
+          alert('Kérjük válassz egy járást!');
+          return;
+        }
+        this.loadTeacherCitiesForSelectedDistrict();
+        this.teacherCurrentStep = 3;
+      }
+      else if (this.teacherCurrentStep === 3) {
+        if (!this.teacherSelectedCityId) {
+          alert('Kérjük válassz egy várost!');
+          return;
+        }
+        this.loadTeacherSchoolsForSelectedCity();
+        this.teacherCurrentStep = 4;
+      }
+      else if (this.teacherCurrentStep === 4) {
+        if (!this.teacherSelectedSchoolId) {
+          alert('Kérjük válassz egy iskolát!');
+          return;
+        }
+        this.teacherCurrentStep = 5;
+      }
+      else if (this.teacherCurrentStep === 5) {
+        if (this.selectedClasses.length === 0) {
+          alert('Kérjük válassz legalább egy osztályt!');
+          return;
+        }
+        this.teacherCurrentStep = 6;
+      }
+      else if (this.teacherCurrentStep === 6) {
+        this.completeTeacherProfileSetup();
+      }
+    },
+    
+    teacherPrevStep() {
+      if (this.teacherCurrentStep > 1) {
+        this.teacherCurrentStep--;
+      } else {
+        this.selectedRole = '';
+        this.teacherCurrentStep = 1;
+        this.resetTeacherSetup();
+      }
+    },
+    
+    // Admin lépésenkénti navigáció
+    adminNextStep() {
+      if (this.adminCurrentStep === 1) {
+        if (!this.adminSelectedRegionId) {
+          alert('Kérjük válassz egy régiót!');
+          return;
+        }
+        this.loadAdminDistrictsForSelectedRegion();
+        this.adminCurrentStep = 2;
+      }
+      else if (this.adminCurrentStep === 2) {
+        if (!this.adminSelectedDistrictId) {
+          alert('Kérjük válassz egy járást!');
+          return;
+        }
+        this.loadAdminCitiesForSelectedDistrict();
+        this.adminCurrentStep = 3;
+      }
+      else if (this.adminCurrentStep === 3) {
+        if (!this.adminSelectedCityId && !this.adminNewCityName) {
+          alert('Kérjük válassz egy várost vagy adj meg egy új várost!');
+          return;
+        }
+        this.adminCurrentStep = 4;
+      }
+      else if (this.adminCurrentStep === 4) {
+        if (!this.validateSchoolForm()) {
+          return;
+        }
+        this.adminCurrentStep = 5;
+      }
+      else if (this.adminCurrentStep === 5) {
+        this.completeAdminProfileSetup();
+      }
+    },
+    
+    adminPrevStep() {
+      if (this.adminCurrentStep > 1) {
+        this.adminCurrentStep--;
+      } else {
+        this.selectedRole = '';
+        this.adminCurrentStep = 1;
+        this.resetAdminSetup();
+      }
+    },
+    
+    // Iskola form validálása
+    validateSchoolForm() {
+      this.schoolFormErrors = {};
+      let isValid = true;
+      
+      if (!this.schoolForm.name.trim()) {
+        this.schoolFormErrors.name = 'Az iskola neve kötelező';
+        isValid = false;
+      }
+      
+      if (!this.schoolForm.description.trim()) {
+        this.schoolFormErrors.description = 'A leírás kötelező';
+        isValid = false;
+      }
+      
+      if (!this.schoolForm.address.trim()) {
+        this.schoolFormErrors.address = 'Az iskola címe kötelező';
+        isValid = false;
+      }
+      
+      return isValid;
+    },
+    
+    // Osztály kiválasztása
+    toggleClassSelection(classId) {
+      const index = this.selectedClasses.indexOf(classId);
+      if (index === -1) {
+        this.selectedClasses.push(classId);
+      } else {
+        this.selectedClasses.splice(index, 1);
+      }
+    },
+    
+    // Osztály eltávolítása
+    removeClass(classId) {
+      const index = this.selectedClasses.indexOf(classId);
+      if (index !== -1) {
+        this.selectedClasses.splice(index, 1);
+      }
+    },
+    
+    // Osztály nevének lekérdezése
+    getClassName(classId) {
+      const classItem = this.schoolClasses.find(c => c.id === classId);
+      return classItem ? classItem.name : '';
+    },
+    
+    // Reset metódusok
+    resetStudentSetup() {
+      this.selectedRegionId = null;
+      this.selectedDistrictId = null;
+      this.selectedCityId = null;
+      this.selectedSchoolId = null;
+      this.districts = [];
+      this.cities = [];
+      this.schools = [];
+      this.searchQuery = '';
+      this.districtSearchQuery = '';
+      this.citySearchQuery = '';
+      this.schoolSearchQuery = '';
+    },
+    
+    resetTeacherSetup() {
+      this.teacherSelectedRegionId = null;
+      this.teacherSelectedDistrictId = null;
+      this.teacherSelectedCityId = null;
+      this.teacherSelectedSchoolId = null;
+      this.isClassTeacher = false;
+      this.selectedMainClass = '';
+      this.selectedClasses = [];
+      this.classSearchQuery = '';
+      this.specialTeaching = {
+        specialNeeds: false,
+        talentManagement: false,
+        extraCurricular: false
+      };
+      this.teacherDistricts = [];
+      this.teacherCities = [];
+      this.teacherSchools = [];
+      this.teacherSearchQuery = '';
+      this.teacherDistrictSearchQuery = '';
+      this.teacherCitySearchQuery = '';
+      this.teacherSchoolSearchQuery = '';
+    },
+    
+    resetAdminSetup() {
+      this.adminSelectedRegionId = null;
+      this.adminSelectedDistrictId = null;
+      this.adminSelectedCityId = null;
+      this.adminNewCityName = '';
+      this.adminNewCityZip = '';
+      this.adminNewCityError = '';
+      this.showAddCityModal = false;
+      this.schoolForm = {
+        name: '',
+        description: '',
+        type: '',
+        foundedYear: '',
+        address: '',
+        phone: '',
+        email: '',
+        website: '',
+        director: '',
+        hasDormitory: false
+      };
+      this.schoolFormErrors = {};
+      this.adminAgreement = false;
+      this.adminDistricts = [];
+      this.adminCities = [];
+      this.adminSearchQuery = '';
+      this.adminDistrictSearchQuery = '';
+      this.adminCitySearchQuery = '';
+    },
+    
+    // Diák adatbetöltők
+    loadDistrictsForSelectedRegion() {
+      const regionDistricts = {
+        1: [],
+        2: [
+          { id: 201, name: 'Budapest környéki járás', cityCount: 15 },
+          { id: 202, name: 'Dunakeszi járás', cityCount: 8 },
+          { id: 203, name: 'Érdi járás', cityCount: 7 }
+        ],
+        3: [
+          { id: 301, name: 'Bácsalmási járás', cityCount: 9 },
+          { id: 302, name: 'Kecskeméti járás', cityCount: 16 }
+        ]
+      };
+      
+      this.districts = regionDistricts[this.selectedRegionId] || [
+        { id: 1, name: 'Járás 1', cityCount: 5 },
+        { id: 2, name: 'Járás 2', cityCount: 8 }
+      ];
+      this.districtSearchQuery = '';
+    },
+    
+    loadCitiesForSelectedDistrict() {
+      const districtCities = {
+        201: [
+          { id: 2001, name: 'Szentendre', schoolCount: 5 },
+          { id: 2002, name: 'Pomáz', schoolCount: 4 }
+        ],
+        202: [
+          { id: 2021, name: 'Dunakeszi', schoolCount: 8 },
+          { id: 2022, name: 'Fót', schoolCount: 4 }
+        ]
+      };
+      
+      this.cities = districtCities[this.selectedDistrictId] || [
+        { id: 1, name: 'Város 1', schoolCount: 3 },
+        { id: 2, name: 'Város 2', schoolCount: 5 }
+      ];
+      this.citySearchQuery = '';
+    },
+    
+    loadSchoolsForSelectedCity() {
+      const citySchools = {
+        2001: [
+          { id: 20011, name: 'Szentendrei Kossuth Lajos Általános Iskola', type: 'Általános iskola' },
+          { id: 20012, name: 'Szentendrei Móricz Zsigmond Gimnázium', type: 'Gimnázium' }
+        ],
+        2021: [
+          { id: 20211, name: 'Dunakeszi Gábor Dénes Szakgimnázium', type: 'Szakgimnázium' },
+          { id: 20212, name: 'Dunakeszi Arany János Általános Iskola', type: 'Általános iskola' }
+        ]
+      };
+      
+      this.schools = citySchools[this.selectedCityId] || [
+        { id: 1, name: 'Általános Iskola', type: 'Általános iskola' },
+        { id: 2, name: 'Gimnázium', type: 'Gimnázium' }
+      ];
+      this.schoolSearchQuery = '';
+    },
+    
+    // Tanár adatbetöltők
+    loadTeacherDistrictsForSelectedRegion() {
+      const regionDistricts = {
+        1: [],
+        2: [
+          { id: 201, name: 'Budapest környéki járás', cityCount: 15 },
+          { id: 202, name: 'Dunakeszi járás', cityCount: 8 },
+          { id: 203, name: 'Érdi járás', cityCount: 7 }
+        ],
+        3: [
+          { id: 301, name: 'Bácsalmási járás', cityCount: 9 },
+          { id: 302, name: 'Kecskeméti járás', cityCount: 16 }
+        ]
+      };
+      
+      this.teacherDistricts = regionDistricts[this.teacherSelectedRegionId] || [
+        { id: 1, name: 'Járás 1', cityCount: 5 },
+        { id: 2, name: 'Járás 2', cityCount: 8 }
+      ];
+      this.teacherDistrictSearchQuery = '';
+    },
+    
+    loadTeacherCitiesForSelectedDistrict() {
+      const districtCities = {
+        201: [
+          { id: 2001, name: 'Szentendre', schoolCount: 5 },
+          { id: 2002, name: 'Pomáz', schoolCount: 4 }
+        ],
+        202: [
+          { id: 2021, name: 'Dunakeszi', schoolCount: 8 },
+          { id: 2022, name: 'Fót', schoolCount: 4 }
+        ]
+      };
+      
+      this.teacherCities = districtCities[this.teacherSelectedDistrictId] || [
+        { id: 1, name: 'Város 1', schoolCount: 3 },
+        { id: 2, name: 'Város 2', schoolCount: 5 }
+      ];
+      this.teacherCitySearchQuery = '';
+    },
+    
+    loadTeacherSchoolsForSelectedCity() {
+      const citySchools = {
+        2001: [
+          { id: 20011, name: 'Szentendrei Kossuth Lajos Általános Iskola', type: 'Általános iskola' },
+          { id: 20012, name: 'Szentendrei Móricz Zsigmond Gimnázium', type: 'Gimnázium' }
+        ],
+        2021: [
+          { id: 20211, name: 'Dunakeszi Gábor Dénes Szakgimnázium', type: 'Szakgimnázium' },
+          { id: 20212, name: 'Dunakeszi Arany János Általános Iskola', type: 'Általános iskola' }
+        ]
+      };
+      
+      this.teacherSchools = citySchools[this.teacherSelectedCityId] || [
+        { id: 1, name: 'Általános Iskola', type: 'Általános iskola' },
+        { id: 2, name: 'Gimnázium', type: 'Gimnázium' }
+      ];
+      this.teacherSchoolSearchQuery = '';
+    },
+    
+    // Admin adatbetöltők
+    loadAdminDistrictsForSelectedRegion() {
+      const regionDistricts = {
+        1: [],
+        2: [
+          { id: 201, name: 'Budapest környéki járás', cityCount: 15 },
+          { id: 202, name: 'Dunakeszi járás', cityCount: 8 },
+          { id: 203, name: 'Érdi járás', cityCount: 7 }
+        ],
+        3: [
+          { id: 301, name: 'Bácsalmási járás', cityCount: 9 },
+          { id: 302, name: 'Kecskeméti járás', cityCount: 16 }
+        ]
+      };
+      
+      this.adminDistricts = regionDistricts[this.adminSelectedRegionId] || [
+        { id: 1, name: 'Járás 1', cityCount: 5 },
+        { id: 2, name: 'Járás 2', cityCount: 8 }
+      ];
+      this.adminDistrictSearchQuery = '';
+    },
+    
+    loadAdminCitiesForSelectedDistrict() {
+      const districtCities = {
+        201: [
+          { id: 2001, name: 'Szentendre', schoolCount: 5 },
+          { id: 2002, name: 'Pomáz', schoolCount: 4 }
+        ],
+        202: [
+          { id: 2021, name: 'Dunakeszi', schoolCount: 8 },
+          { id: 2022, name: 'Fót', schoolCount: 4 }
+        ]
+      };
+      
+      this.adminCities = districtCities[this.adminSelectedDistrictId] || [
+        { id: 1, name: 'Város 1', schoolCount: 3 },
+        { id: 2, name: 'Város 2', schoolCount: 5 }
+      ];
+      this.adminCitySearchQuery = '';
+    },
+    
+    // Kiválasztó metódusok
+    selectRegion(region) {
+      this.selectedRegionId = region.id;
+    },
+    
+    selectDistrict(district) {
+      this.selectedDistrictId = district.id;
+    },
+    
+    selectCity(city) {
+      this.selectedCityId = city.id;
+    },
+    
+    selectSchool(school) {
+      this.selectedSchoolId = school.id;
+    },
+    
+    teacherSelectRegion(region) {
+      this.teacherSelectedRegionId = region.id;
+    },
+    
+    teacherSelectDistrict(district) {
+      this.teacherSelectedDistrictId = district.id;
+    },
+    
+    teacherSelectCity(city) {
+      this.teacherSelectedCityId = city.id;
+    },
+    
+    teacherSelectSchool(school) {
+      this.teacherSelectedSchoolId = school.id;
+    },
+    
+    adminSelectRegion(region) {
+      this.adminSelectedRegionId = region.id;
+    },
+    
+    adminSelectDistrict(district) {
+      this.adminSelectedDistrictId = district.id;
+    },
+    
+    adminSelectCity(city) {
+      this.adminSelectedCityId = city.id;
+      this.adminNewCityName = '';
+    },
+    
+    // Profil befejező metódusok
+    completeStudentProfileSetup() {
       this.profileConfigured = true;
       this.user.role = this.selectedRole;
+      this.user.region = this.selectedRegion?.title || '';
+      this.user.district = this.selectedDistrict?.name || '';
+      this.user.city = this.selectedCity?.name || '';
+      this.user.school = this.selectedSchool?.name || '';
+      this.user.schoolId = this.selectedSchoolId;
+      this.saveUserData();
+    },
+    
+    completeTeacherProfileSetup() {
+      this.profileConfigured = true;
+      this.user.role = this.selectedRole;
+      this.user.region = this.teacherSelectedRegion?.title || '';
+      this.user.district = this.teacherSelectedDistrict?.name || '';
+      this.user.city = this.teacherSelectedCity?.name || '';
+      this.user.school = this.teacherSelectedSchool?.name || '';
+      this.user.schoolId = this.teacherSelectedSchoolId;
+      this.user.isClassTeacher = this.isClassTeacher;
+      this.user.mainClass = this.selectedMainClass;
+      this.user.teachingClasses = this.selectedClasses.map(id => ({
+        id,
+        name: this.getClassName(id)
+      }));
+      this.user.specialTeaching = { ...this.specialTeaching };
+      this.saveUserData();
+    },
+    
+    completeAdminProfileSetup() {
+      this.profileConfigured = true;
+      this.user.role = this.selectedRole;
+      this.user.region = this.adminSelectedRegion?.title || '';
+      this.user.district = this.adminSelectedDistrict?.name || '';
+      this.user.city = this.adminSelectedCity?.name || this.adminNewCityName;
+      
+      // Iskola adatainak mentése a felhasználó profiljába
+      this.user.school = this.schoolForm.name;
+      this.user.schoolId = Date.now(); // Generált ID
+      this.user.schoolDetails = { ...this.schoolForm };
+      
       this.saveUserData();
     },
     
@@ -521,10 +2187,6 @@ export default {
         isLoggedIn: true
       };
       localStorage.setItem('esemenyter_user', JSON.stringify(userData));
-    },
-    
-    selectRegion(region) {
-      this.selectedRegionId = region.id;
     },
     
     goToLogin() {
@@ -549,6 +2211,9 @@ export default {
       this.profileConfigured = false;
       this.showUserMenu = false;
       this.user.role = '';
+      this.resetStudentSetup();
+      this.resetTeacherSetup();
+      this.resetAdminSetup();
     },
     
     scrollToFeatures() {
@@ -568,7 +2233,6 @@ export default {
     this.checkLoginStatus();
     window.addEventListener('scroll', this.handleScroll);
     
-    // Close user menu when clicking outside
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.user-profile')) {
         this.showUserMenu = false;
@@ -867,17 +2531,17 @@ export default {
 
 .hero-content {
   display: grid;
-  grid-template-columns: 1fr 1fr;  /* Két egyenlő oszlop */
+  grid-template-columns: 1fr 1fr;
   gap: 60px;
-  align-items: center;  /* Vertikálisan középre igazít */
-  min-height: 500px;    /* Minimum magasság */
+  align-items: center;
+  min-height: 500px;
   padding: 60px;
 }
 
 .hero-text {
   display: flex;
   flex-direction: column;
-  justify-content: center;  /* Vertikálisan középre igazítja a tartalmat */
+  justify-content: center;
 }
 
 .hero-title {
@@ -971,7 +2635,7 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;  /* Teljes magasságot elfoglal */
+  height: 100%;
   position: relative;
 }
 
@@ -1184,7 +2848,7 @@ export default {
 }
 
 /* ====================
-   WIZARD
+   WIZARD (DIÁK ÉS TANÁR ÉS ADMIN)
    ==================== */
 .setup-wizard {
   background: white;
@@ -1235,11 +2899,13 @@ export default {
   color: white;
   font-weight: 600;
   font-size: 14px;
+  transition: all 0.3s ease;
 }
 
 .step.active {
   background: white;
   color: #4f46e5;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
 }
 
 .wizard-header h3 {
@@ -1258,7 +2924,7 @@ export default {
 
 .step-content {
   text-align: center;
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -1281,7 +2947,7 @@ export default {
 
 .search-wrapper {
   position: relative;
-  max-width: 400px;
+  max-width: 500px;
   margin: 0 auto 32px;
 }
 
@@ -1357,6 +3023,69 @@ export default {
   color: #6b7280;
 }
 
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+}
+
+.no-results i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #9ca3af;
+}
+
+.no-results p {
+  font-size: 16px;
+}
+
+.confirmation-card {
+  background: #f8f9ff;
+  border-radius: 16px;
+  padding: 24px;
+  margin: 32px 0;
+  border: 1px solid #e5e7eb;
+}
+
+.confirmation-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.confirmation-item:last-child {
+  border-bottom: none;
+}
+
+.confirmation-item i {
+  font-size: 24px;
+  color: #4f46e5;
+}
+
+.confirmation-item h5 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.confirmation-item p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.description-text {
+  font-size: 14px !important;
+  color: #6b7280 !important;
+  font-weight: normal !important;
+  line-height: 1.5;
+}
+
 .wizard-actions {
   display: flex;
   justify-content: space-between;
@@ -1383,8 +3112,419 @@ export default {
   color: white;
 }
 
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-primary:disabled:hover {
+  box-shadow: none;
+}
+
 /* ====================
-   FUNKCIÓK
+   TANÁR SPECIFIKUS STÍLUSOK
+   ==================== */
+.class-selection {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.form-group {
+  margin-bottom: 32px;
+  text-align: left;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 24px;
+  font-size: 18px;
+}
+
+.checkbox-input {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.checkbox-label {
+  font-size: 16px;
+}
+
+.form-subtitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #111827;
+}
+
+.form-description {
+  color: #6b7280;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.select-input {
+  width: 200px;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  background: white;
+  cursor: pointer;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+}
+
+.classes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.class-card {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.class-card:hover {
+  border-color: #4f46e5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+}
+
+.class-card.selected {
+  border-color: #4f46e5;
+  background: #f8f9ff;
+}
+
+.class-card.selected .class-check {
+  display: block;
+}
+
+.class-icon {
+  font-size: 24px;
+  color: #4f46e5;
+}
+
+.class-text h5 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.class-text p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.class-check {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #10b981;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  display: none;
+}
+
+.selected-classes {
+  margin-top: 24px;
+  padding: 16px;
+  background: #f8f9ff;
+  border-radius: 12px;
+  border: 1px dashed #4f46e5;
+}
+
+.selected-classes h5 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.class-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #4f46e5;
+  border-radius: 20px;
+  font-size: 14px;
+  color: #4f46e5;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  cursor: pointer;
+  padding: 0;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tag-remove:hover {
+  color: #ef4444;
+}
+
+.special-teaching-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.special-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #f8f9ff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.special-option:hover {
+  border-color: #4f46e5;
+  background: white;
+}
+
+.classes-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.class-summary-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #e0e7ff;
+  color: #4f46e5;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.special-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.special-summary span {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #f0f9ff;
+  color: #0369a1;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ====================
+   ADMIN SPECIFIKUS STÍLUSOK
+   ==================== */
+.school-form {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.form-label span {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-input.error,
+.form-textarea.error {
+  border-color: #ef4444;
+}
+
+.error-message {
+  display: block;
+  margin-top: 8px;
+  color: #ef4444;
+  font-size: 14px;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-select {
+  cursor: pointer;
+  background: white;
+}
+
+.btn-add-city {
+  margin-top: 16px;
+}
+
+.admin-agreement {
+  margin: 32px 0;
+  padding: 20px;
+  background: #f8f9ff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.admin-agreement .checkbox-label {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  justify-content: flex-end;
+}
+
+/* Modal animation */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-active .modal-content,
+.modal-leave-active .modal-content {
+  transition: transform 0.3s;
+}
+
+.modal-enter-from .modal-content,
+.modal-leave-to .modal-content {
+  transform: scale(0.9);
+}
+
+/* ====================
+   FUNKCIÓK SZEKCIÓ
    ==================== */
 .features-section {
   padding: 80px 0;
@@ -1631,6 +3771,71 @@ export default {
 }
 
 /* ====================
+   ANIMÁCIÓK
+   ==================== */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.5s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+/* ====================
+   SCROLLBAR
+   ==================== */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a5ba6 100%);
+}
+
+/* ====================
    RESZPONZÍV DESIGN
    ==================== */
 @media (max-width: 1024px) {
@@ -1648,6 +3853,21 @@ export default {
     grid-template-columns: 1fr;
     gap: 40px;
   }
+  
+  .step {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+  
+  .classes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1663,11 +3883,6 @@ export default {
     grid-template-columns: 1fr;
   }
   
-  .stats-container {
-    grid-template-columns: repeat(2, 1fr);
-    padding: 40px 20px;
-  }
-  
   .footer-links {
     grid-template-columns: 1fr;
     gap: 30px;
@@ -1677,6 +3892,41 @@ export default {
     flex-direction: column;
     gap: 10px;
     text-align: center;
+  }
+  
+  .wizard-content {
+    padding: 30px 20px;
+  }
+  
+  .step-indicators {
+    gap: 10px;
+  }
+  
+  .step {
+    width: 30px;
+    height: 30px;
+    font-size: 11px;
+  }
+  
+  .confirmation-card {
+    padding: 16px;
+  }
+  
+  .confirmation-item {
+    padding: 12px 0;
+  }
+  
+  .classes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  
+  .special-teaching-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-content {
+    width: 95%;
+    margin: 0 10px;
   }
 }
 
@@ -1698,65 +3948,98 @@ export default {
     justify-content: center;
   }
   
-  .stats-container {
-    grid-template-columns: 1fr;
-  }
-  
   .wizard-content {
-    padding: 30px 20px;
+    padding: 20px 15px;
   }
   
   .suggestions-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
-}
-
-/* ====================
-   ANIMÁCIÓK
-   ==================== */
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.5s ease;
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(30px);
-}
-
-.fade-in {
-  animation: fadeIn 0.6s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+  
+  .suggestion-card {
+    padding: 16px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  
+  .step-indicators {
+    gap: 5px;
   }
-}
-
-/* ====================
-   SCROLLBAR
-   ==================== */
-::-webkit-scrollbar {
-  width: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a5ba6 100%);
+  
+  .step {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
+  
+  .step-icon {
+    font-size: 48px;
+  }
+  
+  .step-content h4 {
+    font-size: 20px;
+  }
+  
+  .wizard-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .wizard-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .search-input {
+    padding: 14px 14px 14px 48px;
+    font-size: 14px;
+  }
+  
+  .classes-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .class-card {
+    padding: 12px;
+  }
+  
+  .select-input {
+    width: 100%;
+  }
+  
+  .success-card {
+    padding: 30px 20px;
+  }
+  
+  .success-icon {
+    font-size: 60px;
+  }
+  
+  .success-card h3 {
+    font-size: 24px;
+  }
+  
+  .fab {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+    bottom: 20px;
+    right: 20px;
+  }
+  
+  .modal-header {
+    padding: 16px;
+  }
+  
+  .modal-body {
+    padding: 16px;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+  }
+  
+  .modal-actions button {
+    width: 100%;
+  }
 }
 </style>
