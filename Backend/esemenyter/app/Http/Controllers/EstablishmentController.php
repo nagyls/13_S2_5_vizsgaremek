@@ -28,12 +28,10 @@ class EstablishmentController extends Controller
 
         $personel = Personel::create([
             'role' => 'admin',
-            'establishments_id' => $establishment->id,
+            'establishment_id' => $establishment->id,
             'user_id' => $request->user()->id,
         ]);
 
         return response()->json(['message' => 'Intézmény regisztrálva!'], 201);
-
     }
-
 }
