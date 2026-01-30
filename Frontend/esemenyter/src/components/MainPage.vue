@@ -1281,6 +1281,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'MainPage',
   
@@ -1931,24 +1933,18 @@ export default {
     
     // Diák adatbetöltők
     loadDistrictsForSelectedRegion() {
-      const regionDistricts = {
-        1: [],
-        2: [
-          { id: 201, name: 'Budapest környéki járás', cityCount: 15 },
-          { id: 202, name: 'Dunakeszi járás', cityCount: 8 },
-          { id: 203, name: 'Érdi járás', cityCount: 7 }
-        ],
-        3: [
-          { id: 301, name: 'Bácsalmási járás', cityCount: 9 },
-          { id: 302, name: 'Kecskeméti járás', cityCount: 16 }
-        ]
-      };
-      
-      this.districts = regionDistricts[this.selectedRegionId] || [
-        { id: 1, name: 'Járás 1', cityCount: 5 },
-        { id: 2, name: 'Járás 2', cityCount: 8 }
-      ];
-      this.districtSearchQuery = '';
+      axios.get('http://127.0.0.1:8000/api/subregions/all', {
+        params: { region_id: this.selectedRegionId }
+      })
+      .then(res => {
+        this.districts = res.data.data || [];
+        this.districtSearchQuery = '';
+        console.log('Járások betöltve:', this.districts);
+      })
+      .catch(err => {
+        console.error('Járások lekérésének hibája:', err);
+        this.districts = [];
+      });
     },
     
     loadCitiesForSelectedDistrict() {
@@ -1991,24 +1987,18 @@ export default {
     
     // Tanár adatbetöltők
     loadTeacherDistrictsForSelectedRegion() {
-      const regionDistricts = {
-        1: [],
-        2: [
-          { id: 201, name: 'Budapest környéki járás', cityCount: 15 },
-          { id: 202, name: 'Dunakeszi járás', cityCount: 8 },
-          { id: 203, name: 'Érdi járás', cityCount: 7 }
-        ],
-        3: [
-          { id: 301, name: 'Bácsalmási járás', cityCount: 9 },
-          { id: 302, name: 'Kecskeméti járás', cityCount: 16 }
-        ]
-      };
-      
-      this.teacherDistricts = regionDistricts[this.teacherSelectedRegionId] || [
-        { id: 1, name: 'Járás 1', cityCount: 5 },
-        { id: 2, name: 'Járás 2', cityCount: 8 }
-      ];
-      this.teacherDistrictSearchQuery = '';
+      axios.get('http://127.0.0.1:8000/api/subregions/all', {
+        params: { region_id: this.teacherSelectedRegionId }
+      })
+      .then(res => {
+        this.teacherDistricts = res.data.data || [];
+        this.teacherDistrictSearchQuery = '';
+        console.log('Tanár járások betöltve:', this.teacherDistricts);
+      })
+      .catch(err => {
+        console.error('Tanár járások lekérésének hibája:', err);
+        this.teacherDistricts = [];
+      });
     },
     
     loadTeacherCitiesForSelectedDistrict() {
@@ -2206,14 +2196,30 @@ export default {
     },
     
     logout() {
-      localStorage.removeItem('esemenyter_user');
-      this.isLoggedIn = false;
-      this.profileConfigured = false;
-      this.showUserMenu = false;
-      this.user.role = '';
-      this.resetStudentSetup();
-      this.resetTeacherSetup();
-      this.resetAdminSetup();
+      // API-hoz logout kérés (tokennel)
+      axios.post('http://127.0.0.1:8000/api/logout')
+        .then(() => {
+          console.log('Backend-en törölve a token');
+        })
+        .catch(err => {
+          console.error('Logout hiba:', err);
+        })
+        .finally(() => {
+          // Frontend localStorage tisztítás
+          localStorage.removeItem('esemenyter_user');
+          localStorage.removeItem('esemenyter_token');
+          
+          this.isLoggedIn = false;
+          this.profileConfigured = false;
+          this.showUserMenu = false;
+          this.user.role = '';
+          this.resetStudentSetup();
+          this.resetTeacherSetup();
+          this.resetAdminSetup();
+          
+          // Átirányítás kezdőoldalra
+          this.$router.push('/');
+        });
     },
     
     scrollToFeatures() {

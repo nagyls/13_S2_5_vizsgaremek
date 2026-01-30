@@ -54,33 +54,32 @@ export default {
       this.loading = true;
       
       try {
-        // 1. Backend API hívás - csak itt változott az email mező
+        // 1. Backend API hívás
         const res = await axios.post("http://127.0.0.1:8000/api/login", {
-          email: this.email, // username helyett email
+          email: this.email,
           password: this.password
         });
 
         console.log("Backend válasz:", res.data);
         
-        // 2. Felhasználói adatok mentése localStorage-ba
-        // Még mindig a user.name-t használjuk, csak a bejelentkezés email alapú
+        // 2. Felhasználói adatok mentése localStorage-ba az API válaszból
         const userData = {
-          id: res.data.user?.id || Date.now(),
-          name: res.data.user?.name || this.email.split('@')[0], // emailből veszünk nevet
-          email: this.email, // itt mentjük az emailt is
-          role: res.data.user?.role || '',
-          school: res.data.user?.school || '',
-          class: res.data.user?.class || '',
-          schoolId: res.data.user?.schoolId || null,
-          classId: res.data.user?.classId || null,
-          token: res.data.token || 'login-token-' + Date.now(),
+          id: res.data.user.id,
+          name: res.data.user.name,
+          email: res.data.user.email,
+          token: res.data.token,
+          is_teacher: res.data.is_teacher || false,
+          is_student: res.data.is_student || false,
+          establishment_ids: res.data.establishment_ids || [],
           isLoggedIn: true,
           loggedInAt: new Date().toISOString()
         };
         
         // 3. LocalStorage-be mentés
         localStorage.setItem('esemenyter_user', JSON.stringify(userData));
+        localStorage.setItem('esemenyter_token', res.data.token);
         console.log("User adatok mentve localStorage-ba:", userData);
+        console.log("Token mentve:", res.data.token);
         
         // 4. Sikeres üzenet
         alert("Sikeres bejelentkezés! Átirányítás a főoldalra...");
@@ -93,42 +92,11 @@ export default {
       } catch (err) {
         console.error("Bejelentkezési hiba részletei:", err);
         
-        // 6. Ha nem működik a backend, offline demo mód
-        if (err.code === 'ERR_NETWORK' || err.message.includes('Network Error')) {
-          console.log("Backend nem elérhető, offline bejelentkezés...");
-          
-          // Offline user létrehozása (demo)
-          const offlineUserData = {
-            id: Date.now(),
-            name: this.email.split('@')[0], // emailből név
-            email: this.email, // itt emailt mentünk
-            role: '', // Még nincs szerepköre
-            school: '',
-            class: '',
-            schoolId: null,
-            classId: null,
-            token: 'offline-login-token-' + Date.now(),
-            isLoggedIn: true,
-            isOffline: true,
-            loggedInAt: new Date().toISOString()
-          };
-          
-          localStorage.setItem('esemenyter_user', JSON.stringify(offlineUserData));
-          console.log("Offline user mentve:", offlineUserData);
-          
-          alert("Offline bejelentkezés sikeres! Átirányítás...");
-          
-          setTimeout(() => {
-            this.$router.push('/mainpage');
-          }, 500);
-          
-        } else {
-          // Egyéb hiba (rossz jelszó, stb.)
-          const errorMsg = err.response?.data?.message || 
-                         err.response?.data?.error || 
-                         "Hibás email cím vagy jelszó!"; // Csak a hibaüzenet változott
-          alert("Hiba: " + errorMsg);
-        }
+        // 6. Hibaüzenet megjelenítése
+        const errorMsg = err.response?.data?.message || 
+                       err.response?.data?.error || 
+                       "Hibás email cím vagy jelszó!";
+        alert("Hiba: " + errorMsg);
       } finally {
         this.loading = false;
       }
