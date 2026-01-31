@@ -275,7 +275,7 @@
                   <i class='bx bx-search'></i>
                   <input 
                     type="text" 
-                    v-model="districtSearchQuery"
+                    v-model="jarasSearchQuery"
                     placeholder="Keresd a járásod..."
                     class="search-input"
                   />
@@ -293,8 +293,8 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.name }}</h5>
-                      <p>{{ district.cityCount }} város/település</p>
+                      <h5>{{ district.title || district.name }}</h5>
+                      <p>{{ district.cityCount || 'Járás' }} város/település</p>
                     </div>
                   </div>
                   <div v-if="filteredDistricts.length === 0" class="no-results">
@@ -334,8 +334,8 @@
                       <i class='bx bx-city'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ city.name }}</h5>
-                      <p>{{ city.schoolCount }} iskola</p>
+                      <h5>{{ city.title || city.name }}</h5>
+                      <p>{{ city.schoolCount || 'Település' }} iskola</p>
                     </div>
                   </div>
                   <div v-if="filteredCities.length === 0" class="no-results">
@@ -518,7 +518,7 @@
                   <i class='bx bx-search'></i>
                   <input 
                     type="text" 
-                    v-model="teacherDistrictSearchQuery"
+                    v-model="teacherjarasSearchQuery"
                     placeholder="Keresd a járásod..."
                     class="search-input"
                   />
@@ -898,7 +898,7 @@
                   <i class='bx bx-search'></i>
                   <input 
                     type="text" 
-                    v-model="adminDistrictSearchQuery"
+                    v-model="adminjarasSearchQuery"
                     placeholder="Keresd a járást..."
                     class="search-input"
                   />
@@ -916,8 +916,8 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.name }}</h5>
-                      <p>{{ district.cityCount }} város/település</p>
+                      <h5>{{ district.title || district.name }}</h5>
+                      <p>{{ district.cityCount || 'Járás' }}</p>
                     </div>
                   </div>
                   <div v-if="filteredAdminDistricts.length === 0" class="no-results">
@@ -957,8 +957,8 @@
                       <i class='bx bx-city'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ city.name }}</h5>
-                      <p>{{ city.schoolCount }} iskola</p>
+                      <h5>{{ city.title || city.name }}</h5>
+                      <p>{{ city.schoolCount || 'Település' }}</p>
                     </div>
                   </div>
                   <div v-if="filteredAdminCities.length === 0" class="no-results">
@@ -1079,14 +1079,14 @@
                     <i class='bx bx-map-alt'></i>
                     <div>
                       <h5>Járás</h5>
-                      <p>{{ adminSelectedDistrict?.name }}</p>
+                      <p>{{ adminSelectedDistrict?.title || adminSelectedDistrict?.name }}</p>
                     </div>
                   </div>
                   <div class="confirmation-item">
                     <i class='bx bx-city'></i>
                     <div>
                       <h5>Város</h5>
-                      <p>{{ adminSelectedCity?.name || adminNewCityName }}</p>
+                      <p>{{ adminSelectedCity?.title || adminSelectedCity?.name || adminNewCityName }}</p>
                     </div>
                   </div>
                   <div class="confirmation-item">
@@ -1313,7 +1313,7 @@ export default {
       // Diák beállítás adatai
       currentStep: 1,
       searchQuery: '',
-      districtSearchQuery: '',
+      jarasSearchQuery: '',
       citySearchQuery: '',
       schoolSearchQuery: '',
       selectedRegionId: null,
@@ -1324,7 +1324,7 @@ export default {
       // Tanár beállítás adatai
       teacherCurrentStep: 1,
       teacherSearchQuery: '',
-      teacherDistrictSearchQuery: '',
+      teacherjarasSearchQuery: '',
       teacherCitySearchQuery: '',
       teacherSchoolSearchQuery: '',
       teacherSelectedRegionId: null,
@@ -1364,7 +1364,7 @@ export default {
       // Admin beállítás adatai
       adminCurrentStep: 1,
       adminSearchQuery: '',
-      adminDistrictSearchQuery: '',
+      adminjarasSearchQuery: '',
       adminCitySearchQuery: '',
       adminSelectedRegionId: null,
       adminSelectedDistrictId: null,
@@ -1389,16 +1389,7 @@ export default {
       adminAgreement: false,
       
       // Közös adatlisták
-      regions: [
-        { id: 1, title: 'Budapest', districtCount: 0 },
-        { id: 2, title: 'Pest megye', districtCount: 18 },
-        { id: 3, title: 'Bács-Kiskun', districtCount: 11 },
-        { id: 4, title: 'Baranya', districtCount: 10 },
-        { id: 5, title: 'Békés', districtCount: 9 },
-        { id: 6, title: 'Borsod-Abaúj-Zemplén', districtCount: 16 },
-        { id: 7, title: 'Csongrád', districtCount: 7 },
-        { id: 8, title: 'Fejér', districtCount: 8 }
-      ],
+      regions: [],
       
       // Diák adatai
       districts: [],
@@ -1508,16 +1499,16 @@ export default {
     },
     
     filteredDistricts() {
-      if (!this.districtSearchQuery) return this.districts;
+      if (!this.jarasSearchQuery) return this.districts;
       return this.districts.filter(district =>
-        district.name.toLowerCase().includes(this.districtSearchQuery.toLowerCase())
+         (district.title || district.name).toLowerCase().includes(this.jarasSearchQuery.toLowerCase())
       );
     },
-    
+     
     filteredCities() {
       if (!this.citySearchQuery) return this.cities;
       return this.cities.filter(city =>
-        city.name.toLowerCase().includes(this.citySearchQuery.toLowerCase())
+        (city.title || city.name).toLowerCase().includes(this.citySearchQuery.toLowerCase())
       );
     },
     
@@ -1538,9 +1529,9 @@ export default {
     },
     
     filteredTeacherDistricts() {
-      if (!this.teacherDistrictSearchQuery) return this.teacherDistricts;
+      if (!this.teacherjarasSearchQuery) return this.teacherDistricts;
       return this.teacherDistricts.filter(district =>
-        district.name.toLowerCase().includes(this.teacherDistrictSearchQuery.toLowerCase())
+        district.name.toLowerCase().includes(this.teacherjarasSearchQuery.toLowerCase())
       );
     },
     
@@ -1568,16 +1559,16 @@ export default {
     },
     
     filteredAdminDistricts() {
-      if (!this.adminDistrictSearchQuery) return this.adminDistricts;
+      if (!this.adminjarasSearchQuery) return this.adminDistricts;
       return this.adminDistricts.filter(district =>
-        district.name.toLowerCase().includes(this.adminDistrictSearchQuery.toLowerCase())
+        (district.title || district.name).toLowerCase().includes(this.adminjarasSearchQuery.toLowerCase())
       );
     },
     
     filteredAdminCities() {
       if (!this.adminCitySearchQuery) return this.adminCities;
       return this.adminCities.filter(city =>
-        city.name.toLowerCase().includes(this.adminCitySearchQuery.toLowerCase())
+        (city.title || city.name).toLowerCase().includes(this.adminCitySearchQuery.toLowerCase())
       );
     },
     
@@ -1874,7 +1865,7 @@ export default {
       this.cities = [];
       this.schools = [];
       this.searchQuery = '';
-      this.districtSearchQuery = '';
+      this.jarasSearchQuery = '';
       this.citySearchQuery = '';
       this.schoolSearchQuery = '';
     },
@@ -1897,7 +1888,7 @@ export default {
       this.teacherCities = [];
       this.teacherSchools = [];
       this.teacherSearchQuery = '';
-      this.teacherDistrictSearchQuery = '';
+      this.teacherjarasSearchQuery = '';
       this.teacherCitySearchQuery = '';
       this.teacherSchoolSearchQuery = '';
     },
@@ -1911,34 +1902,30 @@ export default {
       this.adminNewCityError = '';
       this.showAddCityModal = false;
       this.schoolForm = {
-        name: '',
+        title: '',
         description: '',
-        type: '',
-        foundedYear: '',
-        address: '',
-        phone: '',
-        email: '',
         website: '',
-        director: '',
-        hasDormitory: false
+        email: '',
+        phone: '',
+        address: '',
       };
       this.schoolFormErrors = {};
       this.adminAgreement = false;
       this.adminDistricts = [];
       this.adminCities = [];
       this.adminSearchQuery = '';
-      this.adminDistrictSearchQuery = '';
+      this.adminjarasSearchQuery = '';
       this.adminCitySearchQuery = '';
     },
     
     // Diák adatbetöltők
     loadDistrictsForSelectedRegion() {
-      axios.get('http://127.0.0.1:8000/api/subregions/all', {
+      axios.get('http://127.0.0.1:8000/api/innerregions/all', {
         params: { region_id: this.selectedRegionId }
       })
       .then(res => {
         this.districts = res.data.data || [];
-        this.districtSearchQuery = '';
+        this.jarasSearchQuery = '';
         console.log('Járások betöltve:', this.districts);
       })
       .catch(err => {
@@ -1987,12 +1974,12 @@ export default {
     
     // Tanár adatbetöltők
     loadTeacherDistrictsForSelectedRegion() {
-      axios.get('http://127.0.0.1:8000/api/subregions/all', {
+      axios.get('http://127.0.0.1:8000/api/innerregions/all', {
         params: { region_id: this.teacherSelectedRegionId }
       })
       .then(res => {
         this.teacherDistricts = res.data.data || [];
-        this.teacherDistrictSearchQuery = '';
+        this.teacherjarasSearchQuery = '';
         console.log('Tanár járások betöltve:', this.teacherDistricts);
       })
       .catch(err => {
@@ -2041,43 +2028,33 @@ export default {
     
     // Admin adatbetöltők
     loadAdminDistrictsForSelectedRegion() {
-      const regionDistricts = {
-        1: [],
-        2: [
-          { id: 201, name: 'Budapest környéki járás', cityCount: 15 },
-          { id: 202, name: 'Dunakeszi járás', cityCount: 8 },
-          { id: 203, name: 'Érdi járás', cityCount: 7 }
-        ],
-        3: [
-          { id: 301, name: 'Bácsalmási járás', cityCount: 9 },
-          { id: 302, name: 'Kecskeméti járás', cityCount: 16 }
-        ]
-      };
-      
-      this.adminDistricts = regionDistricts[this.adminSelectedRegionId] || [
-        { id: 1, name: 'Járás 1', cityCount: 5 },
-        { id: 2, name: 'Járás 2', cityCount: 8 }
-      ];
-      this.adminDistrictSearchQuery = '';
+      axios.get('http://127.0.0.1:8000/api/innerregions/all', {
+        params: { region_id: this.adminSelectedRegionId }
+      })
+      .then(res => {
+        this.adminDistricts = res.data.data || [];
+        this.adminjarasSearchQuery = '';
+        console.log('Admin járások betöltve:', this.adminDistricts);
+      })
+      .catch(err => {
+        console.error('Admin járások lekérésének hibája:', err);
+        this.adminDistricts = [];
+      });
     },
     
     loadAdminCitiesForSelectedDistrict() {
-      const districtCities = {
-        201: [
-          { id: 2001, name: 'Szentendre', schoolCount: 5 },
-          { id: 2002, name: 'Pomáz', schoolCount: 4 }
-        ],
-        202: [
-          { id: 2021, name: 'Dunakeszi', schoolCount: 8 },
-          { id: 2022, name: 'Fót', schoolCount: 4 }
-        ]
-      };
-      
-      this.adminCities = districtCities[this.adminSelectedDistrictId] || [
-        { id: 1, name: 'Város 1', schoolCount: 3 },
-        { id: 2, name: 'Város 2', schoolCount: 5 }
-      ];
-      this.adminCitySearchQuery = '';
+      axios.get('http://127.0.0.1:8000/api/settlements/all', {
+        params: { inner_region_id: this.adminSelectedDistrictId }
+      })
+      .then(res => {
+        this.adminCities = res.data.data || [];
+        this.adminCitySearchQuery = '';
+        console.log('Admin települések betöltve:', this.adminCities);
+      })
+      .catch(err => {
+        console.error('Admin települések lekérésének hibája:', err);
+        this.adminCities = [];
+      });
     },
     
     // Kiválasztó metódusok
@@ -2157,18 +2134,59 @@ export default {
     },
     
     completeAdminProfileSetup() {
-      this.profileConfigured = true;
-      this.user.role = this.selectedRole;
-      this.user.region = this.adminSelectedRegion?.title || '';
-      this.user.district = this.adminSelectedDistrict?.name || '';
-      this.user.city = this.adminSelectedCity?.name || this.adminNewCityName;
+      const token = localStorage.getItem('esemenyter_token');
       
-      // Iskola adatainak mentése a felhasználó profiljába
-      this.user.school = this.schoolForm.name;
-      this.user.schoolId = Date.now(); // Generált ID
-      this.user.schoolDetails = { ...this.schoolForm };
+      if (!token) {
+        alert('Nincs bejelentkezve. Kérjük jelentkezzen be újra.');
+        return;
+      }
       
-      this.saveUserData();
+      // Prepare establishment data for API
+      const establishmentData = {
+        title: this.schoolForm.name,
+        description: this.schoolForm.description,
+        settlement_id: this.adminSelectedCityId,
+        website: this.schoolForm.website || null,
+        email: this.schoolForm.email || null,
+        phone: this.schoolForm.phone || null,
+        address: this.schoolForm.address
+      };
+      
+      // Submit to Laravel API
+      axios.post('http://127.0.0.1:8000/api/establishment', establishmentData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        console.log('Intézmény sikeresen létrehozva:', response.data);
+        
+        // Update local user profile
+        this.profileConfigured = true;
+        this.user.role = this.selectedRole;
+        this.user.region = this.adminSelectedRegion?.title || '';
+        this.user.district = this.adminSelectedDistrict?.title || '';
+        this.user.city = this.adminSelectedCity?.title || this.adminNewCityName;
+        this.user.school = this.schoolForm.name;
+        this.user.schoolDetails = { ...this.schoolForm };
+        
+        this.saveUserData();
+        alert('Intézmény sikeresen regisztrálva!');
+      })
+      .catch(err => {
+        console.error('Hiba az intézmény létrehozásakor:', err);
+        if (err.response?.data?.errors) {
+          const errors = err.response.data.errors;
+          let errorMsg = 'Hibák:\n';
+          Object.keys(errors).forEach(key => {
+            errorMsg += `${key}: ${errors[key].join(', ')}\n`;
+          });
+          alert(errorMsg);
+        } else {
+          alert('Hiba történt az intézmény regisztrálása során. Kérjük próbálja újra.');
+        }
+      });
     },
     
     saveUserData() {
@@ -2232,11 +2250,25 @@ export default {
     
     handleScroll() {
       this.showScrollTop = window.scrollY > 300;
+    },
+    
+    // regio betöltés
+    loadRegions() {
+      axios.get('http://127.0.0.1:8000/api/regions/all')
+        .then(res => {
+          this.regions = res.data.data || [];
+          console.log('Régiók betöltve:', this.regions);
+        })
+        .catch(err => {
+          console.error('Régiók lekérésének hibája:', err);
+          this.regions = [];
+        });
     }
   },
   
   mounted() {
     this.checkLoginStatus();
+    this.loadRegions();
     window.addEventListener('scroll', this.handleScroll);
     
     document.addEventListener('click', (e) => {

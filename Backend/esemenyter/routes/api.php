@@ -37,6 +37,6 @@ Route::prefix('settlements')->group(function () {
 
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/event', [EventController::class, 'store']);
+    Route::post('/events', [EventController::class, 'store']);
     Route::post('/establishment', [EstablishmentController::class, 'store']);
 });

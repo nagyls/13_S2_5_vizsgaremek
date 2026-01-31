@@ -21,9 +21,14 @@ import './style.css'
 // Axios interceptor - automatikusan csatolja a tokent az Authorization header-be
 axios.interceptors.request.use(config => {
   try {
-    const userData = JSON.parse(localStorage.getItem('esemenyter_user') || '{}');
-    if (userData.token) {
-      config.headers.Authorization = `Bearer ${userData.token}`;
+    // Check for token in localStorage first, then in userData
+    let token = localStorage.getItem('esemenyter_token');
+    if (!token) {
+      const userData = JSON.parse(localStorage.getItem('esemenyter_user') || '{}');
+      token = userData.token;
+    }
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
   } catch (error) {
     console.error('Token lekérési hiba:', error);

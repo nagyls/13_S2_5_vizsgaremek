@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->enum('type', ['local', 'global'])->default('local');
-            $table->string('title', 255)->nullable();
+            $table->string('title', 255);
             $table->text('description')->nullable();
             $table->text('content')->nullable();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();

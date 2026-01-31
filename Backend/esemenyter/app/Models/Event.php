@@ -8,7 +8,7 @@ class Event extends Model
 {
     //
     protected $fillable = [
-        'users_id',
+        'user_id',
         'type',
         'title',
         'description',
@@ -25,6 +25,10 @@ class Event extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'users_id');
+        return $this->belongsTo(User::class);
+    }
+    public function class()
+    {
+        return $this->belongsToMany(ClassModel::class);
     }
 }

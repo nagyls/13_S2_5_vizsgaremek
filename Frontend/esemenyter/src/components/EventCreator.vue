@@ -396,11 +396,6 @@ export default {
         // 2.Adatok összeállítása
         const adatCsomag = {
           type: this.kivalasztottEsemenyTipus,
-          scope_mode: this.kivalasztottCelcsoportMod,
-          establishment_ids: this.helyiEsemeny
-            ? [this.felhasznaloIntezmeny.azonosito]
-            : this.kivalasztottIntezmenyek.map(e => e.azonosito),
-          class_ids: this.kivalasztottOsztalyok,
           title: this.esemenyAdatok.cim,
           description: this.esemenyAdatok.leiras,
           content: this.esemenyAdatok.tartalom,
@@ -417,7 +412,7 @@ export default {
         })
 
         // 4.Sikeres válasz kezelése
-        alert('✅ Esemény sikeresen létrehozva!')
+        alert('Esemény sikeresen létrehozva!')
         this.$router.push('/esemenyek')
 
       } catch (hiba) {

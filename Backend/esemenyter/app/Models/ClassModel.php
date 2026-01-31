@@ -4,14 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Classs extends Model
+class ClassModel extends Model
 {
     //
     protected $fillable = [
-        'users_id',
+        'user_id',
         'name',
         'grade',
-        'establishments_id',
+        'establishment_id',
     ];
     public function getEstablishment()
     {

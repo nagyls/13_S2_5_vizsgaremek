@@ -14,9 +14,11 @@ class UserRegisterController extends Controller
 
     public function register(Request $request)
     {
+        $request->merge(['email' => strtolower($request->email)]);
+
         $request->validate([
             'username' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()->min(6)->mixedCase()->numbers()],
         ]);
 
