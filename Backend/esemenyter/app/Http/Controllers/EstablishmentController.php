@@ -27,7 +27,7 @@ class EstablishmentController extends Controller
             'phone' => ['nullable', 'string', 'max:32'],
             'address' => ['nullable', 'string', 'max:255'],
         ]);
-
+        $validated['user_id'] = $request->user()->id;
         $establishment = Establishment::create($validated);
 
         $personel = Personel::create([

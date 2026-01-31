@@ -10,6 +10,7 @@ class Establishment extends Model
     protected $fillable = [
         'title',
         'description',
+        'user_id',
         'settlement_id',
         'website',
         'email',
