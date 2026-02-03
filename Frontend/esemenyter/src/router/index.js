@@ -8,6 +8,7 @@ import EventCreator from '@/components/EventCreator.vue'
 import CommentBox from '@/components/CommentBox.vue'
 import EventDetails from '@/components/EventDetails.vue'
 import EventsList from '@/components/EventsList.vue'
+import Dashboard from '@/components/Dashboard.vue'
 
 const routes = [
   {
@@ -65,6 +66,12 @@ const routes = [
     name: 'events-list',
     component: EventsList,
     meta: { title: 'Eventek listázása' }
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: Dashboard,
+    meta: { title: 'Irányítópult' }
   },
   {
     path: '/:pathMatch(.*)*',
