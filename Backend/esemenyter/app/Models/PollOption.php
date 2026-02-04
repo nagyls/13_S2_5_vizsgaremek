@@ -8,7 +8,7 @@ class PollOption extends Model
 {
     //
     protected $fillable = [
-        'polls_id',
+        'poll_id',
         'option_text',
     ];
 }

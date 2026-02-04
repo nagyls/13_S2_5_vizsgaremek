@@ -8,8 +8,8 @@ class EventMessage extends Model
 {
     //
     protected $fillable = [
-        'events_id',
-        'users_id',
+        'event_id',
+        'user_id',
         'content',
     ];
 }
