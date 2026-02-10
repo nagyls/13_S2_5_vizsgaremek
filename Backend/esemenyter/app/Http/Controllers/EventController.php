@@ -34,7 +34,7 @@ class EventController extends Controller
             'type' => $validated['type'],
             'title' => $validated['title'],
             'description' => $validated['description'],
-            'content' => $validated['content'] ?? null,
+            'content' => $validated['content'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
         ]);
@@ -43,5 +43,19 @@ class EventController extends Controller
             'message' => 'Esemény létrehozva',
             'event' => $event
         ], 201);
+    }
+    public function index(Request $request)
+    {
+        $events = Event::where('end_date', '>=', Carbon::now())->get();
+
+        return response()->json([
+            'events' => $events
+        ]);
+    }
+    public function show(Request $request, Event $event)
+    {
+        return response()->json([
+            'event' => $event
+        ]);
     }
 }

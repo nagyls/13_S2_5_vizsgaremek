@@ -8,8 +8,8 @@ class EventShown extends Model
 {
     //
     protected $fillable = [
-        'events_id',
-        'users_id',
-        'classes_id',
+        'event_id',
+        'user_id',
+        'class_id',
     ];
 }

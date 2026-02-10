@@ -4,24 +4,19 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Establishment;
-use App\Models\EstablishmentRequest;   
 use App\Models\Region;
 use App\Models\InnerRegion;
 use App\Models\Settlement;
 use App\Models\ClassModel;
-use App\Models\ClassStudent;
+use App\Models\Student;
 use App\Models\Event;
-use App\Models\EventShown;
 use App\Models\EventMessage;
 use App\Models\EventFeedback;
 use App\Models\EventFavourite;
-use App\Models\Poll;
-use App\Models\PollOption;
-use App\Models\PollAnswer;
 use App\Models\Personel;
-use App\Models\Student;
-
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class DatabaseSeeder extends Seeder
 {
@@ -32,100 +27,139 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
+        
+        $user = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'Password123',
-        ]);   
-
-        Region::factory()->create([
-            'title' => 'Bács-Kiskun vármegye',
         ]);
-        InnerRegion::factory()->create([
+
+        
+        $region = Region::create(['title' => 'Bács-Kiskun vármegye']);
+        $inner = InnerRegion::create([
             'title' => 'Kiskunfélegyházi járás',
-            'region_id' => 1,
+            'region_id' => $region->id,
         ]);
-        Settlement::factory()->create([
+        $settlement = Settlement::create([
             'title' => 'Kiskunfélegyháza',
-            'number'=> '6100',
-            'inner_region_id' => 1,
+            'number' => '6100',
+            'inner_region_id' => $inner->id,
         ]);
 
-        ClassModel::factory()->create([
-            'establishment_id' => 1,
-            'user_id' => 1,
+       
+        $est = Establishment::create([
+            'title' => 'PÉGÉ',
+            'description' => 'Példa Gimnázium és Egyetem',
+            'user_id' => $user->id,
+            'website' => 'https://pege.hu',
+            'settlement_id' => $settlement->id,
+        ]);
+
+        
+        $class = ClassModel::create([
+            'establishment_id' => $est->id,
+            'user_id' => $user->id,
             'grade' => 13,
             'name' => 'I',
         ]);
 
-        ClassStudent::factory(50)->create([
-            'student_id' => 1,
-            'class_model_id' => 1,
+        
+        $student = Student::create([
+            'alias' => 'primary_student',
+            'establishment_id' => $est->id,
+            'user_id' => $user->id,
         ]);
 
-        Event::factory()->create([
-            'user_id' => 1,
+        
+        for ($i = 0; $i < 50; $i++) {
+            $u = User::factory()->create();
+            Student::create([
+                'alias' => 'student_'.$i,
+                'establishment_id' => $est->id,
+                'user_id' => $u->id,
+            ]);
+
+            DB::table('class_students')->insert([
+                'class_id' => $class->id,
+                'user_id' => $u->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+       
+        $event = Event::create([
+            'user_id' => $user->id,
             'type' => 'local',
             'title' => 'Első esemény',
             'description' => 'Ez az első esemény leírása.',
             'content' => 'Ez az első esemény tartalma.',
-            'start_date' => '2024-06-01',
-            'end_date' => '2024-06-02', 
-            'status' => 'ongoing',
         ]);
-        EventShown::factory()->create([
-            'user_id' => 1,
-            'event_id' => 1,
-            'class_model_id' => 1,
+
+        
+        DB::table('event_shows')->insert([
+            'event_id' => $event->id,
+            'user_id' => $user->id,
+            'class_id' => $class->id,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
-        EventMessage::factory()->create([
-            'user_id' => 1,
-            'event_id' => 1,
+
+       
+        EventMessage::create([
+            'event_id' => $event->id,
+            'user_id' => $user->id,
             'content' => 'Ez egy esemény üzenet.',
-
-        ]);
-        EventFeedback::factory()->create([
-            'user_id' => 1,
-            'event_id' => 1,
-            'answor' => 'y',
-        ]);
-        EventFavourite::factory()->create([
-            'user_id' => 1,
-            'event_id' => 1,
         ]);
 
-        Poll::factory()->create([
-            'user_id' => 1,
+        
+        EventFeedback::create([
+            'event_id' => $event->id,
+            'user_id' => $user->id,
+            'answer' => 'y',
+        ]);
+
+        
+        EventFavourite::create([
+            'event_id' => $event->id,
+            'user_id' => $user->id,
+        ]);
+
+        
+        $pollId = DB::table('polls')->insertGetId([
+            'event_id' => $event->id,
             'title' => 'Első szavazás',
-            'event_id' => 1,
-        ]);
-        PollOption::factory()->create([
-            'poll_id' => 1,
-            'option_text' => 'Első opció',
-        ]);
-        PollAnswer::factory()->create([
-            'user_id' => 1,
-            'poll_id' => 1,
-            'poll_option_id' => 1,
-            
+            'user_id' => $user->id,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
-        Establishment::factory()->create([
-            'title' => 'PÉGÉ',
-            'description' => 'Példa Gimnázium és Egyetem',
-            'user_id' => 1,
-            'settlement_id' => 1,
-            'website' => 'https://pÉGÉ.hu',
-            'email'=> 'pÉGÉ@pege.hu',
-            'phone' => '+36301234567',
-            'address' => 'Vidám utca 13.',
-    
+        $pollOptionId = DB::table('poll_options')->insertGetId([
+            'poll_id' => $pollId,
+            'title' => 'Első opció',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
-        Personel::factory()->create();
-        Student::factory()->create();
-        EstablishmentRequest::factory()->create();
 
+        DB::table('poll_answers')->insert([
+            'poll_id' => $pollId,
+            'user_id' => $user->id,
+            'poll_option_id' => $pollOptionId,
+        ]);
+
+        
+        DB::table('establishment_requests')->insert([
+            'user_id' => $user->id,
+            'establishment_id' => $est->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        
+        Personel::create([
+            'role' => 'teacher',
+            'establishment_id' => $est->id,
+            'user_id' => $user->id,
+        ]);
     }
 }
