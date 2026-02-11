@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class EventFeedback extends Model
 {
-    //
+    // explicit table name — migration created "event_feedbacks"
+    protected $table = 'event_feedbacks';
+
     protected $fillable = [
-        'events_id',
+        'event_id',
         'answer',
-        'users_id',
+        'user_id',
     ];
 }

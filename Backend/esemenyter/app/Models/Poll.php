@@ -8,8 +8,8 @@ class Poll extends Model
 {
     //
     protected $fillable = [
-        'events_id',
+        'event_id',
         'title',
-        'users_id',
+        'user_id',
     ];
 }

@@ -18,7 +18,7 @@ class RegionController extends Controller
         $query = Region::query();
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $query->where('title', 'LIKE', "{$search}%");
+            $query->where('title', 'LIKE', "%{$search}%");
         }
         
         $regions = $query->orderBy('title')->get();
@@ -41,13 +41,6 @@ class RegionController extends Controller
     {
         $region = Region::find($id);
         
-        if (!$region) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Region not found'
-            ], 404);
-        }
-        
         return response()->json([
             'success' => true,
             'data' => $region
@@ -60,7 +53,7 @@ class RegionController extends Controller
         $query = InnerRegion::query();
         if ($request->has('search') && !empty($request->search) && $request->has('region_id') && !empty($request->region_id)) {
             $search = $request->search;
-            $query->where('title', 'LIKE', "{$search}%")->where('region_id', '=', "{$request->region_id}");
+            $query->where('title', 'LIKE', "%{$search}%")->where('region_id', '=', "{$request->region_id}");
         }
         
         $innerRegions = $query->orderBy('title')->get();
@@ -91,7 +84,7 @@ class RegionController extends Controller
         $query = Settlement::query();
         if ($request->has('search') && !empty($request->search) && $request->has('inner_region_id') && !empty($request->inner_region_id)) {
             $search = $request->search;
-            $query->where('title', 'LIKE', "{$search}%")->where('inner_region_id', '=', "{$request->inner_region_id}");
+            $query->where('title', 'LIKE', "%{$search}%")->where('inner_region_id', '=', "{$request->inner_region_id}");
         }
         
         $settlements = $query->orderBy('title')->get();

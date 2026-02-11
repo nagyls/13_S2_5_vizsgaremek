@@ -9,7 +9,7 @@ class EstablishmentRequest extends Model
     //
     protected $fillable = [
         'users_id',
-        'establishments_id',
+        'establishment_id',
         'status',
     ];
 }

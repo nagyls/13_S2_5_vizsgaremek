@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('classes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('users_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('name', 255)->nullable();
             $table->integer('grade')->nullable();
             $table->foreignId('establishment_id')->constrained('establishments')->cascadeOnDelete();
-            $table->timestamp('created_at')->nullable();
+            $table->timestamps();
         });
     }
 
