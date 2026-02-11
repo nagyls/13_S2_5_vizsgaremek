@@ -35,9 +35,9 @@ class DatabaseSeeder extends Seeder
         ]);
 
         
-        $region = Region::create(['title' => 'Bács-Kiskun vármegye']);
+        $region = Region::create(['title' => 'Bács-Kiskun']);
         $inner = InnerRegion::create([
-            'title' => 'Kiskunfélegyházi járás',
+            'title' => 'Kiskunfélegyháza',
             'region_id' => $region->id,
         ]);
         $settlement = Settlement::create([
@@ -161,5 +161,87 @@ class DatabaseSeeder extends Seeder
             'establishment_id' => $est->id,
             'user_id' => $user->id,
         ]);
+
+        // Load regions / inner regions / settlements from CSV
+        $csvPath = storage_path('app/Járások listája.csv');
+        $lastRegion = null;
+
+        if (file_exists($csvPath)) {
+            if (($handle = fopen($csvPath, 'r')) !== false) {
+                // read header
+                $header = fgetcsv($handle, 0, ';');
+
+                while (($row = fgetcsv($handle, 0, ';')) !== false) {
+                    // Ignore completely empty rows
+                    if (count($row) === 0) {
+                        continue;
+                    }
+
+                    // Columns: 0=Sorszám, 1=Megye, 2=Járás (inner region), 3=települések (comma separated)
+                    $countyRaw = isset($row[1]) ? trim($row[1]) : '';
+                    $districtRaw = isset($row[2]) ? trim($row[2]) : '';
+                    $settlementsRaw = isset($row[3]) ? trim($row[3]) : '';
+
+                    // If county cell is empty, reuse last non-empty county
+                    if ($countyRaw === '' && $lastRegion instanceof \App\Models\Region) {
+                        $region = $lastRegion;
+                    } elseif ($countyRaw !== '') {
+                        // Normalize county title
+                        $countyTitle = preg_replace('/\s+/', ' ', $countyRaw);
+                        $region = \App\Models\Region::firstOrCreate(['title' => $countyTitle]);
+                        $lastRegion = $region;
+                    } else {
+                        // unable to determine region, skip row
+                        continue;
+                    }
+
+                    // If district is empty skip creating inner region / settlements
+                    if ($districtRaw === '') {
+                        continue;
+                    }
+
+                    $innerTitle = preg_replace('/\s+/', ' ', $districtRaw);
+                    $inner = \App\Models\InnerRegion::firstOrCreate(
+                        ['title' => $innerTitle, 'region_id' => $region->id]
+                    );
+
+                    // Split settlements by comma and create them
+                    $settlementNames = preg_split('/\s*,\s*/u', $settlementsRaw);
+                    foreach ($settlementNames as $s) {
+                        $s = trim($s);
+                        // Remove surrounding quotes/newlines, skip empties
+                        $s = trim($s, "\"'\r\n\t ");
+                        if ($s === '') {
+                            continue;
+                        }
+                        // Create settlement (number unknown in CSV -> use empty string to satisfy NOT NULL)
+                        \App\Models\Settlement::firstOrCreate(
+                            ['title' => $s, 'inner_region_id' => $inner->id],
+                            ['number' => '']
+                        );
+                    }
+                }
+
+                fclose($handle);
+            }
+        } else {
+            // CSV not found: keep a small default so seeder still works
+            $region = Region::create([
+                'title' => 'Bács-Kiskun'
+            ]);
+            $inner = InnerRegion::create([
+                'title' => 'Kiskunfélegyházas',
+                'region_id' => $region->id,
+            ]);
+            $settlement = Settlement::create([
+                'title' => 'Kiskunfélegyháza',
+                'number' => '6100',
+                'inner_region_id' => $inner->id,
+            ]);
+        }
+
+        $region = $region ?? \App\Models\Region::first();
+        $inner = $inner ?? \App\Models\InnerRegion::first();
+        $settlement = $settlement ?? \App\Models\Settlement::first();
     }
 }
