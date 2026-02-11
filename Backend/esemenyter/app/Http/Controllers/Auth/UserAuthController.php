@@ -40,14 +40,48 @@ class UserAuthController extends Controller
             $studentEstablishments = $user->student()->pluck('establishment_id')->toArray();
             $establishmentIds = array_merge($establishmentIds, $studentEstablishments);
         }
-        return response()->json([
-            'message' => 'Sikeres bejelentkezés!',
-            'user' => $user,
-            'token' => $token,
-            'is_teacher' => $userTeacher,
-            'is_student' => $userStudent,
-            'establishment_ids' => array_unique($establishmentIds)
-        ]);
+        if ($userStudent) {
+            return response()->json([
+                'message' => 'Sikeres bejelentkezés!',
+                'user' => $user,
+                'token' => $token,
+                'is_student' => $userStudent,
+                'teacher_establishment_ids' => array_unique($establishmentIds),
+                'student_establishment_ids' => array_unique($establishmentIds),
+                'establishment_ids' => array_unique($establishmentIds),
+        
+            ]);
+        }
+        if ($userTeacher) {
+            return response()->json([
+                'message' => 'Sikeres bejelentkezés!',
+                'user' => $user,
+                'token' => $token,
+                'is_teacher' => $userTeacher,
+                'teacher_establishment_ids' => array_unique($establishmentIds),
+                'student_establishment_ids' => array_unique($establishmentIds),
+                'establishment_ids' => array_unique($establishmentIds),
+        
+            ]);
+        }
+        if ($user->is_admin) 
+        {
+            return response()->json([
+                'message' => 'Sikeres bejelentkezés!',
+                'user' => $user,
+                'token' => $token,
+                'is_teacher' => $userTeacher,
+                'is_student' => $userStudent,
+                'is_admin' => $user->is_admin,
+                'teacher_establishment_ids' => array_unique($establishmentIds),
+                'student_establishment_ids' => array_unique($establishmentIds),
+                'establishment_ids' => array_unique($establishmentIds),
+            ]);
+        }
+        
     }
 
 }
+
+
+
