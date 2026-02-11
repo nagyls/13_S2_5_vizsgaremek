@@ -38,5 +38,7 @@ Route::prefix('settlements')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/events', [EventController::class, 'store']);
+    Route::get('/events', [EventController::class, 'index']);
+    Route::get('/events/{event}', [EventController::class, 'show']);
     Route::post('/establishment', [EstablishmentController::class, 'store']);
 });
