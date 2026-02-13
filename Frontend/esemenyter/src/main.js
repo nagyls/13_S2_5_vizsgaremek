@@ -16,6 +16,7 @@ import EventCreator from './components/EventCreator.vue'
 import CommentBox from './components/CommentBox.vue'
 import EventDetails from './components/EventDetails.vue'
 import EventsList from './components/EventsList.vue'
+import Dashboard from './components/Dashboard.vue'
 import './style.css'
 
 // Axios interceptor - automatikusan csatolja a tokent az Authorization header-be
@@ -46,6 +47,7 @@ app.component('event-creator', EventCreator)
 app.component('comment-box', CommentBox)
 app.component('event-details', EventDetails)
 app.component('events-list', EventsList)
+app.component('dashboard', Dashboard)
 app.use(router)
 
 app.mount('#app')
