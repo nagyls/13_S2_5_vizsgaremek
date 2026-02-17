@@ -4,15 +4,16 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Event;
+use App\Models\EventShown;
 use Carbon\Carbon;
 
 class EventController extends Controller
 {
-   
+
 
     public function store(Request $request)
     {
-        $user = $request->user(); 
+        $user = $request->user();
 
         if (!$user) {
             return response()->json(['message' => 'Unauthorized'], 401);
@@ -44,18 +45,27 @@ class EventController extends Controller
             'event' => $event
         ], 201);
     }
-    public function index(Request $request)
+    public function getEvents(Request $request)
     {
-        $events = Event::where('end_date', '>=', Carbon::now())->get();
+        $user = $request->user();
+
+        $events = Event::where('end_date', '>=', Carbon::now())
+            ->where(function ($query) use ($user) {
+
+                if ($user) {
+                    $visibleEventIds = EventShown::where(function ($query2) use ($user) {
+                        $query2->where('user_id', $user->id);
+                        if (property_exists($user, 'class_id') && $user->class_id !== null) {
+                            $query2->orWhere('class_id', $user->class_id);
+                        }
+                    })->pluck('event_id');
+
+                    $query->orWhereIn('id', $visibleEventIds);
+                }
+            })->get();
 
         return response()->json([
             'events' => $events
-        ]);
-    }
-    public function show(Request $request, Event $event)
-    {
-        return response()->json([
-            'event' => $event
         ]);
     }
 }

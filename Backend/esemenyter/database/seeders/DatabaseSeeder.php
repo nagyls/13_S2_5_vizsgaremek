@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        
+
         $user = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
@@ -48,7 +48,7 @@ class DatabaseSeeder extends Seeder
             'inner_region_id' => $inner->id,
         ]);
 
-       
+
         $est = Establishment::create([
             'title' => 'PÉGÉ',
             'description' => 'Példa Gimnázium és Egyetem',
@@ -57,7 +57,7 @@ class DatabaseSeeder extends Seeder
             'settlement_id' => $settlement->id,
         ]);
 
-        
+
         $class = ClassModel::create([
             'establishment_id' => $est->id,
             'user_id' => $user->id,
@@ -65,18 +65,18 @@ class DatabaseSeeder extends Seeder
             'name' => 'I',
         ]);
 
-        
+
         $student = Student::create([
             'alias' => 'primary_student',
             'establishment_id' => $est->id,
             'user_id' => $user->id,
         ]);
 
-        
+
         for ($i = 0; $i < 50; $i++) {
             $u = User::factory()->create();
             Student::create([
-                'alias' => 'student_'.$i,
+                'alias' => 'student_' . $i,
                 'establishment_id' => $est->id,
                 'user_id' => $u->id,
             ]);
@@ -89,7 +89,7 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-       
+
         $event = Event::create([
             'user_id' => $user->id,
             'type' => 'local',
@@ -98,7 +98,7 @@ class DatabaseSeeder extends Seeder
             'content' => 'Ez az első esemény tartalma.',
         ]);
 
-        
+
         DB::table('event_shows')->insert([
             'event_id' => $event->id,
             'user_id' => $user->id,
@@ -107,27 +107,27 @@ class DatabaseSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-       
+
         EventMessage::create([
             'event_id' => $event->id,
             'user_id' => $user->id,
             'content' => 'Ez egy esemény üzenet.',
         ]);
 
-        
+
         EventFeedback::create([
             'event_id' => $event->id,
             'user_id' => $user->id,
             'answer' => 'y',
         ]);
 
-        
+
         EventFavourite::create([
             'event_id' => $event->id,
             'user_id' => $user->id,
         ]);
 
-        
+
         $pollId = DB::table('polls')->insertGetId([
             'event_id' => $event->id,
             'title' => 'Első szavazás',
@@ -149,7 +149,7 @@ class DatabaseSeeder extends Seeder
             'poll_option_id' => $pollOptionId,
         ]);
 
-        
+
         DB::table('establishment_requests')->insert([
             'user_id' => $user->id,
             'establishment_id' => $est->id,
@@ -157,7 +157,7 @@ class DatabaseSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        
+
         Personel::create([
             'role' => 'teacher',
             'establishment_id' => $est->id,
@@ -165,7 +165,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Load regions / inner regions / settlements from CSV
-        $csvPath = storage_path('app/Járások listája.csv');
+        $csvPath = database_path('seeders/data/jarasok.csv');
         $lastRegion = null;
 
         if (file_exists($csvPath)) {
@@ -193,7 +193,7 @@ class DatabaseSeeder extends Seeder
                         $region = \App\Models\Region::firstOrCreate(['title' => $countyTitle]);
                         $lastRegion = $region;
                     } else {
-                        // unable to determine region, skip row
+
                         continue;
                     }
 
@@ -226,22 +226,7 @@ class DatabaseSeeder extends Seeder
 
                 fclose($handle);
             }
-        } else {
-            // CSV not found: keep a small default so seeder still works
-            $region = Region::create([
-                'title' => 'Bács-Kiskun'
-            ]);
-            $inner = InnerRegion::create([
-                'title' => 'Kiskunfélegyházas',
-                'region_id' => $region->id,
-            ]);
-            $settlement = Settlement::create([
-                'title' => 'Kiskunfélegyháza',
-                'number' => '6100',
-                'inner_region_id' => $inner->id,
-            ]);
         }
-
         $region = $region ?? \App\Models\Region::first();
         $inner = $inner ?? \App\Models\InnerRegion::first();
         $settlement = $settlement ?? \App\Models\Settlement::first();

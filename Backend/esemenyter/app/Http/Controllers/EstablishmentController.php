@@ -39,22 +39,28 @@ class EstablishmentController extends Controller
         return response()->json(['message' => 'Intézmény regisztrálva!'], 201);
     }
 
-    public function getestablishment(Request $request)
+
+    public function getEstablishments(Request $request)
     {
         $query = Establishment::query();
         if ($request->has('search') && !empty($request->search) && $request->has('settlement_id') && !empty($request->settlement_id)) {
             $search = $request->search;
             $query->where('title', 'LIKE', "%{$search}%")->where('settlement_id', '=', "{$request->settlement_id}");
         }
-        
-        $establishments= $query->orderBy('title')->get();
 
-         return response()->json([
-            'success' => true,
-            'data' => [
-                $establishments->id,
-                $establishments->title
-                ]
+        $establishment = $query->orderBy('title')->get();
+
+        return response()->json([
+            'id' => $establishment->pluck('id'),
+            'title' => $establishment->pluck('title'),
+        ]);
+    }
+    public function getEstablishmentbyId($id)
+    {
+        $establishment = Establishment::find($id);
+
+        return response()->json([
+            'data' => $establishment
         ]);
     }
 }
