@@ -39,8 +39,8 @@ Route::prefix('settlements')->group(function () {
 });
 
 Route::prefix('establishments')->group(function () {
-    Route::get('/{id}', [EstablishmentController::class, 'getEstablishmentbyId']);
-    Route::get('/', [EstablishmentController::class, 'getEstablishments']);
+    Route::get('/{id}', [EstablishmentController::class, 'getEstablishmentbyId']);// id alapu keresés
+    Route::get('/', [EstablishmentController::class, 'getEstablishments']);// keresés
 });
 
 
