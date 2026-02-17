@@ -30,12 +30,12 @@ class UserAuthController extends Controller
         $userStudent = $user->student()->exists();
 
         $establishmentIds = [];
-        
+
         if ($userTeacher) {
             $personelEstablishments = $user->personel()->pluck('establishment_id')->toArray();
             $establishmentIds = array_merge($establishmentIds, $personelEstablishments);
         }
-        
+
         if ($userStudent) {
             $studentEstablishments = $user->student()->pluck('establishment_id')->toArray();
             $establishmentIds = array_merge($establishmentIds, $studentEstablishments);
@@ -49,7 +49,7 @@ class UserAuthController extends Controller
                 'teacher_establishment_ids' => array_unique($establishmentIds),
                 'student_establishment_ids' => array_unique($establishmentIds),
                 'establishment_ids' => array_unique($establishmentIds),
-        
+
             ]);
         }
         if ($userTeacher) {
@@ -61,11 +61,10 @@ class UserAuthController extends Controller
                 'teacher_establishment_ids' => array_unique($establishmentIds),
                 'student_establishment_ids' => array_unique($establishmentIds),
                 'establishment_ids' => array_unique($establishmentIds),
-        
+
             ]);
         }
-        if ($user->is_admin) 
-        {
+        if ($user->is_admin) {
             return response()->json([
                 'message' => 'Sikeres bejelentkezés!',
                 'user' => $user,
@@ -78,10 +77,5 @@ class UserAuthController extends Controller
                 'establishment_ids' => array_unique($establishmentIds),
             ]);
         }
-        
     }
-
 }
-
-
-

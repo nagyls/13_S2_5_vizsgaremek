@@ -1,4 +1,5 @@
 <?php
+
 use App\Http\Controllers\Auth\UserAuthController;
 use App\Http\Controllers\Auth\UserLogoutController;
 use App\Http\Controllers\Auth\UserRegisterController;
@@ -27,12 +28,12 @@ Route::prefix('regions')->group(function () {
     Route::get('/', [RegionController::class, 'regions']); // keresés
 });
 Route::prefix('innerregions')->group(function () {
-    Route::get('/all', [RegionController::class, 'getallinnerregions']); 
-    Route::get('/', [RegionController::class, 'innerregions']); 
+    Route::get('/all', [RegionController::class, 'getallinnerregions']);
+    Route::get('/', [RegionController::class, 'innerregions']);
 });
 Route::prefix('settlements')->group(function () {
-    Route::get('/all', [RegionController::class, 'getallsettlements']); 
-    Route::get('/', [RegionController::class, 'settlements']); 
+    Route::get('/all', [RegionController::class, 'getallsettlements']);
+    Route::get('/', [RegionController::class, 'settlements']);
 });
 Route::get('/establishments', [EstablishmentController::class, 'getestablishments']);
 
