@@ -26,56 +26,28 @@ class UserAuthController extends Controller
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
+        //intézmény azonosítók lekérése a userhez
         $userTeacher = $user->personel()->exists();
         $userStudent = $user->student()->exists();
 
-        $establishmentIds = [];
+
 
         if ($userTeacher) {
             $personelEstablishments = $user->personel()->pluck('establishment_id')->toArray();
-            $establishmentIds = array_merge($establishmentIds, $personelEstablishments);
         }
-
         if ($userStudent) {
             $studentEstablishments = $user->student()->pluck('establishment_id')->toArray();
-            $establishmentIds = array_merge($establishmentIds, $studentEstablishments);
         }
-        if ($userStudent) {
-            return response()->json([
-                'message' => 'Sikeres bejelentkezés!',
-                'user' => $user,
-                'token' => $token,
-                'is_student' => $userStudent,
-                'teacher_establishment_ids' => array_unique($establishmentIds),
-                'student_establishment_ids' => array_unique($establishmentIds),
-                'establishment_ids' => array_unique($establishmentIds),
-
-            ]);
-        }
-        if ($userTeacher) {
-            return response()->json([
-                'message' => 'Sikeres bejelentkezés!',
-                'user' => $user,
-                'token' => $token,
-                'is_teacher' => $userTeacher,
-                'teacher_establishment_ids' => array_unique($establishmentIds),
-                'student_establishment_ids' => array_unique($establishmentIds),
-                'establishment_ids' => array_unique($establishmentIds),
-
-            ]);
-        }
-        if ($user->is_admin) {
-            return response()->json([
-                'message' => 'Sikeres bejelentkezés!',
-                'user' => $user,
-                'token' => $token,
-                'is_teacher' => $userTeacher,
-                'is_student' => $userStudent,
-                'is_admin' => $user->is_admin,
-                'teacher_establishment_ids' => array_unique($establishmentIds),
-                'student_establishment_ids' => array_unique($establishmentIds),
-                'establishment_ids' => array_unique($establishmentIds),
-            ]);
-        }
+        return response()->json([
+            'message' => 'Sikeres bejelentkezés!',
+            'user' => $user,
+            'token' => $token,
+            //'student_establishment_ids' => array_unique($studentEstablishments),
+            //'teacher_establishment_ids' => array_unique($personelEstablishments),
+        ]);
+    }
+    public function storeStudent(Request $request)
+    {
+        $user = $request->user();
     }
 }

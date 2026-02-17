@@ -35,11 +35,15 @@ Route::prefix('settlements')->group(function () {
     Route::get('/all', [RegionController::class, 'getallsettlements']);
     Route::get('/', [RegionController::class, 'settlements']);
 });
-Route::get('/establishments', [EstablishmentController::class, 'getestablishments']);
 
+Route::prefix('establishments')->group(function () {
+    Route::get('/{id}', [EstablishmentController::class, 'getEstablishmentbyId']);
+    Route::get('/', [EstablishmentController::class, 'getEstablishments']);
+});
 
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/events', [EventController::class, 'getEvents']);
     Route::post('/events', [EventController::class, 'store']);
     Route::post('/establishment', [EstablishmentController::class, 'store']);
 });
