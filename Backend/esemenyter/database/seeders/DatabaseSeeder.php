@@ -163,7 +163,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Load regions / inner regions / settlements from CSV
-        $csvPath = storage_path('app/jarasok.csv');
+        $csvPath = database_path('seeders/data/jarasok.csv');
         $lastRegion = null;
 
         if (file_exists($csvPath)) {
