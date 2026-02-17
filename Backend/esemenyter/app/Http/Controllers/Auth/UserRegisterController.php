@@ -28,13 +28,17 @@ class UserRegisterController extends Controller
             'password' => Hash::make($request->string('password')),
         ]);
 
+        // Send email verification notification
+        $user->sendEmailVerificationNotification();
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
 
         return response()->json([
-            'message' => 'Sikeres regisztráció!',
+            'message' => 'Sikeres regisztráció! Kérjük, ellenőrizze az email fiókját a megerősítő linkért.',
             'user' => $user,
-            'token' => $token
+            'token' => $token,
+            'email_verified' => false
         ]);
     }
 
