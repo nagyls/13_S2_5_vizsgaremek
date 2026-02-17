@@ -26,28 +26,28 @@ class UserAuthController extends Controller
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
+        //intézmény azonosítók lekérése a userhez
         $userTeacher = $user->personel()->exists();
         $userStudent = $user->student()->exists();
 
-        $establishmentIds = [];
-        
+
+
         if ($userTeacher) {
             $personelEstablishments = $user->personel()->pluck('establishment_id')->toArray();
-            $establishmentIds = array_merge($establishmentIds, $personelEstablishments);
         }
-        
         if ($userStudent) {
             $studentEstablishments = $user->student()->pluck('establishment_id')->toArray();
-            $establishmentIds = array_merge($establishmentIds, $studentEstablishments);
         }
         return response()->json([
             'message' => 'Sikeres bejelentkezés!',
             'user' => $user,
             'token' => $token,
-            'is_teacher' => $userTeacher,
-            'is_student' => $userStudent,
-            'establishment_ids' => array_unique($establishmentIds)
+            //'student_establishment_ids' => array_unique($studentEstablishments),
+            //'teacher_establishment_ids' => array_unique($personelEstablishments),
         ]);
     }
-
+    public function storeStudent(Request $request)
+    {
+        $user = $request->user();
+    }
 }
