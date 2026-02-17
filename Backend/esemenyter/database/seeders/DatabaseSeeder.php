@@ -163,7 +163,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Load regions / inner regions / settlements from CSV
-        $csvPath = storage_path('app/Járások listája.csv');
+        $csvPath = storage_path('app/jarasok.csv');
         $lastRegion = null;
 
         if (file_exists($csvPath)) {
@@ -224,22 +224,7 @@ class DatabaseSeeder extends Seeder
 
                 fclose($handle);
             }
-        } else {
-            // CSV not found: keep a small default so seeder still works
-            $region = Region::create([
-                'title' => 'Bács-Kiskun'
-            ]);
-            $inner = InnerRegion::create([
-                'title' => 'Kiskunfélegyházas',
-                'region_id' => $region->id,
-            ]);
-            $settlement = Settlement::create([
-                'title' => 'Kiskunfélegyháza',
-                'number' => '6100',
-                'inner_region_id' => $inner->id,
-            ]);
-        }
-
+        } 
         $region = $region ?? \App\Models\Region::first();
         $inner = $inner ?? \App\Models\InnerRegion::first();
         $settlement = $settlement ?? \App\Models\Settlement::first();

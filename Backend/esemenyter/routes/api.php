@@ -34,6 +34,8 @@ Route::prefix('settlements')->group(function () {
     Route::get('/all', [RegionController::class, 'getallsettlements']); 
     Route::get('/', [RegionController::class, 'settlements']); 
 });
+Route::get('/establishments', [EstablishmentController::class, 'getestablishments']);
+
 
 
 Route::middleware('auth:sanctum')->group(function () {

@@ -38,4 +38,19 @@ class EstablishmentController extends Controller
 
         return response()->json(['message' => 'Intézmény regisztrálva!'], 201);
     }
+    public function getestablishments(Request $request)
+    {
+        $query = Establishment::query();
+
+        if ($request->has('inner_region_id') && !empty($request->inner_region_id)) {
+            $query->where('inner_region_id', $request->inner_region_id);
+        }
+
+        $settlements = $query->orderBy('title')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $settlements
+        ]);
+    }
 }
