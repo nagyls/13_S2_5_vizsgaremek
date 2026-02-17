@@ -86,7 +86,7 @@ export default {
         
         // 5. Rövid várakozás és átirányítás
         setTimeout(() => {
-          this.$router.push('/mainpage');
+          this.$router.push('/dashboard');
         }, 500);
         
       } catch (err) {
@@ -113,7 +113,7 @@ export default {
         const userData = JSON.parse(savedUser);
         if (userData.isLoggedIn) {
           console.log("Már be vagy jelentkezve, átirányítás mainpage-re...");
-          this.$router.push('/mainpage');
+          this.$router.push('/dashboard');
         }
       } catch (error) {
         console.error("Hibás user adatok:", error);
@@ -124,7 +124,6 @@ export default {
 </script>
 
 <style scoped>
-/* Stílusok változatlanok */
 .login-page {
     box-sizing: border-box;
     font-family: "Poppins", sans-serif;

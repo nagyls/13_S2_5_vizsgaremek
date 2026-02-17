@@ -34,8 +34,10 @@ class DatabaseSeeder extends Seeder
             'password' => 'Password123',
         ]);
 
-
-        $region = Region::create(['title' => 'Bács-Kiskun']);
+        
+        $region = Region::create([
+            'title' => 'Bács-Kiskun'
+        ]);
         $inner = InnerRegion::create([
             'title' => 'Kiskunfélegyháza',
             'region_id' => $region->id,
