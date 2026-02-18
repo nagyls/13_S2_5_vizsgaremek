@@ -55,10 +55,11 @@ class RegionController extends Controller
             $search = $request->search;
             $query->where('title', 'LIKE', "%{$search}%")->where('region_id', '=', "{$request->region_id}");
         } else if ($request->has('region_id') && !empty($request->region_id)) {
-            $innerRegions = $query->orderBy('title')->get();
+
             $query->where('region_id', '=', "{$request->region_id}");
+            $innerRegions = $query->orderBy('title')->get();
+            
             return response()->json([
-                'success' => true,
                 'data' => $innerRegions
             ]);
         } else {
@@ -70,7 +71,6 @@ class RegionController extends Controller
         $innerRegions = $query->orderBy('title')->get();
 
         return response()->json([
-            'success' => true,
             'data' => $innerRegions
         ]);
     }
@@ -85,7 +85,6 @@ class RegionController extends Controller
         $innerRegions = $query->orderBy('title')->get();
 
         return response()->json([
-            'success' => true,
             'data' => $innerRegions
         ]);
     }
@@ -97,10 +96,11 @@ class RegionController extends Controller
             $search = $request->search;
             $query->where('title', 'LIKE', "%{$search}%")->where('inner_region_id', '=', "{$request->inner_region_id}");
         } else if ($request->has('inner_region_id') && !empty($request->inner_region_id)) {
-            $settlements = $query->orderBy('title')->get();
+
             $query->where('inner_region_id', '=', "{$request->inner_region_id}");
+            $settlements = $query->orderBy('title')->get();
+            
             return response()->json([
-                'success' => true,
                 'data' => $settlements
             ]);
         } else {
@@ -112,7 +112,6 @@ class RegionController extends Controller
         $settlements = $query->orderBy('title')->get();
 
         return response()->json([
-            'success' => true,
             'data' => $settlements
         ]);
     }
