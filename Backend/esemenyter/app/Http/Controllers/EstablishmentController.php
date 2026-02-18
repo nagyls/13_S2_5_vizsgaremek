@@ -51,8 +51,12 @@ class EstablishmentController extends Controller
         $establishment = $query->orderBy('title')->get();
 
         return response()->json([
-            'id' => $establishment->pluck('id'),
-            'title' => $establishment->pluck('title'),
+            'data' => $establishment->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'title' => $item->title,
+                ];
+            })->values(),
         ]);
     }
     public function getEstablishmentbyId($id)
