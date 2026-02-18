@@ -17,6 +17,7 @@ import CommentBox from './components/CommentBox.vue'
 import EventDetails from './components/EventDetails.vue'
 import EventsList from './components/EventsList.vue'
 import Dashboard from './components/Dashboard.vue'
+import InstitutionManagerDashboard from './components/InstitutionManagerDashboard.vue'
 import './style.css'
 
 // Axios interceptor - automatikusan csatolja a tokent az Authorization header-be
@@ -48,6 +49,7 @@ app.component('comment-box', CommentBox)
 app.component('event-details', EventDetails)
 app.component('events-list', EventsList)
 app.component('dashboard', Dashboard)
+app.component('institution-dashboard', InstitutionManagerDashboard)
 app.use(router)
 
 app.mount('#app')

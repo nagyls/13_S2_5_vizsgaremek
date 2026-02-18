@@ -40,21 +40,39 @@ class EstablishmentController extends Controller
     }
 
 
+    // public function getEstablishments(Request $request)
+    // {
+    //     $query = Establishment::query();
+    //     if ($request->has('search') && !empty($request->search) && $request->has('settlement_id') && !empty($request->settlement_id)) {
+    //         $search = $request->search;
+    //         $query->where('title', 'LIKE', "%{$search}%")->where('settlement_id', '=', "{$request->settlement_id}");
+       
+    //     $establishment = $query->orderBy('title')->get(
+    //     return response()->json([
+    //         'id' => $establishment->pluck('id'),
+    //         'title' => $establishment->pluck('title'),
+    //     ]);
+    // }
+
     public function getEstablishments(Request $request)
     {
         $query = Establishment::query();
-        if ($request->has('search') && !empty($request->search) && $request->has('settlement_id') && !empty($request->settlement_id)) {
-            $search = $request->search;
-            $query->where('title', 'LIKE', "%{$search}%")->where('settlement_id', '=', "{$request->settlement_id}");
+    
+        if ($request->filled('settlement_id')) {
+            $query->where('settlement_id', $request->settlement_id);
         }
-
-        $establishment = $query->orderBy('title')->get();
-
+    
+        if ($request->filled('search')) {
+            $query->where('title', 'LIKE', "%{$request->search}%");
+        }
+    
         return response()->json([
-            'id' => $establishment->pluck('id'),
-            'title' => $establishment->pluck('title'),
+            'success' => true,
+            'data' => $query->orderBy('title')->get()
         ]);
     }
+
+
     public function getEstablishmentbyId($id)
     {
         $establishment = Establishment::find($id);
