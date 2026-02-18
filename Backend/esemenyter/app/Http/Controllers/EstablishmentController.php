@@ -46,6 +46,7 @@ class EstablishmentController extends Controller
         if ($request->has('search') && !empty($request->search) && $request->has('settlement_id') && !empty($request->settlement_id)) {
             $search = $request->search;
             $query->where('title', 'LIKE', "%{$search}%")->where('settlement_id', '=', "{$request->settlement_id}");
+        }
 
         $establishment = $query->orderBy('title')->get();
         return response()->json([
@@ -57,25 +58,6 @@ class EstablishmentController extends Controller
             })->values(),
         ]);
     }
-
-    // public function getEstablishments(Request $request)
-    // {
-    //     $query = Establishment::query();
-    
-    //     if ($request->filled('settlement_id')) {
-    //         $query->where('settlement_id', $request->settlement_id);
-    //     }
-    
-    //     if ($request->filled('search')) {
-    //         $query->where('title', 'LIKE', "%{$request->search}%");
-    //     }
-    
-    //     return response()->json([
-    //         'success' => true,
-    //         'data' => $query->orderBy('title')->get()
-    //     ]);
-    // }
-
     public function getEstablishmentbyId($id)
     {
         $establishment = Establishment::find($id);
