@@ -49,5 +49,6 @@ class UserAuthController extends Controller
     public function storeStudent(Request $request)
     {
         $user = $request->user();
+        
     }
 }
