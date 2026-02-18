@@ -9,6 +9,7 @@ import CommentBox from '@/components/CommentBox.vue'
 import EventDetails from '@/components/EventDetails.vue'
 import EventsList from '@/components/EventsList.vue'
 import Dashboard from '@/components/Dashboard.vue'
+import InstitutionManagerDashboard from '@/components/InstitutionManagerDashboard.vue'
 
 const routes = [
   {
@@ -72,6 +73,12 @@ const routes = [
     name: 'dashboard',
     component: Dashboard,
     meta: { title: 'Irányítópult' }
+  },
+  {
+    path: '/institution-dashboard',
+    name: 'institution-dashboard',
+    component: InstitutionManagerDashboard,
+    meta: { title: 'Intézménykezelő Irányítópult' }
   },
   {
     path: '/:pathMatch(.*)*',

@@ -233,7 +233,7 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.title || district.name }}</h5>
+                      <h5>{{ district.title }}</h5>
                       <p>{{ district.cityCount || 'Járás' }} város/település</p>
                     </div>
                   </div>
@@ -274,7 +274,7 @@
                       <i class='bx bx-city'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ city.title || city.name }}</h5>
+                      <h5>{{ city.title }}</h5>
                       <p>{{ city.schoolCount || 'Település' }} iskola</p>
                     </div>
                   </div>
@@ -315,7 +315,7 @@
                       <i class='bx bx-book'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ school.name }}</h5>
+                      <h5>{{ school.title }}</h5>
                       <p>{{ school.type }}</p>
                     </div>
                   </div>
@@ -476,7 +476,7 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.name }}</h5>
+                      <h5>{{ district.title }}</h5>
                       <p>{{ district.cityCount }} város/település</p>
                     </div>
                   </div>
@@ -517,7 +517,7 @@
                       <i class='bx bx-city'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ city.name }}</h5>
+                      <h5>{{ city.title }}</h5>
                       <p>{{ city.schoolCount }} iskola</p>
                     </div>
                   </div>
@@ -558,7 +558,7 @@
                       <i class='bx bx-book'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ school.name }}</h5>
+                      <h5>{{ school.title }}</h5>
                       <p>{{ school.type }}</p>
                     </div>
                   </div>
@@ -652,37 +652,6 @@
                           </button>
                         </span>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Speciális tanítási formák -->
-                  <div class="form-group">
-                    <h5 class="form-subtitle">Speciális tanítási formák</h5>
-                    <div class="special-teaching-grid">
-                      <label class="special-option">
-                        <input 
-                          type="checkbox" 
-                          v-model="specialTeaching.specialNeeds"
-                          class="checkbox-input"
-                        />
-                        <span class="checkbox-label">Speciális nevelési igényű tanulók</span>
-                      </label>
-                      <label class="special-option">
-                        <input 
-                          type="checkbox" 
-                          v-model="specialTeaching.talentManagement"
-                          class="checkbox-input"
-                        />
-                        <span class="checkbox-label">Tehetséggondozás</span>
-                      </label>
-                      <label class="special-option">
-                        <input 
-                          type="checkbox" 
-                          v-model="specialTeaching.extraCurricular"
-                          class="checkbox-input"
-                        />
-                        <span class="checkbox-label">Szakkör vezetése</span>
-                      </label>
                     </div>
                   </div>
                 </div>
@@ -856,7 +825,7 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.title || district.name }}</h5>
+                      <h5>{{ district.title }}</h5>
                       <p>{{ district.cityCount || 'Járás' }}</p>
                     </div>
                   </div>
@@ -897,7 +866,7 @@
                       <i class='bx bx-city'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ city.title || city.name }}</h5>
+                      <h5>{{ city.title }}</h5>
                       <p>{{ city.schoolCount || 'Település' }}</p>
                     </div>
                   </div>
@@ -1102,10 +1071,26 @@
             </div>
             <h3>Profilod kész!</h3>
             <p>Sikeresen beállítottad a profilodat. Most már teljes mértékben használhatod az EseményTér funkcióit.</p>
-            <button class="btn-primary btn-success" @click="goToEvents">
-              <i class='bx bx-calendar'></i>
-              Események megtekintése
-            </button>
+
+
+            <!-- Gombok szerepkör alapján -->
+            <div class="success-buttons">
+              <button class="btn-primary btn-success" @click="goToEvents">
+                <i class='bx bx-calendar'></i>
+                Események megtekintése
+              </button>
+
+              <!-- Intézményvezetői felület gomb - csak admin/institution_manager szerepkörnél -->
+              <button 
+                v-if="user.role === 'institution_manager' || user.role === 'admin'" 
+                class="btn-primary btn-institution" 
+                @click="goToInstitutionDashboard"
+              >
+                <i class='bx bx-building-house'></i>
+                Intézményvezetői felület
+              </button>
+            </div>
+
             <div class="success-actions">
               <button class="btn-text" @click="goToProfile">
                 <i class='bx bx-user'></i>
@@ -1343,22 +1328,22 @@ export default {
     filteredDistricts() {
       if (!this.jarasSearchQuery) return this.districts;
       return this.districts.filter(district =>
-         (district.title || district.name).toLowerCase().includes(this.jarasSearchQuery.toLowerCase())
+         (district.title).toLowerCase().includes(this.jarasSearchQuery.toLowerCase())
       );
     },
      
     filteredCities() {
       if (!this.citySearchQuery) return this.cities;
       return this.cities.filter(city =>
-        (city.title || city.name).toLowerCase().includes(this.citySearchQuery.toLowerCase())
+        (city.title).toLowerCase().includes(this.citySearchQuery.toLowerCase())
       );
     },
     
     filteredSchools() {
       if (!this.schoolSearchQuery) return this.schools;
+      const q = this.schoolSearchQuery.toLowerCase();
       return this.schools.filter(school =>
-        school.name.toLowerCase().includes(this.schoolSearchQuery.toLowerCase()) ||
-        school.type.toLowerCase().includes(this.schoolSearchQuery.toLowerCase())
+        (school.title).toLowerCase().includes(q)
       );
     },
     
@@ -1373,21 +1358,21 @@ export default {
     filteredTeacherDistricts() {
       if (!this.teacherjarasSearchQuery) return this.teacherDistricts;
       return this.teacherDistricts.filter(district =>
-        district.name.toLowerCase().includes(this.teacherjarasSearchQuery.toLowerCase())
+        district.title.toLowerCase().includes(this.teacherjarasSearchQuery.toLowerCase())
       );
     },
     
     filteredTeacherCities() {
       if (!this.teacherCitySearchQuery) return this.teacherCities;
       return this.teacherCities.filter(city =>
-        city.name.toLowerCase().includes(this.teacherCitySearchQuery.toLowerCase())
+        city.title.toLowerCase().includes(this.teacherCitySearchQuery.toLowerCase())
       );
     },
     
     filteredTeacherSchools() {
       if (!this.teacherSchoolSearchQuery) return this.teacherSchools;
       return this.teacherSchools.filter(school =>
-        school.name.toLowerCase().includes(this.teacherSchoolSearchQuery.toLowerCase()) ||
+        school.title.toLowerCase().includes(this.teacherSchoolSearchQuery.toLowerCase()) ||
         school.type.toLowerCase().includes(this.teacherSchoolSearchQuery.toLowerCase())
       );
     },
@@ -1403,14 +1388,14 @@ export default {
     filteredAdminDistricts() {
       if (!this.adminjarasSearchQuery) return this.adminDistricts;
       return this.adminDistricts.filter(district =>
-        (district.title || district.name).toLowerCase().includes(this.adminjarasSearchQuery.toLowerCase())
+        (district.title).toLowerCase().includes(this.adminjarasSearchQuery.toLowerCase())
       );
     },
     
     filteredAdminCities() {
       if (!this.adminCitySearchQuery) return this.adminCities;
       return this.adminCities.filter(city =>
-        (city.title || city.name).toLowerCase().includes(this.adminCitySearchQuery.toLowerCase())
+        (city.title).toLowerCase().includes(this.adminCitySearchQuery.toLowerCase())
       );
     },
     
@@ -1780,43 +1765,36 @@ export default {
     },
     
     loadCitiesForSelectedDistrict() {
-      const districtCities = {
-        201: [
-          { id: 2001, name: 'Szentendre', schoolCount: 5 },
-          { id: 2002, name: 'Pomáz', schoolCount: 4 }
-        ],
-        202: [
-          { id: 2021, name: 'Dunakeszi', schoolCount: 8 },
-          { id: 2022, name: 'Fót', schoolCount: 4 }
-        ]
-      };
-      
-      this.cities = districtCities[this.selectedDistrictId] || [
-        { id: 1, name: 'Város 1', schoolCount: 3 },
-        { id: 2, name: 'Város 2', schoolCount: 5 }
-      ];
-      this.citySearchQuery = '';
+      axios.get('http://127.0.0.1:8000/api/settlements/all', {
+        params: { inner_region_id: this.selectedDistrictId }
+      })
+      .then(res => {
+        this.cities = res.data.data || res.data || [];
+        this.citySearchQuery = '';
+        console.log('Települések betöltve:', this.cities);
+      })
+      .catch(err => {
+        console.error('Települések lekérésének hibája:', err);
+        this.cities = [];
+      });
     },
     
     loadSchoolsForSelectedCity() {
-      const citySchools = {
-        2001: [
-          { id: 20011, name: 'Szentendrei Kossuth Lajos Általános Iskola', type: 'Általános iskola' },
-          { id: 20012, name: 'Szentendrei Móricz Zsigmond Gimnázium', type: 'Gimnázium' }
-        ],
-        2021: [
-          { id: 20211, name: 'Dunakeszi Gábor Dénes Szakgimnázium', type: 'Szakgimnázium' },
-          { id: 20212, name: 'Dunakeszi Arany János Általános Iskola', type: 'Általános iskola' }
-        ]
-      };
-      
-      this.schools = citySchools[this.selectedCityId] || [
-        { id: 1, name: 'Általános Iskola', type: 'Általános iskola' },
-        { id: 2, name: 'Gimnázium', type: 'Gimnázium' }
-      ];
-      this.schoolSearchQuery = '';
+      axios.get('http://127.0.0.1:8000/api/establishments', {
+        params: {
+          settlement_id: this.selectedCityId
+        }
+      })
+      .then(res => {
+        this.schools = res.data.data || [];
+        this.schoolSearchQuery = '';
+      })
+      .catch(err => {
+        console.error('Iskolák lekérésének hibája:', err);
+        this.schools = [];
+      });
     },
-    
+
     // Tanár adatbetöltők
     loadTeacherDistrictsForSelectedRegion() {
       axios.get('http://127.0.0.1:8000/api/innerregions/all', {
@@ -1825,51 +1803,45 @@ export default {
       .then(res => {
         this.teacherDistricts = res.data.data || [];
         this.teacherjarasSearchQuery = '';
-        console.log('Tanár járások betöltve:', this.teacherDistricts);
+        console.log('Járások betöltve:', this.teacherDistricts);
       })
       .catch(err => {
-        console.error('Tanár járások lekérésének hibája:', err);
+        console.error('Járások lekérésének hibája:', err);
         this.teacherDistricts = [];
       });
     },
-    
+
     loadTeacherCitiesForSelectedDistrict() {
-      const districtCities = {
-        201: [
-          { id: 2001, name: 'Szentendre', schoolCount: 5 },
-          { id: 2002, name: 'Pomáz', schoolCount: 4 }
-        ],
-        202: [
-          { id: 2021, name: 'Dunakeszi', schoolCount: 8 },
-          { id: 2022, name: 'Fót', schoolCount: 4 }
-        ]
-      };
-      
-      this.teacherCities = districtCities[this.teacherSelectedDistrictId] || [
-        { id: 1, name: 'Város 1', schoolCount: 3 },
-        { id: 2, name: 'Város 2', schoolCount: 5 }
-      ];
-      this.teacherCitySearchQuery = '';
+      axios.get('http://127.0.0.1:8000/api/settlements/all', {
+        params: {
+          inner_region_id: this.teacherSelectedDistrictId
+        }
+      })
+      .then(res => {
+        this.teacherCities = res.data.data || [];
+        this.teacherCitySearchQuery = '';
+      })
+      .catch(() => {
+        this.teacherCities = [];
+      });
     },
+
     
     loadTeacherSchoolsForSelectedCity() {
-      const citySchools = {
-        2001: [
-          { id: 20011, name: 'Szentendrei Kossuth Lajos Általános Iskola', type: 'Általános iskola' },
-          { id: 20012, name: 'Szentendrei Móricz Zsigmond Gimnázium', type: 'Gimnázium' }
-        ],
-        2021: [
-          { id: 20211, name: 'Dunakeszi Gábor Dénes Szakgimnázium', type: 'Szakgimnázium' },
-          { id: 20212, name: 'Dunakeszi Arany János Általános Iskola', type: 'Általános iskola' }
-        ]
-      };
-      
-      this.teacherSchools = citySchools[this.teacherSelectedCityId] || [
-        { id: 1, name: 'Általános Iskola', type: 'Általános iskola' },
-        { id: 2, name: 'Gimnázium', type: 'Gimnázium' }
-      ];
-      this.teacherSchoolSearchQuery = '';
+      axios.get('http://127.0.0.1:8000/api/establishments', {
+        params: {
+          settlement_id: this.teacherSelectedCityId
+        }
+      })
+      .then(res => {
+        this.teacherSchools = res.data.data || [];
+        this.teacherSchoolSearchQuery = '';
+      })
+      .catch(() => {
+        this.teacherSchools = [];
+      });
     },
+
     
     // Admin adatbetöltők
     loadAdminDistrictsForSelectedRegion() {
@@ -1953,9 +1925,9 @@ export default {
       this.profileConfigured = true;
       this.user.role = this.selectedRole;
       this.user.region = this.selectedRegion?.title || '';
-      this.user.district = this.selectedDistrict?.name || '';
-      this.user.city = this.selectedCity?.name || '';
-      this.user.school = this.selectedSchool?.name || '';
+      this.user.district = this.selectedDistrict?.title || '';
+      this.user.city = this.selectedCity?.title || '';
+      this.user.school = this.selectedSchool?.title || '';
       this.user.schoolId = this.selectedSchoolId;
       this.saveUserData();
     },
@@ -1964,9 +1936,9 @@ export default {
       this.profileConfigured = true;
       this.user.role = this.selectedRole;
       this.user.region = this.teacherSelectedRegion?.title || '';
-      this.user.district = this.teacherSelectedDistrict?.name || '';
-      this.user.city = this.teacherSelectedCity?.name || '';
-      this.user.school = this.teacherSelectedSchool?.name || '';
+      this.user.district = this.teacherSelectedDistrict?.title || '';
+      this.user.city = this.teacherSelectedCity?.title || '';
+      this.user.school = this.teacherSelectedSchool?.title || '';
       this.user.schoolId = this.teacherSelectedSchoolId;
       this.user.isClassTeacher = this.isClassTeacher;
       this.user.mainClass = this.selectedMainClass;
@@ -2006,16 +1978,21 @@ export default {
       })
       .then(response => {
         console.log('Intézmény sikeresen létrehozva:', response.data);
-        
-        // Update local user profile
+
+        if (this.adminSelectedCityId) {
+          this.selectedCityId = this.adminSelectedCityId;
+          this.loadSchoolsForSelectedCity();
+        }
+      
         this.profileConfigured = true;
-        this.user.role = this.selectedRole;
+        this.user.role = 'institution_manager';
+        this.user.institution_id = response.data.data?.id || response.data?.id;
         this.user.region = this.adminSelectedRegion?.title || '';
         this.user.district = this.adminSelectedDistrict?.title || '';
         this.user.city = this.adminSelectedCity?.title || this.adminNewCityName;
         this.user.school = this.schoolForm.name;
         this.user.schoolDetails = { ...this.schoolForm };
-        
+      
         this.saveUserData();
         alert('Intézmény sikeresen regisztrálva!');
       })
@@ -2045,9 +2022,11 @@ export default {
     goToEvents() {
       this.$router.push('/events-list');
     },
-    
     goToProfile() {
       this.$router.push('/profile');
+    },
+    goToInstitutionDashboard() {
+      this.$router.push('/institution-dashboard');
     },
     
     logout() {
@@ -3114,12 +3093,35 @@ export default {
   line-height: 1.6;
 }
 
+.success-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
 .btn-success {
   display: inline-flex;
   align-items: center;
   gap: 12px;
   padding: 18px 36px;
   font-size: 18px;
+}
+
+.btn-institution {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 36px;
+  font-size: 18px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+}
+
+.btn-institution:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
 }
 
 .success-actions {
