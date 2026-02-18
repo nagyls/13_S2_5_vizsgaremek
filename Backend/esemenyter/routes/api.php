@@ -15,6 +15,8 @@ use App\Http\Controllers\RegionController;
 use App\Http\Controllers\EstablishmentController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
+use App\Http\Controllers\RequestController;
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
@@ -68,6 +70,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/events', [EventController::class, 'index']);
     Route::get('/events/{event}', [EventController::class, 'show']);
     Route::post('/establishment', [EstablishmentController::class, 'store']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/requests/student/{establishment}', [RequestController::class, 'getStudentRequests']);
+    Route::get('/requests/teacher/{establishment}', [RequestController::class, 'getTeacherRequests']);
 });
 
 
