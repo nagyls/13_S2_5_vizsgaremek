@@ -3,7 +3,7 @@
     <header class="main-header">
       <div class="container">
         <div class="header-content">
-          <div class="logo-section" @click="$router.push('/dashboard')">
+          <div class="logo-section" @click="$router.push('/user-dashboard')">
             <div class="logo-icon">
               <i class='bx bx-calendar-heart'></i>
             </div>
@@ -625,45 +625,59 @@ export default {
     },
     
     async approveRequest() {
-      try {
-        const token = localStorage.getItem('esemenyter_token');
-        const requestId = this.selectedRequest.id;
-        const userId = this.selectedRequest.user_id;
-        
-        // Itt kellene történnie a felhasználó osztályba sorolásának
-        // Ez lehet egy külön API hívás a user_class táblába
-        if (this.selectedClassId) {
-          await axios.post(`http://127.0.0.1:8000/api/users/${userId}/assign-class`, {
-            class_id: this.selectedClassId,
-            establishment_id: this.user.institution_id
-          }, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-        
-        // Kérelem törlése (vagy státusz frissítése) - itt most töröljük, mert nincs status mező
-        await axios.delete(`http://127.0.0.1:8000/api/establishment-requests/${requestId}`, {
+    try {
+      const token = localStorage.getItem('esemenyter_token');
+      const requestId = this.selectedRequest.id;
+      const userId = this.selectedRequest.user_id;
+
+      // Osztályba sorolás
+      if (this.selectedClassId) {
+        await axios.post(`http://127.0.0.1:8000/api/users/${userId}/assign-class`, {
+          class_id: this.selectedClassId,
+          establishment_id: this.user.institution_id
+        }, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
-        // Eltávolítjuk a listából
-        const index = this.establishmentRequests.findIndex(r => r.id === requestId);
-        if (index !== -1) {
-          this.establishmentRequests.splice(index, 1);
-        }
-        
-        // Felhasználók újratöltése
-        await this.loadInstitutionUsers(this.user.institution_id);
-        
-        this.closeAssignmentModal();
-        this.showNotification('Kérelem sikeresen elfogadva és a felhasználó osztályba sorolva', 'success');
-        
-      } catch (error) {
-        console.error('Hiba a kérelem elfogadásakor:', error);
-        this.errorMessage = error.response?.data?.message || 'Hiba történt a kérelem feldolgozása során';
-        this.showNotification(this.errorMessage, 'error');
       }
-    },
+
+      // Kérelem törlése (ez jelzi, hogy elfogadták)
+      await axios.delete(`http://127.0.0.1:8000/api/establishment-requests/${requestId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Frissítsük a felhasználó szerepkörét az adatbázisban
+      // Itt kell beállítani a user role-t (student vagy teacher)
+      await axios.put(`http://127.0.0.1:8000/api/users/${userId}/role`, {
+        role: this.getUserRole(userId)
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Eltávolítjuk a listából
+      const index = this.establishmentRequests.findIndex(r => r.id === requestId);
+      if (index !== -1) {
+        this.establishmentRequests.splice(index, 1);
+      }
+
+      // Felhasználók újratöltése
+      await this.loadInstitutionUsers(this.user.institution_id);
+
+      this.closeAssignmentModal();
+      this.showNotification('Kérelem sikeresen elfogadva és a felhasználó osztályba sorolva', 'success');
+
+    } catch (error) {
+      console.error('Hiba a kérelem elfogadásakor:', error);
+      this.errorMessage = error.response?.data?.message || 'Hiba történt a kérelem feldolgozása során';
+      this.showNotification(this.errorMessage, 'error');
+    }
+  },
+
+  // Segédfüggvény a szerepkör lekéréséhez
+  getUserRole(userId) {
+    // Itt lehet logika, hogy diák vagy tanár-e
+    // Most egyszerűen visszaadjuk a selectedRequest user role-t
+    return this.selectedRequest?.role || 'student';
+  },
     
     async rejectRequest(request) {
       if (!confirm(`Biztosan elutasítja ${this.getUserById(request.user_id)?.name || 'a felhasználó'} csatlakozási kérelmét?`)) {
