@@ -196,8 +196,8 @@
                       <i class='bx bx-current-location'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ region.title }}</h5>
-                      <p>{{ region.districtCount }} járás</p>
+                      <h5>{{ region.title }} </h5>
+                      <p>{{ region.title === 'Budapest' ? 'főváros' : 'vármegye' }}</p>
                     </div>
                   </div>
                 </div>
@@ -233,8 +233,8 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.title }}</h5>
-                      <p>{{ district.cityCount || 'Járás' }} város/település</p>
+                      <h5>{{ district.title + "i" }}</h5>
+                      <p>{{ district.cityCount || 'járás' }}</p>
                     </div>
                   </div>
                   <div v-if="filteredDistricts.length === 0" class="no-results">
@@ -275,7 +275,6 @@
                     </div>
                     <div class="suggestion-text">
                       <h5>{{ city.title }}</h5>
-                      <p>{{ city.schoolCount || 'Település' }} iskola</p>
                     </div>
                   </div>
                   <div v-if="filteredCities.length === 0" class="no-results">
@@ -353,21 +352,21 @@
                     <i class='bx bx-map-alt'></i>
                     <div>
                       <h5>Járás</h5>
-                      <p>{{ selectedDistrict?.name }}</p>
+                      <p>{{ selectedDistrict?.title }}</p>
                     </div>
                   </div>
                   <div class="confirmation-item">
                     <i class='bx bx-city'></i>
                     <div>
                       <h5>Város</h5>
-                      <p>{{ selectedCity?.name }}</p>
+                      <p>{{ selectedCity?.title }}</p>
                     </div>
                   </div>
                   <div class="confirmation-item">
                     <i class='bx bx-school'></i>
                     <div>
                       <h5>Iskola</h5>
-                      <p>{{ selectedSchool?.name }}</p>
+                      <p>{{ selectedSchool?.title }}</p>
                     </div>
                   </div>
                 </div>
@@ -440,7 +439,7 @@
                     </div>
                     <div class="suggestion-text">
                       <h5>{{ region.title }}</h5>
-                      <p>{{ region.districtCount }} járás</p>
+                      <p>{{ region.title === 'Budapest' ? 'főváros' : 'vármegye' }}</p>
                     </div>
                   </div>
                 </div>
@@ -476,8 +475,8 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.title }}</h5>
-                      <p>{{ district.cityCount }} város/település</p>
+                      <h5>{{ district.title + "i"}}</h5>
+                      <p>{{ district.cityCount || 'járás'}}</p>
                     </div>
                   </div>
                   <div v-if="filteredTeacherDistricts.length === 0" class="no-results">
@@ -518,7 +517,6 @@
                     </div>
                     <div class="suggestion-text">
                       <h5>{{ city.title }}</h5>
-                      <p>{{ city.schoolCount }} iskola</p>
                     </div>
                   </div>
                   <div v-if="filteredTeacherCities.length === 0" class="no-results">
@@ -575,21 +573,9 @@
                   <i class='bx bx-group'></i>
                 </div>
                 <h4>Osztályok és státusz</h4>
-                <p>Add meg, melyik osztály(ok)ban tanítasz és osztályfőnök vagy-e</p>
+                <p>Add meg, melyik osztály(ok)ban tanítasz</p>
                 
                 <div class="class-selection">
-                  <!-- Osztályfőnöki státusz -->
-                  <div class="form-group">
-                    <label class="form-label">
-                      <input 
-                        type="checkbox" 
-                        v-model="isClassTeacher"
-                        class="checkbox-input"
-                      />
-                      <span class="checkbox-label">Osztályfőnök vagyok</span>
-                    </label>
-                  </div>
-
                   <!-- Osztály kiválasztása -->
                   <div v-if="isClassTeacher" class="form-group">
                     <h5 class="form-subtitle">Osztályfőnöki osztály</h5>
@@ -604,7 +590,7 @@
                   <!-- Tanított osztályok -->
                   <div class="form-group">
                     <h5 class="form-subtitle">Mely osztályokban tanítasz?</h5>
-                    <p class="form-description">Válaszd ki az összes osztályt, ahol tanítasz</p>
+                    <p class="form-description">Válaszd ki az összes osztályt, ahol tanítasz.</p>
                     
                     <div class="search-wrapper">
                       <i class='bx bx-search'></i>
@@ -677,14 +663,7 @@
                     <i class='bx bx-school'></i>
                     <div>
                       <h5>Iskola</h5>
-                      <p>{{ teacherSelectedSchool?.name }}</p>
-                    </div>
-                  </div>
-                  <div class="confirmation-item">
-                    <i class='bx bx-crown'></i>
-                    <div>
-                      <h5>Osztályfőnöki státusz</h5>
-                      <p>{{ isClassTeacher ? 'Osztályfőnök' : 'Nem osztályfőnök' }}</p>
+                      <p>{{ teacherSelectedSchool?.title }}</p>
                     </div>
                   </div>
                   <div v-if="isClassTeacher && selectedMainClass" class="confirmation-item">
@@ -789,7 +768,7 @@
                     </div>
                     <div class="suggestion-text">
                       <h5>{{ region.title }}</h5>
-                      <p>{{ region.districtCount }} járás</p>
+                      <p>{{ region.title === 'Budapest' ? 'főváros' : 'vármegye' }}</p>
                     </div>
                   </div>
                 </div>
@@ -825,8 +804,8 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.title }}</h5>
-                      <p>{{ district.cityCount || 'Járás' }}</p>
+                      <h5>{{ district.title + "i" }}</h5>
+                      <p>{{ district.cityCount || 'járás' }}</p>
                     </div>
                   </div>
                   <div v-if="filteredAdminDistricts.length === 0" class="no-results">
@@ -867,7 +846,6 @@
                     </div>
                     <div class="suggestion-text">
                       <h5>{{ city.title }}</h5>
-                      <p>{{ city.schoolCount || 'Település' }}</p>
                     </div>
                   </div>
                   <div v-if="filteredAdminCities.length === 0" class="no-results">
@@ -988,14 +966,14 @@
                     <i class='bx bx-map-alt'></i>
                     <div>
                       <h5>Járás</h5>
-                      <p>{{ adminSelectedDistrict?.title || adminSelectedDistrict?.name }}</p>
+                      <p>{{ adminSelectedDistrict?.title || adminSelectedDistrict?.title }}</p>
                     </div>
                   </div>
                   <div class="confirmation-item">
                     <i class='bx bx-city'></i>
                     <div>
                       <h5>Város</h5>
-                      <p>{{ adminSelectedCity?.title || adminSelectedCity?.name || adminNewCityName }}</p>
+                      <p>{{ adminSelectedCity?.title || adminSelectedCity?.title || adminNewCityName }}</p>
                     </div>
                   </div>
                   <div class="confirmation-item">
@@ -1062,43 +1040,6 @@
             </div>
           </div>
         </transition>
-
-        <!-- Sikeres profilbeállítás után -->
-        <div v-if="profileConfigured" class="success-section">
-          <div class="success-card">
-            <div class="success-icon">
-              <i class='bx bx-party'></i>
-            </div>
-            <h3>Profilod kész!</h3>
-            <p>Sikeresen beállítottad a profilodat. Most már teljes mértékben használhatod az EseményTér funkcióit.</p>
-
-
-            <!-- Gombok szerepkör alapján -->
-            <div class="success-buttons">
-              <button class="btn-primary btn-success" @click="goToEvents">
-                <i class='bx bx-calendar'></i>
-                Események megtekintése
-              </button>
-
-              <!-- Intézményvezetői felület gomb - csak admin/institution_manager szerepkörnél -->
-              <button 
-                v-if="user.role === 'institution_manager' || user.role === 'admin'" 
-                class="btn-primary btn-institution" 
-                @click="goToInstitutionDashboard"
-              >
-                <i class='bx bx-building-house'></i>
-                Intézményvezetői felület
-              </button>
-            </div>
-
-            <div class="success-actions">
-              <button class="btn-text" @click="goToProfile">
-                <i class='bx bx-user'></i>
-                Profil szerkesztése
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </main>
 
@@ -1930,6 +1871,9 @@ export default {
       this.user.school = this.selectedSchool?.title || '';
       this.user.schoolId = this.selectedSchoolId;
       this.saveUserData();
+
+      // Átirányítás a UserDashboard-ra
+      this.$router.push('/pending-approval');
     },
     
     completeTeacherProfileSetup() {
@@ -1948,6 +1892,9 @@ export default {
       }));
       this.user.specialTeaching = { ...this.specialTeaching };
       this.saveUserData();
+
+      // Átirányítás a UserDashboard-ra
+      this.$router.push('/pending-approval');
     },
     
     completeAdminProfileSetup() {
@@ -1995,6 +1942,9 @@ export default {
       
         this.saveUserData();
         alert('Intézmény sikeresen regisztrálva!');
+
+        // Átirányítás a UserDashboard-ra
+        this.$router.push('/user-dashboard');
       })
       .catch(err => {
         console.error('Hiba az intézmény létrehozásakor:', err);
@@ -2607,12 +2557,15 @@ export default {
   background: white;
   border: 2px solid #e5e7eb;
   border-radius: 16px;
-  padding: 20px;
+  padding: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
+
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
+  justify-content: flex-start;
+  text-align: center;
 }
 
 .suggestion-card:hover {
@@ -2627,12 +2580,17 @@ export default {
 }
 
 .suggestion-icon {
-  font-size: 24px;
+  margin-bottom: 2px;
   color: #4f46e5;
 }
 
+.suggestion-text {
+  text-align: center;
+  width: 100%;
+}
+
 .suggestion-text h5 {
-  margin: 0 0 4px 0;
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: #111827;
@@ -3057,91 +3015,6 @@ export default {
 .admin-agreement .checkbox-label {
   font-size: 14px;
   line-height: 1.5;
-}
-
-/* SIKER SZEKCIÓ */
-.success-section {
-  padding: 80px 0;
-}
-
-.success-card {
-  text-align: center;
-  background: white;
-  border-radius: 32px;
-  padding: 60px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-}
-
-.success-icon {
-  font-size: 80px;
-  color: #10b981;
-  margin-bottom: 32px;
-}
-
-.success-card h3 {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 16px;
-  color: #111827;
-}
-
-.success-card p {
-  font-size: 18px;
-  color: #6b7280;
-  max-width: 500px;
-  margin: 0 auto 32px;
-  line-height: 1.6;
-}
-
-.success-buttons {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
-
-.btn-success {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  padding: 18px 36px;
-  font-size: 18px;
-}
-
-.btn-institution {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  padding: 18px 36px;
-  font-size: 18px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-}
-
-.btn-institution:hover {
-  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
-}
-
-.success-actions {
-  margin-top: 24px;
-}
-
-.btn-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  color: #4f46e5;
-  font-size: 16px;
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.btn-text:hover {
-  color: #7c73ff;
 }
 
 /* FLOATING ACTION BUTTON */

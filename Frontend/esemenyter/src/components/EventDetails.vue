@@ -264,7 +264,7 @@ export default {
   
   methods: {
     visszaAzEsemenyekhez() {
-      this.$router.push('/esemenyek')
+      this.$router.push('/events-list')
     },
 
     async betoltEsemenyt() {
