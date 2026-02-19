@@ -4,7 +4,7 @@
             <form @submit.prevent="register">
                 <h1>Regisztráció</h1>
                 <div class="input-box">
-                    <input type="text" v-model="username" placeholder="Felhasználónév" required>
+                    <input type="text" v-model="username" placeholder="Teljes név" required>
                     <i class='bx bx-user'></i> 
                 </div>
                 <div class="input-box">

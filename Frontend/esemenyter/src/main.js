@@ -20,6 +20,7 @@ import Dashboard from './components/Dashboard.vue'
 import InstitutionManagerDashboard from './components/InstitutionManagerDashboard.vue'
 import UserDashboard from './components/UserDashboard.vue'
 import PendingApproval from './components/PendingApproval.vue'
+import Profile from './components/Profile.vue'
 import './style.css'
 
 // Axios interceptor - automatikusan csatolja a tokent az Authorization header-be
@@ -54,6 +55,7 @@ app.component('dashboard', Dashboard)
 app.component('institution-dashboard', InstitutionManagerDashboard)
 app.component('user-dashboard', UserDashboard)
 app.component('pending-approval', PendingApproval)
+app.component('profile', Profile)
 app.use(router)
 
 app.mount('#app')

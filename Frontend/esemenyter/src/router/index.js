@@ -12,6 +12,7 @@ import Dashboard from '@/components/Dashboard.vue'
 import UserDashboard from '@/components/UserDashboard.vue'
 import InstitutionManagerDashboard from '@/components/InstitutionManagerDashboard.vue'
 import PendingApproval from '@/components/PendingApproval.vue'
+import Profile from '@/components/Profile.vue'
 
 const routes = [
   {
@@ -93,6 +94,12 @@ const routes = [
     name: 'pending-approval',
     component: PendingApproval,
     meta: { title: 'Függőben lévő jóváhagyások' }
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: Profile,
+    meta: { title: 'Profil' }
   },
   {
     path: '/:pathMatch(.*)*',
