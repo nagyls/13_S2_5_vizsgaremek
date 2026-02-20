@@ -73,7 +73,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
 
-        for ($i = 0; $i < 50; $i++) {
+        for ($i = 0; $i < 10; $i++) {
             $u = User::factory()->create();
             Student::create([
                 'alias' => 'student_' . $i,
@@ -85,7 +85,6 @@ class DatabaseSeeder extends Seeder
                 'class_id' => $class->id,
                 'user_id' => $u->id,
                 'created_at' => now(),
-                'updated_at' => now(),
             ]);
         }
 
@@ -104,7 +103,6 @@ class DatabaseSeeder extends Seeder
             'user_id' => $user->id,
             'class_id' => $class->id,
             'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
 
@@ -133,14 +131,12 @@ class DatabaseSeeder extends Seeder
             'title' => 'Első szavazás',
             'user_id' => $user->id,
             'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
         $pollOptionId = DB::table('poll_options')->insertGetId([
             'poll_id' => $pollId,
             'title' => 'Első opció',
             'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
         DB::table('poll_answers')->insert([
@@ -153,38 +149,56 @@ class DatabaseSeeder extends Seeder
         DB::table('establishment_requests')->insert([
             'user_id' => $user->id,
             'establishment_id' => $est->id,
+            'role' => 'student',
             'created_at' => now(),
-            'updated_at' => now(),
+        ]);
+        DB::table('establishment_requests')->insert([
+            'user_id' => $user->id,
+            'establishment_id' => $est->id,
+            'role' => 'student',
+            'created_at' => now(),
+        ]);
+        DB::table('establishment_requests')->insert([
+            'user_id' => $user->id,
+            'establishment_id' => $est->id,
+            'role' => 'teacher',
+            'created_at' => now(),
+        ]);
+        DB::table('establishment_requests')->insert([
+            'user_id' => $user->id,
+            'establishment_id' => $est->id,
+            'role' => 'teacher',
+            'created_at' => now(),
         ]);
 
 
         Personel::create([
-            'role' => 'teacher',
+            'role' => 'admin',
             'establishment_id' => $est->id,
             'user_id' => $user->id,
         ]);
 
-        // Load regions / inner regions / settlements from CSV
+        // csv beoplvasás
         $csvPath = database_path('seeders/data/jarasok.csv');
         $lastRegion = null;
 
         if (file_exists($csvPath)) {
             if (($handle = fopen($csvPath, 'r')) !== false) {
-                // read header
+                
                 $header = fgetcsv($handle, 0, ';');
 
                 while (($row = fgetcsv($handle, 0, ';')) !== false) {
-                    // Ignore completely empty rows
+                    // üres sorok kihagyása
                     if (count($row) === 0) {
                         continue;
                     }
 
-                    // Columns: 0=Sorszám, 1=Megye, 2=Járás (inner region), 3=települések (comma separated)
+                    // Columns: 0=Sorszám, 1=Megye, 2=Járás (inner region), 3=települések 
                     $countyRaw = isset($row[1]) ? trim($row[1]) : '';
                     $districtRaw = isset($row[2]) ? trim($row[2]) : '';
                     $settlementsRaw = isset($row[3]) ? trim($row[3]) : '';
 
-                    // If county cell is empty, reuse last non-empty county
+                    //ha üres akkor az elözőt használjuk
                     if ($countyRaw === '' && $lastRegion instanceof \App\Models\Region) {
                         $region = $lastRegion;
                     } elseif ($countyRaw !== '') {
@@ -196,8 +210,6 @@ class DatabaseSeeder extends Seeder
 
                         continue;
                     }
-
-                    // If district is empty skip creating inner region / settlements
                     if ($districtRaw === '') {
                         continue;
                     }
@@ -207,16 +219,16 @@ class DatabaseSeeder extends Seeder
                         ['title' => $innerTitle, 'region_id' => $region->id]
                     );
 
-                    // Split settlements by comma and create them
+                    // felbontás
                     $settlementNames = preg_split('/\s*,\s*/u', $settlementsRaw);
                     foreach ($settlementNames as $s) {
                         $s = trim($s);
-                        // Remove surrounding quotes/newlines, skip empties
+                       
                         $s = trim($s, "\"'\r\n\t ");
                         if ($s === '') {
                             continue;
                         }
-                        // Create settlement (number unknown in CSV -> use empty string to satisfy NOT NULL)
+                        
                         \App\Models\Settlement::firstOrCreate(
                             ['title' => $s, 'inner_region_id' => $inner->id],
                             ['number' => '']

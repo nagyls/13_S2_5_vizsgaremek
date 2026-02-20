@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('establishment_id')->constrained('establishments')->cascadeOnDelete();
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
-            $table->timestamps();
+            $table->timestamp('created_at')->useCurrent();
         });
     }
 

@@ -9,9 +9,7 @@ use Illuminate\Auth\Events\Verified;
 
 class VerificationController extends Controller
 {
-    /**
-     * Mark the authenticated user's email address as verified.
-     */
+    // Email cím megerősítése
     public function verify(EmailVerificationRequest $request)
     {
         if ($request->user()->hasVerifiedEmail()) {
@@ -29,9 +27,7 @@ class VerificationController extends Controller
         ], 200);
     }
 
-    /**
-     * Resend the email verification notification.
-     */
+    //ujraküldés
     public function resend(Request $request)
     {
         if ($request->user()->hasVerifiedEmail()) {
@@ -47,9 +43,7 @@ class VerificationController extends Controller
         ], 200);
     }
 
-    /**
-     * Check if the authenticated user has verified their email.
-     */
+    // Ellenőrzés, hogy az email cím meg lett-e erősítve
     public function check(Request $request)
     {
         return response()->json([

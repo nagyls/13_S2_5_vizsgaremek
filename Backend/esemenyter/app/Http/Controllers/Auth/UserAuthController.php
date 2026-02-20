@@ -46,9 +46,5 @@ class UserAuthController extends Controller
             //'teacher_establishment_ids' => array_unique($personelEstablishments),
         ]);
     }
-    public function storeStudent(Request $request)
-    {
-        $user = $request->user();
-        
-    }
+    public function storeStudent(Request $request) {}
 }
