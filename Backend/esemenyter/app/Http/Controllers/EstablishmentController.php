@@ -46,6 +46,23 @@ class EstablishmentController extends Controller
         if ($request->has('search') && !empty($request->search) && $request->has('settlement_id') && !empty($request->settlement_id)) {
             $search = $request->search;
             $query->where('title', 'LIKE', "%{$search}%")->where('settlement_id', '=', "{$request->settlement_id}");
+        } else if ($request->has('settlement_id') && !empty($request->settlement_id)) {
+
+            $query->where('settlement_id', '=', "{$request->settlement_id}");
+            $establishment = $query->orderBy('title')->get();
+
+            return response()->json([
+                'data' => $establishment->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'title' => $item->title,
+                    ];
+                })->values(),
+            ]);
+        } else {
+            return response()->json([
+                'data' => []
+            ]);
         }
 
         $establishment = $query->orderBy('title')->get();

@@ -3,7 +3,7 @@
     <header class="esemenyek-fejlec">
       <div class="kontener">
         <div class="fejlec-tartalom">
-          <button class="vissza-gomb" @click="$router.push('/mainpage')">
+          <button class="vissza-gomb" @click="$router.push('/user-dashboard')">
             <i class='bx bx-arrow-back'></i> Főoldal
           </button>
           

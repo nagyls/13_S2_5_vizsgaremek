@@ -9,7 +9,10 @@ import CommentBox from '@/components/CommentBox.vue'
 import EventDetails from '@/components/EventDetails.vue'
 import EventsList from '@/components/EventsList.vue'
 import Dashboard from '@/components/Dashboard.vue'
+import UserDashboard from '@/components/UserDashboard.vue'
 import InstitutionManagerDashboard from '@/components/InstitutionManagerDashboard.vue'
+import PendingApproval from '@/components/PendingApproval.vue'
+import Profile from '@/components/Profile.vue'
 
 const routes = [
   {
@@ -79,6 +82,24 @@ const routes = [
     name: 'institution-dashboard',
     component: InstitutionManagerDashboard,
     meta: { title: 'Intézménykezelő Irányítópult' }
+  },
+  {
+    path: '/user-dashboard',
+    name: 'user-dashboard',
+    component: UserDashboard,
+    meta: { title: 'Felhasználói Irányítópult' }
+  },
+  {
+    path: '/pending-approval',
+    name: 'pending-approval',
+    component: PendingApproval,
+    meta: { title: 'Függőben lévő jóváhagyások' }
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: Profile,
+    meta: { title: 'Profil' }
   },
   {
     path: '/:pathMatch(.*)*',
