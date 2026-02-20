@@ -106,7 +106,6 @@ class EstablishmentController extends Controller
     {
         $user = $request->user();
         $establishments = Establishment::where('user_id', $user->id)
-            ->withoutClasses()
             ->orderBy('title')
             ->get();
 
