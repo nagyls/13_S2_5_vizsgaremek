@@ -400,7 +400,6 @@
                   <div class="step" :class="{ 'active': teacherCurrentStep >= 3 }">3</div>
                   <div class="step" :class="{ 'active': teacherCurrentStep >= 4 }">4</div>
                   <div class="step" :class="{ 'active': teacherCurrentStep >= 5 }">5</div>
-                  <div class="step" :class="{ 'active': teacherCurrentStep >= 6 }">6</div>
                 </div>
               </div>
               <h3>Tanár profil beállítása</h3>
@@ -567,84 +566,8 @@
                 </div>
               </div>
               
-              <!-- 5. lépés: Osztályok és osztályfőnöki státusz -->
+              <!-- 5. lépés: Megerősítés -->
               <div v-if="teacherCurrentStep === 5" class="step-content">
-                <div class="step-icon">
-                  <i class='bx bx-group'></i>
-                </div>
-                <h4>Osztályok és státusz</h4>
-                <p>Add meg, melyik osztály(ok)ban tanítasz</p>
-                
-                <div class="class-selection">
-                  <!-- Osztály kiválasztása -->
-                  <div v-if="isClassTeacher" class="form-group">
-                    <h5 class="form-subtitle">Osztályfőnöki osztály</h5>
-                    <div class="class-select">
-                      <select v-model="selectedMainClass" class="select-input">
-                        <option value="">Válassz osztályt...</option>
-                        <option v-for="grade in availableGrades" :value="grade">{{ grade }}. osztály</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <!-- Tanított osztályok -->
-                  <div class="form-group">
-                    <h5 class="form-subtitle">Mely osztályokban tanítasz?</h5>
-                    <p class="form-description">Válaszd ki az összes osztályt, ahol tanítasz.</p>
-                    
-                    <div class="search-wrapper">
-                      <i class='bx bx-search'></i>
-                      <input 
-                        type="text" 
-                        v-model="classSearchQuery"
-                        placeholder="Keresd az osztályt (pl. 9.A)..."
-                        class="search-input"
-                      />
-                    </div>
-                    
-                    <div class="classes-grid">
-                      <div 
-                        v-for="classItem in filteredClasses" 
-                        :key="classItem.id"
-                        class="class-card"
-                        :class="{ 'selected': selectedClasses.includes(classItem.id) }"
-                        @click="toggleClassSelection(classItem.id)"
-                      >
-                        <div class="class-icon">
-                          <i class='bx bx-chalkboard'></i>
-                        </div>
-                        <div class="class-text">
-                          <h5>{{ classItem.name }}</h5>
-                          <p>{{ classItem.studentCount }} tanuló</p>
-                        </div>
-                        <div class="class-check">
-                          <i class='bx bx-check'></i>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <!-- Kiválasztott osztályok -->
-                    <div v-if="selectedClasses.length > 0" class="selected-classes">
-                      <h5>Kiválasztott osztályok:</h5>
-                      <div class="selected-tags">
-                        <span 
-                          v-for="classId in selectedClasses" 
-                          :key="classId"
-                          class="class-tag"
-                        >
-                          {{ getClassName(classId) }}
-                          <button @click="removeClass(classId)" class="tag-remove">
-                            <i class='bx bx-x'></i>
-                          </button>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- 6. lépés: Megerősítés -->
-              <div v-if="teacherCurrentStep === 6" class="step-content">
                 <div class="step-icon">
                   <i class='bx bx-check-circle'></i>
                 </div>
@@ -664,39 +587,6 @@
                     <div>
                       <h5>Iskola</h5>
                       <p>{{ teacherSelectedSchool?.title }}</p>
-                    </div>
-                  </div>
-                  <div v-if="isClassTeacher && selectedMainClass" class="confirmation-item">
-                    <i class='bx bx-chalkboard'></i>
-                    <div>
-                      <h5>Osztályfőnöki osztály</h5>
-                      <p>{{ selectedMainClass }}. osztály</p>
-                    </div>
-                  </div>
-                  <div v-if="selectedClasses.length > 0" class="confirmation-item">
-                    <i class='bx bx-group'></i>
-                    <div>
-                      <h5>Tanított osztályok</h5>
-                      <div class="classes-summary">
-                        <span 
-                          v-for="classId in selectedClasses" 
-                          :key="classId"
-                          class="class-summary-tag"
-                        >
-                          {{ getClassName(classId) }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div v-if="hasSpecialTeaching" class="confirmation-item">
-                    <i class='bx bx-star'></i>
-                    <div>
-                      <h5>Speciális feladatok</h5>
-                      <div class="special-summary">
-                        <span v-if="specialTeaching.specialNeeds">Speciális nevelés</span>
-                        <span v-if="specialTeaching.talentManagement">Tehetséggondozás</span>
-                        <span v-if="specialTeaching.extraCurricular">Szakkör vezetés</span>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -1249,13 +1139,6 @@ export default {
         classItem.name.toLowerCase().includes(query) ||
         classItem.grade.toString().includes(query)
       );
-    },
-    
-    // Van-e speciális tanítási forma
-    hasSpecialTeaching() {
-      return this.specialTeaching.specialNeeds || 
-             this.specialTeaching.talentManagement || 
-             this.specialTeaching.extraCurricular;
     },
     
     // Diák szűrt listák
@@ -1943,8 +1826,7 @@ export default {
         this.saveUserData();
         alert('Intézmény sikeresen regisztrálva!');
 
-        // Átirányítás a UserDashboard-ra
-        this.$router.push('/user-dashboard');
+        this.$router.push('/institution-dashboard');
       })
       .catch(err => {
         console.error('Hiba az intézmény létrehozásakor:', err);

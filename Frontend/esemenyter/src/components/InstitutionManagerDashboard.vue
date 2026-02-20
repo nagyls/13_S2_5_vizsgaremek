@@ -3,13 +3,14 @@
     <header class="main-header">
       <div class="container">
         <div class="header-content">
-          <div class="logo-section" @click="$router.push('/user-dashboard')">
+          <!-- Logo - csak akkor kattintható, ha van legalább 1 osztály -->
+          <div class="logo-section" :class="{ 'disabled': classes.length === 0 }" @click="goToDashboard">
             <div class="logo-icon">
               <i class='bx bx-calendar-heart'></i>
             </div>
             <div class="logo-text">
               <h1 class="site-title">EseményTér</h1>
-              <p class="site-subtitle">Intézményvezetői felület</p>
+              <p class="site-subtitle">Ahol minden eseményt helyet kap</p>
             </div>
           </div>
           
@@ -35,14 +36,24 @@
                   </div>
                 </div>
                 <div class="menu-items">
-                  <router-link to="/profile" class="menu-item">
+                  <!-- Profil menüpont - csak akkor jelenik meg, ha van osztály -->
+                  <router-link v-if="classes.length > 0" to="/profile" class="menu-item">
                     <i class='bx bx-user'></i>
                     <span>Profilom</span>
                   </router-link>
+                  
+                  <!-- Események menüpont - csak akkor jelenik meg, ha van osztály -->
+                  <router-link v-if="classes.length > 0" to="/events-list" class="menu-item">
+                    <i class='bx bx-calendar'></i>
+                    <span>Események</span>
+                  </router-link>
+                  
+                  <!-- Intézmény beállítások - mindig elérhető -->
                   <router-link to="/institution-settings" class="menu-item">
                     <i class='bx bx-building'></i>
                     <span>Intézmény beállítások</span>
                   </router-link>
+                  
                   <div class="menu-divider"></div>
                   <button class="menu-item logout-btn" @click="logout">
                     <i class='bx bx-log-out'></i>
@@ -83,15 +94,15 @@
                 <span class="stat-label">Osztály</span>
               </div>
               <div class="stat-item">
-                <span class="stat-value">{{ pendingRequests.length }}</span>
+                <span class="stat-value">{{ totalPendingRequests }}</span>
                 <span class="stat-label">Függő kérelem</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Csatlakozási kérelmek szekció -->
-        <div class="requests-section">
+        <!-- CSATLAKOZÁSI KÉRELMEK SZEKCIÓ - csak akkor jelenik meg, ha van osztály -->
+        <div v-if="classes.length > 0" class="requests-section">
           <div class="section-header">
             <h3>
               <i class='bx bx-user-check'></i>
@@ -109,16 +120,32 @@
               </div>
             </div>
           </div>
+          
+          <!-- Fülek a kérelmekhez -->
+          <div class="request-tabs">
+            <button 
+              class="request-tab" 
+              :class="{ 'active': activeRequestTab === 'students' }"
+              @click="activeRequestTab = 'students'"
+            >
+              <i class='bx bx-graduation'></i>
+              Diák kérelmek ({{ pendingStudentRequests.length }})
+            </button>
+            <button 
+              class="request-tab" 
+              :class="{ 'active': activeRequestTab === 'teachers' }"
+              @click="activeRequestTab = 'teachers'"
+            >
+              <i class='bx bx-chalkboard'></i>
+              Tanár kérelmek ({{ pendingTeacherRequests.length }})
+            </button>
+          </div>
 
-          <!-- Függőben lévő kérelmek -->
-          <div v-if="pendingRequests.length > 0" class="requests-group">
-            <h4 class="group-title">
-              <span class="status-badge pending"></span>
-              Függőben lévő kérelmek ({{ pendingRequests.length }})
-            </h4>
-            <div class="requests-grid">
+          <!-- Diák kérelmek -->
+          <div v-if="activeRequestTab === 'students'" class="requests-group">
+            <div v-if="filteredStudentRequests.length > 0" class="requests-grid">
               <div 
-                v-for="request in filteredPendingRequests" 
+                v-for="request in filteredStudentRequests" 
                 :key="request.id"
                 class="request-card pending"
               >
@@ -137,9 +164,62 @@
                     <i class='bx bx-calendar'></i>
                     <span>Kérelem dátuma: {{ formatDate(request.created_at) }}</span>
                   </div>
+                </div>
+
+                <div class="request-actions">
+                  <button class="btn-approve" @click="showClassAssignmentModal(request)">
+                    <i class='bx bx-check'></i>
+                    <span>Elfogadás</span>
+                  </button>
+                  <button class="btn-reject" @click="rejectRequest(request)">
+                    <i class='bx bx-x'></i>
+                    <span>Elutasítás</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nincs diák kérelem -->
+            <div v-else-if="pendingStudentRequests.length === 0 && !searchQuery" class="empty-state">
+              <i class='bx bx-inbox'></i>
+              <h4>Nincsenek diák kérelmek</h4>
+              <p>Még nem érkezett diák csatlakozási kérelem az intézményhez.</p>
+            </div>
+
+            <!-- Nincs találat keresésre -->
+            <div v-else-if="filteredStudentRequests.length === 0 && searchQuery" class="empty-state">
+              <i class='bx bx-search-alt'></i>
+              <h4>Nincs találat</h4>
+              <p>A keresés nem hozott eredményt: "{{ searchQuery }}"</p>
+            </div>
+          </div>
+
+          <!-- Tanár kérelmek -->
+          <div v-if="activeRequestTab === 'teachers'" class="requests-group">
+            <div v-if="filteredTeacherRequests.length > 0" class="requests-grid">
+              <div 
+                v-for="request in filteredTeacherRequests" 
+                :key="request.id"
+                class="request-card pending"
+              >
+                <div class="request-header">
+                  <div class="user-avatar-medium">
+                    <span>{{ getUserInitials(request.user) }}</span>
+                  </div>
+                  <div class="user-info">
+                    <h4>{{ request.user.name }}</h4>
+                    <p class="user-email">{{ request.user.email }}</p>
+                  </div>
+                </div>
+
+                <div class="request-body">
                   <div class="info-row">
-                    <i class='bx bx-badge-check'></i>
-                    <span>Szerepkör: {{ getUserRole(request.user_id) }}</span>
+                    <i class='bx bx-calendar'></i>
+                    <span>Kérelem dátuma: {{ formatDate(request.created_at) }}</span>
+                  </div>
+                  <div class="info-row" v-if="request.specializations">
+                    <i class='bx bx-star'></i>
+                    <span>Szakosodás: {{ request.specializations }}</span>
                   </div>
                 </div>
 
@@ -155,25 +235,180 @@
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Nincs függő kérelem -->
-          <div v-else-if="pendingRequests.length === 0 && !searchQuery" class="empty-state">
-            <i class='bx bx-inbox'></i>
-            <h4>Nincsenek függőben lévő kérelmek</h4>
-            <p>Még nem érkezett csatlakozási kérelem az intézményhez.</p>
-          </div>
+            <!-- Nincs tanár kérelem -->
+            <div v-else-if="pendingTeacherRequests.length === 0 && !searchQuery" class="empty-state">
+              <i class='bx bx-inbox'></i>
+              <h4>Nincsenek tanár kérelmek</h4>
+              <p>Még nem érkezett tanár csatlakozási kérelem az intézményhez.</p>
+            </div>
 
-          <!-- Nincs találat keresésre -->
-          <div v-else-if="filteredPendingRequests.length === 0 && searchQuery" class="empty-state">
-            <i class='bx bx-search-alt'></i>
-            <h4>Nincs találat</h4>
-            <p>A keresés nem hozott eredményt: "{{ searchQuery }}"</p>
+            <!-- Nincs találat keresésre -->
+            <div v-else-if="filteredTeacherRequests.length === 0 && searchQuery" class="empty-state">
+              <i class='bx bx-search-alt'></i>
+              <h4>Nincs találat</h4>
+              <p>A keresés nem hozott eredményt: "{{ searchQuery }}"</p>
+            </div>
           </div>
         </div>
 
-        <!-- Már csatlakozott felhasználók -->
-        <div class="connected-users-section">
+        <!-- OSZTÁLYOK LÉTREHOZÁSA SZEKCIÓ - mindig látható -->
+        <div class="classes-section" :class="{ 
+          'warning': classes.length === 0,
+          'completed': classes.length > 0 
+        }">
+          <div class="section-header">
+            <h3>
+              <i class='bx bx-group'></i>
+              Osztályok kezelése
+            </h3>
+            <div v-if="classes.length === 0" class="warning-message">
+              <i class='bx bx-error-circle'></i>
+              <span>Legalább egy osztályt létre kell hoznod!</span>
+            </div>
+            <div v-else class="success-message">
+              <i class='bx bx-check-circle'></i>
+              <span>Osztályok sikeresen létrehozva ({{ classes.length }} osztály)</span>
+            </div>
+          </div>
+
+          <!-- Osztály létrehozó űrlap -->
+          <div class="create-class-form">
+            <h4>Új osztály létrehozása</h4>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="className">Osztály neve *</label>
+                <input 
+                  type="text" 
+                  id="className"
+                  v-model="newClass.name"
+                  placeholder="Pl.: 9.A, 10.B, 5. osztály"
+                  class="form-control"
+                  :class="{ 'error': classErrors.name }"
+                />
+                <span v-if="classErrors.name" class="error-message">{{ classErrors.name }}</span>
+              </div>
+
+              <div class="form-group">
+                <label for="classGrade">Évfolyam *</label>
+                <select 
+                  id="classGrade"
+                  v-model="newClass.grade"
+                  class="form-control"
+                  :class="{ 'error': classErrors.grade }"
+                >
+                  <option value="">Válassz évfolyamot</option>
+                  <option v-for="grade in availableGrades" :key="grade" :value="grade">
+                    {{ grade }}. évfolyam
+                  </option>
+                </select>
+                <span v-if="classErrors.grade" class="error-message">{{ classErrors.grade }}</span>
+              </div>
+
+              <div class="form-group">
+                <label for="classCapacity">Férőhely (opcionális)</label>
+                <input 
+                  type="number" 
+                  id="classCapacity"
+                  v-model="newClass.capacity"
+                  placeholder="Pl.: 30"
+                  min="1"
+                  class="form-control"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="classTeacher">Osztályfőnök (opcionális)</label>
+                <select 
+                  id="classTeacher"
+                  v-model="newClass.teacher_id"
+                  class="form-control"
+                >
+                  <option value="">-- Nincs kijelölve --</option>
+                  <option 
+                    v-for="teacher in teachers" 
+                    :key="teacher.id" 
+                    :value="teacher.id"
+                  >
+                    {{ teacher.name }}
+                  </option>
+                </select>
+                <small class="form-text">Az osztályfőnök később is kijelölhető</small>
+              </div>
+
+              <div class="form-group">
+                <button class="btn-primary" @click="createClass" :disabled="isCreatingClass">
+                  <i class='bx bx-plus'></i>
+                  {{ isCreatingClass ? 'Létrehozás...' : 'Osztály létrehozása' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Létrehozott osztályok listája -->
+          <div class="classes-list">
+            <h4>Létrehozott osztályok ({{ classes.length }})</h4>
+            
+            <div v-if="classes.length === 0" class="empty-state small">
+              <i class='bx bx-folder-open'></i>
+              <p>Még nem hoztál létre egyetlen osztályt sem.</p>
+            </div>
+
+            <div v-else class="classes-grid">
+              <div v-for="classItem in classes" :key="classItem.id" class="class-item">
+                <div class="class-item-header">
+                  <h5>{{ classItem.name }}</h5>
+                  <span class="class-grade">{{ classItem.grade }}. évfolyam</span>
+                </div>
+                <div class="class-item-body">
+                  <div class="class-stat">
+                    <i class='bx bx-group'></i>
+                    <span>{{ classItem.student_count || 0 }} / {{ classItem.capacity || '∞' }} diák</span>
+                  </div>
+                  <div class="class-stat" v-if="classItem.teacher_name">
+                    <i class='bx bx-chalkboard'></i>
+                    <span>Osztályfőnök: {{ classItem.teacher_name }}</span>
+                  </div>
+                </div>
+                <div class="class-item-actions">
+                  <button class="btn-icon" @click="editClass(classItem)" title="Szerkesztés">
+                    <i class='bx bx-edit'></i>
+                  </button>
+                  <button class="btn-icon" @click="deleteClass(classItem)" title="Törlés">
+                    <i class='bx bx-trash'></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Figyelmeztetés, ha nincs osztály -->
+          <div v-if="classes.length === 0" class="blocking-warning">
+            <i class='bx bx-error-circle'></i>
+            <div class="warning-content">
+              <h4>Osztály létrehozása szükséges</h4>
+              <p>Ahhoz, hogy diákok és tanárok csatlakozhassanak az intézményhez, és hogy elérd a teljes funkciókat, legalább egy osztályt létre kell hoznod.</p>
+            </div>
+          </div>
+
+          <!-- Sikeres véglegesítés üzenet, ha van osztály -->
+          <div v-if="classes.length > 0" class="success-info">
+            <i class='bx bx-check-circle'></i>
+            <div class="success-content">
+              <h4>Gratulálunk! 🎉</h4>
+              <p>Sikeresen létrehoztad az első osztályt. Most már teljes körűen használhatod az EseményTér összes funkcióját:</p>
+              <ul>
+                <li><i class='bx bx-check'></i> Diákok és tanárok csatlakozási kérelmeinek kezelése</li>
+                <li><i class='bx bx-check'></i> Események létrehozása és kezelése</li>
+                <li><i class='bx bx-check'></i> Profilod szerkesztése</li>
+                <li><i class='bx bx-check'></i> Események böngészése</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Már csatlakozott felhasználók - csak akkor jelenik meg, ha van osztály -->
+        <div v-if="classes.length > 0" class="connected-users-section">
           <div class="section-header">
             <h3>
               <i class='bx bx-group'></i>
@@ -270,9 +505,9 @@
       </div>
     </main>
 
-    <!-- Osztály hozzárendelés modal -->
+    <!-- Osztály hozzárendelés modal - csak akkor jelenik meg, ha van osztály -->
     <transition name="modal">
-      <div v-if="showAssignmentModal" class="modal-overlay" @click.self="closeAssignmentModal">
+      <div v-if="showAssignmentModal && classes.length > 0" class="modal-overlay" @click.self="closeAssignmentModal">
         <div class="modal-container">
           <div class="modal-header">
             <h3>
@@ -293,7 +528,7 @@
                 <h4>{{ selectedRequest?.user.name }}</h4>
                 <p>{{ selectedRequest?.user.email }}</p>
                 <div class="role-badge-small">
-                  {{ getUserRole(selectedRequest?.user_id) }}
+                  {{ selectedRequest?.role === 'student' ? 'Diák' : 'Tanár' }}
                 </div>
               </div>
             </div>
@@ -395,6 +630,7 @@ export default {
       classes: [], // Osztályok
       userRoles: {}, // Felhasználók szerepköreinek gyorsítótárazása
       
+      activeRequestTab: 'students', // 'students' vagy 'teachers'
       activeUserTab: 'students',
       showUserMenu: false,
       showScrollTop: false,
@@ -411,7 +647,18 @@ export default {
       // Toast értesítések
       showToast: false,
       toastMessage: '',
-      toastType: 'success'
+      toastType: 'success',
+      
+      // Új osztály létrehozása
+      newClass: {
+        name: '',
+        grade: '',
+        capacity: 30,
+        teacher_id: ''
+      },
+      classErrors: {},
+      isCreatingClass: false,
+      availableGrades: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
     };
   },
   
@@ -425,17 +672,41 @@ export default {
         .substring(0, 2);
     },
     
-    // Függőben lévő kérelmek (minden establishment_requests rekord)
-    pendingRequests() {
-      return this.establishmentRequests;
+    // Összes függőben lévő kérelem
+    totalPendingRequests() {
+      return this.establishmentRequests.length;
     },
     
-    // Szűrt függőben lévő kérelmek
-    filteredPendingRequests() {
-      if (!this.searchQuery) return this.pendingRequests;
+    // Diák kérelmek
+    pendingStudentRequests() {
+      return this.establishmentRequests.filter(req => req.role === 'student');
+    },
+    
+    // Tanár kérelmek
+    pendingTeacherRequests() {
+      return this.establishmentRequests.filter(req => req.role === 'teacher');
+    },
+    
+    // Szűrt diák kérelmek
+    filteredStudentRequests() {
+      if (!this.searchQuery) return this.pendingStudentRequests;
       
       const query = this.searchQuery.toLowerCase();
-      return this.pendingRequests.filter(request => {
+      return this.pendingStudentRequests.filter(request => {
+        const user = this.getUserById(request.user_id);
+        return user && (
+          user.name.toLowerCase().includes(query) ||
+          user.email.toLowerCase().includes(query)
+        );
+      });
+    },
+    
+    // Szűrt tanár kérelmek
+    filteredTeacherRequests() {
+      if (!this.searchQuery) return this.pendingTeacherRequests;
+      
+      const query = this.searchQuery.toLowerCase();
+      return this.pendingTeacherRequests.filter(request => {
         const user = this.getUserById(request.user_id);
         return user && (
           user.name.toLowerCase().includes(query) ||
@@ -451,6 +722,23 @@ export default {
         warning: 'bx bx-error',
         info: 'bx bx-info-circle'
       }[this.toastType];
+    }
+  },
+  
+  watch: {
+    // Ha nincs osztály, blokkoljuk a navigációt
+    classes: {
+      handler(newVal) {
+        if (newVal.length === 0) {
+          // Blokkoljuk a navigációt
+          window.onbeforeunload = () => {
+            return 'Még nem hoztál létre osztályt! Ha elhagyod az oldalt, nem fogadják el a csatlakozási kérelmeket.';
+          };
+        } else {
+          window.onbeforeunload = null;
+        }
+      },
+      immediate: true
     }
   },
   
@@ -471,18 +759,28 @@ export default {
         .substring(0, 2);
     },
     
-    // Felhasználó szerepkörének lekérése
-    getUserRole(userId) {
-      return this.userRoles[userId] || 'Ismeretlen';
-    },
-    
     // Dátum formázás
     formatDate(date) {
-      return format(new Date(date), 'yyyy. MMMM d. HH:mm', { locale: hu });
+      if (!date) return 'Ismeretlen';
+      return new Date(date).toLocaleDateString('hu-HU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     },
     
     toggleUserMenu() {
       this.showUserMenu = !this.showUserMenu;
+    },
+    
+    // Navigáció a dashboardra - csak akkor engedélyezett, ha van osztály
+    goToDashboard() {
+      if (this.classes.length > 0) {
+        this.$router.push('/user-dashboard');
+      }
+      // Ha nincs osztály, nem csinál semmit
     },
     
     // Adatok betöltése
@@ -547,18 +845,6 @@ export default {
         const users = await Promise.all(userPromises);
         this.allUsers = users;
         
-        // Szerepkörök gyűjtése
-        for (const user of users) {
-          try {
-            const roleResponse = await axios.get(`http://127.0.0.1:8000/api/users/${user.id}/role`, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            this.userRoles[user.id] = roleResponse.data.role || 'unknown';
-          } catch (e) {
-            this.userRoles[user.id] = 'unknown';
-          }
-        }
-        
       } catch (error) {
         console.error('Hiba a felhasználók betöltésekor:', error);
       }
@@ -610,6 +896,92 @@ export default {
       };
     },
     
+    // Új osztály létrehozása
+    async createClass() {
+      this.classErrors = {};
+      
+      // Validáció - csak a kötelező mezőket ellenőrizzük
+      if (!this.newClass.name?.trim()) {
+        this.classErrors.name = 'Az osztály neve kötelező';
+      }
+      
+      if (!this.newClass.grade) {
+        this.classErrors.grade = 'Az évfolyam kötelező';
+      }
+      
+      if (Object.keys(this.classErrors).length > 0) {
+        return;
+      }
+      
+      this.isCreatingClass = true;
+      
+      try {
+        const token = localStorage.getItem('esemenyter_token');
+        
+        const classData = {
+          name: this.newClass.name,
+          grade: this.newClass.grade,
+          capacity: this.newClass.capacity || null,
+          teacher_id: this.newClass.teacher_id || null, // Lehet üres is
+          establishment_id: this.user.institution_id
+        };
+        
+        const response = await axios.post(`http://127.0.0.1:8000/api/classes`, classData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Újratöltjük az osztályokat
+        await this.loadClasses(this.user.institution_id);
+        
+        // Űrlap alaphelyzetbe
+        this.newClass = {
+          name: '',
+          grade: '',
+          capacity: 30,
+          teacher_id: ''  // Üresen hagyható
+        };
+        
+        this.showNotification('Osztály sikeresen létrehozva!', 'success');
+        
+      } catch (error) {
+        console.error('Hiba az osztály létrehozásakor:', error);
+        this.showNotification('Hiba történt az osztály létrehozásakor', 'error');
+      } finally {
+        this.isCreatingClass = false;
+      }
+    },
+    
+    // Osztály szerkesztése
+    async editClass(classItem) {
+      // TODO: Szerkesztő modal megnyitása
+      console.log('Edit class:', classItem);
+      this.showNotification('Szerkesztés funkció fejlesztés alatt', 'info');
+    },
+    
+    // Osztály törlése
+    async deleteClass(classItem) {
+      if (!confirm(`Biztosan törölni szeretnéd a(z) ${classItem.name} osztályt?`)) {
+        return;
+      }
+      
+      try {
+        const token = localStorage.getItem('esemenyter_token');
+        
+        await axios.delete(`http://127.0.0.1:8000/api/classes/${classItem.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Újratöltjük az osztályokat
+        await this.loadClasses(this.user.institution_id);
+        
+        this.showNotification('Osztály sikeresen törölve!', 'success');
+        
+      } catch (error) {
+        console.error('Hiba az osztály törlésekor:', error);
+        this.showNotification('Hiba történt az osztály törlésekor', 'error');
+      }
+    },
+    
     // Kérelem kezelés
     showClassAssignmentModal(request) {
       this.selectedRequest = request;
@@ -625,59 +997,52 @@ export default {
     },
     
     async approveRequest() {
-    try {
-      const token = localStorage.getItem('esemenyter_token');
-      const requestId = this.selectedRequest.id;
-      const userId = this.selectedRequest.user_id;
+      try {
+        const token = localStorage.getItem('esemenyter_token');
+        const requestId = this.selectedRequest.id;
+        const userId = this.selectedRequest.user_id;
+        const role = this.selectedRequest.role;
 
-      // Osztályba sorolás
-      if (this.selectedClassId) {
-        await axios.post(`http://127.0.0.1:8000/api/users/${userId}/assign-class`, {
-          class_id: this.selectedClassId,
-          establishment_id: this.user.institution_id
+        // Osztályba sorolás
+        if (this.selectedClassId) {
+          await axios.post(`http://127.0.0.1:8000/api/users/${userId}/assign-class`, {
+            class_id: this.selectedClassId,
+            establishment_id: this.user.institution_id
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+
+        // Kérelem törlése (ez jelzi, hogy elfogadták)
+        await axios.delete(`http://127.0.0.1:8000/api/establishment-requests/${requestId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // Frissítsük a felhasználó szerepkörét az adatbázisban
+        await axios.put(`http://127.0.0.1:8000/api/users/${userId}/role`, {
+          role: role
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
+
+        // Eltávolítjuk a listából
+        const index = this.establishmentRequests.findIndex(r => r.id === requestId);
+        if (index !== -1) {
+          this.establishmentRequests.splice(index, 1);
+        }
+
+        // Felhasználók újratöltése
+        await this.loadInstitutionUsers(this.user.institution_id);
+
+        this.closeAssignmentModal();
+        this.showNotification('Kérelem sikeresen elfogadva és a felhasználó osztályba sorolva', 'success');
+
+      } catch (error) {
+        console.error('Hiba a kérelem elfogadásakor:', error);
+        this.errorMessage = error.response?.data?.message || 'Hiba történt a kérelem feldolgozása során';
+        this.showNotification(this.errorMessage, 'error');
       }
-
-      // Kérelem törlése (ez jelzi, hogy elfogadták)
-      await axios.delete(`http://127.0.0.1:8000/api/establishment-requests/${requestId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      // Frissítsük a felhasználó szerepkörét az adatbázisban
-      // Itt kell beállítani a user role-t (student vagy teacher)
-      await axios.put(`http://127.0.0.1:8000/api/users/${userId}/role`, {
-        role: this.getUserRole(userId)
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      // Eltávolítjuk a listából
-      const index = this.establishmentRequests.findIndex(r => r.id === requestId);
-      if (index !== -1) {
-        this.establishmentRequests.splice(index, 1);
-      }
-
-      // Felhasználók újratöltése
-      await this.loadInstitutionUsers(this.user.institution_id);
-
-      this.closeAssignmentModal();
-      this.showNotification('Kérelem sikeresen elfogadva és a felhasználó osztályba sorolva', 'success');
-
-    } catch (error) {
-      console.error('Hiba a kérelem elfogadásakor:', error);
-      this.errorMessage = error.response?.data?.message || 'Hiba történt a kérelem feldolgozása során';
-      this.showNotification(this.errorMessage, 'error');
-    }
-  },
-
-  // Segédfüggvény a szerepkör lekéréséhez
-  getUserRole(userId) {
-    // Itt lehet logika, hogy diák vagy tanár-e
-    // Most egyszerűen visszaadjuk a selectedRequest user role-t
-    return this.selectedRequest?.role || 'student';
-  },
+    },
     
     async rejectRequest(request) {
       if (!confirm(`Biztosan elutasítja ${this.getUserById(request.user_id)?.name || 'a felhasználó'} csatlakozási kérelmét?`)) {
@@ -793,6 +1158,7 @@ export default {
   
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
+    window.onbeforeunload = null;
   }
 };
 </script>
@@ -839,6 +1205,17 @@ export default {
 
 .logo-section:hover {
   opacity: 0.8;
+}
+
+/* Logo disabled állapot */
+.logo-section.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.logo-section.disabled:hover {
+  opacity: 0.6;
 }
 
 .logo-icon {
@@ -1134,6 +1511,44 @@ export default {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
+/* Request tabok */
+.request-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 10px;
+}
+
+.request-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.request-tab i {
+  font-size: 20px;
+}
+
+.request-tab:hover {
+  background: #f3f4f6;
+  color: #4f46e5;
+}
+
+.request-tab.active {
+  background: #4f46e5;
+  color: white;
+}
+
 .requests-group {
   margin-bottom: 40px;
 }
@@ -1287,6 +1702,288 @@ export default {
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
+/* Osztályok szekció */
+.classes-section {
+  background: white;
+  border-radius: 24px;
+  padding: 30px;
+  margin: 40px 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.classes-section.warning {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.classes-section.completed {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.warning-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #fef3c7;
+  border-radius: 50px;
+  color: #92400e;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.warning-message i {
+  font-size: 18px;
+  color: #f59e0b;
+}
+
+/* Sikeres állapot üzenet */
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #d1fae5;
+  border-radius: 50px;
+  color: #065f46;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.success-message i {
+  font-size: 18px;
+  color: #10b981;
+}
+
+.create-class-form {
+  background: #f8f9ff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 30px;
+}
+
+.create-class-form h4 {
+  margin: 0 0 20px 0;
+  color: #4f46e5;
+  font-size: 18px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  align-items: end;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-control.error {
+  border-color: #ef4444;
+}
+
+.error-message {
+  display: block;
+  margin-top: 5px;
+  color: #ef4444;
+  font-size: 12px;
+}
+
+.form-text {
+  display: block;
+  margin-top: 5px;
+  color: #6b7280;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.classes-list {
+  margin-top: 30px;
+}
+
+.classes-list h4 {
+  margin: 0 0 20px 0;
+  color: #374151;
+  font-size: 18px;
+}
+
+.classes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.class-item {
+  background: #f8f9ff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.class-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+  border-color: #4f46e5;
+}
+
+.class-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.class-item-header h5 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.class-grade {
+  font-size: 14px;
+  color: #6b7280;
+  background: #e0e7ff;
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+
+.class-item-body {
+  margin-bottom: 15px;
+}
+
+.class-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.class-stat i {
+  color: #4f46e5;
+  font-size: 18px;
+}
+
+.class-item-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 15px;
+}
+
+.blocking-warning {
+  margin-top: 30px;
+  padding: 24px;
+  background: #fef3c7;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border: 2px solid #f59e0b;
+}
+
+.blocking-warning i {
+  font-size: 48px;
+  color: #f59e0b;
+}
+
+.warning-content h4 {
+  margin: 0 0 10px 0;
+  color: #92400e;
+  font-size: 20px;
+}
+
+.warning-content p {
+  margin: 0;
+  color: #92400e;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+/* Sikeres véglegesítés info */
+.success-info {
+  margin-top: 30px;
+  padding: 30px;
+  background: #d1fae5;
+  border-radius: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  border: 2px solid #10b981;
+}
+
+.success-info i {
+  font-size: 48px;
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.success-content h4 {
+  margin: 0 0 15px 0;
+  color: #065f46;
+  font-size: 22px;
+}
+
+.success-content p {
+  margin: 0 0 15px 0;
+  color: #065f46;
+  line-height: 1.5;
+}
+
+.success-content ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.success-content li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  color: #065f46;
+  font-size: 16px;
+}
+
+.success-content li i {
+  font-size: 20px;
+  color: #10b981;
+}
+
 /* Empty state */
 .empty-state {
   text-align: center;
@@ -1424,20 +2121,6 @@ export default {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.info-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 0;
-  color: #4b5563;
-  font-size: 14px;
-}
-
-.info-row i {
-  color: #4f46e5;
-  font-size: 18px;
-}
-
 .user-card-actions {
   display: flex;
   justify-content: flex-end;
@@ -1572,12 +2255,12 @@ export default {
   font-weight: 600;
 }
 
-/* Form elemek */
-.form-group {
+/* Form elemek a modalban */
+.assignment-form .form-group {
   margin-bottom: 20px;
 }
 
-.form-group label {
+.assignment-form .form-group label {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
@@ -1617,23 +2300,6 @@ export default {
 
 .form-hint i {
   color: #4f46e5;
-}
-
-/* Error message */
-.error-message {
-  margin-top: 16px;
-  padding: 12px;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #ef4444;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.error-message i {
-  font-size: 20px;
 }
 
 /* Gombok */
@@ -1820,6 +2486,10 @@ export default {
     width: 100%;
     min-width: auto;
   }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1856,8 +2526,18 @@ export default {
   }
   
   .requests-section,
-  .connected-users-section {
+  .connected-users-section,
+  .classes-section {
     padding: 20px;
+  }
+  
+  .request-tabs {
+    flex-direction: column;
+  }
+  
+  .request-tab {
+    width: 100%;
+    justify-content: center;
   }
   
   .user-tabs {
@@ -1870,6 +2550,10 @@ export default {
   }
   
   .users-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .classes-grid {
     grid-template-columns: 1fr;
   }
   
@@ -1900,6 +2584,21 @@ export default {
   .user-summary {
     flex-direction: column;
     text-align: center;
+  }
+  
+  .blocking-warning {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .success-info {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .success-content ul {
+    text-align: left;
   }
   
   .toast-notification {
@@ -1970,6 +2669,10 @@ export default {
     justify-content: center;
   }
   
+  .class-item-actions {
+    justify-content: center;
+  }
+  
   .modal-footer {
     flex-direction: column;
   }
@@ -1988,6 +2691,34 @@ export default {
   }
   
   .empty-state p {
+    font-size: 14px;
+  }
+  
+  .blocking-warning {
+    padding: 16px;
+  }
+  
+  .blocking-warning i {
+    font-size: 36px;
+  }
+  
+  .warning-content h4 {
+    font-size: 16px;
+  }
+  
+  .warning-content p {
+    font-size: 14px;
+  }
+  
+  .success-info i {
+    font-size: 36px;
+  }
+  
+  .success-content h4 {
+    font-size: 18px;
+  }
+  
+  .success-content li {
     font-size: 14px;
   }
 }
