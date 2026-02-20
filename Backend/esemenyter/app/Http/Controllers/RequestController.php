@@ -11,13 +11,7 @@ use App\Models\Student;
 class RequestController extends Controller
 {
     // Get requestek
-    private function isAdminEstablishment($userId, $establishmentId)
-    {
-        return Personel::where('user_id', $userId)
-            ->where('establishment_id', $establishmentId)
-            ->where('role', 'admin')
-            ->exists();
-    }
+
     public function getStudentRequests(Request $request, $establishmentId)
     {
         $user = $request->user();
@@ -80,8 +74,5 @@ class RequestController extends Controller
         return response()->json(['message' => 'Kérelem benyújtva!'], 201);
     }
     //elfogadás, elutasítás
-    
+
 }
-
-
-

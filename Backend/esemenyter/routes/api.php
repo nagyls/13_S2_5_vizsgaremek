@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\EstablishmentController;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use App\Http\Controllers\ClassController;
+
 
 use App\Http\Controllers\RequestController;
 
@@ -31,11 +32,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
         ->middleware(['signed'])
         ->name('verification.verify');
-    
+
     Route::post('/email/resend', [VerificationController::class, 'resend'])
         ->middleware(['throttle:6,1'])
         ->name('verification.resend');
-    
+
     Route::get('/email/verification-status', [VerificationController::class, 'check'])
         ->name('verification.check');
 });
@@ -57,8 +58,8 @@ Route::prefix('settlements')->group(function () {
 
 
 Route::prefix('establishments')->group(function () {
-    Route::get('/{id}', [EstablishmentController::class, 'getEstablishmentbyId']);// id alapu keresés
-    Route::get('/', [EstablishmentController::class, 'getEstablishments']);// keresés
+    Route::get('/{id}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
+    Route::get('/', [EstablishmentController::class, 'getEstablishments']); // keresés
     // Route::post('/', [EstablishmentController::class, 'store']);   // uj
 });
 
@@ -70,6 +71,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/events', [EventController::class, 'index']);
     Route::get('/events/{event}', [EventController::class, 'show']);
     Route::post('/establishment', [EstablishmentController::class, 'store']);
+    Route::post('/classes', [ClassController::class, 'store']);
+    Route::get('/classes/{establishment}', [ClassController::class, 'getClasses']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -77,5 +80,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/requests/teacher/{establishment}', [RequestController::class, 'getTeacherRequests']);
     Route::post('/requests', [RequestController::class, 'submitRequest']);
 });
-
-
