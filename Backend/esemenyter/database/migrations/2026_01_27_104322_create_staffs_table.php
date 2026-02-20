@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('personels', function (Blueprint $table) {
+        Schema::create('Staffs', function (Blueprint $table) {
             $table->id();
             $table->enum('role', ['admin', 'teacher'])->default('teacher');
             $table->foreignId('establishment_id')->constrained('establishments')->onDelete('cascade');
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('personels');
+        Schema::dropIfExists('Staffs');
     }
 };
