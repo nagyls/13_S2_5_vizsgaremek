@@ -47,13 +47,13 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
-    public function student()
+    public function students()
     {
-        return $this->hasOne(Student::class);
+        return $this->hasMany(Student::class);
     }
 
-    public function personel()
+    public function staffs()
     {
-        return $this->hasOne(Personel::class);
+        return $this->hasMany(Staff::class);
     }
 }

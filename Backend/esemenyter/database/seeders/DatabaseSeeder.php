@@ -13,7 +13,7 @@ use App\Models\Event;
 use App\Models\EventMessage;
 use App\Models\EventFeedback;
 use App\Models\EventFavourite;
-use App\Models\Personel;
+use App\Models\Staff;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
             'password' => 'Password123',
         ]);
 
-        
+
         $region = Region::create([
             'title' => 'Bács-Kiskun'
         ]);
@@ -172,20 +172,18 @@ class DatabaseSeeder extends Seeder
         ]);
 
 
-        Personel::create([
+        Staff::create([
             'role' => 'admin',
             'establishment_id' => $est->id,
             'user_id' => $user->id,
         ]);
 
-        // csv beoplvasás
+        // csv beolvasás
         $csvPath = database_path('seeders/data/jarasok.csv');
         $lastRegion = null;
 
         if (file_exists($csvPath)) {
             if (($handle = fopen($csvPath, 'r')) !== false) {
-                
-                $header = fgetcsv($handle, 0, ';');
 
                 while (($row = fgetcsv($handle, 0, ';')) !== false) {
                     // üres sorok kihagyása
@@ -199,12 +197,12 @@ class DatabaseSeeder extends Seeder
                     $settlementsRaw = isset($row[3]) ? trim($row[3]) : '';
 
                     //ha üres akkor az elözőt használjuk
-                    if ($countyRaw === '' && $lastRegion instanceof \App\Models\Region) {
+                    if ($countyRaw === '' && $lastRegion instanceof Region) {
                         $region = $lastRegion;
                     } elseif ($countyRaw !== '') {
                         // Normalize county title
                         $countyTitle = preg_replace('/\s+/', ' ', $countyRaw);
-                        $region = \App\Models\Region::firstOrCreate(['title' => $countyTitle]);
+                        $region = Region::firstOrCreate(['title' => $countyTitle]);
                         $lastRegion = $region;
                     } else {
 
@@ -215,7 +213,7 @@ class DatabaseSeeder extends Seeder
                     }
 
                     $innerTitle = preg_replace('/\s+/', ' ', $districtRaw);
-                    $inner = \App\Models\InnerRegion::firstOrCreate(
+                    $inner = InnerRegion::firstOrCreate(
                         ['title' => $innerTitle, 'region_id' => $region->id]
                     );
 
@@ -223,13 +221,13 @@ class DatabaseSeeder extends Seeder
                     $settlementNames = preg_split('/\s*,\s*/u', $settlementsRaw);
                     foreach ($settlementNames as $s) {
                         $s = trim($s);
-                       
+
                         $s = trim($s, "\"'\r\n\t ");
                         if ($s === '') {
                             continue;
                         }
-                        
-                        \App\Models\Settlement::firstOrCreate(
+
+                        Settlement::firstOrCreate(
                             ['title' => $s, 'inner_region_id' => $inner->id],
                             ['number' => '']
                         );

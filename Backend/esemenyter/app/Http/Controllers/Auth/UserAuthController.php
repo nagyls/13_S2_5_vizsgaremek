@@ -27,13 +27,13 @@ class UserAuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
         //intézmény azonosítók lekérése a userhez
-        $userTeacher = $user->personel()->exists();
+        $userTeacher = $user->Staff()->exists();
         $userStudent = $user->student()->exists();
 
 
 
         if ($userTeacher) {
-            $personelEstablishments = $user->personel()->pluck('establishment_id')->toArray();
+            $StaffEstablishments = $user->Staff()->pluck('establishment_id')->toArray();
         }
         if ($userStudent) {
             $studentEstablishments = $user->student()->pluck('establishment_id')->toArray();
@@ -43,7 +43,7 @@ class UserAuthController extends Controller
             'user' => $user,
             'token' => $token,
             //'student_establishment_ids' => array_unique($studentEstablishments),
-            //'teacher_establishment_ids' => array_unique($personelEstablishments),
+            //'teacher_establishment_ids' => array_unique($StaffEstablishments),
         ]);
     }
     public function storeStudent(Request $request) {}

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Student;
+use App\Models\Staff;
 
 class Establishment extends Model
 {
@@ -23,8 +25,12 @@ class Establishment extends Model
         return $this->hasMany(Student::class);
     }
 
-    public function personels()
+    public function Staffs()
     {
-        return $this->hasMany(Personel::class);
+        return $this->hasMany(Staff::class);
+    }
+    public function scopeWithoutClasses($query)
+    {
+        return $query->whereDoesntHave('classes');
     }
 }
