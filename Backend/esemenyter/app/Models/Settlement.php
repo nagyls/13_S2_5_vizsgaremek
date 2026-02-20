@@ -6,7 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Settlement extends Model
 {
-    //
+    // Disable automatic timestamps as migration does not add created_at/updated_at
+    public $timestamps = false;
     protected $fillable = [
         'title',
         'inner_region_id',

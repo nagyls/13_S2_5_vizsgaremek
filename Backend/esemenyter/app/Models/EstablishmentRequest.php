@@ -13,4 +13,9 @@ class EstablishmentRequest extends Model
         'establishment_id',
         'status',
     ];
+    
+    public function establishment()
+    {
+        return $this->belongsTo(Establishment::class, 'establishment_id');
+    }
 }

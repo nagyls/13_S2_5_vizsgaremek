@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('inner_region_id')->constrained('inner_regions')->onDelete('cascade');
             $table->string('title');
             $table->string('number');
-            $table->timestamps();
         });
     }
 
