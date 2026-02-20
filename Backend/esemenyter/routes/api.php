@@ -59,7 +59,6 @@ Route::prefix('settlements')->group(function () {
 Route::prefix('establishments')->group(function () {
     Route::get('/{id}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
     Route::get('/', [EstablishmentController::class, 'getEstablishments']); // keresés
-    // Route::post('/', [EstablishmentController::class, 'store']);   // uj
 });
 
 
@@ -81,8 +80,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/requests/student/{establishment}', [RequestController::class, 'getStudentRequests']);
     Route::get('/requests/teacher/{establishment}', [RequestController::class, 'getTeacherRequests']);
     Route::post('/requests', [RequestController::class, 'submitRequest']);
-    Route::post('/requests/handle', [RequestController::class, 'handleRequest']);
-    Route::post('/requests/revoke', [RequestController::class, 'requestRevoke']);
+    Route::post('/requests/{requestId}/handle', [RequestController::class, 'handleRequest']);
+    Route::post('/requests/revoke/{establishment}', [RequestController::class, 'revokeRequest']);
 });
 
 Route::prefix('members')->group(function () {
