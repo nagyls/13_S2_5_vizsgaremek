@@ -28,7 +28,7 @@ class UserAuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
         //intézmény azonosítók lekérése a userhez
         $userTeacher = $user->staffs()->exists();
-        $userStudent = $user->student()->exists();
+        $userStudent = $user->students()->exists();
 
 
 
