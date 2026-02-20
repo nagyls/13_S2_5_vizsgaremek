@@ -70,7 +70,7 @@ class RequestController extends Controller
             'establishment_id.required' => 'Az intézmény azonosító megadása kötelező.',
             'establishment_id.exists'   => 'Nem létező intézmény.',
             'role.in'                   => 'A szerepnek "student" vagy "teacher" kell legyen.',
-        ],);
+        ]);
 
         $newRequest = EstablishmentRequest::create([
             'user_id' => $user->id,
@@ -79,6 +79,8 @@ class RequestController extends Controller
         ]);
         return response()->json(['message' => 'Kérelem benyújtva!'], 201);
     }
+    //elfogadás, elutasítás
+    
 }
 
 
