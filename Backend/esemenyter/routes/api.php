@@ -26,7 +26,7 @@ Route::post('/register', [UserRegisterController::class, 'register']);
 Route::post('/login', [UserAuthController::class, 'login']);
 Route::post('/logout', [UserLogoutController::class, 'logout'])->middleware('auth:sanctum');
 
-// Email Verification Routes
+// Email verifikáció
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
         ->middleware(['signed'])
@@ -75,6 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/requests/student/{establishment}', [RequestController::class, 'getStudentRequests']);
     Route::get('/requests/teacher/{establishment}', [RequestController::class, 'getTeacherRequests']);
+    Route::post('/requests', [RequestController::class, 'submitRequest']);
 });
 
 
