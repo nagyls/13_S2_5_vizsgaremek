@@ -36,7 +36,7 @@ class UserAuthController extends Controller
             $StaffEstablishments = $user->staffs()->pluck('establishment_id')->toArray();
         }
         if ($userStudent) {
-            $studentEstablishments = $user->student()->pluck('establishment_id')->toArray();
+            $studentEstablishments = $user->students()->pluck('establishment_id')->toArray();
         }
         return response()->json([
             'message' => 'Sikeres bejelentkezés!',
