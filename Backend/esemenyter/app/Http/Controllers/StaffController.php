@@ -18,14 +18,14 @@ class StaffController extends Controller
                 'message' => 'Intézmény nem található!'
             ], 400);
         }
-        $staffs = User::join('staffs', 'users.id', '=', 'staffs.user_id')
+        $staff = User::join('staffs', 'users.id', '=', 'staffs.user_id')
             ->where('staffs.establishment_id', $establishmentId)
             ->select('users.*')
             ->distinct()
             ->get();
 
         return response()->json([
-            'data' => $staffs
+            'data' => $staff
         ]);
     }
 }

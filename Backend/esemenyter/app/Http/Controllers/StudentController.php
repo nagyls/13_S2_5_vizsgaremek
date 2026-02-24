@@ -18,14 +18,14 @@ class StudentController extends Controller
                 'message' => 'Intézmény nem található!'
             ], 400);
         }
-        $staffs = User::join('students', 'users.id', '=', 'students.user_id')
+        $students = User::join('students', 'users.id', '=', 'students.user_id')
             ->where('students.establishment_id', $establishmentId)
             ->select('users.*')
             ->distinct()
             ->get();
 
         return response()->json([
-            'data' => $staffs
+            'data' => $students
         ]);
     }
 }

@@ -86,5 +86,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::prefix('members')->group(function () {
     Route::get('/students/{establishment}', [StudentController::class, 'getStudents']);
-    Route::get('/staff/{establishment}', [StaffController::class, 'getStaffs']);
+    Route::get('/staff/{establishment}', [StaffController::class, 'getStaff']);
 });

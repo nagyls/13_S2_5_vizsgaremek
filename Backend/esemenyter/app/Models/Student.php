@@ -13,10 +13,10 @@ class Student extends Model
         'establishment_id',
         'user_id',
     ];
-    protected static function noAlias()
+    protected static function booted()
     {
         static::creating(function ($student) {
-            if (empty($student->alias)) {
+            if (empty($student->alias) && $student->user_id) {
                 $user = User::find($student->user_id);
                 if ($user) {
                     $student->alias = $user->name;
