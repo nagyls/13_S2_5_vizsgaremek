@@ -14,4 +14,10 @@ abstract class Controller
             ->where('role', 'admin')
             ->exists();
     }
+    protected function isStaffEstablishment($userId, $establishmentId)
+    {
+        return Staff::where('user_id', $userId)
+            ->where('establishment_id', $establishmentId)
+            ->exists();
+    }
 }

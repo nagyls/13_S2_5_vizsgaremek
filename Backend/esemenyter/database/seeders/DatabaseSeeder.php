@@ -64,6 +64,12 @@ class DatabaseSeeder extends Seeder
             'grade' => 13,
             'name' => 'I',
         ]);
+        $class = ClassModel::create([
+            'establishment_id' => $est->id,
+            'user_id' => null,
+            'grade' => 12,
+            'name' => 'I',
+        ]);
 
 
         $student = Student::create([
@@ -237,8 +243,8 @@ class DatabaseSeeder extends Seeder
                 fclose($handle);
             }
         }
-        $region = $region ?? \App\Models\Region::first();
-        $inner = $inner ?? \App\Models\InnerRegion::first();
-        $settlement = $settlement ?? \App\Models\Settlement::first();
+        $region = $region ?? Region::first();
+        $inner = $inner ?? InnerRegion::first();
+        $settlement = $settlement ?? Settlement::first();
     }
 }

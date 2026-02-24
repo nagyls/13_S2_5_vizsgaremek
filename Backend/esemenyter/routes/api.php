@@ -72,7 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/establishment', [EstablishmentController::class, 'store']);
     Route::get('/establishment/mine', [EstablishmentController::class, 'getMyEstablishments']);
 
-    Route::post('/classes', [ClassController::class, 'store']);
+    Route::post('/classes/create', [ClassController::class, 'store']);
     Route::get('/classes/{establishment}', [ClassController::class, 'getClasses']);
 });
 
@@ -81,7 +81,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/requests/teacher/{establishment}', [RequestController::class, 'getTeacherRequests']);
     Route::post('/requests', [RequestController::class, 'submitRequest']);
     Route::post('/requests/{requestId}/handle', [RequestController::class, 'handleRequest']);
-    Route::post('/requests/revoke/{establishment}', [RequestController::class, 'revokeRequest']);
+    Route::post('/requests/{establishment}/revoke', [RequestController::class, 'revokeRequest']);
 });
 
 Route::prefix('members')->group(function () {

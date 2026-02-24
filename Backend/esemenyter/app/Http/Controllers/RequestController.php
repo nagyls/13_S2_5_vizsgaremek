@@ -13,8 +13,10 @@ class RequestController extends Controller
 
     public function getStudentRequests(Request $request, $establishmentId)
     {
-        $user = $request->user();
-
+        $user = $request->user()?? auth()->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
         if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
             return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
         }
