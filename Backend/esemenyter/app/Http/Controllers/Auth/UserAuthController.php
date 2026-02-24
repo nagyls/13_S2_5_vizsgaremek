@@ -27,16 +27,16 @@ class UserAuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
         //intézmény azonosítók lekérése a userhez
-        $userTeacher = $user->Staff()->exists();
-        $userStudent = $user->student()->exists();
+        $userTeacher = $user->staffs()->exists();
+        $userStudent = $user->students()->exists();
 
 
 
         if ($userTeacher) {
-            $StaffEstablishments = $user->Staff()->pluck('establishment_id')->toArray();
+            $StaffEstablishments = $user->staffs()->pluck('establishment_id')->toArray();
         }
         if ($userStudent) {
-            $studentEstablishments = $user->student()->pluck('establishment_id')->toArray();
+            $studentEstablishments = $user->students()->pluck('establishment_id')->toArray();
         }
         return response()->json([
             'message' => 'Sikeres bejelentkezés!',
