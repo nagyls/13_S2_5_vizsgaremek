@@ -43,6 +43,7 @@
 
 <script>
 import axios from "axios";
+import { toast } from '../services/toast'
 
 export default {
     name: 'Registrate',
@@ -64,17 +65,17 @@ export default {
         async register() {
             // 1. Ellenőrzések
             if (this.jelszo !== this.jelszo_meg) {
-                alert("A jelszavak nem egyeznek!");
+                toast.error("A jelszavak nem egyeznek!");
                 return;
             }
 
             if (this.jelszo.length < 6) {
-                alert("A jelszónak legalább 6 karakter hosszúnak kell lennie!");
+                toast.error("A jelszónak legalább 6 karakter hosszúnak kell lennie!");
                 return;
             }
 
             if (!this.acceptTerms) {
-                alert("Kérjük, fogadd el az ÁSZF-et és az Adatvédelmi nyilatkozatot!");
+                toast.error("Kérjük, fogadd el az ÁSZF-et és az Adatvédelmi nyilatkozatot!");
                 return;
             }
 
@@ -120,7 +121,7 @@ export default {
                 const errorMsg = err.response?.data?.message || 
                                err.response?.data?.error || 
                                "Ismeretlen hiba történt";
-                alert("Hiba: " + errorMsg);
+                toast.error("Hiba: " + errorMsg);
             } finally {
                 this.loading = false;
             }

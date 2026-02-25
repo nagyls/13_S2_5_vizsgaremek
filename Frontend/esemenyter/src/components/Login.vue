@@ -15,7 +15,7 @@
                     <label>
                         <input type="checkbox" v-model="rememberMe" />Emlékezz rám
                     </label>
-                    <a href="#">Elfelejtett jelszó</a>
+                    <!-- <a href="#">Elfelejtett jelszó</a> -->
                 </div>
 
                 <button id="login_btn" type="submit" class="btn" :disabled="loading">
@@ -32,6 +32,7 @@
 
 <script>
 import axios from "axios";
+import { toast } from '../services/toast'
 
 export default {
   name: 'Login',
@@ -101,7 +102,7 @@ export default {
         const errorMsg = err.response?.data?.message || 
                        err.response?.data?.error || 
                        "Hibás email cím vagy jelszó!";
-        alert("Hiba: " + errorMsg);
+        toast.error("Hiba: " + errorMsg);
       } finally {
         this.loading = false;
       }
