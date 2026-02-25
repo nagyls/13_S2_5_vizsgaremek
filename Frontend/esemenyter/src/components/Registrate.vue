@@ -4,24 +4,24 @@
             <form @submit.prevent="register">
                 <h1>Regisztráció</h1>
                 <div class="input-box">
-                    <input type="text" v-model="username" placeholder="Teljes név" required>
+                    <input id="username" type="text" v-model="username" placeholder="Teljes név" required>
                     <i class='bx bx-user'></i> 
                 </div>
                 <div class="input-box">
-                    <input type="email" v-model="email" placeholder="Email cím" required>
+                    <input id="email" type="email" v-model="email" placeholder="Email cím" required>
                     <i class='bx bx-envelope'></i> 
                 </div>
                 <div class="input-box pass-box">
-                    <input :type="showPass1 ? 'text' : 'password'" v-model="jelszo" placeholder="Jelszó" required>
+                    <input id="password" :type="showPass1 ? 'text' : 'password'" v-model="jelszo" placeholder="Jelszó" required>
                     <i :class="showPass1 ? 'bx bx-lock-open' : 'bx bx-lock'" @click="showPass1 = !showPass1" style="cursor: pointer;"></i>
                 </div>
                 <div class="input-box pass-box">
-                    <input :type="showPass2 ? 'text' : 'password'" v-model="jelszo_meg" placeholder="Jelszó megerősítése" required>
+                    <input id="password_confirmation" :type="showPass2 ? 'text' : 'password'" v-model="jelszo_meg" placeholder="Jelszó megerősítése" required>
                     <i :class="showPass2 ? 'bx bx-lock-open' : 'bx bx-lock'" @click="showPass2 = !showPass2" style="cursor: pointer;"></i>
                 </div>
                 <div class="aszf-check">
                     <label>
-                        <input type="checkbox" v-model="acceptTerms" required>
+                        <input id="accept_terms" type="checkbox" v-model="acceptTerms" required>
                         <span class="aszf-text">
                             Elfogadom az <router-link to="/aszf" class="aszf-link">ÁSZF</router-link>-et
                             és egyetértek az <router-link to="/privacy" class="aszf-link">Adatvédelmi nyilatkozattal</router-link>.
@@ -29,7 +29,7 @@
                     </label>
                 </div>
 
-                <button type="submit" class="btn" :disabled="loading">
+                <button id=register_btn type="submit" class="btn" :disabled="loading">
                     {{ loading ? 'Feldolgozás...' : 'Regisztráció' }}
                 </button>
 
@@ -107,9 +107,6 @@ export default {
                 localStorage.setItem('esemenyter_token', res.data.token);
                 console.log("User adatok mentve localStorage-ba:", userData);
                 console.log("Token mentve:", res.data.token);
-                
-                // 5. Sikeres üzenet
-                alert("Sikeres regisztráció! Átirányítás a főoldalra...");
                 
                 // 6. Rövid várakozás és átirányítás
                 setTimeout(() => {

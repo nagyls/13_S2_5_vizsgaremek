@@ -4,21 +4,21 @@
             <form @submit.prevent="login">
                 <h1>Bejelentkezés</h1>
                 <div class="input-box">
-                    <input type="text" placeholder="Email cím" v-model="email" required >
+                    <input id="email" type="text" placeholder="Email cím" v-model="email" required >
                     <i class='bx  bx-user'></i> 
                 </div>
                 <div class="input-box">
-                    <input :type="showPassword ? 'text' : 'password'" placeholder="Jelszó" v-model="password" required >
+                    <input id="password" :type="showPassword ? 'text' : 'password'" placeholder="Jelszó" v-model="password" required >
                     <i :class="showPassword ? 'bx bx-lock-open' : 'bx bx-lock'" @click="togglePassword" style="cursor: pointer;"></i>
                 </div>
                 <div class="remember-forgot">
                     <label>
-                        <input type="checkbox" />Emlékezz rám
+                        <input type="checkbox" v-model="rememberMe" />Emlékezz rám
                     </label>
                     <a href="#">Elfelejtett jelszó</a>
                 </div>
 
-                <button type="submit" class="btn" :disabled="loading">
+                <button id="login_btn" type="submit" class="btn" :disabled="loading">
                     {{ loading ? 'Bejelentkezés...' : 'Bejelentkezés' }}
                 </button>
 
@@ -41,7 +41,8 @@ export default {
       email: "", // Csak a változó neve változott
       password: "",
       showPassword: false,
-      loading: false
+      loading: false,
+      rememberMe: false
     };
   },
   
@@ -76,13 +77,17 @@ export default {
         };
         
         // 3. LocalStorage-be mentés
-        localStorage.setItem('esemenyter_user', JSON.stringify(userData));
-        localStorage.setItem('esemenyter_token', res.data.token);
+        if (this.rememberMe) {
+          // Tartós bejelentkezés
+          localStorage.setItem('esemenyter_user', JSON.stringify(userData));
+          localStorage.setItem('esemenyter_token', res.data.token);
+        } else {
+          // Csak session-re
+          sessionStorage.setItem('esemenyter_user', JSON.stringify(userData));
+          sessionStorage.setItem('esemenyter_token', res.data.token);
+        }
         console.log("User adatok mentve localStorage-ba:", userData);
         console.log("Token mentve:", res.data.token);
-        
-        // 4. Sikeres üzenet
-        alert("Sikeres bejelentkezés! Átirányítás a főoldalra...");
         
         // 5. Rövid várakozás és átirányítás
         setTimeout(() => {
@@ -107,12 +112,12 @@ export default {
     console.log("Bejelentkezési oldal betöltve");
     
     // Ha már be vagy jelentkezve, átirányítás a főoldalra
-    const savedUser = localStorage.getItem('esemenyter_user');
+    const savedUser = localStorage.getItem('esemenyter_user') || sessionStorage.getItem('esemenyter_user');
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser);
         if (userData.isLoggedIn) {
-          console.log("Már be vagy jelentkezve, átirányítás mainpage-re...");
+          console.log("Már be vagy jelentkezve, átirányítás dashboard-ra...");
           this.$router.push('/dashboard');
         }
       } catch (error) {

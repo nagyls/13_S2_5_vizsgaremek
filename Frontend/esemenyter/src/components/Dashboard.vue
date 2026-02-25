@@ -1780,14 +1780,15 @@ export default {
       this.$router.push('/pending-approval');
     },
     
+    // Dashboard.vue - completeAdminProfileSetup metódus módosítása
     completeAdminProfileSetup() {
       const token = localStorage.getItem('esemenyter_token');
-      
+
       if (!token) {
         alert('Nincs bejelentkezve. Kérjük jelentkezzen be újra.');
         return;
       }
-      
+
       // Prepare establishment data for API
       const establishmentData = {
         title: this.schoolForm.name,
@@ -1798,7 +1799,7 @@ export default {
         phone: this.schoolForm.phone || null,
         address: this.schoolForm.address
       };
-      
+
       // Submit to Laravel API
       axios.post('http://127.0.0.1:8000/api/establishment', establishmentData, {
         headers: {
@@ -1809,23 +1810,24 @@ export default {
       .then(response => {
         console.log('Intézmény sikeresen létrehozva:', response.data);
 
-        if (this.adminSelectedCityId) {
-          this.selectedCityId = this.adminSelectedCityId;
-          this.loadSchoolsForSelectedCity();
-        }
-      
+        // Az intézmény adatainak mentése a felhasználóhoz
+        const institutionId = response.data.data?.id || response.data?.id;
+
         this.profileConfigured = true;
         this.user.role = 'institution_manager';
-        this.user.institution_id = response.data.data?.id || response.data?.id;
+        this.user.institution_id = institutionId;
         this.user.region = this.adminSelectedRegion?.title || '';
         this.user.district = this.adminSelectedDistrict?.title || '';
         this.user.city = this.adminSelectedCity?.title || this.adminNewCityName;
         this.user.school = this.schoolForm.name;
         this.user.schoolDetails = { ...this.schoolForm };
-      
-        this.saveUserData();
-        alert('Intézmény sikeresen regisztrálva!');
 
+        this.saveUserData();
+
+        // ÉRTESÍTÉS MUTATÁSA
+        alert('Intézmény sikeresen regisztrálva! Most hozz létre legalább egy osztályt az intézményben.');
+
+        // Átirányítás az InstitutionManagerDashboard-ra
         this.$router.push('/institution-dashboard');
       })
       .catch(err => {
@@ -1862,7 +1864,6 @@ export default {
     },
     
     logout() {
-      // API-hoz logout kérés (tokennel)
       axios.post('http://127.0.0.1:8000/api/logout')
         .then(() => {
           console.log('Backend-en törölve a token');
@@ -1871,14 +1872,20 @@ export default {
           console.error('Logout hiba:', err);
         })
         .finally(() => {
-          // Frontend localStorage tisztítás
+          // 🔥 MINDEN auth adat törlése
           localStorage.removeItem('esemenyter_user');
           localStorage.removeItem('esemenyter_token');
-          
+          localStorage.removeItem('remember_me');
+        
+          sessionStorage.removeItem('esemenyter_user');
+          sessionStorage.removeItem('esemenyter_token');
+        
+          // 🔥 axios header törlése (ha beállítottad valahol)
+          delete axios.defaults.headers.common['Authorization'];
+        
           this.showUserMenu = false;
-          
-          // Átirányítás kezdőoldalra
-          this.$router.push('/');
+        
+          this.$router.push('/mainpage');
         });
     },
     
