@@ -16,7 +16,6 @@ return new class extends Migration
             $table->enum('role', ['student', 'teacher']);
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('establishment_id')->constrained('establishments')->cascadeOnDelete();
-            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->timestamp('created_at')->useCurrent();
         });
     }

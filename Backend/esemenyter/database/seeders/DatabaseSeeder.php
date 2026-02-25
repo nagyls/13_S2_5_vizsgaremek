@@ -81,17 +81,6 @@ class DatabaseSeeder extends Seeder
 
         for ($i = 0; $i < 10; $i++) {
             $u = User::factory()->create();
-            Student::create([
-                'alias' => 'student_' . $i,
-                'establishment_id' => $est->id,
-                'user_id' => $u->id,
-            ]);
-
-            DB::table('class_students')->insert([
-                'class_id' => $class->id,
-                'user_id' => $u->id,
-                'created_at' => now(),
-            ]);
         }
 
 
@@ -153,25 +142,25 @@ class DatabaseSeeder extends Seeder
 
 
         DB::table('establishment_requests')->insert([
-            'user_id' => $user->id,
+            'user_id' => 5,
             'establishment_id' => $est->id,
             'role' => 'student',
             'created_at' => now(),
         ]);
         DB::table('establishment_requests')->insert([
-            'user_id' => $user->id,
+            'user_id' => 2,
             'establishment_id' => $est->id,
             'role' => 'student',
             'created_at' => now(),
         ]);
         DB::table('establishment_requests')->insert([
-            'user_id' => $user->id,
+            'user_id' => 3,
             'establishment_id' => $est->id,
             'role' => 'teacher',
             'created_at' => now(),
         ]);
         DB::table('establishment_requests')->insert([
-            'user_id' => $user->id,
+            'user_id' => 4,
             'establishment_id' => $est->id,
             'role' => 'teacher',
             'created_at' => now(),

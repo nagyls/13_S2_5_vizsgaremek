@@ -80,7 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/requests/student/{establishment}', [RequestController::class, 'getStudentRequests']);
     Route::get('/requests/teacher/{establishment}', [RequestController::class, 'getTeacherRequests']);
     Route::post('/requests', [RequestController::class, 'submitRequest']);
-    Route::post('/requests/{requestId}/handle', [RequestController::class, 'handleRequest']);
+    Route::post('/requests/handle', [RequestController::class, 'handleRequest']);
     Route::post('/requests/{establishment}/revoke', [RequestController::class, 'revokeRequest']);
 });
 
