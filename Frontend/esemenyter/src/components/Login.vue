@@ -53,45 +53,59 @@ export default {
 
     async login() {
       this.loading = true;
-      
+
       try {
+
+        // 🔥 1️⃣ Storage takarítás
+        localStorage.removeItem('esemenyter_user');
+        localStorage.removeItem('esemenyter_token');
+        localStorage.removeItem('CurrentInstitution');
+
+        sessionStorage.removeItem('esemenyter_user');
+        sessionStorage.removeItem('esemenyter_token');
+        sessionStorage.removeItem('CurrentInstitution');
+
         const res = await axios.post("http://127.0.0.1:8000/api/login", {
           email: this.email,
           password: this.password
         });
 
         console.log("Backend válasz:", res.data);
-        
+
+        const token = res.data.token;
+
+        // 🔥 2️⃣ Axios header beállítás
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
         const userData = {
           id: res.data.user.id,
           name: res.data.user.name,
           email: res.data.user.email,
-          token: res.data.token,
           is_teacher: res.data.is_teacher || false,
           is_student: res.data.is_student || false,
           establishment_ids: res.data.establishment_ids || [],
           isLoggedIn: true,
           loggedInAt: new Date().toISOString()
         };
-        
+
         if (this.rememberMe) {
           localStorage.setItem('esemenyter_user', JSON.stringify(userData));
-          localStorage.setItem('esemenyter_token', res.data.token);
+          localStorage.setItem('esemenyter_token', token);
         } else {
           sessionStorage.setItem('esemenyter_user', JSON.stringify(userData));
-          sessionStorage.setItem('esemenyter_token', res.data.token);
+          sessionStorage.setItem('esemenyter_token', token);
         }
-        
-        setTimeout(() => {
-          this.$router.push('/dashboard');
-        }, 500);
-        
+
+        this.$router.push('/dashboard');
+
       } catch (err) {
         console.error("Bejelentkezési hiba:", err);
-        
-        const errorMsg = err.response?.data?.message || 
-                       err.response?.data?.error || 
-                       "Hibás email cím vagy jelszó!";
+
+        const errorMsg =
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Hibás email cím vagy jelszó!";
+
         toast.error("Hiba: " + errorMsg);
       } finally {
         this.loading = false;
@@ -100,16 +114,21 @@ export default {
   },
   
   mounted() {
-    const savedUser = localStorage.getItem('esemenyter_user') || sessionStorage.getItem('esemenyter_user');
-    if (savedUser) {
-      try {
-        const userData = JSON.parse(savedUser);
-        if (userData.isLoggedIn) {
+    const token =
+      localStorage.getItem('esemenyter_token') ||
+      sessionStorage.getItem('esemenyter_token');
+
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      axios.get('http://127.0.0.1:8000/api/user')
+        .then(() => {
           this.$router.push('/dashboard');
-        }
-      } catch (error) {
-        console.error("Hibás user adatok:", error);
-      }
+        })
+        .catch(() => {
+          localStorage.clear();
+          sessionStorage.clear();
+        });
     }
   }
 };

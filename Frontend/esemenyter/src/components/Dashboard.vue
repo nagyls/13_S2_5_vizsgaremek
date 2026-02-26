@@ -35,14 +35,6 @@
                   </div>
                 </div>
                 <div class="menu-items">
-                  <router-link to="/profile" class="menu-item">
-                    <i class='bx bx-user'></i>
-                    <span>Profilom</span>
-                  </router-link>
-                  <router-link to="/events-list" class="menu-item">
-                    <i class='bx bx-calendar'></i>
-                    <span>Események</span>
-                  </router-link>
                   <div class="menu-divider"></div>
                   <button class="menu-item logout-btn" @click="logout">
                     <i class='bx bx-log-out'></i>
@@ -1275,36 +1267,18 @@ export default {
   
   methods: {
     checkLoginStatus() {
-      const tokenLocal = localStorage.getItem('esemenyter_token')
-      const tokenSession = sessionStorage.getItem('esemenyter_token')
-
-      const token = tokenLocal || tokenSession
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
 
       if (!token) {
-        this.$router.push('/')
-        return
+        this.$router.push('/');
+        return;
       }
     
-      // USER ADAT UGYANONNAN JÖJJÖN, AHONNAN A TOKEN
-      const storage = tokenLocal ? localStorage : sessionStorage
-      const savedUser = storage.getItem('esemenyter_user')
-
-      if (savedUser) {
-        try {
-          const userData = JSON.parse(savedUser)
-          this.user = { ...this.user, ...userData }
-          this.profileConfigured = !!userData.role
-
-          // MAJD lekérjük a friss adatokat a backendről, DE CSAK EGYSZER
-          this.fetchUserData(token)
-        } catch (e) {
-          console.error('Hibás user adatok:', e)
-          this.fetchUserData(token)
-        }
-      } else {
-        // Ha nincs mentett user, de van token, akkor is lekérjük
-        this.fetchUserData(token)
-      }
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    
+      this.fetchUserData(token);
     },
     
     async fetchUserData(token) {
@@ -1348,8 +1322,11 @@ export default {
           // Közvetlenül töröljük az adatokat
           localStorage.removeItem('esemenyter_user');
           localStorage.removeItem('esemenyter_token');
+          localStorage.removeItem('CurrentInstitution');
+
           sessionStorage.removeItem('esemenyter_user');
           sessionStorage.removeItem('esemenyter_token');
+          sessionStorage.removeItem('CurrentInstitution');
           delete axios.defaults.headers.common['Authorization'];
 
           // Átirányítás
@@ -1955,6 +1932,10 @@ export default {
     },
     
     saveUserData() {
+
+      const tokenLocal = localStorage.getItem('esemenyter_token');
+      const tokenSession = sessionStorage.getItem('esemenyter_token');
+        
       const userData = {
         id: this.user.id,
         name: this.user.name,
@@ -1970,19 +1951,13 @@ export default {
         teachingClasses: this.user.teachingClasses,
         specialTeaching: this.user.specialTeaching,
         isLoggedIn: true
-      }
+      };
     
-      // Token megőrzése!
-      const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token');
-
-      if (localStorage.getItem('esemenyter_token')) {
+      if (tokenLocal) {
         localStorage.setItem('esemenyter_user', JSON.stringify(userData));
-        // Token már megvan, nem kell újra menteni
-      } else {
+      } else if (tokenSession) {
         sessionStorage.setItem('esemenyter_user', JSON.stringify(userData));
       }
-
-      console.log('User adatok mentve, token megtartva:', !!token);
     },
     
     goToEvents() {
@@ -1998,35 +1973,32 @@ export default {
     logout() {
       console.log('Logout metódus hívva');
 
-      // Először töröljük a lokális adatokat
+      // 🔥 TELJES TAKARÍTÁS
       localStorage.removeItem('esemenyter_user');
       localStorage.removeItem('esemenyter_token');
       localStorage.removeItem('remember_me');
+      localStorage.removeItem('CurrentInstitution');
 
       sessionStorage.removeItem('esemenyter_user');
       sessionStorage.removeItem('esemenyter_token');
+      sessionStorage.removeItem('CurrentInstitution');
 
       delete axios.defaults.headers.common['Authorization'];
 
       this.showUserMenu = false;
 
       // Backend logout - token NÉLKÜL küldjük (így nem lesz 401)
-      axios.delete('http://127.0.0.1:8000/api/logout', {}, {
-        headers: {
-          'Authorization': ''  // Üres Authorization header
-        }
+      axios.delete('http://127.0.0.1:8000/api/logout')
+      .then(() => {
+        console.log('Backend-en törölve a token');
       })
-        .then(() => {
-          console.log('Backend-en törölve a token');
-        })
-        .catch(err => {
-          console.log('Backend logout válasz (várható, ha már töröltük a tokent):', err.message);
-        })
-        .finally(() => {
-          // MINDENKÉPPEN átirányítunk
-          console.log('Átirányítás a főoldalra');
-          this.$router.push('/');
-        });
+      .catch(err => {
+        console.log('Backend logout válasz:', err.message);
+      })
+      .finally(() => {
+        console.log('Átirányítás a főoldalra');
+        this.$router.push('/');
+      });
     },
     
     scrollToTop() {
