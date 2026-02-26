@@ -1,0 +1,127 @@
+{
+  "info": {
+    "_postman_id": "edadde25-d068-4217-a9ab-db94a201027f",
+    "name": "diák tanár lekérés",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "diákok",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "id": "a72d66b9-e2d2-4392-a95c-bd10fad2b6e1",
+            "exec": [
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "id": "70b2053a-25ed-4df3-bd7c-5b087bbf158d",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/members/students/{{establishment_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "members",
+            "students",
+            "{{establishment_id}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "tanárok",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "id": "3b923c95-5dc4-4e06-8c7f-5110242c2269",
+            "exec": [
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "id": "f52000a5-2358-4d3d-a883-1ee5d538fdaa",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/members/staff/{{establishment_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "members",
+            "staff",
+            "{{establishment_id}}"
+          ]
+        },
+        "description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "establishment_id",
+      "value": "1",
+      "type": "string"
+    }
+  ]
+}

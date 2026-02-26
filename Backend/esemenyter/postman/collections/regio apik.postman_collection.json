@@ -1,0 +1,236 @@
+{
+  "info": {
+    "_postman_id": "b957e20a-289a-43de-820f-f32f1d1d9312",
+    "name": "regio apik",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Search Regions",
+      "id": "20972860-52b7-43ed-a091-42193a06db5e",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/regions/?search=B",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "regions",
+            ""
+          ],
+          "query": [
+            {
+              "key": "search",
+              "value": "B"
+            }
+          ]
+        },
+        "description": "Get regions with optional search filtering. Add a 'search' query parameter to filter regions by title."
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Regions",
+      "id": "6cb737a7-9fe7-4a62-aadc-9e90d54bd1f2",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/regions/all",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "regions",
+            "all"
+          ]
+        },
+        "description": "Get all regions without search filtering"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Region by ID",
+      "id": "247d981f-3c91-4d8c-87d2-4497f04d93f8",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/regions/1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "regions",
+            "1"
+          ]
+        },
+        "description": "Get a single region by ID. Replace :id with the actual region ID."
+      },
+      "response": []
+    },
+    {
+      "name": "search subregions",
+      "id": "af157861-8091-4bb6-b677-2193f98b8d9a",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/innerregions?search=g&region_id=1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "innerregions"
+          ],
+          "query": [
+            {
+              "key": "search",
+              "value": "g"
+            },
+            {
+              "key": "region_id",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Generated from cURL: curl --request GET --location '{{base_url}}/api/subregions?search=&region_id=' --header 'Accept: application/json'"
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Subregions",
+      "id": "c962c37a-a6dc-4c62-9ca6-0b809e870d46",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/innerregions/all?region_id=1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "innerregions",
+            "all"
+          ],
+          "query": [
+            {
+              "key": "region_id",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Generated from cURL: curl --location '{{base_url}}/api/subregions/all?region_id=' --header 'Accept: application/json'"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Settlements",
+      "id": "647eaa1d-b01f-4fd9-8141-2001a39d54e2",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/settlements?search=&inner_region_id=1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "settlements"
+          ],
+          "query": [
+            {
+              "key": "search",
+              "value": ""
+            },
+            {
+              "key": "inner_region_id",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Searches and filters settlements by title and inner region.\n\nQuery Parameters:\n- `search` (optional): Filter settlements by title (LIKE search%)\n- `inner_region_id` (optional): Filter by inner region ID\n\nBoth parameters must be present and non-empty to apply filtering.\nReturns settlements ordered by title."
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Settlements",
+      "id": "3eb437fc-3ce3-440c-95b4-9432a5b6eccf",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/settlements/all?inner_region_id=1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "settlements",
+            "all"
+          ],
+          "query": [
+            {
+              "key": "inner_region_id",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Retrieves all settlements, optionally filtered by inner region.\n\nQuery Parameters:\n- `inner_region_id` (optional): Filter by inner region ID\n\nReturns settlements ordered by title."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,242 @@
+{
+  "info": {
+    "_postman_id": "8613f003-f491-4366-8451-2ead82e5241d",
+    "name": "class",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "osztály létrehoz",
+      "id": "4ebb8f34-db01-404b-91ae-8042a7763bd8",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"name\": \"A\",\r\n  \"grade\": 10,\r\n  \"establishment_id\": 1,\r\n  \"capacity\": 30,\r\n  \"user_id\": null\r\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/establishment/classes/create",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "establishment",
+            "classes",
+            "create"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "osztály lekér",
+      "id": "9b3d4e0c-7fd7-49c9-a49e-f2b08fb5797b",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/establishment/{{establishment_id}}/classes",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "establishment",
+            "{{establishment_id}}",
+            "classes"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "osztélyhoz adás",
+      "id": "7712bf35-bec4-41e9-8025-3eb55f538ea0",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"establishment_id\" : 1,\r\n    \"class_id\": 2,\r\n    \"student_id\": [\r\n        2,\r\n        3\r\n        \r\n    ]\r\n\r\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/establishment/classes/add-students",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "establishment",
+            "classes",
+            "add-students"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "ozstályfönök változtatás",
+      "id": "e5dbbff8-dfbb-4a4d-80a5-2f0b59953bed",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"teacher_id\": 3\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/establishment/{{establishment_id}}/classes/{{class_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "establishment",
+            "{{establishment_id}}",
+            "classes",
+            "{{class_id}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "osztály tag lekér",
+      "id": "324990d0-ba8d-4e26-b4e9-5676dfd6476e",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/establishment/{{establishment_id}}/classes/{{class_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "establishment",
+            "{{establishment_id}}",
+            "classes",
+            "{{class_id}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "establishment_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "class_id",
+      "value": "2",
+      "type": "string"
+    }
+  ]
+}
