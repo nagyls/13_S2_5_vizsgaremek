@@ -35,10 +35,6 @@
                   </div>
                 </div>
                 <div class="menu-items">
-                  <router-link to="/profile" class="menu-item">
-                    <i class='bx bx-user'></i>
-                    <span>Profilom</span>
-                  </router-link>
                   <div class="menu-divider"></div>
                   <button class="menu-item logout-btn" @click="logout">
                     <i class='bx bx-log-out'></i>
@@ -107,10 +103,6 @@
           </div>
 
           <div class="action-buttons">
-            <button class="btn-outline" @click="goToProfile">
-              <i class='bx bx-user'></i>
-              Profil szerkesztése
-            </button>
             <button class="btn-primary" @click="checkStatus">
               <i class='bx bx-refresh'></i>
               Státusz ellenőrzése
@@ -312,10 +304,6 @@ export default {
     
     toggleUserMenu() {
       this.showUserMenu = !this.showUserMenu;
-    },
-    
-    goToProfile() {
-      this.$router.push('/profile');
     },
     
     showNotification(message, type = 'info') {

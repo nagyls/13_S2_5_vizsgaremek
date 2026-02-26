@@ -11,7 +11,6 @@ class EstablishmentRequest extends Model
         'users_id',
         'role',
         'establishment_id',
-        'status',
     ];
     
     public function establishment()

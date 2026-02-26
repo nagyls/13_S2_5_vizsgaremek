@@ -64,6 +64,12 @@ class DatabaseSeeder extends Seeder
             'grade' => 13,
             'name' => 'I',
         ]);
+        $class = ClassModel::create([
+            'establishment_id' => $est->id,
+            'user_id' => null,
+            'grade' => 12,
+            'name' => 'I',
+        ]);
 
 
         $student = Student::create([
@@ -75,17 +81,6 @@ class DatabaseSeeder extends Seeder
 
         for ($i = 0; $i < 10; $i++) {
             $u = User::factory()->create();
-            Student::create([
-                'alias' => 'student_' . $i,
-                'establishment_id' => $est->id,
-                'user_id' => $u->id,
-            ]);
-
-            DB::table('class_students')->insert([
-                'class_id' => $class->id,
-                'user_id' => $u->id,
-                'created_at' => now(),
-            ]);
         }
 
 
@@ -147,25 +142,25 @@ class DatabaseSeeder extends Seeder
 
 
         DB::table('establishment_requests')->insert([
-            'user_id' => $user->id,
+            'user_id' => 5,
             'establishment_id' => $est->id,
             'role' => 'student',
             'created_at' => now(),
         ]);
         DB::table('establishment_requests')->insert([
-            'user_id' => $user->id,
+            'user_id' => 2,
             'establishment_id' => $est->id,
             'role' => 'student',
             'created_at' => now(),
         ]);
         DB::table('establishment_requests')->insert([
-            'user_id' => $user->id,
+            'user_id' => 3,
             'establishment_id' => $est->id,
             'role' => 'teacher',
             'created_at' => now(),
         ]);
         DB::table('establishment_requests')->insert([
-            'user_id' => $user->id,
+            'user_id' => 4,
             'establishment_id' => $est->id,
             'role' => 'teacher',
             'created_at' => now(),
@@ -237,8 +232,8 @@ class DatabaseSeeder extends Seeder
                 fclose($handle);
             }
         }
-        $region = $region ?? \App\Models\Region::first();
-        $inner = $inner ?? \App\Models\InnerRegion::first();
-        $settlement = $settlement ?? \App\Models\Settlement::first();
+        $region = $region ?? Region::first();
+        $inner = $inner ?? InnerRegion::first();
+        $settlement = $settlement ?? Settlement::first();
     }
 }

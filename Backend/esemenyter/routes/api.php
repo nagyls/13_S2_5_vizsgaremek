@@ -26,7 +26,7 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [UserRegisterController::class, 'register']);
 
 Route::post('/login', [UserAuthController::class, 'login']);
-Route::post('/logout', [UserLogoutController::class, 'logout'])->middleware('auth:sanctum');
+Route::delete('/logout', [UserLogoutController::class, 'logout'])->middleware('auth:sanctum');
 
 // Email verifikáció
 Route::middleware('auth:sanctum')->group(function () {
@@ -40,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('verification.check');
 });
 
+// Keresési és lekérdezési végpontok(helyek, intézmények)
 Route::prefix('regions')->group(function () {
     Route::get('/all', [RegionController::class, 'getallregions']); // összes régió
     Route::get('/{id}', [RegionController::class, 'showregion']); // id alapu keresés
@@ -54,38 +55,42 @@ Route::prefix('settlements')->group(function () {
     Route::get('/', [RegionController::class, 'settlements']);
 });
 
-
-
 Route::prefix('establishments')->group(function () {
     Route::get('/{id}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
     Route::get('/', [EstablishmentController::class, 'getEstablishments']); // keresés
-    // Route::post('/', [EstablishmentController::class, 'store']);   // uj
 });
 
 
 
 Route::middleware('auth:sanctum')->group(function () {
+//esemény kezelés
     Route::get('/events', [EventController::class, 'getEvents']);
     Route::post('/events', [EventController::class, 'store']);
     Route::get('/events', [EventController::class, 'index']);
     Route::get('/events/{event}', [EventController::class, 'show']);
-
-    Route::post('/establishment', [EstablishmentController::class, 'store']);
+//intézmény kezelés
+    Route::post('/establishment/create', [EstablishmentController::class, 'store']);
     Route::get('/establishment/mine', [EstablishmentController::class, 'getMyEstablishments']);
+//osztály kezelés
+    Route::get('/establishment/{establishment}/classes', [ClassController::class, 'getClasses']);
+    Route::get('/establishment/{establishment}/classes/{class}', [ClassController::class, 'getClassMembers']);
 
-    Route::post('/classes', [ClassController::class, 'store']);
-    Route::get('/classes/{establishment}', [ClassController::class, 'getClasses']);
-});
+    Route::post('/establishment/classes/create', [ClassController::class, 'store']);
+    Route::post('/establishment/classes/add-students', [StudentController::class, 'storeInClass']);
+    Route::post('/establishment/classes/remove-students', [StudentController::class, 'removeFromClass']);
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/requests/student/{establishment}', [RequestController::class, 'getStudentRequests']);
-    Route::get('/requests/teacher/{establishment}', [RequestController::class, 'getTeacherRequests']);
-    Route::post('/requests', [RequestController::class, 'submitRequest']);
-    Route::post('/requests/handle', [RequestController::class, 'handleRequest']);
-    Route::post('/requests/revoke', [RequestController::class, 'requestRevoke']);
+    Route::patch('/establishment/{establishment}/classes/{class}', [StaffController::class, 'updateClassTeacher']);
+//kérelmek
+    Route::get('/establishment/{establishment}/requests/students', [RequestController::class, 'getStudentRequests']);
+    Route::get('/establishment/{establishment}/requests/teachers', [RequestController::class, 'getTeacherRequests']);
+
+    Route::post('/establishment/{establishment}/requests', [RequestController::class, 'submitRequest']);
+    Route::post('/establishment/requests/handle', [RequestController::class, 'handleRequest']);
+
+    Route::delete('/establishment/{establishment}/requests/revoke', [RequestController::class, 'revokeRequest']);
 });
 
 Route::prefix('members')->group(function () {
     Route::get('/students/{establishment}', [StudentController::class, 'getStudents']);
-    Route::get('/staff/{establishment}', [StaffController::class, 'getStaffs']);
+    Route::get('/staff/{establishment}', [StaffController::class, 'getStaff']);
 });

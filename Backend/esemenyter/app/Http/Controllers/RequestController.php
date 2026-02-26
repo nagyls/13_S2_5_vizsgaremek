@@ -14,7 +14,6 @@ class RequestController extends Controller
     public function getStudentRequests(Request $request, $establishmentId)
     {
         $user = $request->user();
-
         if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
             return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
         }
@@ -73,44 +72,81 @@ class RequestController extends Controller
         return response()->json(['message' => 'Kérelem benyújtva!'], 201);
     }
     //elfogadás, elutasítás
-    public function handleRequest(Request $request, $requestId)
+    public function handleRequest(Request $request)
     {
+        $validated = $request->validate([
+            'establishment_id' => ['required', 'integer', 'exists:establishments,id'],
+            'action' => ['required', 'string', 'in:accept,reject'],
+            'request_id' => ['required', 'array'],
+            'request_id.*' => ['integer', 'exists:establishment_requests,id'],
+        ],[
+            'establishment_id.required' => 'Az intézmény azonosító megadása kötelező.',
+            'establishment_id.exists'   => 'Nem létező intézmény.',
+            'action.in' => 'Az action mezőben "accept" vagy "reject" értéknek kell lennie.',
+            'action.required' => 'Az action mező megadása kötelező.',
+            'request_id.required' => 'A request_id mező megadása kötelező.',
+            'request_id.array' => 'A request_id mezőnek tömbnek kell lennie.',
+            'request_id.*.integer' => 'Minden request_id értéknek egész számnak kell lennie.',
+            'request_id.*.exists' => 'Minden request_id értéknek léteznie kell az establishment_requests táblában.'
+        ]);
+
         $user = $request->user();
-        $establishmentRequest = EstablishmentRequest::find($requestId);
-        if (!$establishmentRequest) {
-            return response()->json(['message' => 'Kérelem nem található!'], 404);
-        }
-        if (!$this->isAdminEstablishment($user->id, $establishmentRequest->establishment_id)) {
+        if (!$this->isAdminEstablishment($user->id, $validated['establishment_id'])) {
             return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
         }
 
-        $request->validate([
-            'action' => ['required', 'string', 'in:accept,reject'],
-        ], [
-            'action.in' => 'Az action mezőben "accept" vagy "reject" értéknek kell lennie.',
-            'action.required' => 'Az action mező megadása kötelező.',
-        ]);
+        // csak az adott intézményhez tartozó kéréseket dolgozzuk fel
+        $requests = EstablishmentRequest::whereIn('id', $validated['request_id'])
+            ->where('establishment_id', $validated['establishment_id'])
+            ->get();
 
-        if ($request->action === 'accept') {
-            if ($establishmentRequest->role === 'teacher') {
-                Staff::create([
-                    'user_id' => $establishmentRequest->user_id,
-                    'establishment_id' => $establishmentRequest->establishment_id,
-                    'role' => 'teacher',
-                ]);
-            } else {
-                Student::create([
-                    'user_id' => $establishmentRequest->user_id,
-                    'establishment_id' => $establishmentRequest->establishment_id,
-                ]);
+    
+
+        $accepted = 0;
+        $rejected = 0;
+
+        if ($requests->isNotEmpty()) {
+            if ($validated['action'] === 'accept') {
+                foreach ($requests as $item) {
+                    if ($item->role === 'teacher') {
+                        $staff = Staff::firstOrCreate(
+                            ['user_id' => $item->user_id, 'establishment_id' => $item->establishment_id],
+                            ['role' => 'teacher']
+                        );
+                        if ($staff->wasRecentlyCreated) {
+                            $accepted++;
+                        }
+                    } else {
+                        $student = Student::firstOrCreate([
+                            'user_id' => $item->user_id,
+                            'establishment_id' => $item->establishment_id,
+                        ]);
+                        if ($student->wasRecentlyCreated) {
+                            $accepted++;
+                        }
+                    }
+                    // a kérelem törlése minden feldolgozott esetben
+                    $item->delete();
+                }
+            } else { // reject
+                EstablishmentRequest::whereIn('id', $requests->pluck('id')->toArray())->delete();
+                $rejected = count($requests);
             }
-            $establishmentRequest->delete();
-            return response()->json(['message' => 'Kérelem elfogadva!']);
+        }
+
+        if ($validated['action'] === 'accept') {
+            return response()->json([
+            'message' => 'Kérelmek feldolgozva.',
+            'accepted' => $accepted,
+            ]);
         } else {
-            $establishmentRequest->delete();
-            return response()->json(['message' => 'Kérelem elutasítva!']);
+            return response()->json([
+            'message' => 'Kérelmek feldolgozva.',
+            'rejected' => $rejected,
+            ]);
         }
     }
+
     // visszavon
     public function revokeRequest(Request $request, $establishmentId)
     {
