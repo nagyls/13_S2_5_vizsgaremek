@@ -325,7 +325,7 @@ export default {
     },
     
     logout() {
-      axios.post('http://127.0.0.1:8000/api/logout')
+      axios.delete('http://127.0.0.1:8000/api/logout')
         .finally(() => {
           localStorage.removeItem('esemenyter_user');
           localStorage.removeItem('esemenyter_token');

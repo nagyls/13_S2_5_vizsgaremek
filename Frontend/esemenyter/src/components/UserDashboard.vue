@@ -219,13 +219,7 @@ export default {
     },
     
     logout() {
-      axios.post('http://127.0.0.1:8000/api/logout')
-        .then(() => {
-          console.log('Backend-en törölve a token');
-        })
-        .catch(err => {
-          console.error('Logout hiba:', err);
-        })
+      axios.delete('http://127.0.0.1:8000/api/logout')
         .finally(() => {
           localStorage.removeItem('esemenyter_user');
           localStorage.removeItem('esemenyter_token');

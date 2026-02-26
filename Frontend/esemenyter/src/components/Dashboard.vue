@@ -1883,7 +1883,7 @@ export default {
       // Külön axios kérés a biztonság kedvéért
       axios({
         method: 'post',
-        url: 'http://127.0.0.1:8000/api/establishment',
+        url: 'http://127.0.0.1:8000/api/establishment/create',
         data: establishmentData,
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -2010,7 +2010,7 @@ export default {
       this.showUserMenu = false;
 
       // Backend logout - token NÉLKÜL küldjük (így nem lesz 401)
-      axios.post('http://127.0.0.1:8000/api/logout', {}, {
+      axios.delete('http://127.0.0.1:8000/api/logout', {}, {
         headers: {
           'Authorization': ''  // Üres Authorization header
         }

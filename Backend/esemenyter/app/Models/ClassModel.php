@@ -12,6 +12,7 @@ class ClassModel extends Model
         'establishment_id', 
         'user_id', 
         'grade', 
+        'capacity',
         'name'
     ];
 

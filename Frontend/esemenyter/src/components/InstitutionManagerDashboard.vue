@@ -856,7 +856,7 @@ export default {
           establishment_id: this.user.institution_id
         };
 
-        const response = await axios.post(`http://127.0.0.1:8000/api/classes`, classData, {
+        const response = await axios.post(`http://127.0.0.1:8000/api/establishment/classes/create`, classData, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -1047,7 +1047,7 @@ export default {
     async logout() {
       try {
         const token = localStorage.getItem('esemenyter_token');
-        await axios.post('http://127.0.0.1:8000/api/logout', {}, {
+        await axios.delete('http://127.0.0.1:8000/api/logout', {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } catch (error) {

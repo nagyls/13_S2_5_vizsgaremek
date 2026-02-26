@@ -19,9 +19,11 @@ class ClassController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'grade' => ['required', 'integer'],
+            'capacity' => ['nullable', 'integer'],
             'establishment_id' => ['required', 'exists:establishments,id'],
-            'user_id' => ['nullable', 'exists:users,id'],
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
         ], [
+            'capacity.integer'          => 'A maximális létszámnak egész számnak kell lennie.',
             'name.required'             => 'Az osztály neve kötelező.',
             'name.string'               => 'Az osztály neve szöveges érték kell legyen.',
             'name.max'                  => 'Az osztály neve nem lehet hosszabb 100 karakternél.',
@@ -29,11 +31,14 @@ class ClassController extends Controller
             'grade.integer'             => 'A évfolyamnak egész számnak kell lennie.',
             'establishment_id.required' => 'Az intézmény azonosító megadása kötelező.',
             'establishment_id.exists'   => 'Nem létező intézmény.',
+            'user_id.integer'          => 'A tanár azonosítójának egész számnak kell lennie.',
+            'user_id.exists'           => 'Nem létező tanár.',
         ]);
 
         $class = ClassModel::create([
             'user_id' => $request->user_id,
             'name' => $request->name,
+            'capacity' => $request->capacity,
             'grade' => $request->grade,
             'establishment_id' => $request->establishment_id,
         ]);
