@@ -857,7 +857,7 @@ export default {
         };
 
         const response = await axios.post(`http://127.0.0.1:8000/api/establishment/classes/create`, classData, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' }
         });
 
         // Újratöltjük az osztályokat

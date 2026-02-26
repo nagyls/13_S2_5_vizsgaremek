@@ -1905,7 +1905,8 @@ export default {
         this.user.city = this.adminSelectedCity?.title || this.adminNewCityName;
         this.user.school = this.schoolForm.name;
         this.user.schoolDetails = { ...this.schoolForm };
-      
+
+        localStorage.setItem('CurrentInstitution', response.data.data?.id || response.data?.id);
         this.saveUserData();
       
         setTimeout(() => {
