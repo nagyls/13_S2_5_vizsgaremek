@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ClassModel;
 use App\Models\User;
+use App\Models\Establishment;
 
 
 class ClassController extends Controller
 {
 
-    //Post Class
+    //osztály létrehozása
 
     public function store(Request $request)
     {
@@ -46,7 +47,7 @@ class ClassController extends Controller
             'class' => $class
         ], 201);
     }
-    //Get Classes
+    //Osztályok lekérdezése
     public function getClasses(Request $request, $establishment)
     {
         $user = $request->user();
@@ -64,6 +65,32 @@ class ClassController extends Controller
                         'grade' => $item->grade,
                     ];
                 })->values(),
+        ]);
+    }
+    //Osztály tagok lekérdezése
+    public function getClassMembers(Request $request, $establishmentId, $classId)
+    {
+        $user = $request->user();
+        if (!$this->isMemberEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
+        $establishment = Establishment::find($establishmentId);
+        $class = ClassModel::find($classId);
+        if (!$establishment || !$class) {
+            return response()->json(['message' => 'Intézmény vagy osztály nem található!'], 404);
+        }
+        if ($class->establishment_id != $establishment->id) {
+            return response()->json(['message' => 'Az osztály nem tartozik az intézményhez!'], 400);
+        }
+
+        $students = User::join('class_students', 'users.id', '=', 'class_students.user_id')
+            ->leftJoin('students', 'users.id', '=', 'students.user_id')
+            ->where('class_students.class_id', $classId)
+            ->select('users.*', 'students.alias')
+            ->get();
+            
+        return response()->json([
+            'data' => $students
         ]);
     }
 }

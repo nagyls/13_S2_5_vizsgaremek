@@ -100,15 +100,14 @@ class RequestController extends Controller
             ->where('establishment_id', $validated['establishment_id'])
             ->get();
 
-        // Egyszerűsítés: eltávolítjuk az előszűrést és előzetes törlést. A firstOrCreate biztosítja, hogy ne legyen duplikáció versenyhelyzetben sem.
-        $remaining = $requests;
+    
 
         $accepted = 0;
         $rejected = 0;
 
-        if ($remaining->isNotEmpty()) {
+        if ($requests->isNotEmpty()) {
             if ($validated['action'] === 'accept') {
-                foreach ($remaining as $item) {
+                foreach ($requests as $item) {
                     if ($item->role === 'teacher') {
                         $staff = Staff::firstOrCreate(
                             ['user_id' => $item->user_id, 'establishment_id' => $item->establishment_id],
@@ -130,8 +129,8 @@ class RequestController extends Controller
                     $item->delete();
                 }
             } else { // reject
-                EstablishmentRequest::whereIn('id', $remaining->pluck('id')->toArray())->delete();
-                $rejected = count($remaining);
+                EstablishmentRequest::whereIn('id', $requests->pluck('id')->toArray())->delete();
+                $rejected = count($requests);
             }
         }
 
