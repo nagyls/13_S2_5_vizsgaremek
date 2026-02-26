@@ -3,14 +3,13 @@
     <header class="main-header">
       <div class="container">
         <div class="header-content">
-          <!-- Logo - csak akkor kattintható, ha van legalább 1 osztály -->
-          <div class="logo-section" :class="{ 'disabled': classes.length === 0 }" @click="goToDashboard">
+          <div class="logo-section" @click="$router.push('/user-dashboard')">
             <div class="logo-icon">
               <i class='bx bx-calendar-heart'></i>
             </div>
             <div class="logo-text">
               <h1 class="site-title">EseményTér</h1>
-              <p class="site-subtitle">Ahol minden eseményt helyet kap</p>
+              <p class="site-subtitle">Ahol minden esemény helyet kap</p>
             </div>
           </div>
           
@@ -36,24 +35,14 @@
                   </div>
                 </div>
                 <div class="menu-items">
-                  <!-- Profil menüpont - csak akkor jelenik meg, ha van osztály -->
-                  <router-link v-if="classes.length > 0" to="/profile" class="menu-item">
+                  <router-link to="/profile" class="menu-item">
                     <i class='bx bx-user'></i>
                     <span>Profilom</span>
                   </router-link>
-                  
-                  <!-- Események menüpont - csak akkor jelenik meg, ha van osztály -->
-                  <router-link v-if="classes.length > 0" to="/events-list" class="menu-item">
-                    <i class='bx bx-calendar'></i>
-                    <span>Események</span>
-                  </router-link>
-                  
-                  <!-- Intézmény beállítások - mindig elérhető -->
                   <router-link to="/institution-settings" class="menu-item">
                     <i class='bx bx-building'></i>
                     <span>Intézmény beállítások</span>
                   </router-link>
-                  
                   <div class="menu-divider"></div>
                   <button class="menu-item logout-btn" @click="logout">
                     <i class='bx bx-log-out'></i>
@@ -101,8 +90,8 @@
           </div>
         </div>
 
-        <!-- CSATLAKOZÁSI KÉRELMEK SZEKCIÓ - csak akkor jelenik meg, ha van osztály -->
-        <div v-if="classes.length > 0" class="requests-section">
+        <!-- CSATLAKOZÁSI KÉRELMEK SZEKCIÓ -->
+        <div class="requests-section">
           <div class="section-header">
             <h3>
               <i class='bx bx-user-check'></i>
@@ -252,61 +241,49 @@
           </div>
         </div>
 
-        <!-- OSZTÁLYOK LÉTREHOZÁSA SZEKCIÓ - mindig látható -->
-        <div class="classes-section" :class="{ 
-          'warning': classes.length === 0,
-          'completed': classes.length > 0 
-        }">
+        <!-- OSZTÁLYOK LÉTREHOZÁSA SZEKCIÓ -->
+        <div class="classes-section">
           <div class="section-header">
             <h3>
               <i class='bx bx-group'></i>
               Osztályok kezelése
             </h3>
-            <div v-if="classes.length === 0" class="warning-message">
-              <i class='bx bx-error-circle'></i>
-              <span>Legalább egy osztályt létre kell hoznod!</span>
-            </div>
-            <div v-else class="success-message">
-              <i class='bx bx-check-circle'></i>
-              <span>Osztályok sikeresen létrehozva ({{ classes.length }} osztály)</span>
-            </div>
           </div>
 
+          
           <!-- Osztály létrehozó űrlap -->
           <div class="create-class-form">
             <h4>Új osztály létrehozása</h4>
+            
             <div class="form-row">
               <div class="form-group">
-                <label for="className">Osztály neve *</label>
+            <label for="classGrade">Évfolyam</label>
+            <select 
+              id="classGrade"
+              v-model="newClass.grade"
+              class="form-control"
+            >
+              <option value="">Válassz évfolyamot</option>
+              <option v-for="grade in availableGrades" :key="grade" :value="grade">
+                {{ grade }}. évfolyam
+              </option>
+            </select>
+          </div>
+              <div class="form-group">
+                <label for="className">Osztály</label>
                 <input 
                   type="text" 
                   id="className"
                   v-model="newClass.name"
-                  placeholder="Pl.: 9.A, 10.B, 5. osztály"
+                  placeholder="Pl.: A, B, C"
                   class="form-control"
-                  :class="{ 'error': classErrors.name }"
                 />
-                <span v-if="classErrors.name" class="error-message">{{ classErrors.name }}</span>
               </div>
 
-              <div class="form-group">
-                <label for="classGrade">Évfolyam *</label>
-                <select 
-                  id="classGrade"
-                  v-model="newClass.grade"
-                  class="form-control"
-                  :class="{ 'error': classErrors.grade }"
-                >
-                  <option value="">Válassz évfolyamot</option>
-                  <option v-for="grade in availableGrades" :key="grade" :value="grade">
-                    {{ grade }}. évfolyam
-                  </option>
-                </select>
-                <span v-if="classErrors.grade" class="error-message">{{ classErrors.grade }}</span>
-              </div>
+              
 
               <div class="form-group">
-                <label for="classCapacity">Férőhely (opcionális)</label>
+                <label for="classCapacity">Férőhely</label>
                 <input 
                   type="number" 
                   id="classCapacity"
@@ -318,7 +295,7 @@
               </div>
 
               <div class="form-group">
-                <label for="classTeacher">Osztályfőnök (opcionális)</label>
+                <label for="classTeacher">Osztályfőnök (választható)</label>
                 <select 
                   id="classTeacher"
                   v-model="newClass.teacher_id"
@@ -333,7 +310,6 @@
                     {{ teacher.name }}
                   </option>
                 </select>
-                <small class="form-text">Az osztályfőnök később is kijelölhető</small>
               </div>
 
               <div class="form-group">
@@ -381,34 +357,10 @@
               </div>
             </div>
           </div>
-
-          <!-- Figyelmeztetés, ha nincs osztály -->
-          <div v-if="classes.length === 0" class="blocking-warning">
-            <i class='bx bx-error-circle'></i>
-            <div class="warning-content">
-              <h4>Osztály létrehozása szükséges</h4>
-              <p>Ahhoz, hogy diákok és tanárok csatlakozhassanak az intézményhez, és hogy elérd a teljes funkciókat, legalább egy osztályt létre kell hoznod.</p>
-            </div>
-          </div>
-
-          <!-- Sikeres véglegesítés üzenet, ha van osztály -->
-          <div v-if="classes.length > 0" class="success-info">
-            <i class='bx bx-check-circle'></i>
-            <div class="success-content">
-              <h4>Gratulálunk! 🎉</h4>
-              <p>Sikeresen létrehoztad az első osztályt. Most már teljes körűen használhatod az EseményTér összes funkcióját:</p>
-              <ul>
-                <li><i class='bx bx-check'></i> Diákok és tanárok csatlakozási kérelmeinek kezelése</li>
-                <li><i class='bx bx-check'></i> Események létrehozása és kezelése</li>
-                <li><i class='bx bx-check'></i> Profilod szerkesztése</li>
-                <li><i class='bx bx-check'></i> Események böngészése</li>
-              </ul>
-            </div>
-          </div>
         </div>
 
-        <!-- Már csatlakozott felhasználók - csak akkor jelenik meg, ha van osztály -->
-        <div v-if="classes.length > 0" class="connected-users-section">
+        <!-- Már csatlakozott felhasználók -->
+        <div class="connected-users-section">
           <div class="section-header">
             <h3>
               <i class='bx bx-group'></i>
@@ -505,9 +457,9 @@
       </div>
     </main>
 
-    <!-- Osztály hozzárendelés modal - csak akkor jelenik meg, ha van osztály -->
+    <!-- Osztály hozzárendelés modal -->
     <transition name="modal">
-      <div v-if="showAssignmentModal && classes.length > 0" class="modal-overlay" @click.self="closeAssignmentModal">
+      <div v-if="showAssignmentModal" class="modal-overlay" @click.self="closeAssignmentModal">
         <div class="modal-container">
           <div class="modal-header">
             <h3>
@@ -535,14 +487,13 @@
 
             <div class="assignment-form">
               <div class="form-group">
-                <label for="class-select">Válassz osztályt:</label>
+                <label for="class-select">Válassz osztályt (opcionális):</label>
                 <select 
                   id="class-select"
                   v-model="selectedClassId" 
                   class="form-select"
-                  :disabled="!classes.length"
                 >
-                  <option value="">-- Osztály kiválasztása --</option>
+                  <option value="">-- Osztály nélkül --</option>
                   <option 
                     v-for="classItem in classes" 
                     :key="classItem.id" 
@@ -552,9 +503,9 @@
                     ({{ classItem.student_count || 0 }}/{{ classItem.capacity || '∞' }} diák)
                   </option>
                 </select>
-                <p v-if="!classes.length" class="form-hint">
+                <p class="form-hint">
                   <i class='bx bx-info-circle'></i>
-                  Még nincsenek osztályok létrehozva. Először hozz létre osztályokat.
+                  Választhatsz osztályt a felhasználónak, de nem kötelező. Később is módosítható.
                 </p>
               </div>
             </div>
@@ -569,8 +520,7 @@
             <button class="btn-outline" @click="closeAssignmentModal">Mégse</button>
             <button 
               class="btn-primary" 
-              @click="approveRequest" 
-              :disabled="!selectedClassId"
+              @click="approveRequest"
             >
               <i class='bx bx-check'></i>
               Kérelem elfogadása
@@ -597,8 +547,6 @@
 
 <script>
 import axios from 'axios';
-// import { format } from 'date-fns';
-// import { hu } from 'date-fns/locale';
 
 export default {
   name: 'InstitutionManagerDashboard',
@@ -658,7 +606,7 @@ export default {
       },
       classErrors: {},
       isCreatingClass: false,
-      availableGrades: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+      availableGrades: [9, 10, 11, 12, 13]
     };
   },
   
@@ -725,23 +673,6 @@ export default {
     }
   },
   
-  watch: {
-    // Ha nincs osztály, blokkoljuk a navigációt
-    classes: {
-      handler(newVal) {
-        if (newVal.length === 0) {
-          // Blokkoljuk a navigációt
-          window.onbeforeunload = () => {
-            return 'Még nem hoztál létre osztályt! Ha elhagyod az oldalt, nem fogadják el a csatlakozási kérelmeket.';
-          };
-        } else {
-          window.onbeforeunload = null;
-        }
-      },
-      immediate: true
-    }
-  },
-  
   methods: {
     // Felhasználó lekérése ID alapján
     getUserById(userId) {
@@ -775,52 +706,53 @@ export default {
       this.showUserMenu = !this.showUserMenu;
     },
     
-    // Navigáció a dashboardra - csak akkor engedélyezett, ha van osztály
-    goToDashboard() {
-      if (this.classes.length > 0) {
-        this.$router.push('/user-dashboard');
-      }
-      // Ha nincs osztály, nem csinál semmit
-    },
-    
     // Adatok betöltése
     async loadInstitutionData() {
       try {
         const token = localStorage.getItem('esemenyter_token');
         const institutionId = this.user.institution_id;
-        
+
         if (!institutionId) {
           console.error('Nincs intézmény ID');
           return;
         }
-        
+
         // Intézmény adatok
         const instResponse = await axios.get(`http://127.0.0.1:8000/api/establishments/${institutionId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         this.institution = instResponse.data.data || instResponse.data;
-        
-        // Csatlakozási kérelmek (establishment_requests tábla)
-        const requestsResponse = await axios.get(`http://127.0.0.1:8000/api/establishments/${institutionId}/requests`, {
+
+        // DIÁK csatlakozási kérelmek betöltése
+        const studentRequestsResponse = await axios.get(`http://127.0.0.1:8000/api/requests/student/${institutionId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        this.establishmentRequests = requestsResponse.data.data || [];
-        
+        const studentRequests = studentRequestsResponse.data.data || [];
+
+        // TANÁR csatlakozási kérelmek betöltése
+        const teacherRequestsResponse = await axios.get(`http://127.0.0.1:8000/api/requests/teacher/${institutionId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const teacherRequests = teacherRequestsResponse.data.data || [];
+
+        // Kérelmek egyesítése
+        this.establishmentRequests = [...studentRequests, ...teacherRequests];
+
         // Összes felhasználó betöltése (a kérelmekhez kapcsolódóan)
         const userIds = this.establishmentRequests.map(r => r.user_id);
         if (userIds.length > 0) {
           await this.loadUsers(userIds);
         }
-        
+
         // Diákok és tanárok betöltése (akik már csatlakoztak)
         await this.loadInstitutionUsers(institutionId);
-        
-        // Osztályok betöltése
+
+        // Osztályok betöltése - JAVÍTVA: classes/{establishment}
         await this.loadClasses(institutionId);
-        
+
         // Statisztikák frissítése
         this.updateStats();
-        
+
       } catch (error) {
         console.error('Hiba az adatok betöltésekor:', error);
         this.showNotification('Hiba történt az adatok betöltésekor', 'error');
@@ -850,40 +782,39 @@ export default {
       }
     },
     
-    // Intézmény felhasználóinak betöltése (akik már csatlakoztak)
     async loadInstitutionUsers(institutionId) {
       try {
         const token = localStorage.getItem('esemenyter_token');
         
-        // Diákok
-        const studentsResponse = await axios.get(`http://127.0.0.1:8000/api/establishments/${institutionId}/students`, {
-          headers: { Authorization: `Bearer ${token}` }
+        // Token küldése, de a backend nem ellenőrzi
+        const studentsResponse = await axios.get(`http://127.0.0.1:8000/api/establishments/student/${institutionId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         this.students = studentsResponse.data.data || [];
-        
-        // Tanárok
-        const teachersResponse = await axios.get(`http://127.0.0.1:8000/api/establishments/${institutionId}/teachers`, {
-          headers: { Authorization: `Bearer ${token}` }
+      
+        const teachersResponse = await axios.get(`http://127.0.0.1:8000/api/establishments/teacher/${institutionId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         this.teachers = teachersResponse.data.data || [];
-        
+      
       } catch (error) {
         console.error('Hiba az intézmény felhasználóinak betöltésekor:', error);
       }
     },
     
-    // Osztályok betöltése
+    // Osztályok betöltése intézmény ID alapján
     async loadClasses(institutionId) {
       try {
         const token = localStorage.getItem('esemenyter_token');
-        
-        const response = await axios.get(`http://127.0.0.1:8000/api/establishments/${institutionId}/classes`, {
+
+        const response = await axios.get(`http://127.0.0.1:8000/api/classes/${institutionId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         this.classes = response.data.data || [];
-        
+
       } catch (error) {
         console.error('Hiba az osztályok betöltésekor:', error);
+        this.showNotification('Hiba történt az osztályok betöltésekor', 'error');
       }
     },
     
@@ -899,50 +830,49 @@ export default {
     // Új osztály létrehozása
     async createClass() {
       this.classErrors = {};
-      
-      // Validáció - csak a kötelező mezőket ellenőrizzük
-      if (!this.newClass.name?.trim()) {
-        this.classErrors.name = 'Az osztály neve kötelező';
-      }
-      
-      if (!this.newClass.grade) {
-        this.classErrors.grade = 'Az évfolyam kötelező';
-      }
-      
-      if (Object.keys(this.classErrors).length > 0) {
+
+      // Validáció - csak akkor ellenőrizzük, ha van kitöltve
+      if (!this.newClass.name?.trim() && !this.newClass.grade && !this.newClass.capacity) {
+        // Ha egy mező sincs kitöltve, ne csináljunk semmit
         return;
       }
-      
+
+      // Ha van név, de nincs évfolyam
+      if (this.newClass.name?.trim() && !this.newClass.grade) {
+        this.classErrors.grade = 'Az évfolyam kötelező, ha osztálynevet adsz meg';
+        return;
+      }
+
       this.isCreatingClass = true;
-      
+
       try {
         const token = localStorage.getItem('esemenyter_token');
-        
+
         const classData = {
-          name: this.newClass.name,
-          grade: this.newClass.grade,
+          name: this.newClass.name || 'Új osztály',
+          grade: this.newClass.grade || 1,
           capacity: this.newClass.capacity || null,
-          teacher_id: this.newClass.teacher_id || null, // Lehet üres is
+          teacher_id: this.newClass.teacher_id || null,
           establishment_id: this.user.institution_id
         };
-        
+
         const response = await axios.post(`http://127.0.0.1:8000/api/classes`, classData, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
+
         // Újratöltjük az osztályokat
         await this.loadClasses(this.user.institution_id);
-        
+
         // Űrlap alaphelyzetbe
         this.newClass = {
           name: '',
           grade: '',
           capacity: 30,
-          teacher_id: ''  // Üresen hagyható
+          teacher_id: ''
         };
-        
+
         this.showNotification('Osztály sikeresen létrehozva!', 'success');
-        
+
       } catch (error) {
         console.error('Hiba az osztály létrehozásakor:', error);
         this.showNotification('Hiba történt az osztály létrehozásakor', 'error');
@@ -984,6 +914,12 @@ export default {
     
     // Kérelem kezelés
     showClassAssignmentModal(request) {
+      // Ellenőrizzük, hogy van-e user adat
+      const user = this.getUserById(request.user_id);
+      if (user) {
+        request.user = user;
+      }
+      
       this.selectedRequest = request;
       this.selectedClassId = '';
       this.errorMessage = '';
@@ -1002,8 +938,8 @@ export default {
         const requestId = this.selectedRequest.id;
         const userId = this.selectedRequest.user_id;
         const role = this.selectedRequest.role;
-
-        // Osztályba sorolás
+      
+        // Csak akkor rendelünk osztályt, ha van kiválasztva
         if (this.selectedClassId) {
           await axios.post(`http://127.0.0.1:8000/api/users/${userId}/assign-class`, {
             class_id: this.selectedClassId,
@@ -1012,31 +948,31 @@ export default {
             headers: { Authorization: `Bearer ${token}` }
           });
         }
-
-        // Kérelem törlése (ez jelzi, hogy elfogadták)
+      
+        // Kérelem törlése (elfogadás után)
         await axios.delete(`http://127.0.0.1:8000/api/establishment-requests/${requestId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-
-        // Frissítsük a felhasználó szerepkörét az adatbázisban
+      
+        // Felhasználó szerepkörének frissítése
         await axios.put(`http://127.0.0.1:8000/api/users/${userId}/role`, {
           role: role
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
-
+      
         // Eltávolítjuk a listából
         const index = this.establishmentRequests.findIndex(r => r.id === requestId);
         if (index !== -1) {
           this.establishmentRequests.splice(index, 1);
         }
-
+      
         // Felhasználók újratöltése
         await this.loadInstitutionUsers(this.user.institution_id);
-
+      
         this.closeAssignmentModal();
-        this.showNotification('Kérelem sikeresen elfogadva és a felhasználó osztályba sorolva', 'success');
-
+        this.showNotification('Kérelem sikeresen elfogadva!', 'success');
+      
       } catch (error) {
         console.error('Hiba a kérelem elfogadásakor:', error);
         this.errorMessage = error.response?.data?.message || 'Hiba történt a kérelem feldolgozása során';
@@ -1045,26 +981,27 @@ export default {
     },
     
     async rejectRequest(request) {
-      if (!confirm(`Biztosan elutasítja ${this.getUserById(request.user_id)?.name || 'a felhasználó'} csatlakozási kérelmét?`)) {
+      const user = this.getUserById(request.user_id);
+      if (!confirm(`Biztosan elutasítja ${user?.name || 'a felhasználó'} csatlakozási kérelmét?`)) {
         return;
       }
-      
+
       try {
         const token = localStorage.getItem('esemenyter_token');
-        
-        // Kérelem törlése (elutasítás = törlés)
+
+        // Kérelem törlése - a megfelelő endpoint használata
         await axios.delete(`http://127.0.0.1:8000/api/establishment-requests/${request.id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
+
         // Eltávolítjuk a listából
         const index = this.establishmentRequests.findIndex(r => r.id === request.id);
         if (index !== -1) {
           this.establishmentRequests.splice(index, 1);
         }
-        
+
         this.showNotification('Kérelem elutasítva', 'warning');
-        
+
       } catch (error) {
         console.error('Hiba a kérelem elutasításakor:', error);
         this.showNotification('Hiba történt a művelet során', 'error');
@@ -1158,32 +1095,37 @@ export default {
   
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
-    window.onbeforeunload = null;
   }
 };
 </script>
 
 <style scoped>
-.institution-dashboard {
+/* Alap stílusok */
+* {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
-  font-family: "Poppins", sans-serif;
+
+}
+
+.institution-dashboard {
   min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   width: 100vw;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
 .container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 30px;
 }
 
-/* FEJLÉC */
+/* Header stílusok */
 .main-header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 16px 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -1193,87 +1135,88 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 15px 0;
 }
 
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
   cursor: pointer;
-  transition: opacity 0.3s;
+  transition: transform 0.3s ease;
 }
 
 .logo-section:hover {
-  opacity: 0.8;
-}
-
-/* Logo disabled állapot */
-.logo-section.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-.logo-section.disabled:hover {
-  opacity: 0.6;
+  transform: scale(1.02);
 }
 
 .logo-icon {
-  font-size: 32px;
-  color: #4f46e5;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 28px;
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
 }
 
-.logo-text h1 {
-  margin: 0;
+.logo-text {
+  line-height: 1.2;
+}
+
+.site-title {
   font-size: 24px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  margin: 0;
 }
 
 .site-subtitle {
+  font-size: 12px;
+  color: #6b7280;
   margin: 0;
-  font-size: 14px;
-  color: #64748b;
-  font-weight: 500;
 }
 
-/* Felhasználó profil */
+/* User profile */
 .user-profile {
   position: relative;
 }
 
 .user-avatar {
+  display: flex;
+  align-items: center;
+  gap: 15px;
   cursor: pointer;
-  position: relative;
+  padding: 5px 10px;
+  border-radius: 50px;
+  transition: background 0.3s ease;
+}
+
+.user-avatar:hover {
+  background: #f3f4f6;
 }
 
 .avatar-circle {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 16px;
-  transition: transform 0.3s ease;
-}
-
-.user-avatar:hover .avatar-circle {
-  transform: scale(1.05);
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
 }
 
 .user-status {
-  position: absolute;
-  bottom: 0;
-  right: 0;
+  position: relative;
 }
 
 .status-dot {
@@ -1281,85 +1224,100 @@ export default {
   height: 12px;
   border-radius: 50%;
   border: 2px solid white;
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
 }
 
 .status-dot.online {
   background: #10b981;
+  box-shadow: 0 0 0 2px white;
 }
 
-/* Felhasználó menü */
+/* User menu */
 .user-menu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: 60px;
   right: 0;
+  width: 280px;
   background: white;
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  width: 300px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   z-index: 1000;
 }
 
 .menu-header {
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #667eea10, #764ba210);
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .menu-user-info h4 {
   margin: 0 0 5px 0;
-  font-size: 18px;
+  color: #374151;
+  font-size: 16px;
 }
 
 .user-email {
   margin: 0;
+  color: #6b7280;
   font-size: 14px;
-  opacity: 0.9;
 }
 
 .role-badge {
   display: inline-block;
   padding: 4px 12px;
-  border-radius: 20px;
+  border-radius: 50px;
   font-size: 12px;
   font-weight: 600;
   margin-top: 10px;
-  background: rgba(255, 255, 255, 0.2);
+}
+
+.role-badge.institution {
+  background: #4f46e5;
   color: white;
 }
 
 .menu-items {
-  padding: 10px 0;
+  padding: 10px;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  padding: 12px 20px;
-  background: none;
-  border: none;
-  text-align: left;
+  padding: 12px 16px;
+  border-radius: 10px;
   color: #374151;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  width: 100%;
+  border: none;
+  background: none;
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.2s;
-}
-
-.menu-item:hover {
-  background: #f3f4f6;
 }
 
 .menu-item i {
   font-size: 20px;
   color: #6b7280;
+  transition: color 0.3s ease;
+}
+
+.menu-item:hover {
+  background: #f3f4f6;
+  color: #4f46e5;
+}
+
+.menu-item:hover i {
+  color: #4f46e5;
 }
 
 .menu-divider {
   height: 1px;
   background: #e5e7eb;
-  margin: 10px 20px;
+  margin: 8px 0;
 }
 
 .logout-btn {
@@ -1370,59 +1328,74 @@ export default {
   color: #ef4444;
 }
 
-/* Animációk */
-.slide-fade-enter-active,
+.logout-btn:hover {
+  background: #fee2e2;
+}
+
+/* Slide-fade animáció */
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
 .slide-fade-leave-active {
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
 }
 
 .slide-fade-enter-from,
 .slide-fade-leave-to {
-  opacity: 0;
   transform: translateY(-10px);
+  opacity: 0;
 }
 
-/* Fő tartalom */
+/* Main content */
 .main-content {
   padding: 40px 0;
 }
 
-/* Intézmény info kártya */
+/* Intézmény info card */
 .institution-info-card {
   background: white;
   border-radius: 24px;
   padding: 30px;
+  margin-bottom: 30px;
   display: flex;
   align-items: center;
   gap: 30px;
-  margin-bottom: 30px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .institution-icon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-size: 40px;
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.institution-details {
+  flex: 1;
 }
 
 .institution-details h2 {
+  margin: 0 0 10px 0;
+  color: #374151;
   font-size: 28px;
-  margin-bottom: 8px;
-  color: #111827;
 }
 
 .institution-address {
-  color: #6b7280;
-  margin-bottom: 20px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  color: #6b7280;
+  margin: 0 0 20px 0;
+  font-size: 16px;
 }
 
 .institution-stats {
@@ -1436,9 +1409,10 @@ export default {
 
 .stat-value {
   display: block;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: #4f46e5;
+  line-height: 1.2;
 }
 
 .stat-label {
@@ -1446,53 +1420,53 @@ export default {
   color: #6b7280;
 }
 
-/* Szekció fejléc */
+/* Section headers */
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 25px;
 }
 
 .section-header h3 {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 24px;
-  color: #111827;
+  color: #374151;
+  font-size: 22px;
   margin: 0;
 }
 
 .section-header h3 i {
   color: #4f46e5;
+  font-size: 26px;
 }
 
+/* Search */
 .header-actions {
   display: flex;
-  gap: 16px;
+  gap: 15px;
 }
 
-/* Kereső */
 .search-wrapper {
   position: relative;
-  min-width: 300px;
 }
 
 .search-wrapper i {
   position: absolute;
-  left: 16px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
   color: #9ca3af;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .search-input {
-  width: 100%;
-  padding: 12px 16px 12px 48px;
+  padding: 10px 15px 10px 40px;
   border: 2px solid #e5e7eb;
   border-radius: 50px;
   font-size: 14px;
+  width: 250px;
   transition: all 0.3s ease;
   background: white;
 }
@@ -1501,17 +1475,10 @@ export default {
   outline: none;
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  width: 300px;
 }
 
-/* Kérelmek szekció */
-.requests-section {
-  background: white;
-  border-radius: 24px;
-  padding: 30px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-}
-
-/* Request tabok */
+/* Request tabs */
 .request-tabs {
   display: flex;
   gap: 10px;
@@ -1549,36 +1516,18 @@ export default {
   color: white;
 }
 
-.requests-group {
-  margin-bottom: 40px;
-}
-
-.group-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 18px;
-  color: #374151;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.status-badge {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.status-badge.pending {
-  background: #f59e0b;
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+/* Request cards */
+.requests-section {
+  background: white;
+  border-radius: 24px;
+  padding: 30px;
+  margin: 30px 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
 .requests-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 20px;
 }
 
@@ -1586,18 +1535,18 @@ export default {
   background: #f8f9ff;
   border-radius: 16px;
   padding: 20px;
-  border: 2px solid transparent;
+  border: 1px solid #e5e7eb;
   transition: all 0.3s ease;
+}
+
+.request-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  border-color: #4f46e5;
 }
 
 .request-card.pending {
   border-left: 4px solid #f59e0b;
-}
-
-.request-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  border-color: #4f46e5;
 }
 
 .request-header {
@@ -1608,27 +1557,30 @@ export default {
 }
 
 .user-avatar-medium {
-  width: 56px;
-  height: 56px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 20px;
+  font-size: 18px;
+}
+
+.user-info {
+  flex: 1;
 }
 
 .user-info h4 {
   margin: 0 0 5px 0;
-  font-size: 18px;
-  color: #111827;
+  color: #374151;
+  font-size: 16px;
 }
 
-.user-email {
-  margin: 0;
-  font-size: 14px;
+.user-info .user-email {
+  font-size: 13px;
   color: #6b7280;
 }
 
@@ -1642,58 +1594,51 @@ export default {
 .info-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 5px 0;
+  gap: 8px;
   color: #4b5563;
   font-size: 14px;
+  margin-bottom: 8px;
 }
 
 .info-row i {
   color: #4f46e5;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .request-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
-.btn-approve {
+.btn-approve, .btn-reject {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px;
-  background: #10b981;
-  color: white;
+  padding: 10px;
   border: none;
   border-radius: 8px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.btn-approve:hover {
+.btn-approve {
+  background: #10b981;
+  color: white;
+}
+
+.btn-approve:hover:not(:disabled) {
   background: #059669;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .btn-reject {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
   background: #ef4444;
   color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
 .btn-reject:hover {
@@ -1709,53 +1654,7 @@ export default {
   padding: 30px;
   margin: 40px 0;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-  border: 2px solid transparent;
   transition: all 0.3s ease;
-}
-
-.classes-section.warning {
-  border-color: #f59e0b;
-  background: #fffbeb;
-}
-
-.classes-section.completed {
-  border-color: #10b981;
-  background: #f0fdf4;
-}
-
-.warning-message {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: #fef3c7;
-  border-radius: 50px;
-  color: #92400e;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.warning-message i {
-  font-size: 18px;
-  color: #f59e0b;
-}
-
-/* Sikeres állapot üzenet */
-.success-message {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: #d1fae5;
-  border-radius: 50px;
-  color: #065f46;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.success-message i {
-  font-size: 18px;
-  color: #10b981;
 }
 
 .create-class-form {
@@ -1779,25 +1678,24 @@ export default {
 }
 
 .form-group {
-  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #374151;
   font-size: 14px;
+  font-weight: 600;
+  color: #374151;
 }
 
 .form-control {
-  width: 100%;
-  padding: 12px 16px;
+  padding: 10px 12px;
   border: 2px solid #e5e7eb;
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.3s ease;
-  font-family: "Poppins", sans-serif;
+  background: white;
 }
 
 .form-control:focus {
@@ -1811,18 +1709,97 @@ export default {
 }
 
 .error-message {
-  display: block;
-  margin-top: 5px;
   color: #ef4444;
   font-size: 12px;
+  margin-top: 4px;
 }
 
-.form-text {
-  display: block;
-  margin-top: 5px;
-  color: #6b7280;
+.form-select {
+  padding: 10px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+}
+
+.form-hint {
+  margin: 8px 0 0 0;
   font-size: 12px;
-  font-style: italic;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-hint i {
+  color: #4f46e5;
+  font-size: 14px;
+}
+
+.btn-primary {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  padding: 10px 20px;
+  background: white;
+  color: #374151;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-outline:hover {
+  background: #f3f4f6;
+  border-color: #4f46e5;
+  color: #4f46e5;
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-icon:hover {
+  background: #4f46e5;
+  color: white;
+  border-color: #4f46e5;
+  transform: translateY(-2px);
 }
 
 .classes-list {
@@ -1905,123 +1882,12 @@ export default {
   padding-top: 15px;
 }
 
-.blocking-warning {
-  margin-top: 30px;
-  padding: 24px;
-  background: #fef3c7;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  border: 2px solid #f59e0b;
-}
-
-.blocking-warning i {
-  font-size: 48px;
-  color: #f59e0b;
-}
-
-.warning-content h4 {
-  margin: 0 0 10px 0;
-  color: #92400e;
-  font-size: 20px;
-}
-
-.warning-content p {
-  margin: 0;
-  color: #92400e;
-  opacity: 0.9;
-  line-height: 1.5;
-}
-
-/* Sikeres véglegesítés info */
-.success-info {
-  margin-top: 30px;
-  padding: 30px;
-  background: #d1fae5;
-  border-radius: 16px;
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  border: 2px solid #10b981;
-}
-
-.success-info i {
-  font-size: 48px;
-  color: #10b981;
-  flex-shrink: 0;
-}
-
-.success-content h4 {
-  margin: 0 0 15px 0;
-  color: #065f46;
-  font-size: 22px;
-}
-
-.success-content p {
-  margin: 0 0 15px 0;
-  color: #065f46;
-  line-height: 1.5;
-}
-
-.success-content ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.success-content li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  color: #065f46;
-  font-size: 16px;
-}
-
-.success-content li i {
-  font-size: 20px;
-  color: #10b981;
-}
-
-/* Empty state */
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: #6b7280;
-}
-
-.empty-state i {
-  font-size: 64px;
-  color: #9ca3af;
-  margin-bottom: 20px;
-}
-
-.empty-state h4 {
-  font-size: 20px;
-  margin-bottom: 10px;
-  color: #374151;
-}
-
-.empty-state p {
-  font-size: 16px;
-  color: #6b7280;
-}
-
-.empty-state.small {
-  padding: 40px;
-}
-
-.empty-state.small i {
-  font-size: 48px;
-}
-
-/* Csatlakozott felhasználók szekció */
+/* Connected users section */
 .connected-users-section {
   background: white;
   border-radius: 24px;
   padding: 30px;
-  margin-top: 40px;
+  margin: 30px 0;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
@@ -2064,13 +1930,13 @@ export default {
 
 .users-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
 .user-card {
   background: #f8f9ff;
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 20px;
   border: 1px solid #e5e7eb;
   transition: all 0.3s ease;
@@ -2078,22 +1944,24 @@ export default {
 
 .user-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
   border-color: #4f46e5;
 }
 
 .user-card-header {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
   margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .user-avatar-small {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2102,52 +1970,71 @@ export default {
   font-size: 16px;
 }
 
-.user-card-info h4 {
-  margin: 0 0 5px 0;
-  font-size: 16px;
-  color: #111827;
+.user-card-info {
+  flex: 1;
 }
 
-.user-email {
-  margin: 0;
-  font-size: 14px;
+.user-card-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  color: #374151;
+}
+
+.user-card-info .user-email {
+  font-size: 12px;
   color: #6b7280;
+  margin: 0;
 }
 
 .user-card-body {
   margin-bottom: 15px;
-  padding: 10px 0;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
+  min-height: 60px;
 }
 
 .user-card-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 15px;
 }
 
-.btn-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: white;
-  border: 1px solid #e5e7eb;
+/* Empty states */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: #f8f9ff;
+  border-radius: 16px;
   color: #6b7280;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
-.btn-icon:hover {
-  background: #4f46e5;
-  color: white;
-  border-color: #4f46e5;
+.empty-state i {
+  font-size: 60px;
+  color: #4f46e5;
+  margin-bottom: 20px;
+  opacity: 0.5;
 }
 
-/* Modal stílusok */
+.empty-state h4 {
+  margin: 0 0 10px 0;
+  color: #374151;
+  font-size: 20px;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.empty-state.small {
+  padding: 40px 20px;
+}
+
+.empty-state.small i {
+  font-size: 40px;
+}
+
+/* Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -2169,15 +2056,16 @@ export default {
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
 }
 
 .modal-header {
   padding: 20px 30px;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea10, #764ba210);
 }
 
 .modal-header h3 {
@@ -2185,7 +2073,12 @@ export default {
   align-items: center;
   gap: 10px;
   margin: 0;
-  color: #111827;
+  color: #374151;
+  font-size: 20px;
+}
+
+.modal-header h3 i {
+  color: #4f46e5;
 }
 
 .modal-close {
@@ -2194,23 +2087,21 @@ export default {
   font-size: 24px;
   color: #6b7280;
   cursor: pointer;
-  transition: color 0.3s;
+  padding: 5px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-close:hover {
-  color: #ef4444;
+  background: #f3f4f6;
+  color: #4f46e5;
 }
 
 .modal-body {
   padding: 30px;
-}
-
-.modal-footer {
-  padding: 20px 30px;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: flex-end;
-  gap: 15px;
 }
 
 .user-summary {
@@ -2218,15 +2109,16 @@ export default {
   align-items: center;
   gap: 20px;
   margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 20px;
+  background: #f8f9ff;
+  border-radius: 16px;
 }
 
 .user-avatar-large {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2237,113 +2129,53 @@ export default {
 
 .user-summary-info h4 {
   margin: 0 0 5px 0;
+  color: #374151;
   font-size: 18px;
 }
 
 .user-summary-info p {
   margin: 0 0 8px 0;
   color: #6b7280;
+  font-size: 14px;
 }
 
 .role-badge-small {
   display: inline-block;
-  padding: 4px 12px;
-  background: #e0e7ff;
-  color: #4f46e5;
-  border-radius: 20px;
+  padding: 2px 10px;
+  background: #4f46e5;
+  color: white;
+  border-radius: 50px;
   font-size: 12px;
   font-weight: 600;
 }
 
-/* Form elemek a modalban */
+.assignment-form {
+  margin-top: 20px;
+}
+
 .assignment-form .form-group {
   margin-bottom: 20px;
 }
 
-.assignment-form .form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #374151;
+.modal-footer {
+  padding: 20px 30px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  background: #f8f9ff;
 }
 
-.form-select {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 16px;
-  background: white;
-  cursor: pointer;
+/* Modal animáció */
+.modal-enter-active,
+.modal-leave-active {
   transition: all 0.3s ease;
 }
 
-.form-select:focus {
-  outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-}
-
-.form-select:disabled {
-  background: #f3f4f6;
-  cursor: not-allowed;
-}
-
-.form-hint {
-  margin-top: 8px;
-  font-size: 14px;
-  color: #6b7280;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.form-hint i {
-  color: #4f46e5;
-}
-
-/* Gombok */
-.btn-outline {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: transparent;
-  border: 2px solid #4f46e5;
-  color: #4f46e5;
-  border-radius: 50px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-outline:hover {
-  background: #4f46e5;
-  color: white;
-}
-
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 50px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
 }
 
 /* Toast értesítések */
@@ -2351,6 +2183,7 @@ export default {
   position: fixed;
   bottom: 30px;
   right: 30px;
+  min-width: 300px;
   padding: 16px 24px;
   background: white;
   border-radius: 12px;
@@ -2359,24 +2192,23 @@ export default {
   align-items: center;
   gap: 12px;
   z-index: 3000;
-  min-width: 300px;
-  border-left: 4px solid;
+  animation: slideIn 0.3s ease;
 }
 
 .toast-notification.success {
-  border-left-color: #10b981;
+  border-left: 4px solid #10b981;
 }
 
 .toast-notification.error {
-  border-left-color: #ef4444;
+  border-left: 4px solid #ef4444;
 }
 
 .toast-notification.warning {
-  border-left-color: #f59e0b;
+  border-left: 4px solid #f59e0b;
 }
 
 .toast-notification.info {
-  border-left-color: #3b82f6;
+  border-left: 4px solid #4f46e5;
 }
 
 .toast-notification i {
@@ -2396,15 +2228,26 @@ export default {
 }
 
 .toast-notification.info i {
-  color: #3b82f6;
+  color: #4f46e5;
 }
 
 .toast-notification span {
-  font-size: 14px;
   color: #374151;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-/* Toast animáció */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 .toast-enter-active,
 .toast-leave-active {
   transition: all 0.3s ease;
@@ -2412,23 +2255,11 @@ export default {
 
 .toast-enter-from,
 .toast-leave-to {
+  transform: translateX(100%);
   opacity: 0;
-  transform: translateX(30px);
 }
 
-/* Modal animáció */
-.modal-enter-active,
-.modal-leave-active {
-  transition: all 0.3s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-  transform: scale(0.9);
-}
-
-/* FAB gomb */
+/* Floating Action Button */
 .fab {
   position: fixed;
   bottom: 30px;
@@ -2436,101 +2267,45 @@ export default {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   border: none;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
   transition: all 0.3s ease;
   z-index: 1000;
 }
 
 .fab:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
 }
 
 /* Reszponzív design */
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
+  .container {
+    padding: 0 20px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 15px;
+  }
+
   .institution-info-card {
     flex-direction: column;
     text-align: center;
   }
-  
-  .institution-stats {
-    justify-content: center;
-  }
-  
-  .requests-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .users-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  }
-  
-  .section-header {
-    flex-direction: column;
-    gap: 16px;
-  }
-  
-  .header-actions {
-    width: 100%;
-  }
-  
-  .search-wrapper {
-    width: 100%;
-    min-width: auto;
-  }
-  
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-}
 
-@media (max-width: 768px) {
-  .main-content {
-    padding: 20px 0;
-  }
-  
-  .institution-info-card {
-    padding: 20px;
-  }
-  
-  .institution-icon {
-    width: 60px;
-    height: 60px;
-    font-size: 30px;
-  }
-  
-  .institution-details h2 {
-    font-size: 24px;
-  }
-  
   .institution-stats {
     flex-wrap: wrap;
-    gap: 20px;
+    justify-content: center;
   }
-  
-  .stat-item {
-    flex: 1 1 calc(50% - 20px);
-  }
-  
-  .user-menu {
-    width: 280px;
-    right: -20px;
-  }
-  
-  .requests-section,
-  .connected-users-section,
-  .classes-section {
-    padding: 20px;
-  }
-  
+
   .request-tabs {
     flex-direction: column;
   }
@@ -2540,186 +2315,76 @@ export default {
     justify-content: center;
   }
   
-  .user-tabs {
-    flex-direction: column;
-  }
-  
-  .user-tab {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .users-grid {
+  .create-class-form .form-row {
     grid-template-columns: 1fr;
   }
-  
-  .classes-grid {
+
+  .form-row {
     grid-template-columns: 1fr;
   }
-  
-  .request-card {
-    padding: 15px;
+
+  .search-input {
+    width: 200px;
   }
-  
-  .user-avatar-medium {
-    width: 48px;
-    height: 48px;
-    font-size: 18px;
+
+  .search-input:focus {
+    width: 250px;
   }
-  
-  .user-info h4 {
-    font-size: 16px;
-  }
-  
+
   .modal-container {
     width: 95%;
+    margin: 20px;
   }
-  
-  .modal-header,
-  .modal-body,
-  .modal-footer {
-    padding: 20px;
-  }
-  
-  .user-summary {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .blocking-warning {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .success-info {
-    flex-direction: column;
-    text-align: center;
-    padding: 20px;
-  }
-  
-  .success-content ul {
-    text-align: left;
-  }
-  
+
   .toast-notification {
     left: 20px;
     right: 20px;
     min-width: auto;
-    bottom: 20px;
-  }
-  
-  .fab {
-    width: 48px;
-    height: 48px;
-    font-size: 20px;
-    bottom: 20px;
-    right: 20px;
   }
 }
 
 @media (max-width: 480px) {
-  .container {
-    padding: 0 15px;
-  }
-  
-  .logo-text h1 {
-    font-size: 20px;
-  }
-  
-  .site-subtitle {
-    font-size: 12px;
-  }
-  
-  .avatar-circle {
-    width: 40px;
-    height: 40px;
-    font-size: 14px;
-  }
-  
   .institution-stats {
     gap: 15px;
   }
-  
+
   .stat-value {
     font-size: 20px;
   }
-  
+
   .stat-label {
     font-size: 12px;
   }
-  
-  .section-header h3 {
-    font-size: 20px;
+
+  .request-card {
+    padding: 15px;
   }
-  
-  .group-title {
-    font-size: 16px;
-  }
-  
-  .request-actions {
+
+  .section-header {
     flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
   }
-  
-  .btn-approve,
-  .btn-reject {
+
+  .header-actions {
     width: 100%;
   }
-  
-  .user-card-actions {
-    justify-content: center;
+
+  .search-wrapper {
+    width: 100%;
   }
-  
-  .class-item-actions {
-    justify-content: center;
+
+  .search-input {
+    width: 100%;
   }
-  
-  .modal-footer {
-    flex-direction: column;
+
+  .search-input:focus {
+    width: 100%;
   }
-  
-  .modal-footer button {
+
+  .btn-primary {
     width: 100%;
     justify-content: center;
-  }
-  
-  .empty-state i {
-    font-size: 48px;
-  }
-  
-  .empty-state h4 {
-    font-size: 18px;
-  }
-  
-  .empty-state p {
-    font-size: 14px;
-  }
-  
-  .blocking-warning {
-    padding: 16px;
-  }
-  
-  .blocking-warning i {
-    font-size: 36px;
-  }
-  
-  .warning-content h4 {
-    font-size: 16px;
-  }
-  
-  .warning-content p {
-    font-size: 14px;
-  }
-  
-  .success-info i {
-    font-size: 36px;
-  }
-  
-  .success-content h4 {
-    font-size: 18px;
-  }
-  
-  .success-content li {
-    font-size: 14px;
   }
 }
 </style>

@@ -219,14 +219,13 @@ export default {
   
   mounted() {
     window.addEventListener('scroll', this.handleScroll)
-    
-    // Redirect if already logged in
-    const savedUser = localStorage.getItem('esemenyter_user')
-    if (savedUser) {
-      const userData = JSON.parse(savedUser)
-      if (userData.isLoggedIn) {
-        this.$router.push('/dashboard')
-      }
+
+    const token =
+      localStorage.getItem('esemenyter_token') ||
+      sessionStorage.getItem('esemenyter_token')
+
+    if (token && this.$route.path !== '/dashboard') {
+      this.$router.push('/dashboard')
     }
   },
   
