@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test('student setup successfully', async ({ page }) => {
-  const email = `diak${Date.now()}@gmail.com`;
+test('teacher setup successfully', async ({ page }) => {
+  const email = `tanar${Date.now()}@gmail.com`;
   const password = 'Teszt123';
 
   await page.goto('http://localhost:5173/register');
@@ -18,8 +18,8 @@ test('student setup successfully', async ({ page }) => {
 
   await page.waitForURL(/dashboard/, { timeout: 6000 });
 
-  await page.click('.role-card.student');
-  await page.click('.role-card.student .card-action-btn');
+  await page.click('.role-card.teacher');
+  await page.click('.role-card.teacher .card-action-btn');
   await page.waitForSelector('.setup-wizard');
 
   await page.waitForSelector('.suggestions-grid .suggestion-card');

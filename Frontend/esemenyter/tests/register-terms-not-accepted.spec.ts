@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test('successful registration', async ({ page }) => {
-
+test('registration checkbox fails', async ({ page }) => {
+  
   const email = `teszt${Date.now()}@gmail.com`;
   const password = 'Teszt123';
 
@@ -12,10 +12,12 @@ test('successful registration', async ({ page }) => {
   await page.fill('#password', password);
   await page.fill('#password_confirmation', password);
 
-  await page.locator('.checkbox-container').click();
-
   await page.click('#register_btn');
 
-  await page.waitForURL(/dashboard/, { timeout: 6000 });
+  await expect(page).toHaveURL(/register/);
+
+  await expect(
+    page.getByText('Elfogadom az ÁSZF-et és egyetértek az Adatvédelmi nyilatkozattal')
+  ).toBeVisible();
 
 });
