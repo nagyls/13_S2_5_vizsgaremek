@@ -7,20 +7,6 @@
   "item": [
     {
       "name": "Login",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "id": "54cdce94-cc76-4b85-b4b0-1b28cf33efca",
-            "exec": [
-              ""
-            ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
-          }
-        }
-      ],
       "id": "b884ad08-229d-47c7-b168-ab00d2b78940",
       "request": {
         "method": "POST",
@@ -60,20 +46,6 @@
     },
     {
       "name": "Logout",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "id": "963623d1-4112-435f-aac7-a88262f6d18a",
-            "exec": [
-              ""
-            ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
-          }
-        }
-      ],
       "id": "5089f356-b1f6-4375-90df-f18289639412",
       "request": {
         "auth": {
@@ -112,8 +84,7 @@
             "api",
             "logout"
           ]
-        },
-        "description": "This is a POST request, submitting data to an API via the request body. This request submits JSON data, and the data is reflected in the response.\n\nA successful POST request typically returns a `200 OK` or `201 Created` response code."
+        }
       },
       "response": []
     },
@@ -152,11 +123,13 @@
   ],
   "variable": [
     {
+      "id": "f119c687-52a9-4aad-8860-f91bd36650b1",
       "key": "base_url",
       "value": "http://127.0.0.1:8000",
       "type": "string"
     },
     {
+      "id": "a0c8e76d-7eff-40b9-87eb-ead67531352a",
       "key": "token",
       "value": "",
       "type": "string"

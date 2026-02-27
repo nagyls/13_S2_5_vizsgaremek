@@ -1,12 +1,12 @@
 {
   "info": {
     "_postman_id": "8613f003-f491-4366-8451-2ead82e5241d",
-    "name": "class",
+    "name": "Class apik",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "osztály létrehoz",
+      "name": "Osztály létrehozás",
       "id": "4ebb8f34-db01-404b-91ae-8042a7763bd8",
       "request": {
         "auth": {
@@ -52,7 +52,7 @@
       "response": []
     },
     {
-      "name": "osztály lekér",
+      "name": "Osztályok lekérése",
       "id": "9b3d4e0c-7fd7-49c9-a49e-f2b08fb5797b",
       "request": {
         "auth": {
@@ -83,7 +83,7 @@
       "response": []
     },
     {
-      "name": "osztélyhoz adás",
+      "name": "Diák osztályhoz adása",
       "id": "7712bf35-bec4-41e9-8025-3eb55f538ea0",
       "request": {
         "auth": {
@@ -127,7 +127,7 @@
       "response": []
     },
     {
-      "name": "ozstályfönök változtatás",
+      "name": "Ozstályfönök változtatás",
       "id": "e5dbbff8-dfbb-4a4d-80a5-2f0b59953bed",
       "request": {
         "auth": {
@@ -179,7 +179,7 @@
       "response": []
     },
     {
-      "name": "osztály tag lekér",
+      "name": "Osztály tag lekérése",
       "id": "324990d0-ba8d-4e26-b4e9-5676dfd6476e",
       "request": {
         "auth": {
@@ -219,21 +219,25 @@
   ],
   "variable": [
     {
+      "id": "740f1347-88a7-4ff8-902d-bae5ffde3ee2",
       "key": "base_url",
       "value": "http://127.0.0.1:8000",
       "type": "string"
     },
     {
+      "id": "fc6fce83-ea88-4514-9931-c33c90ee8d78",
       "key": "token",
       "value": "",
       "type": "string"
     },
     {
+      "id": "e2365235-6f1c-430c-ba68-2341977e3969",
       "key": "establishment_id",
       "value": "1",
       "type": "string"
     },
     {
+      "id": "4a464d5d-426e-4243-829a-b7131ceb4eec",
       "key": "class_id",
       "value": "2",
       "type": "string"

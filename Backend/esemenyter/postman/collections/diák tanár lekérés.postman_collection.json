@@ -1,26 +1,12 @@
 {
   "info": {
     "_postman_id": "edadde25-d068-4217-a9ab-db94a201027f",
-    "name": "diák tanár lekérés",
+    "name": "Tagok lekérése",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "diákok",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "id": "a72d66b9-e2d2-4392-a95c-bd10fad2b6e1",
-            "exec": [
-              ""
-            ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
-          }
-        }
-      ],
+      "name": "Diákok lekérése",
       "id": "70b2053a-25ed-4df3-bd7c-5b087bbf158d",
       "request": {
         "auth": {
@@ -53,21 +39,7 @@
       "response": []
     },
     {
-      "name": "tanárok",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "id": "3b923c95-5dc4-4e06-8c7f-5110242c2269",
-            "exec": [
-              ""
-            ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
-          }
-        }
-      ],
+      "name": "Tanárok lekérése",
       "id": "f52000a5-2358-4d3d-a883-1ee5d538fdaa",
       "request": {
         "auth": {
@@ -114,11 +86,13 @@
   ],
   "variable": [
     {
+      "id": "90e4c392-b07a-4904-acc5-dbc1f5ea0b0f",
       "key": "base_url",
       "value": "http://127.0.0.1:8000",
       "type": "string"
     },
     {
+      "id": "2fb6ac8e-f921-492f-847d-249e9fe6861a",
       "key": "establishment_id",
       "value": "1",
       "type": "string"

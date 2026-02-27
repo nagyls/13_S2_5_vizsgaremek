@@ -1,12 +1,12 @@
 {
   "info": {
     "_postman_id": "6f077433-5836-40b0-a75e-0567024b346c",
-    "name": "eventek",
+    "name": "Event apik",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "New Request",
+      "name": "Esemény létrehozás",
       "id": "bd7980cd-98ae-4770-8e6b-797b4a321754",
       "request": {
         "auth": {
@@ -55,11 +55,13 @@
   ],
   "variable": [
     {
+      "id": "b924fe63-5aa7-40f5-ab51-bbfe3c653365",
       "key": "base_url",
       "value": "http://127.0.0.1:8000",
       "type": "string"
     },
     {
+      "id": "36d700b8-0e25-43dc-8fd4-530a463d95ca",
       "key": "token",
       "value": "",
       "type": "string"

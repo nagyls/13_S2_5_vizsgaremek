@@ -1,12 +1,12 @@
 {
   "info": {
     "_postman_id": "b957e20a-289a-43de-820f-f32f1d1d9312",
-    "name": "regio apik",
+    "name": "Region/InnerRegion/Settlement apik",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Search Regions",
+      "name": "Régió keresés",
       "id": "20972860-52b7-43ed-a091-42193a06db5e",
       "request": {
         "method": "GET",
@@ -38,7 +38,7 @@
       "response": []
     },
     {
-      "name": "Get All Regions",
+      "name": "Összes régió lekérése",
       "id": "6cb737a7-9fe7-4a62-aadc-9e90d54bd1f2",
       "request": {
         "method": "GET",
@@ -64,7 +64,7 @@
       "response": []
     },
     {
-      "name": "Get Region by ID",
+      "name": "Régió lekérése azonositóval",
       "id": "247d981f-3c91-4d8c-87d2-4497f04d93f8",
       "request": {
         "method": "GET",
@@ -90,7 +90,7 @@
       "response": []
     },
     {
-      "name": "search subregions",
+      "name": "Járás keresés",
       "id": "af157861-8091-4bb6-b677-2193f98b8d9a",
       "request": {
         "method": "GET",
@@ -112,11 +112,13 @@
           "query": [
             {
               "key": "search",
-              "value": "g"
+              "value": "g",
+              "uuid": "ffd27a1a-4e93-4b3f-94fc-91f60bf8fe71"
             },
             {
               "key": "region_id",
-              "value": "1"
+              "value": "1",
+              "uuid": "7a43ea23-cc4f-460c-b418-7e43c2b6720c"
             }
           ]
         },
@@ -125,7 +127,7 @@
       "response": []
     },
     {
-      "name": "Get All Subregions",
+      "name": "Összes Járás lekérése egy régióban",
       "id": "c962c37a-a6dc-4c62-9ca6-0b809e870d46",
       "request": {
         "method": "GET",
@@ -148,7 +150,8 @@
           "query": [
             {
               "key": "region_id",
-              "value": "1"
+              "value": "1",
+              "uuid": "53b4d479-37a4-4dd5-b9e5-f8f14316e895"
             }
           ]
         },
@@ -157,7 +160,7 @@
       "response": []
     },
     {
-      "name": "Search Settlements",
+      "name": "Település keresés",
       "id": "647eaa1d-b01f-4fd9-8141-2001a39d54e2",
       "request": {
         "method": "GET",
@@ -180,11 +183,13 @@
           "query": [
             {
               "key": "search",
-              "value": ""
+              "value": "",
+              "uuid": "b4db490c-e4b7-4bdd-9de5-3573c7321deb"
             },
             {
               "key": "inner_region_id",
-              "value": "1"
+              "value": "1",
+              "uuid": "6624a396-5126-462c-8cf4-b71be9eeb0eb"
             }
           ]
         },
@@ -193,7 +198,7 @@
       "response": []
     },
     {
-      "name": "Get All Settlements",
+      "name": "Összes település lekérése egy járásból",
       "id": "3eb437fc-3ce3-440c-95b4-9432a5b6eccf",
       "request": {
         "method": "GET",
@@ -217,7 +222,8 @@
           "query": [
             {
               "key": "inner_region_id",
-              "value": "1"
+              "value": "1",
+              "uuid": "c0ce6470-f0f7-46c1-9ebb-9908512069db"
             }
           ]
         },
@@ -228,6 +234,7 @@
   ],
   "variable": [
     {
+      "id": "11f70cbf-20de-49e6-b2d4-206e1266b6d0",
       "key": "base_url",
       "value": "http://127.0.0.1:8000",
       "type": "string"

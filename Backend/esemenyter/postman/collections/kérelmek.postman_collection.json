@@ -1,26 +1,12 @@
 {
   "info": {
     "_postman_id": "24378a25-2321-469f-925f-fbd5261253e6",
-    "name": "kérelmek",
+    "name": "Request apik",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "diák rquest",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "id": "cb929995-e089-42f4-9921-3fb06f2e02b8",
-            "exec": [
-              ""
-            ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
-          }
-        }
-      ],
+      "name": "Diákkérelmek lekérése",
       "id": "95c56cc4-1c0a-48fc-a2fc-072d869787e4",
       "protocolProfileBehavior": {
         "disableBodyPruning": true
@@ -70,7 +56,7 @@
       "response": []
     },
     {
-      "name": "tanár request",
+      "name": "Tanár kérelmek lekérése",
       "id": "aa20eea3-c8bd-4d78-8e34-980664d369de",
       "protocolProfileBehavior": {
         "disableBodyPruning": true
@@ -120,7 +106,7 @@
       "response": []
     },
     {
-      "name": "request kezelés",
+      "name": "Kérelmek kezelése",
       "id": "a892d74a-8cb8-47a5-8fcd-a6a58972c459",
       "request": {
         "auth": {
@@ -164,7 +150,7 @@
       "response": []
     },
     {
-      "name": "request feladáss",
+      "name": "Kérelmek létrehozása",
       "id": "eb967d93-36e5-4e3e-9415-208ebfaaa1d8",
       "request": {
         "auth": {
@@ -210,16 +196,19 @@
   ],
   "variable": [
     {
+      "id": "5bc67f06-59bc-45a7-a505-037a7d85079d",
       "key": "base_url",
       "value": "http://127.0.0.1:8000",
       "type": "string"
     },
     {
+      "id": "cc87c5ba-1a37-44d6-a415-65ab52f5560f",
       "key": "token",
       "value": "",
       "type": "string"
     },
     {
+      "id": "ce848f18-2916-46fe-9c32-fcd04b015f5f",
       "key": "establishment_id",
       "value": "1",
       "type": "string"

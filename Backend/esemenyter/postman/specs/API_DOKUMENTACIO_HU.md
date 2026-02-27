@@ -1,129 +1,393 @@
-# Eseménytér Backend API dokumentáció
+# Eseménytér – API teszt dokumentáció 
 
-## 1) Állapotfelmérés (Postman review)
+Ez a dokumentum a backend API kézi és Postman alapú teszteléséhez készült.
 
-A Postman collectionök normalizálása elkészült, így már jó alapot adnak a publikálható dokumentációhoz.
+## 1. Tesztkörnyezet
 
-### Jól működő / használható csomagok
-- `autentikáciok` (login/logout/register) – alap auth flow benne van.
-- `regio apik` – régió / kistérség / település lekérdezések több példával.
-- `class` – osztálykezelés fő műveletei (létrehozás, lista, tagok, tanár csere).
-- `kérelmek` – kérelem listázás és kezelés alapjai megvannak.
+- **Base URL:** `http://127.0.0.1:8000`
+- **API prefix:** `/api`
+- **Auth:** Laravel Sanctum Bearer token
+- **Fejlécek:**
+   - `Accept: application/json`
+   - `Content-Type: application/json` (ahol van body)
 
-### Elvégzett javítások
-1. **Token kezelés egységesítve**: minden authos collection `{{token}}` változót használ.
-2. **Base URL egységesítve**: minden request `{{base_url}}` alapú.
-3. **`eventek` collection kiegészítve**: URL + Bearer auth + JSON headerek beállítva.
-4. **Útvonalak route-hoz igazítva**:
-   - `POST /api/establishment/create`
-   - `POST /api/establishment/{establishment}/requests`
-5. **Collection szintű változók hozzáadva**: `base_url`, `token`, és ahol szükséges `establishment_id`, `class_id`.
+### 1.1 Postman environment változók
 
-### Még nyitott pontok
-1. **`GET /api/events` duplikált route** a backendben (két handler).
-2. **Válaszminták hiányoznak** több requestből (Postman `response` mezők üresek).
-3. **`New Collection` üres**: törölhető vagy későbbi bővítésre megtartható.
+- `base_url`
+- `token`
+- `establishment_id`
+- `class_id`
+- `event_id`
 
-### Route oldali megjegyzés
-- `GET /api/events` duplán szerepel a route fájlban (két külön handlerrel). Dokumentáció előtt döntsetek, melyik a tényleges/elfogadott végpont viselkedés.
+### 1.2 Aktuális Postman collection nevek
 
----
+- `autentikáciok`
+- `Region/InnerRegion/Settlement apik`
+- `Establishment apik`
+- `Class apik`
+- `Tagok lekérése`
+- `Request apik`
+- `Event apik`
 
-## 2) Javasolt dokumentációs struktúra (magyar)
+## 2. Tesztfuttatási sorrend
 
-Készíts egy központi API-doksit az alábbi fejezetekkel:
+1. Regisztráció
+2. Bejelentkezés (token mentése)
+3. Nyilvános lekérdező API-k (régiók, intézmények)
+4. Intézmény létrehozás
+5. Kérelmek feladása/kezelése
+6. Osztály műveletek
+7. Esemény létrehozás/listázás
+8. Kijelentkezés
 
-1. **Bevezetés**
-   - API célja
-   - alap URL (`base_url`)
-   - verziózás (ha van)
+## 3. Tesztesetek végpontonként
 
-2. **Hitelesítés**
-   - login, token használat (Bearer)
-   - auth szükséges / nem szükséges endpointok
-   - tipikus hibák (`401`, `403`)
-
-3. **Erőforrások szerint endpointok**
-   - Auth
-   - Régiók
-   - Intézmények
-   - Osztályok
-   - Tagok (diák/tanár)
-   - Kérelmek
-   - Események
-
-4. **Hibakezelés**
-   - standard státuszkódok (`200`, `201`, `204`, `400`, `401`, `403`, `404`, `422`, `500`)
-   - validációs hibaformátum
-
-5. **Mintafolyamatok (use-case-ek)**
-   - Regisztráció → login → tokenes hívás
-   - Intézményhez csatlakozási kérelem és kezelése
-   - Osztály létrehozása és diák hozzárendelése
+Az alábbiaknál minden végponthoz legalább egy **pozitív** és egy **negatív** teszt futtatása javasolt.
 
 ---
 
-## 3) Endpoint sablon (másold minden végponthoz)
+### 3.1 Auth
 
-```md
-### [METHOD] /api/...
+#### `POST /api/register`
 
-**Leírás:** Rövid funkcióleírás.
+**Cél:** Új felhasználó létrehozása.
 
-**Auth:** Igen/Nem (Bearer token)
-
-**Path paraméterek:**
-- `id` (integer) – ...
-
-**Query paraméterek:**
-- `search` (string, optional) – ...
-
-**Request body:**
+**Pozitív test body példa:**
 ```json
 {
-  "...": "..."
+   "username": "Teszt Elek",
+   "email": "teszt.elek@example.com",
+   "password": "Password123",
+   "password_confirmation": "Password123"
 }
 ```
 
-**Sikeres válasz (200/201):**
+**Elvárt eredmény:**
+- `200`
+- `message`, `user`, `token`, `email_verified` mezők a válaszban
+
+**Negatív tesztek:**
+- Már létező email -> `422`
+- Gyenge jelszó (pl. nincs szám/nagybetű) -> `422`
+- Hiányzó `password_confirmation` -> `422`
+
+#### `POST /api/login`
+
+**Cél:** Token igénylése.
+
+**Pozitív body:**
 ```json
 {
-  "...": "..."
+   "email": "teszt.elek@example.com",
+   "password": "Password123"
 }
 ```
 
-**Hibák:**
-- `401` – nincs vagy hibás token
-- `422` – validációs hiba
-- `404` – nem található erőforrás
+**Elvárt eredmény:**
+- `200`
+- `token` mező létezik
+
+**Negatív tesztek:**
+- Nem létező email -> `422`
+- Hibás jelszó -> `401`
+
+#### `DELETE /api/logout` *(auth szükséges)*
+
+**Cél:** Aktuális token törlése.
+
+**Elvárt eredmény:**
+- Érvényes tokennel `200`
+- Token nélkül `401`
+
+---
+
+### 3.2 Email verifikáció *(auth szükséges)*
+
+#### `GET /api/email/verify/{id}/{hash}`
+
+**Cél:** Email megerősítése aláírt URL-lel.
+
+**Teszt:**
+- Érvényes signed URL + token -> `200`
+- Érvénytelen/lejárt hash -> `403` vagy `401`
+
+#### `POST /api/email/resend`
+
+**Cél:** Megerősítő email újraküldése.
+
+**Teszt:**
+- Hitelesített user -> `200`
+- 1 percen belül 6 hívás fölött throttle -> `429`
+
+#### `GET /api/email/verification-status`
+
+**Cél:** Verifikált állapot lekérdezése.
+
+**Elvárt eredmény:**
+- `200`
+- `{ "verified": true|false }`
+
+---
+
+### 3.3 Régió / kistérség / település (publikus)
+
+#### `GET /api/regions/all`
+#### `GET /api/regions/{id}`
+#### `GET /api/regions?search=B`
+#### `GET /api/innerregions/all?region_id=1`
+#### `GET /api/innerregions?search=g&region_id=1`
+#### `GET /api/settlements/all?inner_region_id=1`
+#### `GET /api/settlements?search=&inner_region_id=1`
+
+**Elvárt eredmény (pozitív):** `200`, rendezett lista a `data` mezőben.
+
+**Negatív tesztjavaslat:**
+- Hiányzó kötelező szűrő paramétereknél üres lista (`data: []`) ellenőrzése
+
+---
+
+### 3.4 Intézmények
+
+#### `GET /api/establishments?search=p&settlement_id=1`
+#### `GET /api/establishments/{id}`
+
+**Cél:** Intézmények keresése/lekérdezése.
+
+**Elvárt eredmény:** `200`, `data` mező.
+
+#### `POST /api/establishment/create` *(auth szükséges)*
+
+**Pozitív body példa:**
+```json
+{
+   "title": "Minta Gimnázium",
+   "description": "Intézményi leírás",
+   "settlement_id": 2,
+   "website": "https://pelda.hu",
+   "email": "info@pelda.hu",
+   "phone": "+3612345678",
+   "address": "1111 Budapest, Fő utca 1."
+}
 ```
 
----
+**Elvárt eredmény:**
+- `201`
+- `message`, `data`
 
-## 4) Következő lépések (ajánlott sorrend)
+**Negatív tesztek:**
+- Ugyanazzal a `title`-lel újra -> `422`
+- Nem létező `settlement_id` -> `422`
+- Rossz `website` URL -> `422`
 
-1. **Postman Environment létrehozása (kötelező):**
-   - `base_url`, `token` (és opcionálisan `establishment_id`, `class_id`)
-   - ezeket állítsd be aktív környezetben (Local/Dev)
+#### `GET /api/establishment/mine` *(auth szükséges)*
 
-2. **Példaválaszok rögzítése (fontos):**
-   - minden requesthez legalább 1 sikeres és 1 hiba példa
-
-3. **Automatikus publikálás Postmanből:**
-   - collection leírások kitöltése magyarul
-   - Postman “Generate Documentation” használata
-
-4. **Repo-ba mentett hivatalos doksi:**
-   - ez a fájl maradjon a „forrás igazság” (`postman/specs/API_DOKUMENTACIO_HU.md`)
-   - release előtt frissítés kötelező
+**Elvárt eredmény:** `200`, saját intézmények listája.
 
 ---
 
-## 5) Rövid ellenőrzőlista (vizsga/átadás előtt)
+### 3.5 Tagok (publikus)
 
-- [ ] Nincs hardcode token a collectionökben
-- [ ] Minden URL változós (`{{base_url}}`)
-- [ ] Minden route dokumentálva van
-- [ ] Auth requirement minden végpontnál jelölve
-- [ ] Van request + response példa minden végponthoz
-- [ ] Van legalább 1 end-to-end folyamatleírás
+#### `GET /api/members/students/{establishment}`
+#### `GET /api/members/staff/{establishment}`
+
+**Elvárt eredmény:**
+- Létező intézményre `200`, `data` lista
+- Nem létező intézményre `400`, hibaüzenet
+
+---
+
+### 3.6 Osztályok *(auth szükséges)*
+
+#### `POST /api/establishment/classes/create`
+
+**Pozitív body:**
+```json
+{
+   "name": "A",
+   "grade": 10,
+   "capacity": 30,
+   "establishment_id": 1,
+   "user_id": null
+}
+```
+
+**Elvárt eredmény:** `201`, `class` objektum.
+
+**Negatív teszt:**
+- Hiányzó `name` vagy nem létező `establishment_id` -> `422`
+
+#### `GET /api/establishment/{establishment}/classes`
+
+**Elvárt eredmény:**
+- Staff/admin tagként `200`
+- Nem jogosult userként `403`
+
+#### `GET /api/establishment/{establishment}/classes/{class}`
+
+**Elvárt eredmény:**
+- Jogosult tagként `200`
+- Nem létező osztály/intézmény -> `404`
+- Hibás intézmény-osztály kapcsolat -> `400`
+
+#### `POST /api/establishment/classes/add-students`
+
+**Pozitív body:**
+```json
+{
+   "establishment_id": 1,
+   "class_id": 2,
+   "student_id": [2, 3]
+}
+```
+
+**Elvárt eredmény:**
+- Siker esetén `200`, üzenet
+- Már osztálytag diáknál `409`
+- Nem admin usernél `403`
+
+#### `PATCH /api/establishment/{establishment}/classes/{class}`
+
+**Megjegyzés (fontos):** A route path paraméteres, de a controller body-ban várja az `establishment_id` és `class_id` mezőket is.
+
+**Javasolt body a jelenlegi implementációhoz:**
+```json
+{
+   "establishment_id": 1,
+   "class_id": 2,
+   "teacher_id": 3
+}
+```
+
+**Elvárt eredmény:**
+- `200` sikeres hozzárendelés
+- Nem intézményi admin -> `403`
+- Nem intézményi tanár -> `400`
+
+#### `POST /api/establishment/classes/remove-students`
+
+**Megjegyzés:** Route létezik, de a `StudentController` jelenlegi kódban nincs hozzá `removeFromClass` metódus. Ez a végpont jelen állapotban hibát adhat.
+
+---
+
+### 3.7 Kérelmek *(auth szükséges)*
+
+#### `POST /api/establishment/{establishment}/requests`
+
+**Megjegyzés:** A route path paraméteres, de a controller a body `establishment_id` mezőt validálja. Teszteléskor add meg body-ban is.
+
+**Pozitív body:**
+```json
+{
+   "establishment_id": 1,
+   "role": "student"
+}
+```
+
+**Elvárt eredmény:**
+- `201` új kérelem
+- Már létező kérelem vagy tagság -> `409`
+
+#### `GET /api/establishment/{establishment}/requests/students`
+#### `GET /api/establishment/{establishment}/requests/teachers`
+
+**Elvárt eredmény:**
+- Intézményi adminként `200`
+- Nem adminként `403`
+
+#### `POST /api/establishment/requests/handle`
+
+**Pozitív body példa:**
+```json
+{
+   "establishment_id": 1,
+   "action": "accept",
+   "request_id": [1, 2]
+}
+```
+
+**Elvárt eredmény:**
+- `200`, `accepted` vagy `rejected` számláló
+- Hibás `action` (`accept`/`reject`-en kívül) -> `422`
+- Nem adminként -> `403`
+
+#### `DELETE /api/establishment/{establishment}/requests/revoke`
+
+**Elvárt eredmény:**
+- Saját kérelem esetén `200`
+- Nem létező kérelem esetén `404`
+
+---
+
+### 3.8 Események *(auth szükséges)*
+
+#### `POST /api/events`
+
+**Pozitív body:**
+```json
+{
+   "type": "global",
+   "title": "Nyílt nap",
+   "description": "Leírás",
+   "content": "Részletes tartalom",
+   "start_date": "2026-03-01 10:00:00",
+   "end_date": "2026-03-01 12:00:00"
+}
+```
+
+**Elvárt eredmény:**
+- `201`
+- `message`, `event`
+
+**Negatív tesztek:**
+- `type` nem `local/global` -> `422`
+- `end_date < start_date` -> `422`
+
+#### `GET /api/events`
+
+**Megjegyzés (fontos):** A route fájlban ez a GET végpont duplikáltan szerepel (`getEvents` és `index`). Működés backend route sorrendtől függhet.
+
+**Elvárt minimum:**
+- `200`
+- Eseménylista (`events` vagy más lista jellegű kulcs)
+
+#### `GET /api/events/{event}`
+
+**Megjegyzés:** A route definiálva van, de a jelenlegi `EventController` fájlban nem látható `show()` metódus. Ez hibát okozhat, amíg nincs implementálva.
+
+---
+
+## 4. Általános hibaellenőrzés
+
+Minden auth védett végpontra futtasd:
+
+1. **Token nélkül** -> `401`
+2. **Érvénytelen tokennel** -> `401`
+3. **Jogosultság nélküli userrel** -> `403` (ahol releváns)
+
+Validációs végpontokra:
+
+1. Hiányzó kötelező mező -> `422`
+2. Hibás adattípus -> `422`
+3. Nem létező idegen kulcs (`id`) -> `422` vagy `400` implementációtól függően
+
+## 5. Postman teszt script alap (opcionális)
+
+```javascript
+pm.test("Sikeres státusz", function () {
+   pm.expect(pm.response.code).to.be.oneOf([200, 201]);
+});
+
+pm.test("JSON válasz", function () {
+   pm.response.to.have.header("Content-Type");
+   pm.expect(pm.response.headers.get("Content-Type")).to.include("application/json");
+});
+```
+
+## 6. Ismert technikai eltérések (jelenlegi kódbázis)
+
+1. `GET /api/events` duplikált route.
+2. `POST /api/establishment/classes/remove-students` route mögött hiányzó controller metódus.
+3. `GET /api/events/{event}` route mögött hiányzó `show()` (jelenlegi fájl alapján).
+4. Bizonyos route-ok path paraméteresek, de a controller body mezőt is megkövetel (`establishment_id`, `class_id`).
+
+Ezért a tesztelésnél a route és a controller validáció együttes viselkedése alapján kell elfogadni az eredményt.

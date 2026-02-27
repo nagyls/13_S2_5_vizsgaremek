@@ -1,0 +1,838 @@
+﻿openapi: 3.0.3
+info:
+  title: Eseménytér API
+  version: 1.1.0
+  description: >-
+    Route + controller alapú Swagger/OpenAPI dokumentáció.
+    A request paraméterek és body mezők a Laravel controller validációhoz igazodnak.
+servers:
+  - url: http://127.0.0.1:8000/api
+    description: Local development
+
+tags:
+  - name: Auth
+  - name: Verification
+  - name: Regions
+  - name: Establishments
+  - name: Members
+  - name: Classes
+  - name: Requests
+  - name: Events
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+
+paths:
+  /register:
+    post:
+      tags: [Auth]
+      summary: Regisztráció
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password, password_confirmation]
+              properties:
+                username:
+                  type: string
+                  maxLength: 255
+                email:
+                  type: string
+                  format: email
+                  maxLength: 255
+                password:
+                  type: string
+                  minLength: 6
+                password_confirmation:
+                  type: string
+            example:
+              username: John
+              email: john@example.com
+              password: Password123
+              password_confirmation: Password123
+      responses:
+        '200':
+          description: Sikeres regisztráció
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    type: object
+                    additionalProperties: true
+                  token:
+                    type: string
+                  email_verified:
+                    type: boolean
+        '422':
+          description: Validációs hiba
+
+  /login:
+    post:
+      tags: [Auth]
+      summary: Bejelentkezés
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+            example:
+              email: test@example.com
+              password: Password123
+      responses:
+        '200':
+          description: Sikeres bejelentkezés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    type: object
+                    additionalProperties: true
+                  token:
+                    type: string
+        '401':
+          description: Hibás jelszó
+        '422':
+          description: Validációs hiba
+
+  /logout:
+    delete:
+      tags: [Auth]
+      summary: Kijelentkezés
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sikeres kijelentkezés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Nincs vagy hibás token
+
+  /user:
+    get:
+      tags: [Auth]
+      summary: Bejelentkezett felhasználó lekérése
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Felhasználó adatai
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          description: Nincs vagy hibás token
+
+  /email/verify/{id}/{hash}:
+    get:
+      tags: [Verification]
+      summary: Email cím megerősítése
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Megerősítési állapot
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Nincs vagy hibás token
+        '403':
+          description: Érvénytelen vagy nem aláírt URL
+
+  /email/resend:
+    post:
+      tags: [Verification]
+      summary: Megerősítő email újraküldése
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Művelet sikeres
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Nincs vagy hibás token
+        '429':
+          description: Throttle limit túllépve
+
+  /email/verification-status:
+    get:
+      tags: [Verification]
+      summary: Email verifikációs állapot
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Ellenőrzés sikeres
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified:
+                    type: boolean
+        '401':
+          description: Nincs vagy hibás token
+
+  /regions:
+    get:
+      tags: [Regions]
+      summary: Régió keresés
+      security: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+
+  /regions/all:
+    get:
+      tags: [Regions]
+      summary: Összes régió lekérése
+      security: []
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+
+  /regions/{id}:
+    get:
+      tags: [Regions]
+      summary: Régió lekérése azonosítóval
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+
+  /innerregions:
+    get:
+      tags: [Regions]
+      summary: Járás keresés
+      security: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: region_id
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+
+  /innerregions/all:
+    get:
+      tags: [Regions]
+      summary: Összes járás lekérése
+      security: []
+      parameters:
+        - name: region_id
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+
+  /settlements:
+    get:
+      tags: [Regions]
+      summary: Település keresés
+      security: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: inner_region_id
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+
+  /settlements/all:
+    get:
+      tags: [Regions]
+      summary: Összes település lekérése
+      security: []
+      parameters:
+        - name: inner_region_id
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+
+  /establishments:
+    get:
+      tags: [Establishments]
+      summary: Intézmények lekérése szűréssel
+      security: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: settlement_id
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+
+  /establishments/{id}:
+    get:
+      tags: [Establishments]
+      summary: Intézmény lekérése azonosítóval
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+
+  /establishment/create:
+    post:
+      tags: [Establishments]
+      summary: Intézmény létrehozás
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, settlement_id]
+              properties:
+                title:
+                  type: string
+                  maxLength: 255
+                description:
+                  type: string
+                  nullable: true
+                settlement_id:
+                  type: integer
+                website:
+                  type: string
+                  format: uri
+                  nullable: true
+                email:
+                  type: string
+                  format: email
+                  nullable: true
+                phone:
+                  type: string
+                  maxLength: 32
+                  nullable: true
+                address:
+                  type: string
+                  maxLength: 255
+                  nullable: true
+            example:
+              title: My School2
+              description: Short description
+              settlement_id: 2
+      responses:
+        '201':
+          description: Intézmény létrehozva
+        '401':
+          description: Nincs vagy hibás token
+        '422':
+          description: Validációs hiba
+
+  /establishment/mine:
+    get:
+      tags: [Establishments]
+      summary: Saját intézmények lekérése
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+        '401':
+          description: Nincs vagy hibás token
+
+  /members/students/{establishment}:
+    get:
+      tags: [Members]
+      summary: Diákok lekérése
+      security: []
+      parameters:
+        - name: establishment
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+        '400':
+          description: Intézmény nem található
+
+  /members/staff/{establishment}:
+    get:
+      tags: [Members]
+      summary: Tanárok lekérése
+      security: []
+      parameters:
+        - name: establishment
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+        '400':
+          description: Intézmény nem található
+
+  /establishment/classes/create:
+    post:
+      tags: [Classes]
+      summary: Osztály létrehozás
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, grade, establishment_id]
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                grade:
+                  type: integer
+                capacity:
+                  type: integer
+                  nullable: true
+                establishment_id:
+                  type: integer
+                user_id:
+                  type: integer
+                  nullable: true
+            example:
+              name: A
+              grade: 10
+              establishment_id: 1
+              capacity: 30
+              user_id: null
+      responses:
+        '201':
+          description: Osztály létrehozva
+        '401':
+          description: Nincs vagy hibás token
+        '422':
+          description: Validációs hiba
+
+  /establishment/{establishment}/classes:
+    get:
+      tags: [Classes]
+      summary: Osztályok lekérése
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: establishment
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+        '403':
+          description: Nem felhatalmazott
+
+  /establishment/{establishment}/classes/{class}:
+    get:
+      tags: [Classes]
+      summary: Osztálytagok lekérése
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: establishment
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: class
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+        '400':
+          description: Hibás intézmény-osztály kapcsolat
+        '403':
+          description: Nem felhatalmazott
+        '404':
+          description: Intézmény vagy osztály nem található
+
+    patch:
+      tags: [Classes]
+      summary: Osztályfőnök módosítása
+      description: >-
+        A route path paraméteres, de a controller validáció body-ban is megköveteli
+        az establishment_id és class_id mezőket.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: establishment
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: class
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [establishment_id, class_id, teacher_id]
+              properties:
+                establishment_id:
+                  type: integer
+                class_id:
+                  type: integer
+                teacher_id:
+                  type: integer
+            example:
+              establishment_id: 1
+              class_id: 2
+              teacher_id: 3
+      responses:
+        '200':
+          description: Sikeres frissítés
+        '400':
+          description: Tanár/osztály/intézmény hiba
+        '403':
+          description: Nem felhatalmazott
+        '422':
+          description: Validációs hiba
+
+  /establishment/classes/add-students:
+    post:
+      tags: [Classes]
+      summary: Diákok osztályhoz adása
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [establishment_id, class_id, student_id]
+              properties:
+                establishment_id:
+                  type: integer
+                class_id:
+                  type: integer
+                student_id:
+                  type: array
+                  items:
+                    type: integer
+            example:
+              establishment_id: 1
+              class_id: 2
+              student_id: [2, 3]
+      responses:
+        '200':
+          description: Sikeres művelet
+        '400':
+          description: Üzleti szabály hiba
+        '403':
+          description: Nem felhatalmazott
+        '409':
+          description: Már osztálytag
+        '422':
+          description: Validációs hiba
+
+  /establishment/{establishment}/requests/students:
+    get:
+      tags: [Requests]
+      summary: Diák kérelmek lekérése
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: establishment
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+        '403':
+          description: Nem felhatalmazott
+
+  /establishment/{establishment}/requests/teachers:
+    get:
+      tags: [Requests]
+      summary: Tanár kérelmek lekérése
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: establishment
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+        '403':
+          description: Nem felhatalmazott
+
+  /establishment/{establishment}/requests:
+    post:
+      tags: [Requests]
+      summary: Csatlakozási kérelem benyújtása
+      description: >-
+        A controller body mezőből (`establishment_id`) dolgozik, ezért ezt is kötelező
+        megadni még path paraméter mellett is.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: establishment
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [establishment_id, role]
+              properties:
+                establishment_id:
+                  type: integer
+                role:
+                  type: string
+                  enum: [student, teacher]
+            example:
+              establishment_id: 1
+              role: student
+      responses:
+        '201':
+          description: Kérelem létrehozva
+        '409':
+          description: Már létező kérelem vagy tagság
+        '422':
+          description: Validációs hiba
+
+  /establishment/requests/handle:
+    post:
+      tags: [Requests]
+      summary: Kérelmek kezelése (elfogadás/elutasítás)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [establishment_id, action, request_id]
+              properties:
+                establishment_id:
+                  type: integer
+                action:
+                  type: string
+                  enum: [accept, reject]
+                request_id:
+                  type: array
+                  items:
+                    type: integer
+            example:
+              establishment_id: 1
+              action: accept
+              request_id: [1, 2]
+      responses:
+        '200':
+          description: Kérelmek feldolgozva
+        '403':
+          description: Nem felhatalmazott
+        '422':
+          description: Validációs hiba
+
+  /establishment/{establishment}/requests/revoke:
+    delete:
+      tags: [Requests]
+      summary: Saját kérelem visszavonása
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: establishment
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Kérelem visszavonva
+        '404':
+          description: Kérelem nem található
+
+  /events:
+    post:
+      tags: [Events]
+      summary: Esemény létrehozása
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, title, description, start_date, end_date]
+              properties:
+                type:
+                  type: string
+                  enum: [local, global]
+                title:
+                  type: string
+                  maxLength: 255
+                description:
+                  type: string
+                content:
+                  type: string
+                  nullable: true
+                start_date:
+                  type: string
+                end_date:
+                  type: string
+            example:
+              type: global
+              title: Test Event
+              description: Test Description
+              content: Test Content
+              start_date: '2026-02-15 10:00:00'
+              end_date: '2026-02-15 18:00:00'
+      responses:
+        '201':
+          description: Esemény létrehozva
+        '401':
+          description: Nincs vagy hibás token
+        '422':
+          description: Validációs hiba
+
+    get:
+      tags: [Events]
+      summary: Események lekérése
+      description: A route fájlban a GET /events duplikáltan szerepel.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+
+  /events/{event}:
+    get:
+      tags: [Events]
+      summary: Egy esemény lekérése
+      description: A route definiálva van, de a controllerben lehet hiányzó implementáció.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: event
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sikeres lekérdezés
+        '404':
+          description: Nem található
