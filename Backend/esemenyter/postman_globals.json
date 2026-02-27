@@ -1,0 +1,19 @@
+{
+  "id": "7cdf4a65-8784-4f32-983f-de1caf929dd0",
+  "name": "Globals",
+  "values": [
+    {
+      "key": "token",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "base_url",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "globals"
+}
