@@ -1871,9 +1871,12 @@ export default {
       .then(response => {
         console.log('Intézmény sikeresen létrehozva:', response.data);
         toast.success('Iskola sikeresen regisztrálva!');
-      
+        
         const institutionId = response.data.data?.id || response.data?.id;
-      
+        if (institutionId !== null && institutionId !== undefined) {
+          localStorage.setItem('CurrentInstitution', String(institutionId));
+        }
+
         this.profileConfigured = true;
         this.user.role = 'institution_manager';
         this.user.institution_id = institutionId;
@@ -1883,7 +1886,6 @@ export default {
         this.user.school = this.schoolForm.name;
         this.user.schoolDetails = { ...this.schoolForm };
 
-        localStorage.setItem('CurrentInstitution', response.data.data?.id || response.data?.id);
         this.saveUserData();
       
         setTimeout(() => {

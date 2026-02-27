@@ -641,10 +641,10 @@ export default {
       
       const query = this.searchQuery.toLowerCase();
       return this.pendingStudentRequests.filter(request => {
-        const user = this.getUserById(request.user_id);
+        const user = request.user || this.getUserById(request.user_id);
         return user && (
-          user.name.toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query)
+          (user.name || '').toLowerCase().includes(query) ||
+          (user.email || '').toLowerCase().includes(query)
         );
       });
     },
@@ -655,10 +655,10 @@ export default {
       
       const query = this.searchQuery.toLowerCase();
       return this.pendingTeacherRequests.filter(request => {
-        const user = this.getUserById(request.user_id);
+        const user = request.user || this.getUserById(request.user_id);
         return user && (
-          user.name.toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query)
+          (user.name || '').toLowerCase().includes(query) ||
+          (user.email || '').toLowerCase().includes(query)
         );
       });
     },
@@ -710,39 +710,50 @@ export default {
     async loadInstitutionData() {
       try {
         const token = localStorage.getItem('esemenyter_token');
-        const institutionId = this.user.institution_id;
+        const storedInstitutionId = localStorage.getItem('CurrentInstitution') || localStorage.getItem('institutionId');
+        const institutionId = this.user.institution_id || storedInstitutionId;
 
         if (!institutionId) {
           console.error('Nincs intézmény ID');
           return;
         }
 
+        this.user.institution_id = Number(institutionId);
+
         // Intézmény adatok
-        const instResponse = await axios.get(`http://127.0.0.1:8000/api/establishments/${institutionId}`, {
+        const instResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        this.institution = instResponse.data.data || instResponse.data;
+        const institutionData = instResponse.data.data || instResponse.data || {};
+        this.institution = {
+          ...this.institution,
+          id: institutionData.id || Number(institutionId),
+          name: institutionData.name || institutionData.title || '',
+          address: institutionData.address || '',
+          type: institutionData.type || ''
+        };
 
         // DIÁK csatlakozási kérelmek betöltése
-        const studentRequestsResponse = await axios.get(`http://127.0.0.1:8000/api/requests/student/${institutionId}`, {
+        const studentRequestsResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/requests/students`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const studentRequests = studentRequestsResponse.data.data || [];
 
         // TANÁR csatlakozási kérelmek betöltése
-        const teacherRequestsResponse = await axios.get(`http://127.0.0.1:8000/api/requests/teacher/${institutionId}`, {
+        const teacherRequestsResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/requests/teachers`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const teacherRequests = teacherRequestsResponse.data.data || [];
 
         // Kérelmek egyesítése
-        this.establishmentRequests = [...studentRequests, ...teacherRequests];
-
-        // Összes felhasználó betöltése (a kérelmekhez kapcsolódóan)
-        const userIds = this.establishmentRequests.map(r => r.user_id);
-        if (userIds.length > 0) {
-          await this.loadUsers(userIds);
-        }
+        this.establishmentRequests = [...studentRequests, ...teacherRequests].map(request => ({
+          ...request,
+          user: request.user || {
+            id: request.user_id,
+            name: `Felhasználó #${request.user_id}`,
+            email: ''
+          }
+        }));
 
         // Diákok és tanárok betöltése (akik már csatlakoztak)
         await this.loadInstitutionUsers(institutionId);
@@ -759,40 +770,16 @@ export default {
       }
     },
     
-    // Felhasználók betöltése ID-k alapján
-    async loadUsers(userIds) {
-      try {
-        const token = localStorage.getItem('esemenyter_token');
-        
-        // Unique user IDs
-        const uniqueIds = [...new Set(userIds)];
-        
-        // Felhasználók betöltése egyesével (vagy batch API-val)
-        const userPromises = uniqueIds.map(id => 
-          axios.get(`http://127.0.0.1:8000/api/users/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }).then(res => res.data.data || res.data)
-        );
-        
-        const users = await Promise.all(userPromises);
-        this.allUsers = users;
-        
-      } catch (error) {
-        console.error('Hiba a felhasználók betöltésekor:', error);
-      }
-    },
-    
     async loadInstitutionUsers(institutionId) {
       try {
         const token = localStorage.getItem('esemenyter_token');
         
-        // Token küldése, de a backend nem ellenőrzi
-        const studentsResponse = await axios.get(`http://127.0.0.1:8000/api/establishments/student/${institutionId}`, {
+        const studentsResponse = await axios.get(`http://127.0.0.1:8000/api/members/students/${institutionId}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         this.students = studentsResponse.data.data || [];
       
-        const teachersResponse = await axios.get(`http://127.0.0.1:8000/api/establishments/teacher/${institutionId}`, {
+        const teachersResponse = await axios.get(`http://127.0.0.1:8000/api/members/staff/${institutionId}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         this.teachers = teachersResponse.data.data || [];
@@ -807,7 +794,7 @@ export default {
       try {
         const token = localStorage.getItem('esemenyter_token');
 
-        const response = await axios.get(`http://127.0.0.1:8000/api/classes/${institutionId}`, {
+        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/classes`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         this.classes = response.data.data || [];
@@ -893,31 +880,23 @@ export default {
       if (!confirm(`Biztosan törölni szeretnéd a(z) ${classItem.name} osztályt?`)) {
         return;
       }
-      
-      try {
-        const token = localStorage.getItem('esemenyter_token');
-        
-        await axios.delete(`http://127.0.0.1:8000/api/classes/${classItem.id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        // Újratöltjük az osztályokat
-        await this.loadClasses(this.user.institution_id);
-        
-        this.showNotification('Osztály sikeresen törölve!', 'success');
-        
-      } catch (error) {
-        console.error('Hiba az osztály törlésekor:', error);
-        this.showNotification('Hiba történt az osztály törlésekor', 'error');
-      }
+
+      this.showNotification('Az osztály törléséhez jelenleg nincs backend API végpont.', 'warning');
     },
     
     // Kérelem kezelés
     showClassAssignmentModal(request) {
       // Ellenőrizzük, hogy van-e user adat
       const user = this.getUserById(request.user_id);
-      if (user) {
+      if (user && !request.user) {
         request.user = user;
+      }
+      if (!request.user) {
+        request.user = {
+          id: request.user_id,
+          name: `Felhasználó #${request.user_id}`,
+          email: ''
+        };
       }
       
       this.selectedRequest = request;
@@ -935,31 +914,46 @@ export default {
     async approveRequest() {
       try {
         const token = localStorage.getItem('esemenyter_token');
+        const establishmentId = this.user.institution_id;
         const requestId = this.selectedRequest.id;
         const userId = this.selectedRequest.user_id;
         const role = this.selectedRequest.role;
-      
-        // Csak akkor rendelünk osztályt, ha van kiválasztva
-        if (this.selectedClassId) {
-          await axios.post(`http://127.0.0.1:8000/api/users/${userId}/assign-class`, {
-            class_id: this.selectedClassId,
-            establishment_id: this.user.institution_id
-          }, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-      
-        // Kérelem törlése (elfogadás után)
-        await axios.delete(`http://127.0.0.1:8000/api/establishment-requests/${requestId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      
-        // Felhasználó szerepkörének frissítése
-        await axios.put(`http://127.0.0.1:8000/api/users/${userId}/role`, {
-          role: role
+
+        await axios.post('http://127.0.0.1:8000/api/establishment/requests/handle', {
+          establishment_id: establishmentId,
+          action: 'accept',
+          request_id: [requestId]
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
+
+        // Opcionális osztály hozzárendelés
+        if (this.selectedClassId) {
+          if (role === 'student') {
+            await this.loadInstitutionUsers(establishmentId);
+            const acceptedStudent = this.students.find(student => Number(student.id) === Number(userId));
+
+            if (acceptedStudent?.student_id) {
+              await axios.post('http://127.0.0.1:8000/api/establishment/classes/add-students', {
+                establishment_id: establishmentId,
+                class_id: this.selectedClassId,
+                student_id: [acceptedStudent.student_id]
+              }, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+            }
+          }
+
+          if (role === 'teacher') {
+            await axios.patch(`http://127.0.0.1:8000/api/establishment/${establishmentId}/classes/${this.selectedClassId}`, {
+              establishment_id: establishmentId,
+              class_id: this.selectedClassId,
+              teacher_id: userId
+            }, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+          }
+        }
       
         // Eltávolítjuk a listából
         const index = this.establishmentRequests.findIndex(r => r.id === requestId);
@@ -981,7 +975,7 @@ export default {
     },
     
     async rejectRequest(request) {
-      const user = this.getUserById(request.user_id);
+      const user = request.user || this.getUserById(request.user_id);
       if (!confirm(`Biztosan elutasítja ${user?.name || 'a felhasználó'} csatlakozási kérelmét?`)) {
         return;
       }
@@ -989,8 +983,11 @@ export default {
       try {
         const token = localStorage.getItem('esemenyter_token');
 
-        // Kérelem törlése - a megfelelő endpoint használata
-        await axios.delete(`http://127.0.0.1:8000/api/establishment-requests/${request.id}`, {
+        await axios.post('http://127.0.0.1:8000/api/establishment/requests/handle', {
+          establishment_id: this.user.institution_id,
+          action: 'reject',
+          request_id: [request.id]
+        }, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -1064,7 +1061,11 @@ export default {
       if (savedUser) {
         const userData = JSON.parse(savedUser);
         if (userData.isLoggedIn) {
+          const storedInstitutionId = localStorage.getItem('CurrentInstitution') || localStorage.getItem('institutionId');
           this.user = { ...this.user, ...userData };
+          if (!this.user.institution_id && storedInstitutionId) {
+            this.user.institution_id = Number(storedInstitutionId);
+          }
           
           // Ellenőrizzük, hogy intézményvezető-e
           if (userData.role !== 'institution_manager' && userData.role !== 'admin') {

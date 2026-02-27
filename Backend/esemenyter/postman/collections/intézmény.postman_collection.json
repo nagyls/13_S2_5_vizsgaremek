@@ -1,0 +1,133 @@
+{
+  "info": {
+    "_postman_id": "0f38333f-a4f2-427b-9637-539e4ef777ec",
+    "name": "Establishment apik",
+    "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Intézmény létrehozás",
+      "id": "ee9c430f-e1f6-4111-ab73-3816df3412d1",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\":\"My School2\",\"description\":\"Short description\",\"settlement_id\":2}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/establishment/create",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "establishment",
+            "create"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Intézmények lekérése szűréssel",
+      "id": "ce715f06-7da0-4927-8dcd-fa5c88ec28d0",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "description": "Specify JSON response format"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/establishments?search=p&settlement_id=1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "establishments"
+          ],
+          "query": [
+            {
+              "key": "search",
+              "value": "p"
+            },
+            {
+              "key": "settlement_id",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Intézmény lekérése azonositóval",
+      "id": "9c039361-5d64-4148-a7ef-c06f168edf4c",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/establishments/{{establishment_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "establishments",
+            "{{establishment_id}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "id": "12fed3ae-a1da-472c-9b78-cae9f4308fe9",
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "id": "5b8c8a8a-88af-498d-ba6c-11462308fc5a",
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "id": "716d7965-27cf-4f10-9d06-0e34fdea75e2",
+      "key": "establishment_id",
+      "value": "1",
+      "type": "string"
+    }
+  ]
+}
