@@ -56,7 +56,6 @@ Route::prefix('settlements')->group(function () {
 });
 
 Route::prefix('establishments')->group(function () {
-    Route::get('/{id}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
     Route::get('/', [EstablishmentController::class, 'getEstablishments']); // keresés
 });
 
@@ -71,6 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
 //intézmény kezelés
     Route::post('/establishment/create', [EstablishmentController::class, 'store']);
     Route::get('/establishment/mine', [EstablishmentController::class, 'getMyEstablishments']);
+    Route::get('/establishment/{id}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
 //osztály kezelés
     Route::get('/establishment/{establishment}/classes', [ClassController::class, 'getClasses']);
     Route::get('/establishment/{establishment}/classes/{class}', [ClassController::class, 'getClassMembers']);
