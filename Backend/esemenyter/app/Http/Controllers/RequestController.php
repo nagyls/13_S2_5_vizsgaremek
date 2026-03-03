@@ -50,6 +50,7 @@ class RequestController extends Controller
                 'role' => $item->role,
                 'created_at' => $item->created_at,
                 'name' => $item->userFromId->name,
+                'email' => $item->userFromId->email,
             ];
         });
         return response()->json([

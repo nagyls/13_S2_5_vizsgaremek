@@ -118,17 +118,23 @@ class EstablishmentController extends Controller
     public function getRole(Request $request)
     {
         $user = $request->user();
-        if($user->establishment_id === null) {
+        if ($user->establishment_id === null) {
             return response()->json([
                 'establishment_id' => null,
             ]);
         }
-        $role = $user->staffs()->where('establishment_id', $user->establishment_id)->first();
-        if (!$role) {
-            $role = $user->students()->where('establishment_id', $user->establishment_id)->first();
+        if ($this->isMemberEstablishment($user->id, $user->establishment_id)) {
+            if ($this->isStaffEstablishment($user->id, $user->establishment_id)) {
+                return response()->json([
+                    'role' => 'teacher',
+                ]);
+            }
+            return response()->json([
+                'establishment_id' => 'student',
+            ]);
         }
         return response()->json([
-            'role' => $role ? $role->role : null,
+            'establishment_id' => null,
         ]);
     }
 }

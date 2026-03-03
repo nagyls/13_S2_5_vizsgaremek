@@ -119,11 +119,11 @@ export default {
                     email: backendUser.email || res.data.user.email,
                     role: role || backendUser.role || '',
                     institution_id: backendUser.establishment_id || null,
-          is_teacher: res.data.is_teacher || false,
-          is_student: res.data.is_student || false,
-          establishment_ids: res.data.establishment_ids || [],
-          isLoggedIn: true,
-          loggedInAt: new Date().toISOString()
+                    is_teacher: res.data.is_teacher || false,
+                    is_student: res.data.is_student || false,
+                    establishment_ids: res.data.establishment_ids || [],
+                    isLoggedIn: true,
+                    loggedInAt: new Date().toISOString()
         };
 
                 if (userData.institution_id) {

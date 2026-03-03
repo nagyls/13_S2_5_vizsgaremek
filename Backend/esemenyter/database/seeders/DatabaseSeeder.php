@@ -72,16 +72,17 @@ class DatabaseSeeder extends Seeder
         ]);
 
 
-        $student = Student::create([
-            'alias' => 'primary_student',
-            'establishment_id' => $est->id,
-            'user_id' => $user->id,
-        ]);
+
 
 
         for ($i = 0; $i < 10; $i++) {
             $u = User::factory()->create();
         }
+        $student = Student::create([
+            'alias' => 'primary_student',
+            'establishment_id' => $est->id,
+            'user_id' => 2,
+        ]);
 
 
         $event = Event::create([
