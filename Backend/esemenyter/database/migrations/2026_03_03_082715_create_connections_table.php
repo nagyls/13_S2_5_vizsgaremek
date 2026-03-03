@@ -17,10 +17,16 @@ return new class extends Migration
                   ->references('id')->on('establishments')
                   ->onDelete('cascade');
         });
-
     }
 
     /**
      * Reverse the migrations.
      */
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['establishment_id']);
+            $table->dropColumn('establishment_id');
+        });
+    }
 };
