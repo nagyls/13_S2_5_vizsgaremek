@@ -14,9 +14,7 @@ class EstablishmentController extends Controller
     public function store(Request $request)
     {
 
-        if (!$request->user()) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
-        }
+        $user = $request->user();
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255', Rule::unique('establishments', 'title')],
@@ -46,11 +44,13 @@ class EstablishmentController extends Controller
         $validated['user_id'] = $request->user()->id;
         $establishment = Establishment::create($validated);
 
-        $Staff = Staff::create([
+        $staff = Staff::create([
             'role' => 'admin',
             'establishment_id' => $establishment->id,
             'user_id' => $request->user()->id,
         ]);
+        
+        User::where('id', $request->user()->id)->update(['establishment_id' => $establishment->id]);
 
         return response()->json([
             'message' => 'Intézmény regisztrálva!',
