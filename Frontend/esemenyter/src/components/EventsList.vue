@@ -19,7 +19,7 @@
             </div>
             <div class="felhasznalo-adatok">
               <span class="nev">{{ aktualisFelhasznalo.nev }}</span>
-              <span class="szerep" :class="aktualisFelhasznalo.role">
+              <span class="szerep" :class="normalizaltSzerep">
                 {{ szerepMegjelenites }}
               </span>
             </div>
@@ -264,6 +264,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'EsemenyekLista',
   
@@ -281,6 +283,10 @@ export default {
   },
   
   computed: {
+    normalizaltSzerep() {
+      return String(this.aktualisFelhasznalo?.role || '').toLowerCase();
+    },
+
     felhasznaloInicialek() {
       if (!this.aktualisFelhasznalo?.nev) return '?';
       return this.aktualisFelhasznalo.nev
@@ -295,9 +301,10 @@ export default {
       const szerepek = {
         'student': 'Diák',
         'teacher': 'Tanár',
-        'admin': 'Admin'
+        'admin': 'Admin',
+        'institution_manager': 'Intézményvezető'
       };
-      return szerepek[this.aktualisFelhasznalo?.role] || 'Vendég';
+      return szerepek[this.normalizaltSzerep] || 'Vendég';
     },
     
     aktivEsemenyekSzama() {
@@ -309,9 +316,7 @@ export default {
     },
     
     létrehozhatEsemenyt() {
-      return this.aktualisFelhasznalo && 
-             (this.aktualisFelhasznalo.role === 'teacher' || 
-              this.aktualisFelhasznalo.role === 'admin');
+      return ['teacher', 'admin', 'institution_manager'].includes(this.normalizaltSzerep);
     },
     
     vannakAktivSzurok() {
@@ -327,7 +332,9 @@ export default {
   methods: {
     async betoltFelhasznalot() {
       try {
-        const mentettFelhasznalo = localStorage.getItem('esemenyter_user');
+        const mentettFelhasznalo =
+          localStorage.getItem('esemenyter_user') ||
+          sessionStorage.getItem('esemenyter_user');
         if (mentettFelhasznalo) {
           this.aktualisFelhasznalo = JSON.parse(mentettFelhasznalo);
         }
@@ -356,49 +363,35 @@ export default {
     },
     
     async apiEsemenyekLekerese() {
-      // Demo adatok
-      const demoEsemenyek = [
-        {
-          id: 1,
-          title: 'Tavaszi kirándulás',
-          description: 'Éves tavaszi kirándulás a természetben. Gyülekező 8:00-kor az iskola előtt.',
-          type: 'local',
-          status: 'open',
-          start_date: new Date().toISOString(),
-          creator_name: 'Admin User',
-          comment_count: 5,
-          participants: 25,
-          favorites: 12
-        },
-        {
-          id: 2,
-          title: 'Verseny a tudásért',
-          description: 'Országos tudományos verseny középiskolásoknak. Több kategóriában lehet nevezni.',
-          type: 'global',
-          status: 'open',
-          start_date: new Date(Date.now() + 86400000).toISOString(),
-          creator_name: 'Tanár Béla',
-          comment_count: 3,
-          participants: 45,
-          favorites: 18
-        }
-      ];
-      
-      return demoEsemenyek.filter(esemeny => {
-        if (this.szurok.tipus && esemeny.type !== this.szurok.tipus) return false;
-        if (this.szurok.allapot && esemeny.status !== this.szurok.allapot) return false;
-        return true;
-      }).sort((a, b) => {
-        switch (this.szurok.rendezes) {
-          case 'oldest':
-            return new Date(a.start_date) - new Date(b.start_date);
-          case 'start_date':
-            return new Date(a.start_date) - new Date(b.start_date);
-          case 'newest':
-          default:
-            return new Date(b.start_date) - new Date(a.start_date);
+      const { data } = await axios.get('http://127.0.0.1:8000/api/events', {
+        headers: {
+          Accept: 'application/json'
         }
       });
+
+      const bejovoEsemenyek = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.events)
+          ? data.events
+          : [];
+
+      return bejovoEsemenyek
+        .filter(esemeny => {
+          if (this.szurok.tipus && esemeny.type !== this.szurok.tipus) return false;
+          if (this.szurok.allapot && esemeny.status !== this.szurok.allapot) return false;
+          return true;
+        })
+        .sort((a, b) => {
+          switch (this.szurok.rendezes) {
+            case 'oldest':
+              return new Date(a.start_date) - new Date(b.start_date);
+            case 'start_date':
+              return new Date(a.start_date) - new Date(b.start_date);
+            case 'newest':
+            default:
+              return new Date(b.start_date) - new Date(a.start_date);
+          }
+        });
     },
     
     formatDatum(datumString) {
@@ -543,6 +536,7 @@ export default {
 .szerep.student { color: #10b981; }
 .szerep.teacher { color: #f97316; }
 .szerep.admin { color: #8b5cf6; }
+.szerep.institution_manager { color: #8b5cf6; }
 
 /* Hero szekció (EventDetails-ből) */
 .hero-szekcio {
