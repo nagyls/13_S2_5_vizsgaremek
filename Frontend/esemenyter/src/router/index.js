@@ -112,6 +112,35 @@ const router = createRouter({
   routes
 })
 
+router.beforeEach((to, from, next) => {
+  const savedUserRaw =
+    localStorage.getItem('esemenyter_user') ||
+    sessionStorage.getItem('esemenyter_user');
+
+  let role = '';
+  if (savedUserRaw) {
+    try {
+      role = JSON.parse(savedUserRaw)?.role || '';
+    } catch (error) {
+      role = '';
+    }
+  }
+
+  const isStudentOrTeacher = role === 'student' || role === 'teacher';
+
+  if (isStudentOrTeacher && to.path === '/pending-approval') {
+    next('/user-dashboard');
+    return;
+  }
+
+  if (isStudentOrTeacher && to.path === '/dashboard') {
+    next('/user-dashboard');
+    return;
+  }
+
+  next();
+});
+
 router.afterEach((to) => {
   document.title = (to.meta.title ? to.meta.title + ' – EseményTér' : 'EseményTér');
 });

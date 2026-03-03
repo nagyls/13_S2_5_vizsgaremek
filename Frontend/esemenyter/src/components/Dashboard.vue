@@ -1844,15 +1844,6 @@ export default {
 
     // Profil befejező metódusok
     async completeStudentProfileSetup() {
-      this.profileConfigured = true;
-      this.user.role = this.selectedRole;
-      this.user.region = this.selectedRegion?.title || '';
-      this.user.district = this.selectedDistrict?.title || '';
-      this.user.city = this.selectedCity?.title || '';
-      this.user.school = this.selectedSchool?.title || '';
-      this.user.schoolId = this.selectedSchoolId;
-      this.saveUserData();
-
       try {
         await this.submitInstitutionRequest(this.selectedSchoolId, 'student');
       } catch (error) {
@@ -1862,12 +1853,34 @@ export default {
         }
       }
 
+      this.profileConfigured = true;
+      this.user.role = '';
+      this.user.pendingApproval = true;
+      this.user.requestedRole = 'student';
+      this.user.region = this.selectedRegion?.title || '';
+      this.user.district = this.selectedDistrict?.title || '';
+      this.user.city = this.selectedCity?.title || '';
+      this.user.school = this.selectedSchool?.title || '';
+      this.user.schoolId = this.selectedSchoolId;
+      this.saveUserData();
+
       this.$router.push('/pending-approval');
     },
     
     async completeTeacherProfileSetup() {
+      try {
+        await this.submitInstitutionRequest(this.teacherSelectedSchoolId, 'teacher');
+      } catch (error) {
+        if (error.response?.status !== 409) {
+          toast.error('A csatlakozási kérelem elküldése sikertelen.');
+          return;
+        }
+      }
+
       this.profileConfigured = true;
-      this.user.role = this.selectedRole;
+      this.user.role = '';
+      this.user.pendingApproval = true;
+      this.user.requestedRole = 'teacher';
       this.user.region = this.teacherSelectedRegion?.title || '';
       this.user.district = this.teacherSelectedDistrict?.title || '';
       this.user.city = this.teacherSelectedCity?.title || '';
@@ -1881,15 +1894,6 @@ export default {
       }));
       this.user.specialTeaching = { ...this.specialTeaching };
       this.saveUserData();
-
-      try {
-        await this.submitInstitutionRequest(this.teacherSelectedSchoolId, 'teacher');
-      } catch (error) {
-        if (error.response?.status !== 409) {
-          toast.error('A csatlakozási kérelem elküldése sikertelen.');
-          return;
-        }
-      }
 
       this.$router.push('/pending-approval');
     },
@@ -2017,6 +2021,8 @@ export default {
         name: this.user.name,
         email: this.user.email,
         role: this.user.role,
+        pendingApproval: !!this.user.pendingApproval,
+        requestedRole: this.user.requestedRole || '',
         region: this.user.region,
         district: this.user.district,
         city: this.user.city,

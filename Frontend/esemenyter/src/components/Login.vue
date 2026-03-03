@@ -51,9 +51,12 @@ export default {
       this.showPassword = !this.showPassword;
     },
 
-        getRedirectPathByRole(role) {
+        getRedirectPath(userData) {
+            const role = userData?.role || '';
+
             if (role === 'institution_manager') return '/institution-dashboard';
-            if (role === 'admin') return '/user-dashboard';
+            if (role === 'admin' || role === 'teacher' || role === 'student') return '/user-dashboard';
+            if (userData?.pendingApproval) return '/pending-approval';
             return '/dashboard';
         },
 
@@ -132,7 +135,7 @@ export default {
 
                 this.saveAuthData(userData, token);
 
-                this.$router.push(this.getRedirectPathByRole(userData.role));
+                this.$router.push(this.getRedirectPath(userData));
 
       } catch (err) {
         console.error("Bejelentkezési hiba:", err);
@@ -188,7 +191,7 @@ export default {
                         localStorage.setItem('CurrentInstitution', String(mergedUserData.institution_id));
                     }
 
-                    this.$router.push(this.getRedirectPathByRole(mergedUserData.role));
+                    this.$router.push(this.getRedirectPath(mergedUserData));
         })
         .catch(() => {
           localStorage.clear();
