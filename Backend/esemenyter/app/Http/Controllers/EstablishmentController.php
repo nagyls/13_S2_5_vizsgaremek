@@ -7,7 +7,7 @@ use Illuminate\Validation\Rule;
 use App\Models\Establishment;
 use App\Models\Staff;
 use App\Models\User;
-
+use Symfony\Component\Mime\Message;
 
 class EstablishmentController extends Controller
 {
@@ -118,13 +118,14 @@ class EstablishmentController extends Controller
     public function getRole(Request $request)
     {
         $user = $request->user();
-        if ($user->establishment_id === null) {
-            return response()->json([
-                'establishment_id' => null,
-            ]);
-        }
+
         if ($this->isMemberEstablishment($user->id, $user->establishment_id)) {
             if ($this->isStaffEstablishment($user->id, $user->establishment_id)) {
+                if ($this->isAdminEstablishment($user->id, $user->establishment_id)) {
+                    return response()->json([
+                        'role' => 'admin',
+                    ]);
+                }
                 return response()->json([
                     'role' => 'teacher',
                 ]);
@@ -134,7 +135,8 @@ class EstablishmentController extends Controller
             ]);
         }
         return response()->json([
-            'role' => null,
+            'message' => 'Nem tagja egy intézménynek sem!',
+            403
         ]);
     }
 }
