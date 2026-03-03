@@ -1827,7 +1827,7 @@ export default {
       }
 
       return axios.post(
-        `http://127.0.0.1:8000/api/establishment/${establishmentId}/requests`,
+        `http://127.0.0.1:8000/api/establishment/requests/create`,
         {
           establishment_id: establishmentId,
           role

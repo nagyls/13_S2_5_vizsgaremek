@@ -258,16 +258,15 @@
             <div class="form-row">
               <div class="form-group">
             <label for="classGrade">Évfolyam</label>
-            <select 
+            <input 
               id="classGrade"
-              v-model="newClass.grade"
+              v-model.number="newClass.grade"
+              type="number"
+              min="1"
+              max="13"
+              placeholder="Pl.: 9"
               class="form-control"
-            >
-              <option value="">Válassz évfolyamot</option>
-              <option v-for="grade in availableGrades" :key="grade" :value="grade">
-                {{ grade }}. évfolyam
-              </option>
-            </select>
+            />
           </div>
               <div class="form-group">
                 <label for="className">Osztály</label>
@@ -275,6 +274,7 @@
                   type="text" 
                   id="className"
                   v-model="newClass.name"
+                  @input="sanitizeClassNameInput"
                   placeholder="Pl.: A, B, C"
                   class="form-control"
                 />
@@ -283,11 +283,11 @@
               
 
               <div class="form-group">
-                <label for="classCapacity">Férőhely</label>
+                <label for="classCapacity">Létszám</label>
                 <input 
                   type="number" 
                   id="classCapacity"
-                  v-model="newClass.capacity"
+                  v-model.number="newClass.capacity"
                   placeholder="Pl.: 30"
                   min="1"
                   class="form-control"
@@ -333,13 +333,13 @@
             <div v-else class="classes-grid">
               <div v-for="classItem in classes" :key="classItem.id" class="class-item">
                 <div class="class-item-header">
-                  <h5>{{ classItem.name }}</h5>
+                  <h5>{{ formatClassDisplayName(classItem) }}</h5>
                   <span class="class-grade">{{ classItem.grade }}. évfolyam</span>
                 </div>
                 <div class="class-item-body">
                   <div class="class-stat">
                     <i class='bx bx-group'></i>
-                    <span>{{ classItem.student_count || 0 }} / {{ classItem.capacity || '∞' }} diák</span>
+                    <span>{{ classItem.student_count || 0 }} / {{ getClassCapacity(classItem) }} diák</span>
                   </div>
                   <div class="class-stat" v-if="classItem.teacher_name">
                     <i class='bx bx-chalkboard'></i>
@@ -407,7 +407,7 @@
               <div class="user-card-body">
                 <div class="info-row">
                   <i class='bx bx-group'></i>
-                  <span>Osztály: {{ student.class_name || 'Nincs beállítva' }}</span>
+                  <span>Osztály: {{ getStudentClassDisplay(student) }}</span>
                 </div>
               </div>
               <div class="user-card-actions">
@@ -440,7 +440,7 @@
               <div class="user-card-body">
                 <div class="info-row">
                   <i class='bx bx-chalkboard'></i>
-                  <span>Tanított osztályok: {{ teacher.classes?.length || 0 }}</span>
+                  <span>Tanított osztályok: {{ getTeacherClassesDisplay(teacher) }}</span>
                 </div>
               </div>
               <div class="user-card-actions">
@@ -487,25 +487,25 @@
 
             <div class="assignment-form">
               <div class="form-group">
-                <label for="class-select">Válassz osztályt (opcionális):</label>
+                <label for="class-select">Válassz osztályt:</label>
                 <select 
                   id="class-select"
                   v-model="selectedClassId" 
                   class="form-select"
                 >
-                  <option value="">-- Osztály nélkül --</option>
+                  <option value="">-- Osztály kiválasztása --</option>
                   <option 
                     v-for="classItem in classes" 
                     :key="classItem.id" 
                     :value="classItem.id"
                   >
-                    {{ classItem.name }} 
-                    ({{ classItem.student_count || 0 }}/{{ classItem.capacity || '∞' }} diák)
+                    {{ formatClassDisplayName(classItem) }} 
+                    ({{ classItem.student_count || 0 }}/{{ getClassCapacity(classItem) }} diák)
                   </option>
                 </select>
                 <p class="form-hint">
                   <i class='bx bx-info-circle'></i>
-                  Választhatsz osztályt a felhasználónak, de nem kötelező. Később is módosítható.
+                  Az elfogadáshoz kötelező osztályt választani.
                 </p>
               </div>
             </div>
@@ -521,6 +521,7 @@
             <button 
               class="btn-primary" 
               @click="approveRequest"
+              :disabled="!selectedClassId"
             >
               <i class='bx bx-check'></i>
               Kérelem elfogadása
@@ -600,7 +601,7 @@ export default {
       // Új osztály létrehozása
       newClass: {
         name: '',
-        grade: '',
+        grade: null,
         capacity: 30,
         teacher_id: ''
       },
@@ -701,7 +702,72 @@ export default {
         minute: '2-digit'
       });
     },
-    
+
+    formatClassDisplayName(classItem) {
+      const grade = classItem?.grade;
+      const className = (classItem?.name || '').toString().trim();
+
+      if (grade && className) {
+        return `${grade}.${className}`;
+      }
+
+      return className || 'Névtelen osztály';
+    },
+
+    formatCompactClassDisplayName(classItem) {
+      const grade = classItem?.grade;
+      const className = (classItem?.name || '').toString().trim();
+
+      if (grade && className) {
+        return `${grade}.${className}`;
+      }
+
+      return className || 'Nincs beállítva';
+    },
+
+    getStudentClassDisplay(student) {
+      if (!student) return 'Nincs beállítva';
+
+      const className = (student.class_name || '').toString().trim();
+      if (className) {
+        return className;
+      }
+
+      return 'Nincs beállítva';
+    },
+
+    getTeacherClassesDisplay(teacher) {
+      if (!teacher || !this.classes?.length) {
+        return 'Nincs beállítva';
+      }
+
+      const labels = this.classes
+        .filter(classItem => Number(classItem.user_id) === Number(teacher.id))
+        .map(classItem => this.formatCompactClassDisplayName(classItem));
+
+      if (!labels.length) {
+        return 'Nincs beállítva';
+      }
+
+      return labels.join(', ');
+    },
+
+    getClassCapacity(classItem) {
+      const capacity = Number(classItem?.capacity);
+
+      if (Number.isFinite(capacity) && capacity > 0) {
+        return capacity;
+      }
+
+      return 30;
+    },
+
+    sanitizeClassNameInput() {
+      this.newClass.name = String(this.newClass.name || '')
+        .replace(/[^a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ]/g, '')
+        .slice(0, 5);
+    },
+
     toggleUserMenu() {
       this.showUserMenu = !this.showUserMenu;
     },
@@ -751,20 +817,33 @@ export default {
         ];
 
         // Kérelmek egyesítése, user adatokkal
-        this.establishmentRequests = allRequests.map(request => ({
-          ...request,
-          user: request.user || {
-            id: request.user_id,
-            name: `Felhasználó #${request.user_id}`,
-            email: ''
-          }
-        }));
+        // Támogatjuk mindkét backend formátumot:
+        // - request.user: { id, name, email }
+        // - request.name + request.email
+        this.establishmentRequests = allRequests.map(request => {
+          const resolvedUserId = request.user_id ?? request.user?.id ?? null;
+          const resolvedName = (request.user?.name || request.name || '').toString().trim();
+          const resolvedEmail = (request.user?.email || request.email || '').toString().trim();
+
+          return {
+            ...request,
+            user_id: resolvedUserId,
+            user: request.user || {
+              id: resolvedUserId,
+              name: resolvedName || `Felhasználó #${resolvedUserId ?? '?'}`,
+              email: resolvedEmail
+            }
+          };
+        });
 
         // Diákok és tanárok betöltése (akik már csatlakoztak)
         await this.loadInstitutionUsers(institutionId);
 
         // Osztályok betöltése
         await this.loadClasses(institutionId);
+
+        // Diákok osztályainak hozzárendelése (pl. 11B)
+        await this.loadStudentClassAssignments(institutionId);
 
         // Statisztikák frissítése
         this.updateStats();
@@ -809,6 +888,48 @@ export default {
         this.showNotification('Hiba történt az osztályok betöltésekor', 'error');
       }
     },
+
+    async loadStudentClassAssignments(institutionId) {
+      try {
+        if (!this.students.length || !this.classes.length) {
+          return;
+        }
+
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+
+        const memberResponses = await Promise.all(
+          this.classes.map(classItem =>
+            axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/classes/${classItem.id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            }).catch(() => ({ data: { data: [] } }))
+          )
+        );
+
+        const classByUserId = new Map();
+
+        this.classes.forEach((classItem, index) => {
+          const members = memberResponses[index]?.data?.data || [];
+          const classLabel = this.formatCompactClassDisplayName(classItem);
+
+          members.forEach(member => {
+            const memberUserId = Number(member.id);
+
+            if (memberUserId && !classByUserId.has(memberUserId)) {
+              classByUserId.set(memberUserId, classLabel);
+            }
+          });
+        });
+
+        this.students = this.students.map(student => ({
+          ...student,
+          class_name: classByUserId.get(Number(student.id)) || student.class_name || ''
+        }));
+      } catch (error) {
+        console.error('Hiba a diák osztály-hozzárendelések betöltésekor:', error);
+      }
+    },
     
     // Statisztikák frissítése
     updateStats() {
@@ -822,8 +943,7 @@ export default {
     // Új osztály létrehozása
     async createClass() {
       this.classErrors = {};
-
-      // Validáció - csak akkor ellenőrizzük, ha van kitöltve
+ 
       if (!this.newClass.name?.trim() && !this.newClass.grade && !this.newClass.capacity) {
         // Ha egy mező sincs kitöltve, ne csináljunk semmit
         return;
@@ -835,6 +955,23 @@ export default {
         return;
       }
 
+      if (this.newClass.name?.trim() && !/^[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ]+$/.test(this.newClass.name.trim())) {
+        this.classErrors.name = 'Az osztály neve csak betűket tartalmazhat';
+        return;
+      }
+
+      const parsedGrade = Number(this.newClass.grade);
+      if (!Number.isInteger(parsedGrade) || parsedGrade < 1 || parsedGrade > 100) {
+        this.classErrors.grade = 'Az évfolyamnak 1 és 100 közötti egész számnak kell lennie';
+        return;
+      }
+
+      const parsedCapacity = Number(this.newClass.capacity);
+      if (!Number.isInteger(parsedCapacity) || parsedCapacity < 1 || parsedCapacity > 200) {
+        this.classErrors.capacity = 'A létszámnak 1 és 200 közötti egész számnak kell lennie';
+        return;
+      }
+
       this.isCreatingClass = true;
 
       try {
@@ -842,8 +979,8 @@ export default {
 
         const classData = {
           name: this.newClass.name || 'Új osztály',
-          grade: this.newClass.grade || 1,
-          capacity: this.newClass.capacity || null,
+          grade: parsedGrade,
+          capacity: parsedCapacity,
           teacher_id: this.newClass.teacher_id || null,
           establishment_id: this.user.institution_id
         };
@@ -858,7 +995,7 @@ export default {
         // Űrlap alaphelyzetbe
         this.newClass = {
           name: '',
-          grade: '',
+          grade: null,
           capacity: 30,
           teacher_id: ''
         };
@@ -918,6 +1055,12 @@ export default {
     
     async approveRequest() {
       try {
+        if (!this.selectedClassId) {
+          this.errorMessage = 'Az elfogadáshoz válassz osztályt.';
+          this.showNotification(this.errorMessage, 'warning');
+          return;
+        }
+
         const token = localStorage.getItem('esemenyter_token');
         const establishmentId = this.user.institution_id;
         const requestId = this.selectedRequest.id;
@@ -968,6 +1111,7 @@ export default {
       
         // Felhasználók újratöltése
         await this.loadInstitutionUsers(this.user.institution_id);
+        await this.loadStudentClassAssignments(establishmentId);
       
         this.closeAssignmentModal();
         this.showNotification('Kérelem sikeresen elfogadva!', 'success');
