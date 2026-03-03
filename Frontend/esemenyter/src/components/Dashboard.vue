@@ -1308,7 +1308,15 @@ export default {
           specialTeaching: this.user.specialTeaching || {}
         }
 
-        this.profileConfigured = !!userData.role
+        await this.fetchAndSaveRole(token);
+
+        if (!this.user.role && userData.role) {
+          this.user.role = userData.role;
+        }
+
+        this.selectedRole = this.user.role === 'institution_manager' ? 'admin' : this.user.role;
+
+        this.profileConfigured = !!this.user.role
         this.saveUserData()
         console.log('Felhasználói adatok betöltve:', this.user)
 
@@ -1332,6 +1340,24 @@ export default {
           // Átirányítás
           this.$router.push('/');
         }
+      }
+    },
+
+    async fetchAndSaveRole(token) {
+      try {
+        const roleResponse = await axios.get('http://127.0.0.1:8000/api/establishment/role', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const roleFromApi = roleResponse.data?.role || '';
+
+        if (roleFromApi) {
+          this.user.role = roleFromApi;
+        }
+      } catch (error) {
+        console.error('Hiba a role lekérésekor:', error);
       }
     },
     

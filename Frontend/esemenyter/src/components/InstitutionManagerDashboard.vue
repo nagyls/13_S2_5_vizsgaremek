@@ -1050,19 +1050,42 @@ export default {
       }
     },
     
-    checkLoginStatus() {
+    async checkLoginStatus() {
       const savedUser = localStorage.getItem('esemenyter_user');
       if (savedUser) {
         const userData = JSON.parse(savedUser);
         if (userData.isLoggedIn) {
           const storedInstitutionId = localStorage.getItem('CurrentInstitution') || localStorage.getItem('institutionId');
           this.user = { ...this.user, ...userData };
+
+          if (!this.user.role) {
+            try {
+              const token = localStorage.getItem('esemenyter_token');
+              if (token) {
+                const roleResponse = await axios.get('http://127.0.0.1:8000/api/establishment/role', {
+                  headers: { Authorization: `Bearer ${token}` }
+                });
+
+                const roleFromApi = roleResponse.data?.role;
+                if (roleFromApi) {
+                  this.user.role = roleFromApi;
+                  localStorage.setItem('esemenyter_user', JSON.stringify({
+                    ...userData,
+                    role: roleFromApi
+                  }));
+                }
+              }
+            } catch (error) {
+              console.error('Role lekérési hiba:', error);
+            }
+          }
+
           if (!this.user.institution_id && storedInstitutionId) {
             this.user.institution_id = Number(storedInstitutionId);
           }
           
           // Ellenőrizzük, hogy intézményvezető-e
-          if (userData.role !== 'institution_manager' && userData.role !== 'admin') {
+          if (this.user.role !== 'institution_manager' && this.user.role !== 'admin') {
             this.$router.push('/dashboard');
             return;
           }
