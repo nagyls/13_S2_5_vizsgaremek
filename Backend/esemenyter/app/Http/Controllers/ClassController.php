@@ -58,18 +58,19 @@ class ClassController extends Controller
         $user = $request->user();
         if (!$this->isStaffEstablishment($user->id, $establishment)) {
             return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
-        } 
+        }
         $classes = ClassModel::where('establishment_id', $establishment)->orderBy('grade')->orderBy('name')->get();
         return response()->json([
             'data' => $classes->map(function ($item) {
-                    return [
-                        'id' => $item->id,
-                        'user' => optional(User::find($item->user_id))->name,
-                        'user_id' => $item->user_id,
-                        'name' => $item->name,
-                        'grade' => $item->grade,
-                    ];
-                })->values(),
+                return [
+                    'id' => $item->id,
+                    'user' => optional(User::find($item->user_id))->name,
+                    'user_id' => $item->user_id,
+                    'name' => $item->name,
+                    'grade' => $item->grade,
+                    'capacity' => $item->capacity,
+                ];
+            })->values(),
         ]);
     }
     //Osztály tagok lekérdezése
@@ -93,7 +94,7 @@ class ClassController extends Controller
             ->where('class_students.class_id', $classId)
             ->select('users.*', 'students.alias')
             ->get();
-            
+
         return response()->json([
             'data' => $students
         ]);

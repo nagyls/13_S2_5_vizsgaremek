@@ -20,9 +20,17 @@ class RequestController extends Controller
         }
 
         $requests = EstablishmentRequest::where('establishment_id', $establishmentId)->where('role', 'student')->get();
-
+        $data = $requests->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'establishment_id' => $item->establishment_id,
+                'role' => $item->role,
+                'created_at' => $item->created_at,
+                'name' => $item->userFromId->name,
+            ];
+        });
         return response()->json([
-            'data' => $requests
+            'data' => $data
         ]);
     }
     public function getTeacherRequests(Request $request, $establishmentId)
@@ -34,9 +42,17 @@ class RequestController extends Controller
         }
 
         $requests = EstablishmentRequest::where('establishment_id', $establishmentId)->where('role', 'teacher')->get();
-
+        $data = $requests->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'establishment_id' => $item->establishment_id,
+                'role' => $item->role,
+                'created_at' => $item->created_at,
+                'name' => $item->userFromId->name,
+            ];
+        });
         return response()->json([
-            'data' => $requests
+            'data' => $data
         ]);
     }
 
@@ -80,7 +96,7 @@ class RequestController extends Controller
             'action' => ['required', 'string', 'in:accept,reject'],
             'request_id' => ['required', 'array'],
             'request_id.*' => ['integer', 'exists:establishment_requests,id'],
-        ],[
+        ], [
             'establishment_id.required' => 'Az intézmény azonosító megadása kötelező.',
             'establishment_id.exists'   => 'Nem létező intézmény.',
             'action.in' => 'Az action mezőben "accept" vagy "reject" értéknek kell lennie.',
@@ -101,7 +117,7 @@ class RequestController extends Controller
             ->where('establishment_id', $validated['establishment_id'])
             ->get();
 
-    
+
 
         $accepted = 0;
         $rejected = 0;
@@ -139,13 +155,13 @@ class RequestController extends Controller
 
         if ($validated['action'] === 'accept') {
             return response()->json([
-            'message' => 'Kérelmek feldolgozva.',
-            'accepted' => $accepted,
+                'message' => 'Kérelmek feldolgozva.',
+                'accepted' => $accepted,
             ]);
         } else {
             return response()->json([
-            'message' => 'Kérelmek feldolgozva.',
-            'rejected' => $rejected,
+                'message' => 'Kérelmek feldolgozva.',
+                'rejected' => $rejected,
             ]);
         }
     }

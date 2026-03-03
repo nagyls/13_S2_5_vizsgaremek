@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 
 class EstablishmentRequest extends Model
 {
@@ -17,5 +18,10 @@ class EstablishmentRequest extends Model
     public function establishment()
     {
         return $this->belongsTo(Establishment::class, 'establishment_id');
+    }
+
+    public function userFromId()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
