@@ -130,11 +130,11 @@ class EstablishmentController extends Controller
                 ]);
             }
             return response()->json([
-                'establishment_id' => 'student',
+                'role' => 'student',
             ]);
         }
         return response()->json([
-            'establishment_id' => null,
+            'role' => null,
         ]);
     }
 }
