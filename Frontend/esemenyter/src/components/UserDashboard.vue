@@ -164,7 +164,19 @@ export default {
   
   methods: {
     loadUserData() {
-      const savedUser = localStorage.getItem('esemenyter_user');
+      const savedUser =
+        localStorage.getItem('esemenyter_user') ||
+        sessionStorage.getItem('esemenyter_user');
+
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      if (!savedUser || !token) {
+        this.$router.push('/');
+        return;
+      }
+
       if (savedUser) {
         const userData = JSON.parse(savedUser);
         if (userData.isLoggedIn) {
@@ -180,22 +192,29 @@ export default {
         } else {
           this.$router.push('/');
         }
-      } else {
-        this.$router.push('/');
       }
     },
 
     async checkPendingStatus() {
       try {
-        const token = localStorage.getItem('esemenyter_token');
-        // Ellenőrizzük, hogy van-e függőben lévő kérelem
-        const response = await axios.get(`http://127.0.0.1:8000/api/users/${this.user.id}/has-pending-request`, {
-        headers: { Authorization: `Bearer ${token}` }
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+
+        if (!token) {
+          return;
+        }
+
+        const response = await axios.get('http://127.0.0.1:8000/api/user', {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        
-        if (response.data.has_pending) {
-            // Ha van függőben lévő kérelem, irányítsuk a PendingApproval oldalra
-            this.$router.push('/pending-approval');
+
+        const backendUser = response.data || {};
+        const hasEstablishedMembership = !!backendUser.establishment_id;
+        const canHavePending = ['student', 'teacher'].includes(this.user.role) && !!this.user.schoolId;
+
+        if (canHavePending && !hasEstablishedMembership) {
+          this.$router.push('/pending-approval');
         }
       } catch (error) {
         console.error('Hiba a függőben lévő kérelem ellenőrzésekor:', error);
@@ -223,6 +242,8 @@ export default {
         .finally(() => {
           localStorage.removeItem('esemenyter_user');
           localStorage.removeItem('esemenyter_token');
+          sessionStorage.removeItem('esemenyter_user');
+          sessionStorage.removeItem('esemenyter_token');
           this.showUserMenu = false;
           this.$router.push('/');
         });

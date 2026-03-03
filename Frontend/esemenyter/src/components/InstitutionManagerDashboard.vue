@@ -709,7 +709,9 @@ export default {
     // Adatok betöltése
     async loadInstitutionData() {
       try {
-        const token = localStorage.getItem('esemenyter_token');
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
         const storedInstitutionId = localStorage.getItem('CurrentInstitution') || localStorage.getItem('institutionId');
         const institutionId = this.user.institution_id || storedInstitutionId;
 
@@ -733,11 +735,20 @@ export default {
           type: institutionData.type || ''
         };
 
-        // Kérelmek adminnak: minden kérelem lekérése
-        const requestsResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/requests/all`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const allRequests = requestsResponse.data.data || [];
+        // Kérelmek betöltése a létező végpontokról (diák + tanár)
+        const [studentRequestsResponse, teacherRequestsResponse] = await Promise.all([
+          axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/requests/students`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/requests/teachers`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+
+        const allRequests = [
+          ...(studentRequestsResponse.data.data || []),
+          ...(teacherRequestsResponse.data.data || [])
+        ];
 
         // Kérelmek egyesítése, user adatokkal
         this.establishmentRequests = allRequests.map(request => ({
@@ -1037,7 +1048,9 @@ export default {
     
     async logout() {
       try {
-        const token = localStorage.getItem('esemenyter_token');
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
         await axios.delete('http://127.0.0.1:8000/api/logout', {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -1046,21 +1059,31 @@ export default {
       } finally {
         localStorage.removeItem('esemenyter_user');
         localStorage.removeItem('esemenyter_token');
+        sessionStorage.removeItem('esemenyter_user');
+        sessionStorage.removeItem('esemenyter_token');
         this.$router.push('/');
       }
     },
     
     async checkLoginStatus() {
-      const savedUser = localStorage.getItem('esemenyter_user');
+      const savedUser =
+        localStorage.getItem('esemenyter_user') ||
+        sessionStorage.getItem('esemenyter_user');
       if (savedUser) {
         const userData = JSON.parse(savedUser);
         if (userData.isLoggedIn) {
-          const storedInstitutionId = localStorage.getItem('CurrentInstitution') || localStorage.getItem('institutionId');
+          const storedInstitutionId =
+            localStorage.getItem('CurrentInstitution') ||
+            sessionStorage.getItem('CurrentInstitution') ||
+            localStorage.getItem('institutionId') ||
+            sessionStorage.getItem('institutionId');
           this.user = { ...this.user, ...userData };
 
           if (!this.user.role) {
             try {
-              const token = localStorage.getItem('esemenyter_token');
+              const token =
+                localStorage.getItem('esemenyter_token') ||
+                sessionStorage.getItem('esemenyter_token');
               if (token) {
                 const roleResponse = await axios.get('http://127.0.0.1:8000/api/establishment/role', {
                   headers: { Authorization: `Bearer ${token}` }
@@ -1069,10 +1092,16 @@ export default {
                 const roleFromApi = roleResponse.data?.role;
                 if (roleFromApi) {
                   this.user.role = roleFromApi;
-                  localStorage.setItem('esemenyter_user', JSON.stringify({
+                  const mergedUser = {
                     ...userData,
                     role: roleFromApi
-                  }));
+                  };
+
+                  if (localStorage.getItem('esemenyter_token')) {
+                    localStorage.setItem('esemenyter_user', JSON.stringify(mergedUser));
+                  } else {
+                    sessionStorage.setItem('esemenyter_user', JSON.stringify(mergedUser));
+                  }
                 }
               }
             } catch (error) {

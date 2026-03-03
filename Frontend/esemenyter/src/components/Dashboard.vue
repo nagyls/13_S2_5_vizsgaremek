@@ -1320,6 +1320,11 @@ export default {
         this.saveUserData()
         console.log('Felhasználói adatok betöltve:', this.user)
 
+        if (this.user.role === 'admin') {
+          this.$router.replace('/user-dashboard');
+          return;
+        }
+
       } catch (error) {
         console.error('Hiba a felhasználói adatok lekérésekor:', error)
 
@@ -1812,8 +1817,33 @@ export default {
       this.adminNewCityName = '';
     },
     
+    async submitInstitutionRequest(establishmentId, role) {
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      if (!token) {
+        throw new Error('Nincs érvényes bejelentkezés.');
+      }
+
+      return axios.post(
+        `http://127.0.0.1:8000/api/establishment/${establishmentId}/requests`,
+        {
+          establishment_id: establishmentId,
+          role
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          }
+        }
+      );
+    },
+
     // Profil befejező metódusok
-    completeStudentProfileSetup() {
+    async completeStudentProfileSetup() {
       this.profileConfigured = true;
       this.user.role = this.selectedRole;
       this.user.region = this.selectedRegion?.title || '';
@@ -1823,10 +1853,19 @@ export default {
       this.user.schoolId = this.selectedSchoolId;
       this.saveUserData();
 
+      try {
+        await this.submitInstitutionRequest(this.selectedSchoolId, 'student');
+      } catch (error) {
+        if (error.response?.status !== 409) {
+          toast.error('A csatlakozási kérelem elküldése sikertelen.');
+          return;
+        }
+      }
+
       this.$router.push('/pending-approval');
     },
     
-    completeTeacherProfileSetup() {
+    async completeTeacherProfileSetup() {
       this.profileConfigured = true;
       this.user.role = this.selectedRole;
       this.user.region = this.teacherSelectedRegion?.title || '';
@@ -1842,6 +1881,15 @@ export default {
       }));
       this.user.specialTeaching = { ...this.specialTeaching };
       this.saveUserData();
+
+      try {
+        await this.submitInstitutionRequest(this.teacherSelectedSchoolId, 'teacher');
+      } catch (error) {
+        if (error.response?.status !== 409) {
+          toast.error('A csatlakozási kérelem elküldése sikertelen.');
+          return;
+        }
+      }
 
       this.$router.push('/pending-approval');
     },

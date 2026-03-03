@@ -189,7 +189,9 @@ export default {
   
   methods: {
     loadUserData() {
-      const savedUser = localStorage.getItem('esemenyter_user');
+      const savedUser =
+        localStorage.getItem('esemenyter_user') ||
+        sessionStorage.getItem('esemenyter_user');
       if (savedUser) {
         const userData = JSON.parse(savedUser);
         if (userData.isLoggedIn) {
@@ -212,21 +214,24 @@ export default {
     
     async checkUserStatus() {
       try {
-        const token = localStorage.getItem('esemenyter_token');
-        
-        // Ellenőrizzük, hogy van-e függőben lévő kérelem
-        const response = await axios.get(`http://127.0.0.1:8000/api/users/${this.user.id}/pending-request`, {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+
+        if (!token) {
+          this.$router.push('/');
+          return;
+        }
+
+        const response = await axios.get('http://127.0.0.1:8000/api/user', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
-        const hasPendingRequest = response.data.has_pending;
-        
-        if (!hasPendingRequest) {
-          // Ha nincs függőben lévő kérelem, akkor már elfogadták
-          // Töltsük újra a felhasználó adatokat
+
+        const hasEstablishedMembership = !!response.data?.establishment_id;
+
+        if (hasEstablishedMembership) {
           await this.refreshUserData();
         }
-        
       } catch (error) {
         console.error('Hiba a státusz ellenőrzésekor:', error);
       }
@@ -234,21 +239,25 @@ export default {
     
     async refreshUserData() {
       try {
-        const token = localStorage.getItem('esemenyter_token');
-        
-        const response = await axios.get(`http://127.0.0.1:8000/api/users/${this.user.id}`, {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+
+        const response = await axios.get('http://127.0.0.1:8000/api/user', {
           headers: { Authorization: `Bearer ${token}` }
         });
         
         const userData = response.data.data || response.data;
         
-        // Frissítsük a localStorage-t
-        const savedUser = JSON.parse(localStorage.getItem('esemenyter_user'));
+        const savedUserRaw =
+          localStorage.getItem('esemenyter_user') ||
+          sessionStorage.getItem('esemenyter_user');
+        const savedUser = savedUserRaw ? JSON.parse(savedUserRaw) : {};
         const updatedUser = { ...savedUser, ...userData };
         localStorage.setItem('esemenyter_user', JSON.stringify(updatedUser));
+        sessionStorage.setItem('esemenyter_user', JSON.stringify(updatedUser));
         
-        // Ha már elfogadták, irányítsuk át a dashboardra
-        if (userData.status === 'approved' || userData.role) {
+        if (userData.establishment_id) {
           this.showNotification('Kérelmed elfogadásra került! Átirányítás...', 'success');
           setTimeout(() => {
             this.$router.push('/user-dashboard');
@@ -264,25 +273,17 @@ export default {
       this.showNotification('Státusz ellenőrzése...', 'info');
       
       try {
-        const token = localStorage.getItem('esemenyter_token');
-        
-        const response = await axios.get(`http://127.0.0.1:8000/api/users/${this.user.id}/request-status`, {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+
+        const response = await axios.get('http://127.0.0.1:8000/api/user', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
-        const status = response.data.status;
-        
-        if (status === 'approved') {
+
+        if (response.data?.establishment_id) {
           this.showNotification('Kérelmed elfogadásra került! Átirányítás...', 'success');
-          
-          // Frissítsük a felhasználó adatokat
           await this.refreshUserData();
-          
-          setTimeout(() => {
-            this.$router.push('/user-dashboard');
-          }, 2000);
-        } else if (status === 'rejected') {
-          this.showNotification('Sajnáljuk, kérelmed elutasításra került.', 'error');
         } else {
           this.showNotification('Kérelmed még elbírálás alatt áll.', 'info');
         }
