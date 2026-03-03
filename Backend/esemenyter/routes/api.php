@@ -85,7 +85,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/establishment/{establishment}/requests/students', [RequestController::class, 'getStudentRequests']);
     Route::get('/establishment/{establishment}/requests/teachers', [RequestController::class, 'getTeacherRequests']);
 
-    Route::post('/establishment/{establishment}/requests', [RequestController::class, 'submitRequest']);
+    Route::post('/establishment/requests/create', [RequestController::class, 'submitRequest']);
     Route::post('/establishment/requests/handle', [RequestController::class, 'handleRequest']);
 
     Route::delete('/establishment/{establishment}/requests/revoke', [RequestController::class, 'revokeRequest']);

@@ -8,11 +8,12 @@ class EstablishmentRequest extends Model
 {
     //
     protected $fillable = [
-        'users_id',
+        'user_id',
         'role',
         'establishment_id',
     ];
-    
+    const UPDATED_AT = null;
+
     public function establishment()
     {
         return $this->belongsTo(Establishment::class, 'establishment_id');
