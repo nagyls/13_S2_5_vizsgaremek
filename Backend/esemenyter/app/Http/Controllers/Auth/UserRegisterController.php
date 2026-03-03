@@ -36,7 +36,11 @@ class UserRegisterController extends Controller
 
         return response()->json([
             'message' => 'Sikeres regisztráció! Kérjük, ellenőrizze az email fiókját a megerősítő linkért.',
-            'user' => $user,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
             'token' => $token,
             'email_verified' => false
         ]);
