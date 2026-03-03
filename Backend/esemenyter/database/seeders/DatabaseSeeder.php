@@ -56,7 +56,7 @@ class DatabaseSeeder extends Seeder
             'website' => 'https://pege.hu',
             'settlement_id' => $settlement->id,
         ]);
-
+        User::where('id', $user->id)->update(['establishment_id' => $est->id]);
 
         $class = ClassModel::create([
             'establishment_id' => $est->id,

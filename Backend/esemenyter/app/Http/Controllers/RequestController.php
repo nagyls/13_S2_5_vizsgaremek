@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\EstablishmentRequest;
 use App\Models\Staff;
 use App\Models\Student;
+use App\Models\User;
 
 class RequestController extends Controller
 {
