@@ -70,6 +70,7 @@
               {{ roleDisplayName }}
             </p>
           </div>
+<!--           
           <div class="profile-actions">
             <button v-if="!isEditing" class="btn-primary" @click="startEditing">
               <i class='bx bx-edit'></i>
@@ -79,7 +80,7 @@
               <i class='bx bx-x'></i>
               Mégse
             </button>
-          </div>
+          </div> -->
         </div>
 
         <!-- Profil tartalom -->
@@ -753,7 +754,9 @@ export default {
   
   methods: {
     loadUserData() {
-      const savedUser = localStorage.getItem('esemenyter_user');
+      const savedUser =
+        localStorage.getItem('esemenyter_user') ||
+        sessionStorage.getItem('esemenyter_user');
       if (savedUser) {
         const userData = JSON.parse(savedUser);
         if (userData.isLoggedIn) {
@@ -769,13 +772,25 @@ export default {
     
     async loadUserFromBackend() {
       try {
-        const token = localStorage.getItem('esemenyter_token');
-        const response = await axios.get(`http://127.0.0.1:8000/api/users/${this.user.id}`, {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+
+        if (!token) {
+          this.$router.push('/');
+          return;
+        }
+
+        const response = await axios.get('http://127.0.0.1:8000/api/user', {
           headers: { Authorization: `Bearer ${token}` }
         });
         
         const userData = response.data.data || response.data;
-        this.user = { ...this.user, ...userData };
+        this.user = {
+          ...this.user,
+          ...userData,
+          schoolId: userData.establishment_id || this.user.schoolId || null
+        };
         
         // Ha diák, töltsük be az elérhető osztályokat
         if (this.user.role === 'student' && this.user.schoolId) {
@@ -790,8 +805,15 @@ export default {
     
     async loadAvailableClasses() {
       try {
-        const token = localStorage.getItem('esemenyter_token');
-        const response = await axios.get(`http://127.0.0.1:8000/api/establishments/${this.user.schoolId}/classes`, {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+
+        if (!token) {
+          return;
+        }
+
+        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${this.user.schoolId}/classes`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -873,7 +895,14 @@ export default {
       this.isSaving = true;
       
       try {
-        const token = localStorage.getItem('esemenyter_token');
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+
+        if (!token) {
+          this.$router.push('/');
+          return;
+        }
         
         // Alapadatok mentése
         const updateData = {
@@ -923,10 +952,19 @@ export default {
         const updatedUser = response.data.data || response.data;
         this.user = { ...this.user, ...updatedUser };
         
-        // Frissítsük a localStorage-t
-        const savedUser = JSON.parse(localStorage.getItem('esemenyter_user'));
+        // Frissítsük a mentett felhasználót a megfelelő tárhelyen
+        const savedUserRaw =
+          localStorage.getItem('esemenyter_user') ||
+          sessionStorage.getItem('esemenyter_user') ||
+          '{}';
+        const savedUser = JSON.parse(savedUserRaw);
         const updatedSavedUser = { ...savedUser, ...updatedUser };
-        localStorage.setItem('esemenyter_user', JSON.stringify(updatedSavedUser));
+
+        if (localStorage.getItem('esemenyter_token')) {
+          localStorage.setItem('esemenyter_user', JSON.stringify(updatedSavedUser));
+        } else {
+          sessionStorage.setItem('esemenyter_user', JSON.stringify(updatedSavedUser));
+        }
         
         this.isEditing = false;
         this.showNotification('Profil sikeresen frissítve!', 'success');
@@ -959,7 +997,7 @@ export default {
     
     goToDashboard() {
       if (this.user.role === 'institution_manager' || this.user.role === 'admin') {
-        this.$router.push('/institution-dashboard');
+        this.$router.push('/user-dashboard');
       } else if (this.user.role) {
         this.$router.push('/user-dashboard');
       } else {

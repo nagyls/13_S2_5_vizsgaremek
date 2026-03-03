@@ -88,7 +88,7 @@
             <div class="success-actions">
               <button class="btn-text" @click="goToProfile">
                 <i class='bx bx-user'></i>
-                Profil szerkesztése
+                Profiladatok megtekintése
               </button>
             </div>
           </div>
