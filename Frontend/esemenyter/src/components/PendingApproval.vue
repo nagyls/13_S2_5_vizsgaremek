@@ -363,7 +363,7 @@ export default {
   box-sizing: border-box;
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
@@ -400,6 +400,7 @@ export default {
   font-size: 32px;
   color: #4f46e5;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -409,6 +410,7 @@ export default {
   font-size: 24px;
   font-weight: 700;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -903,6 +905,21 @@ export default {
 
 /* Reszponzív */
 @media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .logo-section {
+    justify-content: center;
+  }
+
+  .user-profile {
+    align-self: center;
+  }
+
   .main-content {
     padding: 40px 0;
   }

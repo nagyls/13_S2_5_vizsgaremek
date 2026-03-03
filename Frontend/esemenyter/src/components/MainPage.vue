@@ -240,7 +240,7 @@ export default {
   box-sizing: border-box;
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
@@ -283,6 +283,7 @@ export default {
   font-size: 32px;
   color: #4f46e5;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -292,6 +293,7 @@ export default {
   font-size: 24px;
   font-weight: 700;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -382,6 +384,7 @@ export default {
 
 .gradient-text {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -718,6 +721,30 @@ export default {
     gap: 40px;
     padding: 40px;
   }
+
+  .floating-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(140px, 1fr));
+    gap: 16px;
+    height: auto;
+    position: static;
+  }
+
+  .card {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: 100%;
+    padding: 18px;
+  }
+
+  .floating,
+  .delayed,
+  .delayed-2 {
+    animation: none;
+  }
   
   .hero-title {
     font-size: 36px;
@@ -730,6 +757,26 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .floating-cards {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .logo-section {
+    justify-content: center;
+  }
+
+  .nav-buttons {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
   .features-grid {
     grid-template-columns: 1fr;
   }
@@ -747,6 +794,20 @@ export default {
 }
 
 @media (max-width: 480px) {
+  .floating-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .nav-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nav-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   .hero-content {
     padding: 30px 20px;
   }

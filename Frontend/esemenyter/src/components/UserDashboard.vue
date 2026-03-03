@@ -284,7 +284,7 @@ export default {
   box-sizing: border-box;
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
@@ -634,6 +634,21 @@ export default {
 
 /* RESZPONZÍV */
 @media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .logo-section {
+    justify-content: center;
+  }
+
+  .user-profile {
+    align-self: center;
+  }
+
   .user-menu {
     width: 280px;
     right: -20px;
