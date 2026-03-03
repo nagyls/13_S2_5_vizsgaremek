@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Models\Establishment;
 use App\Models\Staff;
+use App\Models\User;
 
 
 class EstablishmentController extends Controller
@@ -122,9 +123,9 @@ class EstablishmentController extends Controller
                 'establishment_id' => null,
             ]);
         }
-        $role = $user->staff()->where('establishment_id', $user->establishment_id)->first();
+        $role = $user->staffs()->where('establishment_id', $user->establishment_id)->first();
         if (!$role) {
-            $role = $user->student()->where('establishment_id', $user->establishment_id)->first();
+            $role = $user->students()->where('establishment_id', $user->establishment_id)->first();
         }
         return response()->json([
             'role' => $role ? $role->role : null,
