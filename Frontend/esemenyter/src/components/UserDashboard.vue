@@ -242,8 +242,12 @@ export default {
         .finally(() => {
           localStorage.removeItem('esemenyter_user');
           localStorage.removeItem('esemenyter_token');
+          localStorage.removeItem('CurrentInstitution');
+          localStorage.removeItem('remember_me');
           sessionStorage.removeItem('esemenyter_user');
           sessionStorage.removeItem('esemenyter_token');
+          sessionStorage.removeItem('CurrentInstitution');
+          delete axios.defaults.headers.common['Authorization'];
           this.showUserMenu = false;
           this.$router.push('/');
         });

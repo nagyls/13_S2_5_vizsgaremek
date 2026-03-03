@@ -83,6 +83,19 @@ export default {
             }
         },
 
+        saveCurrentInstitution(institutionId) {
+            if (!institutionId) return;
+
+            const hasLocalToken = !!localStorage.getItem('esemenyter_token');
+            if (hasLocalToken || this.rememberMe) {
+                localStorage.setItem('CurrentInstitution', String(institutionId));
+                sessionStorage.removeItem('CurrentInstitution');
+            } else {
+                sessionStorage.setItem('CurrentInstitution', String(institutionId));
+                localStorage.removeItem('CurrentInstitution');
+            }
+        },
+
     async login() {
       this.loading = true;
 
@@ -129,9 +142,7 @@ export default {
                     loggedInAt: new Date().toISOString()
         };
 
-                if (userData.institution_id) {
-                    localStorage.setItem('CurrentInstitution', String(userData.institution_id));
-        }
+                this.saveCurrentInstitution(userData.institution_id);
 
                 this.saveAuthData(userData, token);
 
@@ -187,9 +198,7 @@ export default {
                         sessionStorage.setItem('esemenyter_user', JSON.stringify(mergedUserData));
                     }
 
-                    if (mergedUserData.institution_id) {
-                        localStorage.setItem('CurrentInstitution', String(mergedUserData.institution_id));
-                    }
+                    this.saveCurrentInstitution(mergedUserData.institution_id);
 
                     this.$router.push(this.getRedirectPath(mergedUserData));
         })

@@ -1195,7 +1195,7 @@ export default {
         const token =
           localStorage.getItem('esemenyter_token') ||
           sessionStorage.getItem('esemenyter_token');
-        await axios.delete('http://127.0.0.1:8000/api/logout', {}, {
+        await axios.delete('http://127.0.0.1:8000/api/logout', {
           headers: { Authorization: `Bearer ${token}` }
         });
       } catch (error) {
@@ -1203,8 +1203,12 @@ export default {
       } finally {
         localStorage.removeItem('esemenyter_user');
         localStorage.removeItem('esemenyter_token');
+        localStorage.removeItem('CurrentInstitution');
+        localStorage.removeItem('remember_me');
         sessionStorage.removeItem('esemenyter_user');
         sessionStorage.removeItem('esemenyter_token');
+        sessionStorage.removeItem('CurrentInstitution');
+        delete axios.defaults.headers.common['Authorization'];
         this.$router.push('/');
       }
     },
