@@ -49,7 +49,7 @@ class EstablishmentController extends Controller
             'establishment_id' => $establishment->id,
             'user_id' => $request->user()->id,
         ]);
-        
+
         User::where('id', $request->user()->id)->update(['establishment_id' => $establishment->id]);
 
         return response()->json([
@@ -111,6 +111,23 @@ class EstablishmentController extends Controller
 
         return response()->json([
             'data' => $establishments
+        ]);
+    }
+
+    public function getRole(Request $request)
+    {
+        $user = $request->user();
+        if($user->establishment_id === null) {
+            return response()->json([
+                'establishment_id' => null,
+            ]);
+        }
+        $role = $user->staff()->where('establishment_id', $user->establishment_id)->first();
+        if (!$role) {
+            $role = $user->student()->where('establishment_id', $user->establishment_id)->first();
+        }
+        return response()->json([
+            'role' => $role ? $role->role : null,
         ]);
     }
 }

@@ -37,20 +37,5 @@ class UserAuthController extends Controller
             'token' => $token,
         ]);
     }
-    public function getRole(Request $request)
-    {
-        $user = $request->user();
-        if($user->establishment_id === null) {
-            return response()->json([
-                'establishment_id' => null,
-            ]);
-        }
-        $role = $user->staff()->where('establishment_id', $user->establishment_id)->first();
-        if (!$role) {
-            $role = $user->student()->where('establishment_id', $user->establishment_id)->first();
-        }
-        return response()->json([
-            'role' => $role ? $role->role : null,
-        ]);
-    }
+    
 }

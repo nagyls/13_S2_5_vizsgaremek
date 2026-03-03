@@ -68,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/events', [EventController::class, 'index']);
     Route::get('/events/{event}', [EventController::class, 'show']);
 //intézmény kezelés
+    Route::get('/establishment/role', [EstablishmentController::class, 'getRole']);
     Route::post('/establishment/create', [EstablishmentController::class, 'store']);
     Route::get('/establishment/mine', [EstablishmentController::class, 'getMyEstablishments']);
     Route::get('/establishment/{id}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
