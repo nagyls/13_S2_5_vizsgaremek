@@ -733,20 +733,14 @@ export default {
           type: institutionData.type || ''
         };
 
-        // DIÁK csatlakozási kérelmek betöltése
-        const studentRequestsResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/requests/students`, {
+        // Kérelmek adminnak: minden kérelem lekérése
+        const requestsResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/requests/all`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const studentRequests = studentRequestsResponse.data.data || [];
+        const allRequests = requestsResponse.data.data || [];
 
-        // TANÁR csatlakozási kérelmek betöltése
-        const teacherRequestsResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/requests/teachers`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const teacherRequests = teacherRequestsResponse.data.data || [];
-
-        // Kérelmek egyesítése
-        this.establishmentRequests = [...studentRequests, ...teacherRequests].map(request => ({
+        // Kérelmek egyesítése, user adatokkal
+        this.establishmentRequests = allRequests.map(request => ({
           ...request,
           user: request.user || {
             id: request.user_id,
@@ -758,7 +752,7 @@ export default {
         // Diákok és tanárok betöltése (akik már csatlakoztak)
         await this.loadInstitutionUsers(institutionId);
 
-        // Osztályok betöltése - JAVÍTVA: classes/{establishment}
+        // Osztályok betöltése
         await this.loadClasses(institutionId);
 
         // Statisztikák frissítése
