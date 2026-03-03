@@ -37,5 +37,5 @@ class UserAuthController extends Controller
             'token' => $token,
         ]);
     }
-    public function storeStudent(Request $request) {}
+    
 }
