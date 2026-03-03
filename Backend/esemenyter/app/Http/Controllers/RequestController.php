@@ -115,6 +115,7 @@ class RequestController extends Controller
                         );
                         if ($staff->wasRecentlyCreated) {
                             $accepted++;
+                            User::where('id', $item->user_id)->update(['establishment_id' => $item->establishment_id]);
                         }
                     } else {
                         $student = Student::firstOrCreate([
@@ -123,6 +124,7 @@ class RequestController extends Controller
                         ]);
                         if ($student->wasRecentlyCreated) {
                             $accepted++;
+                            User::where('id', $item->user_id)->update(['establishment_id' => $item->establishment_id]);
                         }
                     }
                     // a kérelem törlése minden feldolgozott esetben
