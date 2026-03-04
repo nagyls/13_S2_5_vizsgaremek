@@ -502,8 +502,9 @@ export default {
 <style scoped>
 /* Alap stílusok (EventDetails-ből átvéve) */
 .events-page {
-  min-width: 100vw;
+  width: 100%;
   min-height: 100vh;
+  overflow-x: hidden;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
@@ -1296,6 +1297,13 @@ export default {
     flex-direction: column;
     text-align: center;
   }
+
+  .user-menu {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(300px, calc(100vw - 2rem));
+  }
   
   .hero-content {
     padding: 2rem;
@@ -1352,6 +1360,10 @@ export default {
 }
 
 @media (max-width: 480px) {
+  .container {
+    padding: 0.75rem;
+  }
+
   .hero-title {
     font-size: 1.75rem;
   }

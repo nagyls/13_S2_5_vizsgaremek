@@ -567,117 +567,149 @@ export default {
   }
 }
 </script>
-
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 .event-creator-page {
-  background: linear-gradient(135deg, #8c8c8f 0%, #764ba2 100%);
-  font-family: "Poppins", sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: 'Inter', sans-serif;
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
-  width: 100vw;
+  width: 100%;
+  overflow-x: hidden;
+  padding: 20px;
 }
 
 .back-button {
   position: absolute;
-  top: 20px;
-  left: 20px;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  padding: 10px 15px;
-  border-radius: 50px;
+  top: 24px;
+  left: 24px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 10px 18px;
+  border-radius: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 600;
-  color: #333;
+  font-weight: 500;
+  color: #1e293b;
   z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
   max-width: 120px;
   white-space: nowrap;
+  font-size: 14px;
 }
 
 .back-button:hover {
-  background: white;
-  transform: translateX(-5px);
+  background: #f8fafc;
+  transform: translateX(-3px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .event-creator-wrapper {
-  max-width: 900px;
+  max-width: 1000px;
   width: 100%;
   background: white;
-  border-radius: 20px;
+  border-radius: 32px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   margin: 60px 20px 20px;
   box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
 }
 
 .creator-header {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 25px 30px;
+  padding: 32px 40px;
   text-align: center;
   box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+.creator-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .creator-header h1 {
-  font-size: 28px;
+  font-size: 32px;
   margin-bottom: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  position: relative;
+}
+
+.creator-header h1 i {
+  font-size: 36px;
+  color: #e0e7ff;
 }
 
 .subtitle {
-  opacity: 0.9;
-  font-size: 14px;
+  opacity: 0.8;
+  font-size: 15px;
+  font-weight: 400;
+  position: relative;
 }
 
 .creator-content {
-  padding: 25px;
+  padding: 32px 40px;
   box-sizing: border-box;
+  background: white;
 }
 
 .no-permission {
-  padding: 30px;
+  padding: 40px;
   text-align: center;
   box-sizing: border-box;
 }
 
 .permission-error {
-  padding: 25px;
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  border-radius: 15px;
-  border-left: 5px solid #ef4444;
+  padding: 32px;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-radius: 24px;
+  border: 1px solid #fecaca;
   box-sizing: border-box;
 }
 
 .permission-error i {
-  font-size: 48px;
+  font-size: 56px;
   color: #ef4444;
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
 .permission-error h3 {
-  color: #dc2626;
-  margin-bottom: 10px;
-  font-size: 20px;
+  color: #b91c1c;
+  margin-bottom: 12px;
+  font-size: 22px;
+  font-weight: 600;
 }
 
 .permission-error p {
   color: #7f1d1d;
-  margin-bottom: 20px;
-  font-size: 15px;
+  margin-bottom: 24px;
+  font-size: 16px;
 }
 
 .stepper-nav {
-  margin-bottom: 25px;
+  margin-bottom: 32px;
 }
 
 .steps {
@@ -685,53 +717,73 @@ export default {
   justify-content: space-between;
   align-items: center;
   position: relative;
-  flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
+  padding: 0 20px;
+}
+
+.steps::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: 60px;
+  right: 60px;
+  height: 2px;
+  background: #e2e8f0;
+  z-index: 1;
 }
 
 .step {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   position: relative;
   z-index: 2;
   flex: 1;
-  min-width: 70px;
+  background: white;
+  padding: 0 10px;
 }
 
 .step-number {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: #e5e7eb;
-  color: #6b7280;
+  background: #f1f5f9;
+  color: #64748b;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   font-size: 16px;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .step.active .step-number {
-  background: #4f46e5;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  border-color: #667eea;
   transform: scale(1.1);
+  box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.35);
 }
 
 .step.completed .step-number {
   background: #10b981;
   color: white;
+  border-color: #10b981;
 }
 
 .step-label {
-  color: #6b7280;
-  font-size: 12px;
+  color: #64748b;
+  font-size: 13px;
   font-weight: 500;
   text-align: center;
-  word-break: break-word;
-  max-width: 80px;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  max-width: 120px;
+  line-height: 1.3;
+  letter-spacing: 0.5px;
 }
 
 .step.active .step-label {
@@ -740,9 +792,9 @@ export default {
 }
 
 .form-section {
-  margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e2e8f0;
   box-sizing: border-box;
 }
 
@@ -754,317 +806,379 @@ export default {
 
 .form-section h3 {
   color: #1f2937;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
 }
 
 .form-section h3 i {
-  color: #4f46e5;
+  color: #667eea;
+  font-size: 24px;
+  background: #eef2ff;
+  padding: 8px;
+  border-radius: 12px;
 }
 
 .type-selection, .target-group-options {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 15px;
-  margin-top: 15px;
+  gap: 20px;
+  margin-top: 20px;
   box-sizing: border-box;
 }
 
 .type-option, .target-group-option {
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 24px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
   background: white;
   box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .type-option:hover, .target-group-option:hover {
-  border-color: #c7d2fe;
+  border-color: #94a3b8;
   transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .type-option.selected, .target-group-option.selected {
-  border-color: #4f46e5;
-  background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+  border-color: #667eea;
+  background: linear-gradient(135deg, #eef2ff 0%, #ede9fe 100%);
+  box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.2);
 }
 
 .option-content {
-  text-align: center;
+  text-align: left;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .option-content i {
-  font-size: 36px;
-  color: #4f46e5;
-  margin-bottom: 10px;
+  font-size: 40px;
+  color: #667eea;
+  margin-bottom: 16px;
+  background: #f1f5f9;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
 }
 
 .option-content h4 {
   color: #1f2937;
-  margin-bottom: 5px;
-  font-size: 18px;
+  margin-bottom: 8px;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .option-content p {
-  color: #6b7280;
-  font-size: 13px;
-  line-height: 1.4;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 12px;
 }
 
 /* Új stílusok a globális megye választóhoz */
 .county-list {
-  max-height: 400px;
+  max-height: 450px;
   overflow-y: auto;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 10px;
-  margin-top: 15px;
-  background: #f9fafb;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 16px;
+  margin-top: 20px;
+  background: #ffffff;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .county-option {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 15px;
-  border-bottom: 1px solid #e5e7eb;
-  transition: all 0.3s;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  margin-bottom: 4px;
 }
 
 .county-option:last-child {
   border-bottom: none;
+  margin-bottom: 0;
 }
 
 .county-option:hover {
-  background: #f3f4f6;
+  background: #f8fafc;
 }
 
 .county-option.selected {
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
 }
 
 .county-option.own-county {
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border-left: 4px solid #10b981;
+  border: 1px solid #bbf7d0;
+  position: relative;
 }
 
 .county-checkbox {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   cursor: pointer;
   flex: 1;
 }
 
 .county-checkbox input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
-  accent-color: #4f46e5;
+  accent-color: #667eea;
+  border-radius: 6px;
 }
 
 .county-checkbox input[type="checkbox"]:disabled {
   accent-color: #10b981;
   cursor: not-allowed;
+  opacity: 0.8;
 }
 
 .county-name {
   font-weight: 500;
-  color: #1f2937;
+  color: #1e293b;
+  font-size: 15px;
 }
 
 .own-county-badge {
   font-size: 12px;
-  color: #10b981;
+  color: #059669;
   font-weight: 600;
   margin-left: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 4px 8px;
+  border-radius: 20px;
 }
 
 .school-count {
   font-size: 13px;
-  color: #6b7280;
-  background: #f3f4f6;
-  padding: 4px 8px;
-  border-radius: 20px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 12px;
+  border-radius: 30px;
   white-space: nowrap;
-}
-
-.selected-info {
-  margin-top: 15px;
-  padding: 12px;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #0369a1;
   font-weight: 500;
 }
 
+.selected-info {
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #0369a1;
+  font-weight: 500;
+  border: 1px solid #bae6fd;
+}
+
 .selected-info i {
-  font-size: 20px;
+  font-size: 24px;
   color: #0284c7;
 }
 
 .selection-description {
-  color: #6b7280;
-  font-size: 14px;
-  margin-bottom: 10px;
+  color: #64748b;
+  font-size: 15px;
+  margin-bottom: 16px;
+  font-weight: 400;
 }
 
 .permission-badge {
   display: inline-block;
-  margin-top: 8px;
-  padding: 4px 8px;
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  margin-top: 12px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
   color: #dc2626;
-  border-radius: 20px;
-  font-size: 11px;
+  border-radius: 30px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid #fecaca;
+  align-self: flex-start;
 }
 
 .county-list-summary {
   display: block;
-  margin-top: 5px;
+  margin-top: 8px;
   font-size: 14px;
-  color: #4b5563;
-  line-height: 1.5;
+  color: #475569;
+  line-height: 1.6;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 12px;
 }
 
 /* FORM ELEMEK */
 .event-form {
-  margin-top: 20px;
+  margin-top: 24px;
   box-sizing: border-box;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   box-sizing: border-box;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  color: #374151;
+  color: #1e293b;
   font-weight: 600;
   font-size: 14px;
+  letter-spacing: 0.3px;
 }
 
 .form-group input, .form-group textarea {
   width: 100%;
-  padding: 10px 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
   font-size: 15px;
-  font-family: inherit;
-  transition: all 0.3s;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s ease;
   box-sizing: border-box;
+  background: #f8fafc;
 }
 
 .form-group input:focus, .form-group textarea:focus {
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
 }
 
 .form-group textarea {
-  min-height: 100px;
+  min-height: 120px;
   resize: vertical;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  gap: 20px;
   box-sizing: border-box;
 }
 
 .summary {
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 15px;
-  margin-top: 15px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 24px;
+  margin-top: 20px;
   box-sizing: border-box;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
 
 .summary-item {
-  padding: 10px 0;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 14px 0;
+  border-bottom: 1px solid #e2e8f0;
   font-size: 15px;
-  line-height: 1.4;
+  line-height: 1.6;
+  color: #475569;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .summary-item:last-child {
   border-bottom: none;
+  padding-bottom: 0;
 }
 
 .summary-item strong {
-  color: #374151;
-  margin-right: 8px;
+  color: #1e293b;
+  min-width: 140px;
+  font-weight: 600;
+}
+
+.summary-item span {
+  color: #475569;
 }
 
 /* gombok */
 .form-actions {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 25px;
-  padding-top: 15px;
-  border-top: 2px solid #e5e7eb;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
   box-sizing: border-box;
 }
 
 .btn {
-  padding: 10px 20px;
+  padding: 14px 28px;
   border: none;
-  border-radius: 10px;
+  border-radius: 16px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  transition: all 0.3s;
+  gap: 8px;
+  transition: all 0.2s ease;
   text-decoration: none;
   box-sizing: border-box;
   flex: 1;
+  letter-spacing: 0.3px;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
 }
 
 .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5b6ee8 0%, #6b43a0 100%);
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
 }
 
 .btn-secondary {
   background: #f1f5f9;
   color: #475569;
-  border: 2px solid #e2e8f0;
+  border: 1px solid #e2e8f0;
 }
 
 .btn-secondary:hover:not(:disabled) {
   background: #e2e8f0;
+  transform: translateY(-2px);
 }
 
 .btn-success {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
 }
 
 .btn-success:hover:not(:disabled) {
+  background: #059669;
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.3);
 }
 
 .btn:disabled {
@@ -1077,106 +1191,90 @@ export default {
 /* Reszponzív kiegészítések */
 @media (max-width: 768px) {
   .event-creator-page {
-    padding: 15px;
+    padding: 12px;
     align-items: flex-start;
   }
   
   .event-creator-wrapper {
-    margin: 50px 15px 15px;
+    margin: 60px 10px 10px;
     max-width: 100%;
   }
   
-  .back-button {
-    top: 15px;
-    left: 15px;
-    padding: 8px 12px;
-    font-size: 14px;
-    max-width: 110px;
-  }
-  
   .creator-header {
-    padding: 20px;
+    padding: 24px;
   }
   
   .creator-header h1 {
-    font-size: 22px;
-    flex-direction: row;
-    gap: 10px;
+    font-size: 24px;
+  }
+  
+  .creator-header h1 i {
+    font-size: 28px;
   }
   
   .subtitle {
-    font-size: 12px;
+    font-size: 13px;
   }
   
   .creator-content {
-    padding: 20px;
+    padding: 24px;
   }
-  
+
   .steps {
-    gap: 5px;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding: 0 8px 6px;
+    gap: 12px;
+    scroll-snap-type: x proximity;
+  }
+
+  .steps::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .steps::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+  }
+
+  .step {
+    flex: 0 0 90px;
+    padding: 0;
+    scroll-snap-align: start;
   }
   
-  .step {
-    min-width: 60px;
+  .steps::before {
+    display: none;
   }
   
   .step-number {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     font-size: 14px;
   }
   
   .step-label {
     font-size: 11px;
-    max-width: 70px;
+    max-width: 95px;
   }
   
   .form-section h3 {
     font-size: 18px;
   }
   
-  .option-content h4 {
-    font-size: 16px;
-  }
-  
   .option-content i {
+    width: 56px;
+    height: 56px;
     font-size: 32px;
   }
   
-  .form-group label {
-    font-size: 13px;
-  }
-  
-  .form-group input, .form-group textarea {
-    font-size: 14px;
-    padding: 9px 11px;
+  .option-content h4 {
+    font-size: 18px;
   }
   
   .form-row {
     grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  .btn {
-    padding: 9px 16px;
-    font-size: 14px;
-  }
-  
-  .form-actions {
-    flex-direction: row;
-    gap: 10px;
-  }
-  
-  .permission-error {
-    padding: 20px;
-  }
-  
-  .permission-error i {
-    font-size: 40px;
-  }
-  
-  .permission-error h3 {
-    font-size: 18px;
+    gap: 16px;
   }
   
   .county-list {
@@ -1186,43 +1284,62 @@ export default {
   .county-option {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 12px;
+    padding: 16px;
   }
   
   .school-count {
-    align-self: flex-end;
+    align-self: flex-start;
   }
   
-  .county-name {
+  .summary-item {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .summary-item strong {
+    min-width: auto;
+  }
+  
+  .btn {
+    padding: 12px 20px;
     font-size: 14px;
+  }
+  
+  .form-actions {
+    flex-direction: row;
+    gap: 12px;
   }
 }
 
 @media (max-width: 480px) {
   .event-creator-page {
-    padding: 10px;
+    padding: 8px;
   }
   
   .event-creator-wrapper {
-    margin: 45px 10px 10px;
-    border-radius: 15px;
+    margin: 55px 5px 5px;
+    border-radius: 24px;
   }
   
   .back-button {
-    top: 10px;
-    left: 10px;
-    padding: 7px 10px;
+    top: 12px;
+    left: 12px;
+    padding: 8px 14px;
     font-size: 13px;
-    max-width: 100px;
   }
   
   .creator-header {
-    padding: 15px;
+    padding: 20px;
   }
   
   .creator-header h1 {
-    font-size: 18px;
-    gap: 8px;
+    font-size: 20px;
+    gap: 6px;
+  }
+  
+  .creator-header h1 i {
+    font-size: 24px;
   }
   
   .subtitle {
@@ -1230,87 +1347,103 @@ export default {
   }
   
   .creator-content {
-    padding: 15px;
+    padding: 20px;
+  }
+
+  .steps {
+    gap: 10px;
+  }
+  
+  .steps::before {
+    display: none;
   }
   
   .step {
-    min-width: 50px;
+    flex: 0 0 80px;
   }
   
   .step-number {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     font-size: 13px;
   }
   
   .step-label {
     font-size: 10px;
-    max-width: 60px;
-  }
-  
-  .form-section h3 {
-    font-size: 16px;
-    gap: 8px;
-  }
-  
-  .form-section h3 i {
-    font-size: 18px;
+    max-width: 80px;
+    letter-spacing: 0.3px;
   }
   
   .type-selection, .target-group-options {
-    gap: 10px;
+    gap: 12px;
   }
   
   .type-option, .target-group-option {
-    padding: 12px;
+    padding: 20px;
   }
   
   .option-content i {
+    width: 48px;
+    height: 48px;
     font-size: 28px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
   }
   
   .option-content h4 {
-    font-size: 15px;
-    margin-bottom: 4px;
+    font-size: 16px;
   }
   
   .option-content p {
-    font-size: 12px;
+    font-size: 13px;
   }
   
-  .form-actions {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .btn {
-    width: 100%;
-    padding: 10px;
+  .permission-badge {
+    font-size: 11px;
+    padding: 4px 8px;
   }
   
   .county-list {
     max-height: 300px;
-    padding: 8px;
+    padding: 12px;
   }
   
   .county-option {
-    padding: 10px;
+    padding: 14px;
   }
   
   .county-checkbox {
-    gap: 8px;
+    gap: 12px;
   }
   
   .county-checkbox input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
+  }
+  
+  .county-name {
+    font-size: 14px;
   }
   
   .own-county-badge {
     display: block;
     margin-left: 0;
-    margin-top: 4px;
+    margin-top: 6px;
+    width: fit-content;
+  }
+  
+  .school-count {
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .btn {
+    width: 100%;
+    padding: 14px;
   }
 }
 
@@ -1321,17 +1454,52 @@ export default {
   
   .form-actions .btn {
     flex: none;
-    min-width: 140px;
+    min-width: 160px;
   }
 }
 
 @media (min-width: 1024px) {
   .event-creator-wrapper {
-    max-width: 950px;
+    max-width: 1000px;
   }
   
   .creator-content {
-    padding: 30px;
+    padding: 40px;
   }
+}
+
+/* Animációk */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-section {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+/* Modern scrollbar */
+.county-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.county-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.county-list::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 10px;
+}
+
+.county-list::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 </style>

@@ -10,7 +10,7 @@
       </div>
 
       <!-- Betöltés állapot -->
-      <div v-if="isLoading" class="status-card betoltes">
+      <div v-if="isLoading" class="status-card loading">
         <div class="loader">
           <div class="spinner"></div>
         </div>
@@ -472,7 +472,8 @@ export default {
 /* Alap stílusok */
 .event-details {
   min-height: 100vh;
-  min-width: 100vw;
+  width: 100%;
+  overflow-x: hidden;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
@@ -488,7 +489,7 @@ export default {
   margin-bottom: 2rem;
 }
 
-.btn-vissza {
+.btn-back {
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
@@ -505,7 +506,7 @@ export default {
   backdrop-filter: blur(10px);
 }
 
-.btn-vissza:hover {
+.btn-back:hover {
   transform: translateX(-5px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   background: white;
@@ -522,7 +523,7 @@ export default {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
-.status-card.betoltes .loader {
+.status-card.loading .loader {
   margin-bottom: 1.5rem;
 }
 
@@ -891,19 +892,19 @@ export default {
   color: #667eea;
 }
 
-.stat-adat {
+.stat-data {
   display: flex;
   flex-direction: column;
 }
 
-.stat-szam {
+.stat-number {
   font-size: 1.5rem;
   font-weight: 700;
   color: #1a202c;
   line-height: 1.2;
 }
 
-.stat-cimke {
+.stat-label {
   font-size: 0.75rem;
   color: #718096;
   text-transform: uppercase;
@@ -1077,6 +1078,11 @@ export default {
   .container {
     padding: 1rem;
   }
+
+  .btn-back {
+    width: 100%;
+    justify-content: center;
+  }
   
   .hero-content {
     padding: 2rem;
@@ -1124,8 +1130,17 @@ export default {
 }
 
 @media (max-width: 480px) {
+  .container {
+    padding: 0.75rem;
+  }
+
   .hero-title {
     font-size: 1.75rem;
+  }
+
+  .btn-back {
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
   }
   
   .info-block,
