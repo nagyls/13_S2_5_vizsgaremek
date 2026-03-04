@@ -1,158 +1,209 @@
 <template>
-  <div class="esemeny-keszito-oldal">
-    <button class="vissza-gomb" @click="$router.back()">
+  <div class="event-creator-page">
+    <button class="back-button" @click="$router.back()">
       <i class='bx bx-arrow-back'></i> Vissza
     </button>
 
-    <div class="esemeny-keszito-wrapper">
-      <div class="keszito-fejlec">
+    <div class="event-creator-wrapper">
+      <div class="creator-header">
         <h1><i class='bx bx-calendar-plus'></i> Új esemény létrehozása</h1>
-        <p class="alcim">{{ getSzerepUzenet }}</p>
+        <p class="subtitle">{{ roleMessage }}</p>
       </div>
 
-      <div v-if="!vanJogosultsag" class="nincs-jogosultsag">
-        <div class="jogosultsag-hiba">
+      <div v-if="!hasPermission" class="no-permission">
+        <div class="permission-error">
           <i class='bx bx-shield-x'></i>
           <h3>Nincs jogosultságod eseményt létrehozni!</h3>
           <p>Csak adminisztrátorok és osztályfőnökök hozhatnak létre eseményeket.</p>
-          <router-link to="/mainpage" class="gomb gomb-primary">
+          <router-link to="/mainpage" class="btn btn-primary">
             <i class='bx bx-home'></i> Vissza a főoldalra
           </router-link>
         </div>
       </div>
 
       <!-- JOGOSULT FELHASZNÁLÓ FORMJA -->
-      <div v-else class="keszito-tartalom">
-        <div class="lepteto-navigacio">
-          <div class="lepesek">
-            <div v-for="lepes in leptetok" :key="lepes.szam" 
-                 class="lepes" 
-                 :class="{ 'aktiv': aktualisLepes >= lepes.szam, 'befejezett': aktualisLepes > lepes.szam }">
-              <span class="lepes-szam">{{ lepes.szam }}</span>
-              <span class="lepes-cimke">{{ lepes.cimke }}</span>
+      <div v-else class="creator-content">
+        <div class="stepper-nav">
+          <div class="steps">
+            <div v-for="step in steps" :key="step.number" 
+                 class="step" 
+                 :class="{ 'active': currentStep >= step.number, 'completed': currentStep > step.number }">
+              <span class="step-number">{{ step.number }}</span>
+              <span class="step-label">{{ step.label }}</span>
             </div>
           </div>
         </div>
 
-        <!-- 1.esemeny tipusa -->
-        <div v-if="aktualisLepes === 1 && felhasznaloSzerep === 'admin'" class="form-resz">
-          <h3><i class='bx bx-category'></i> 1. Esemény típusa</h3>
-          <div class="tipus-valasztas">
-            <label v-for="tipus in esemenyTipusok" :key="tipus.ertek" 
-                   class="tipus-opcio" 
-                   :class="{ 'kivalasztott': kivalasztottEsemenyTipus === tipus.ertek }">
-              <input type="radio" v-model="kivalasztottEsemenyTipus" :value="tipus.ertek" hidden>
-              <div class="opcio-tartalom">
-                <i :class="tipus.ikon"></i>
-                <h4>{{ tipus.cimke }}</h4>
-                <p>{{ tipus.leiras }}</p>
+        <!-- 1. ESEMÉNY SZINTJÉNEK KIVÁLASZTÁSA -->
+        <div v-if="currentStep === 1" class="form-section">
+          <h3><i class='bx bx-layer'></i> 1. Esemény szintjének kiválasztása</h3>
+          <div class="type-selection">
+            <!-- Globális opció - csak adminoknak -->
+              <label v-if="userRole === 'admin'" 
+                   class="type-option" 
+                  :class="{ 'selected': selectedEventScope === 'global' }">
+                <input type="radio" v-model="selectedEventScope" value="global" hidden>
+              <div class="option-content">
+                <i class='bx bx-world'></i>
+                <h4>Globális szintű esemény</h4>
+                <p>Több intézménybe is kiküldhető esemény</p>
+                <span class="permission-badge">Csak adminoknak</span>
+              </div>
+            </label>
+
+            <!-- Iskolai opció - minden jogosultnak -->
+            <label class="type-option" 
+              :class="{ 'selected': selectedEventScope === 'school' }">
+                <input type="radio" v-model="selectedEventScope" value="school" hidden>
+              <div class="option-content">
+                <i class='bx bx-building'></i>
+                <h4>Iskolai szintű esemény</h4>
+                <p>Saját intézményeden belüli esemény</p>
               </div>
             </label>
           </div>
         </div>
 
-        <!-- 2.celcsoport -->
-        <div v-if="aktualisLepes === 2 && kellMutatniCelcsoportValasztast" class="form-resz">
-          <h3><i class='bx bx-target-lock'></i> 2. Célcsoport kiválasztása</h3>
+        <!-- 2. GLOBÁLIS ESEMÉNY - MEGYÉK KIVÁLASZTÁSA -->
+        <div v-if="currentStep === 2 && selectedEventScope === 'global'" class="form-section">
+          <h3><i class='bx bx-map'></i> 2. Vármegyék kiválasztása</h3>
+          <p class="selection-description">Válaszd ki, mely vármegyék iskolái kapják meg az eseményt</p>
           
-          <!-- helyi esemeny -->
-          <div v-if="helyiEsemeny" class="celcsoport-info">
-            <div class="info-doboz">
-              <i class='bx bx-info-circle'></i>
-              <p>Helyi eseményként automatikusan a saját intézményed lesz kiválasztva.</p>
-            </div>
-            <div class="kivalasztott-intezmeny">
-              <i class='bx bx-check-circle'></i>
-              <span>{{ felhasznaloIntezmeny.cim }}</span>
+          <div class="county-list">
+            <div v-for="county in counties" 
+                 :key="county.id" 
+                 class="county-option"
+                 :class="{ 
+                   'selected': selectedCountyIds.includes(county.id),
+                   'own-county': county.id === userCountyId
+                 }">
+              <label class="county-checkbox">
+                <input 
+                  type="checkbox" 
+                  :value="county.id" 
+                  v-model="selectedCountyIds"
+                  :disabled="county.id === userCountyId && !selectedCountyIds.includes(county.id)"
+                >
+                <span class="county-name">
+                  {{ county.name }}
+                  <span v-if="county.id === userCountyId" class="own-county-badge">
+                    (saját vármegye - kötelező)
+                  </span>
+                </span>
+              </label>
+              <span class="school-count">{{ county.schoolCount }} iskola</span>
             </div>
           </div>
 
-          <!-- globalis esemeny -->
-          <div v-else class="celcsoport-valasztas">
-            <div class="celcsoport-opciok">
-              <label v-for="celcsoport in celcsoportMódok" :key="celcsoport.ertek"
-                     class="celcsoport-opcio"
-                     :class="{ 'kivalasztott': kivalasztottCelcsoportMod === celcsoport.ertek }">
-                <input type="radio" v-model="kivalasztottCelcsoportMod" :value="celcsoport.ertek" hidden>
-                <div class="opcio-tartalom">
-                  <i :class="celcsoport.ikon"></i>
-                  <h4>{{ celcsoport.cimke }}</h4>
-                  <p>{{ celcsoport.leiras }}</p>
+          <div class="selected-info" v-if="selectedCountyIds.length > 0">
+            <i class='bx bx-check-circle'></i>
+            <span>{{ selectedCountyIds.length }} vármegye kiválasztva</span>
+          </div>
+        </div>
+
+        <!-- 2. ISKOLAI ESEMÉNY - CÉLCSOPORT KIVÁLASZTÁSA -->
+        <div v-if="currentStep === 2 && selectedEventScope === 'school'" class="form-section">
+          <h3><i class='bx bx-target-lock'></i> 2. Célcsoport kiválasztása</h3>
+          
+          <div class="target-group-selection">
+            <div class="target-group-options">
+              <label v-for="target in schoolTargetOptions" 
+                     :key="target.value"
+                     class="target-group-option"
+                     :class="{ 'selected': selectedSchoolTargetGroup === target.value }">
+                <input type="radio" v-model="selectedSchoolTargetGroup" :value="target.value" hidden>
+                <div class="option-content">
+                  <i :class="target.icon"></i>
+                  <h4>{{ target.label }}</h4>
+                  <p>{{ target.description }}</p>
                 </div>
               </label>
             </div>
-
-            <div class="valasztas-tipp">
-              {{ kivalasztottCelcsoportMod === 'intezmeny_lista' ? 'Válassz intézményeket' : 'Válassz szűrőket' }}
-            </div>
           </div>
         </div>
 
-        <!-- 3.osztalyok -->
-        <div v-if="aktualisLepes === 3 && vanKivalasztottIntezmeny" class="form-resz">
-          <h3><i class='bx bx-group'></i> 3. Osztályok kiválasztása</h3>
-          <div class="valasztas-tipp">
-            {{ kivalasztottOsztalyok.length }} osztály kiválasztva
-          </div>
-        </div>
-
-        <!-- 4.esemeny adatai -->
-        <div v-if="aktualisLepes === 4 && vanKivalasztottOsztaly" class="form-resz">
-          <h3><i class='bx bx-edit'></i> 4. Esemény adatai</h3>
-          <div class="esemeny-adatok-form">
-            <div class="form-csoport">
+        <!-- 3. ESEMÉNY ADATAI (közös rész) -->
+        <div v-if="currentStep === 3" class="form-section">
+          <h3><i class='bx bx-edit'></i> 3. Esemény adatai</h3>
+          <div class="event-form">
+            <div class="form-group">
               <label>Cím *</label>
-              <input v-model="esemenyAdatok.cim" placeholder="Esemény címe" required>
+              <input v-model="eventForm.title" placeholder="Esemény címe" required>
             </div>
-            <div class="form-csoport">
+            <div class="form-group">
               <label>Leírás *</label>
-              <textarea v-model="esemenyAdatok.leiras" placeholder="Részletes leírás" required></textarea>
+              <textarea v-model="eventForm.description" placeholder="Részletes leírás" required></textarea>
             </div>
-            <div class="form-sor">
-              <div class="form-csoport">
+            <div class="form-group">
+              <label>Tartalom (opcionális)</label>
+              <textarea v-model="eventForm.content" placeholder="Bővebb tartalom, instrukciók"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
                 <label>Kezdés *</label>
-                <input type="date" v-model="esemenyAdatok.kezdes_idopont" :min="maiNap" required>
+                <input type="datetime-local" v-model="eventForm.startDateTime" :min="todayMin" required>
               </div>
-              <div class="form-csoport">
+              <div class="form-group">
                 <label>Befejezés *</label>
-                <input type="date" v-model="esemenyAdatok.befejezes_idopont" :min="esemenyAdatok.kezdes_idopont || maiNap" required>
+                <input type="datetime-local" v-model="eventForm.endDateTime" :min="eventForm.startDateTime || todayMin" required>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 5.attekintes -->
-        <div v-if="aktualisLepes === 5 && vanKivalasztottOsztaly" class="form-resz">
-          <h3><i class='bx bx-check-circle'></i> 5. Áttekintés</h3>
-          <div class="attekintes">
-            <div class="osszegzes-elem">
-              <strong>Típus:</strong> {{ getEsemenyTipusCimke(kivalasztottEsemenyTipus) }}
+        <!-- 4. ÁTTEKINTÉS -->
+        <div v-if="currentStep === 4" class="form-section">
+          <h3><i class='bx bx-check-circle'></i> 4. Áttekintés</h3>
+          <div class="summary">
+            <div class="summary-item">
+              <strong>Esemény szintje:</strong> {{ getEventScopeLabel(selectedEventScope) }}
             </div>
-            <div class="osszegzes-elem">
-              <strong>Intézmények:</strong> {{ kivalasztottIntezmenyek.length }}
+            
+            <!-- Globális esemény részletei -->
+            <template v-if="selectedEventScope === 'global'">
+              <div class="summary-item">
+                <strong>Kiválasztott vármegyék:</strong> {{ selectedCountyIds.length }} db
+              </div>
+              <div class="summary-item">
+                <strong>Érintett vármegyék:</strong> 
+                <span class="county-list-summary">
+                  {{ getSelectedCountyNames().join(', ') }}
+                </span>
+              </div>
+            </template>
+            
+            <!-- Iskolai esemény részletei -->
+            <template v-else>
+              <div class="summary-item">
+                <strong>Célcsoport:</strong> {{ getSchoolTargetLabel(selectedSchoolTargetGroup) }}
+              </div>
+              <div class="summary-item">
+                <strong>Intézmény:</strong> {{ userInstitution.name }}
+              </div>
+            </template>
+
+            <div class="summary-item">
+              <strong>Cím:</strong> {{ eventForm.title || '(nincs megadva)' }}
             </div>
-            <div class="osszegzes-elem">
-              <strong>Osztályok:</strong> {{ kivalasztottOsztalyok.length }}
-            </div>
-            <div class="osszegzes-elem">
-              <strong>Cím:</strong> {{ esemenyAdatok.cim || '(nincs megadva)' }}
+            <div class="summary-item">
+              <strong>Időpont:</strong> {{ formatDateTime(eventForm.startDateTime) }} - {{ formatDateTime(eventForm.endDateTime) }}
             </div>
           </div>
         </div>
 
-        <div class="form-muveletek">
-          <button @click="elozoLepes" :disabled="aktualisLepes === 1" class="gomb gomb-secondary">
+        <div class="form-actions">
+          <button @click="previousStep" :disabled="currentStep === 1" class="btn btn-secondary">
             <i class='bx bx-chevron-left'></i> Előző
           </button>
           
-          <button v-if="aktualisLepes < 5" @click="kovetkezoLepes" :disabled="!tovabblephetE" class="gomb gomb-primary">
+          <button v-if="currentStep < 4" @click="nextStep" :disabled="!canProceed" class="btn btn-primary">
             Következő <i class='bx bx-chevron-right'></i>
           </button>
           
-          <button v-else @click="esemenyLetrehozasa" :disabled="!ervenyesEaForm || betoltesKozben" class="gomb gomb-siker">
-            <i class='bx bx-check' v-if="!betoltesKozben"></i>
+          <button v-else @click="createEvent" :disabled="!isFormValid || isSubmitting" class="btn btn-success">
+            <i class='bx bx-check' v-if="!isSubmitting"></i>
             <i class='bx bx-loader-circle bx-spin' v-else></i>
-            {{ betoltesKozben ? 'Feldolgozás...' : 'Esemény létrehozása' }}
+            {{ isSubmitting ? 'Feldolgozás...' : 'Esemény létrehozása' }}
           </button>
         </div>
       </div>
@@ -162,6 +213,7 @@
 
 <script>
 import axios from 'axios';
+import { toast } from '../services/toast'
 
 export default {
   name: 'EsemenyKeszito',
@@ -169,262 +221,347 @@ export default {
   data() {
     return {
       // FELHASZNÁLÓ ADATAI
-      felhasznaloSzerep: 'admin',  // 'admin', 'teacher' vagy 'student'
-      felhasznaloIntezmeny: { 
-        azonosito: 1, 
-        cim: 'Kossuth Lajos Gimnázium' 
+      userRole: 'student',
+      userInstitution: {
+        id: 1,
+        name: 'Kossuth Lajos Gimnázium',
+        countyId: 1
       },
+      userCountyId: 1,
       
       // LÉPTETŐ ADATOK
-      aktualisLepes: 1,           // Jelenlegi lépés száma
-      betoltesKozben: false,       // Betöltés állapota
-      maiNap: new Date().toISOString().split('T')[0], // Mai dátum YYYY-MM-DD formában
+      currentStep: 1,
+      isSubmitting: false,
+      todayMin: new Date().toISOString().slice(0, 16),
       
-      // ESEMÉNY TÍPUS
-      kivalasztottEsemenyTipus: 'local',  // 'local' vagy 'global'
+      // ESEMÉNY SZINT
+      selectedEventScope: 'school',
       
-      // CÉLCSOPORT BEÁLLÍTÁSOK
-      kivalasztottCelcsoportMod: 'intezmeny_lista',  // 'intezmeny_lista' vagy 'teruleti_szures'
-      kivalasztottIntezmenyek: [],  // Kiválasztott intézmények listája
+      // GLOBÁLIS ESEMÉNY ADATOK
+      selectedCountyIds: [],
+      countiesList: [],
       
-      // OSZTÁLYOK
-      kivalasztottOsztalyok: [],  // Kiválasztott osztályok listája
+      // ISKOLAI ESEMÉNY ADATOK
+      selectedSchoolTargetGroup: 'sajat_osztaly',
       
       // ESEMÉNY ADATOK
-      esemenyAdatok: {
-        cim: '',
-        leiras: '',
-        tartalom: '',
-        kezdes_idopont: '',
-        befejezes_idopont: ''
+      eventForm: {
+        title: '',
+        description: '',
+        content: '',
+        startDateTime: '',
+        endDateTime: ''
       },
       
       // KONFIGURÁCIÓK
-      leptetok: [
-        { szam: 1, cimke: 'Típus' },
-        { szam: 2, cimke: 'Célcsoport' },
-        { szam: 3, cimke: 'Osztályok' },
-        { szam: 4, cimke: 'Adatok' },
-        { szam: 5, cimke: 'Létrehozás' }
+      steps: [
+        { number: 1, label: 'Szint' },
+        { number: 2, label: 'Célcsoport' },
+        { number: 3, label: 'Adatok' },
+        { number: 4, label: 'Létrehozás' }
       ],
       
-      esemenyTipusok: [
+      schoolTargetOptions: [
         { 
-          ertek: 'local', 
-          cimke: 'Helyi esemény', 
-          ikon: 'bx bx-building', 
-          leiras: 'Csak a saját intézményedben' 
+          value: 'sajat_osztaly', 
+          label: 'Saját osztály', 
+          icon: 'bx bx-user', 
+          description: 'Csak a saját osztályod diákjai és tanárai látják' 
         },
         { 
-          ertek: 'global', 
-          cimke: 'Globális esemény', 
-          ikon: 'bx bx-world', 
-          leiras: 'Több intézményben' 
-        }
-      ],
-      
-      celcsoportMódok: [
-        { 
-          ertek: 'intezmeny_lista', 
-          cimke: 'Intézmény lista', 
-          ikon: 'bx bx-list-ol', 
-          leiras: 'Kézzel válaszd ki' 
+          value: 'evfolyam', 
+          label: 'Évfolyam szintű', 
+          icon: 'bx bx-group', 
+          description: 'A saját osztályod és az évfolyam többi osztálya' 
         },
         { 
-          ertek: 'teruleti_szures', 
-          cimke: 'Területi szűrés', 
-          ikon: 'bx bx-filter-alt', 
-          leiras: 'Szűrés alapján' 
+          value: 'teljes_iskola', 
+          label: 'Teljes iskola', 
+          icon: 'bx bx-building-house', 
+          description: 'Az iskolában lévő összes felhasználó látja' 
         }
       ]
     }
   },
   
   computed: {
-    vanJogosultsag() {
-      return this.felhasznaloSzerep === 'admin' || this.felhasznaloSzerep === 'teacher'
+    hasPermission() {
+      return ['admin', 'teacher', 'institution_manager'].includes(this.userRole)
     },
     
-    getSzerepUzenet() {
-      if (this.felhasznaloSzerep === 'teacher') {
-        return 'Osztályfőnökként helyi eseményt hozhatsz létre'
+    roleMessage() {
+      if (this.userRole === 'teacher') {
+        return 'Osztályfőnökként iskolai szintű eseményt hozhatsz létre'
       }
-      if (this.felhasznaloSzerep === 'admin') {
-        return 'Adminisztrátorként helyi vagy globális eseményt hozhatsz létre'
+      if (this.userRole === 'admin') {
+        return 'Adminisztrátorként globális és iskolai eseményt is létrehozhatsz'
+      }
+      if (this.userRole === 'institution_manager') {
+        return 'Intézményvezetőként iskolai szintű eseményt hozhatsz létre'
       }
       return 'Nincs jogosultságod eseményt létrehozni'
     },
     
-    helyiEsemeny() {
-      return this.kivalasztottEsemenyTipus === 'local' || this.felhasznaloSzerep === 'teacher'
-    },
-    
-    kellMutatniCelcsoportValasztast() {
-      if (this.felhasznaloSzerep === 'teacher') return false
-      return this.aktualisLepes >= 2
-    },
-    
-    vanKivalasztottIntezmeny() {
-      return this.kivalasztottIntezmenyek.length > 0 || this.helyiEsemeny
-    },
-    
-    vanKivalasztottOsztaly() {
-      return this.kivalasztottOsztalyok.length > 0 || this.aktualisLepes < 3
-    },
-    
-    tovabblephetE() {
-      switch (this.aktualisLepes) {
-        case 1: return true  // Típus mindig választható
-        case 2: return this.helyiEsemeny || this.kivalasztottIntezmenyek.length > 0
-        case 3: return this.kivalasztottOsztalyok.length > 0 || true // DEMO
-        case 4: return this.ellenorizEsemenyAdatokat()
-        default: return true
+    canProceed() {
+      switch (this.currentStep) {
+        case 1: 
+          if (this.selectedEventScope === 'global' && this.userRole !== 'admin') {
+            return false
+          }
+          return this.selectedEventScope !== ''
+        
+        case 2:
+          if (this.selectedEventScope === 'global') {
+            return this.selectedCountyIds.length > 0
+          } else {
+            return this.selectedSchoolTargetGroup !== ''
+          }
+        
+        case 3:
+          return this.validateEventForm()
+        
+        default:
+          return true
       }
     },
     
-    ervenyesEaForm() {
-      return this.ellenorizEsemenyAdatokat() && this.aktualisLepes === 5
+    isFormValid() {
+      return this.validateEventForm() && this.currentStep === 4
+    },
+    
+    counties() {
+      return this.countiesList
     }
   },
   
   watch: {
-    //Ha az esemény típusa változik, automatikusan beállítjuk az intézményeket
-    kivalasztottEsemenyTipus(ujErtek) {
-      if (ujErtek === 'local') {
-        // Helyi esemény
-        this.kivalasztottIntezmenyek = [this.felhasznaloIntezmeny]
+    // Ha az esemény szintje változik, reseteljük a megfelelő adatokat
+    selectedEventScope(newValue) {
+      if (newValue === 'global') {
+        if (!this.selectedCountyIds.includes(this.userCountyId)) {
+          this.selectedCountyIds = [this.userCountyId]
+        }
       } else {
-        // Globális esemény
-        this.kivalasztottIntezmenyek = []
+        this.selectedSchoolTargetGroup = 'sajat_osztaly'
+      }
+    },
+    
+    // Saját megye mindig legyen kiválasztva globális eseménynél
+    selectedCountyIds(newValue) {
+      if (this.selectedEventScope === 'global' && 
+          !newValue.includes(this.userCountyId)) {
+        this.$nextTick(() => {
+          this.selectedCountyIds = [this.userCountyId, ...newValue]
+        })
       }
     }
   },
   
   created() {
-    this.inicializalas()
+    this.initialize()
   },
   
   methods: {
-    /**
-     * ALGORITMUS: Demó adatok inicializálása
-     */
-    inicializalas() {
-      // Ha tanár, automatikusan helyi esemény
-      if (this.felhasznaloSzerep === 'teacher') {
-        this.kivalasztottEsemenyTipus = 'local'
-        this.kivalasztottIntezmenyek = [this.felhasznaloIntezmeny]
-      }
-    },
-    
-    /**
-     * Esemény típus címkéjének lekérdezése
-     * @param {string} tipus - 'local' vagy 'global'
-     * @returns {string} - A típus magyar neve
-     */
-    getEsemenyTipusCimke(tipus) {
-      const tipusObjektum = this.esemenyTipusok.find(t => t.ertek === tipus)
-      return tipusObjektum ? tipusObjektum.cimke : tipus
-    },
-    
-    /**
-     * Esemény adatok ellenőrzése
-     * @returns {boolean} - Érvényesek-e az adatok
-     */
-    ellenorizEsemenyAdatokat() {
-      const { cim, leiras, kezdes_idopont, befejezes_idopont } = this.esemenyAdatok
-      
-      return cim.trim() !== '' && 
-             leiras.trim() !== '' && 
-             kezdes_idopont !== '' && 
-             befejezes_idopont !== '' &&
-             new Date(kezdes_idopont) <= new Date(befejezes_idopont)
-    },
-    
-    kovetkezoLepes() {
-      if (this.aktualisLepes < 5 && this.tovabblephetE) {
-        this.aktualisLepes++
-        
-        // DEMO: Automatikus kitöltés
-        this.demóAdatokKitoltese()
-      }
-    },
-    
-    demóAdatokKitoltese() {
-      // 3.osztályok
-      if (this.aktualisLepes === 3) {
-        this.kivalasztottOsztalyok = [1, 2, 3] // DEMO osztály azonosítók
-      }
-      
-      // 4.esemény adatok
-      if (this.aktualisLepes === 4 && !this.esemenyAdatok.cim) {
-        this.esemenyAdatok = {
-          cim: 'Tavaszi kirándulás',
-          leiras: 'Éves tavaszi kirándulás a természetben',
-          tartalom: 'Hozz magaddal kenyeret és vizet!',
-          kezdes_idopont: this.maiNap,
-          befejezes_idopont: this.getKovetkezoHetiDatum()
-        }
-      }
-    },
-    
-    /**
-     * Következő heti dátum generálása
-     * @returns {string} - Dátum YYYY-MM-DD formátumban
-     */
-    getKovetkezoHetiDatum() {
-      const datum = new Date()
-      datum.setDate(datum.getDate() + 7)
-      return datum.toISOString().split('T')[0]
-    },
-    
-    elozoLepes() {
-      if (this.aktualisLepes > 1) {
-        this.aktualisLepes--
-      }
-    },
-  
-    async esemenyLetrehozasa() {
-      // 1.Form ellenőrzés
-      if (!this.ervenyesEaForm) {
-        alert('Kérjük, töltsd ki az összes kötelező mezőt!')
-        return
-      }
-
-      this.betoltesKozben = true
-
+    initialize() {
       try {
-        // 2.Adatok összeállítása
-        const adatCsomag = {
-          type: this.kivalasztottEsemenyTipus,
-          title: this.esemenyAdatok.cim,
-          description: this.esemenyAdatok.leiras,
-          content: this.esemenyAdatok.tartalom,
-          start_date: this.esemenyAdatok.kezdes_idopont,
-          end_date: this.esemenyAdatok.befejezes_idopont,
+        const savedUser =
+          localStorage.getItem('esemenyter_user') ||
+          sessionStorage.getItem('esemenyter_user')
+
+        if (savedUser) {
+          const user = JSON.parse(savedUser)
+          this.userRole = String(user?.role || 'student').toLowerCase()
+
+          if (user?.institution_id) {
+            this.userInstitution.id = Number(user.institution_id)
+          }
+        }
+      } catch (error) {
+        console.error('Felhasználó inicializálási hiba:', error)
+      }
+
+      if (this.userRole !== 'admin') {
+        this.selectedEventScope = 'school'
+      }
+
+      this.loadCounties()
+      this.loadInstitutionData()
+    },
+
+    async loadInstitutionData() {
+      try {
+        const institutionId = Number(this.userInstitution.id)
+        if (!institutionId) {
+          return
         }
 
-        // 3. LÉPÉS: API hívás
-        await axios.post('http://127.0.0.1:8000/api/events', adatCsomag, {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token')
+
+        if (!token) {
+          return
+        }
+
+        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${token}`,
             Accept: 'application/json'
           }
         })
 
-        // 4.Sikeres válasz kezelése
-        alert('Esemény sikeresen létrehozva!')
-        this.$router.push('/esemenyek')
+        const institution = response?.data?.data || {}
 
-      } catch (hiba) {
-        console.error(hiba)
+        this.userInstitution = {
+          ...this.userInstitution,
+          id: Number(institution.id || institutionId),
+          name: institution.title || institution.name || this.userInstitution.name,
+          countyId: Number(institution.region_id || this.userInstitution.countyId || 1)
+        }
+      } catch (error) {
+        console.error('Intézmény betöltési hiba:', error)
+      }
+    },
 
-        if (hiba.response?.data?.message) {
-          alert('Hiba: ' + hiba.response.data.message)
+    async loadCounties() {
+      try {
+        const response = await axios.get('http://127.0.0.1:8000/api/regions/all', {
+          headers: {
+            Accept: 'application/json'
+          }
+        })
+
+        const apiCounties = Array.isArray(response?.data?.data) ? response.data.data : []
+
+        if (!apiCounties.length) {
+          return
+        }
+
+        this.countiesList = apiCounties.map((county) => ({
+          id: Number(county.id),
+          name: county.title || county.name || county.nev || `Vármegye #${county.id}`,
+          schoolCount: Number(county.iskolakSzama || county.schools_count || 0)
+        }))
+      } catch (error) {
+        console.error('Megyék betöltési hiba:', error)
+      }
+    },
+    
+    getEventScopeLabel(scope) {
+      const labels = {
+        'global': 'Globális esemény',
+        'school': 'Iskolai esemény'
+      }
+      return labels[scope] || scope
+    },
+    
+    getSchoolTargetLabel(targetGroup) {
+      const target = this.schoolTargetOptions.find(option => option.value === targetGroup)
+      return target ? target.label : targetGroup
+    },
+    
+    getSelectedCountyNames() {
+      return this.selectedCountyIds.map((id) => {
+        const county = this.counties.find(item => item.id === id)
+        return county ? county.name : id
+      })
+    },
+    
+    validateEventForm() {
+      const { title, description, startDateTime, endDateTime } = this.eventForm
+      
+      return title && title.trim() !== '' && 
+             description && description.trim() !== '' && 
+             startDateTime && startDateTime !== '' && 
+             endDateTime && endDateTime !== '' &&
+             new Date(startDateTime) <= new Date(endDateTime)
+    },
+    
+    formatDateTime(dateTime) {
+      if (!dateTime) return 'nincs megadva'
+      const date = new Date(dateTime)
+      return date.toLocaleString('hu-HU', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    },
+    
+    nextStep() {
+      if (this.currentStep < 4 && this.canProceed) {
+        this.currentStep++
+      }
+    },
+    
+    previousStep() {
+      if (this.currentStep > 1) {
+        this.currentStep--
+      }
+    },
+  
+    async createEvent() {
+      if (!this.isFormValid) {
+        toast.warning('Kérjük, töltsd ki az összes kötelező mezőt!')
+        return
+      }
+
+      this.isSubmitting = true
+
+      try {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token')
+
+        if (!token) {
+          toast.error('Lejárt munkamenet. Kérlek jelentkezz be újra!')
+          this.$router.push('/')
+          return
+        }
+
+        // Adatok összeállítása a backend elvárásai szerint
+        const payload = {
+          title: this.eventForm.title,
+          description: this.eventForm.description,
+          content: this.eventForm.content,
+          start_date: this.eventForm.startDateTime,
+          end_date: this.eventForm.endDateTime,
+          type: this.selectedEventScope === 'global' ? 'global' : 'local'
+        }
+
+        if (this.selectedEventScope === 'global') {
+          payload.counties = this.selectedCountyIds
+        } 
+        else {
+          payload.target_group = this.selectedSchoolTargetGroup
+          payload.institution_id = this.userInstitution.id
+        }
+
+        await axios.post('http://127.0.0.1:8000/api/events', payload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/json'
+          }
+        })
+
+        toast.success('Esemény sikeresen létrehozva!')
+        this.$router.push('/events-list')
+
+      } catch (error) {
+        console.error('Hiba az esemény létrehozásakor:', error)
+
+        if (error.response?.data?.message) {
+          toast.error('Hiba: ' + error.response.data.message)
+        } else if (error.response?.data?.errors) {
+          const errors = Object.values(error.response.data.errors).flat()
+          toast.error('Hiba: ' + errors.join(' '))
         } else {
-          alert('Ismeretlen hiba történt')
+          toast.error('Ismeretlen hiba történt')
         }
       } finally {
-        this.betoltesKozben = false
+        this.isSubmitting = false
       }
     }
   }
@@ -432,7 +569,7 @@ export default {
 </script>
 
 <style scoped>
-.esemeny-keszito-oldal {
+.event-creator-page {
   background: linear-gradient(135deg, #8c8c8f 0%, #764ba2 100%);
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
@@ -443,7 +580,7 @@ export default {
   width: 100vw;
 }
 
-.vissza-gomb {
+.back-button {
   position: absolute;
   top: 20px;
   left: 20px;
@@ -464,12 +601,12 @@ export default {
   white-space: nowrap;
 }
 
-.vissza-gomb:hover {
+.back-button:hover {
   background: white;
   transform: translateX(-5px);
 }
 
-.esemeny-keszito-wrapper {
+.event-creator-wrapper {
   max-width: 900px;
   width: 100%;
   background: white;
@@ -480,7 +617,7 @@ export default {
   box-sizing: border-box;
 }
 
-.keszito-fejlec {
+.creator-header {
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
   padding: 25px 30px;
@@ -488,7 +625,7 @@ export default {
   box-sizing: border-box;
 }
 
-.keszito-fejlec h1 {
+.creator-header h1 {
   font-size: 28px;
   margin-bottom: 8px;
   display: flex;
@@ -497,23 +634,23 @@ export default {
   gap: 12px;
 }
 
-.alcim {
+.subtitle {
   opacity: 0.9;
   font-size: 14px;
 }
 
-.keszito-tartalom {
+.creator-content {
   padding: 25px;
   box-sizing: border-box;
 }
 
-.nincs-jogosultsag {
+.no-permission {
   padding: 30px;
   text-align: center;
   box-sizing: border-box;
 }
 
-.jogosultsag-hiba {
+.permission-error {
   padding: 25px;
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   border-radius: 15px;
@@ -521,29 +658,29 @@ export default {
   box-sizing: border-box;
 }
 
-.jogosultsag-hiba i {
+.permission-error i {
   font-size: 48px;
   color: #ef4444;
   margin-bottom: 15px;
 }
 
-.jogosultsag-hiba h3 {
+.permission-error h3 {
   color: #dc2626;
   margin-bottom: 10px;
   font-size: 20px;
 }
 
-.jogosultsag-hiba p {
+.permission-error p {
   color: #7f1d1d;
   margin-bottom: 20px;
   font-size: 15px;
 }
 
-.lepteto-navigacio {
+.stepper-nav {
   margin-bottom: 25px;
 }
 
-.lepesek {
+.steps {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -552,7 +689,7 @@ export default {
   gap: 10px;
 }
 
-.lepes {
+.step {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -563,7 +700,7 @@ export default {
   min-width: 70px;
 }
 
-.lepes-szam {
+.step-number {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -577,18 +714,18 @@ export default {
   transition: all 0.3s;
 }
 
-.lepes.aktiv .lepes-szam {
+.step.active .step-number {
   background: #4f46e5;
   color: white;
   transform: scale(1.1);
 }
 
-.lepes.befejezett .lepes-szam {
+.step.completed .step-number {
   background: #10b981;
   color: white;
 }
 
-.lepes-cimke {
+.step-label {
   color: #6b7280;
   font-size: 12px;
   font-weight: 500;
@@ -597,25 +734,25 @@ export default {
   max-width: 80px;
 }
 
-.lepes.aktiv .lepes-cimke {
+.step.active .step-label {
   color: #4f46e5;
   font-weight: 600;
 }
 
-.form-resz {
+.form-section {
   margin-bottom: 25px;
   padding-bottom: 15px;
   border-bottom: 1px solid #e5e7eb;
   box-sizing: border-box;
 }
 
-.form-resz:last-child {
+.form-section:last-child {
   border-bottom: none;
   margin-bottom: 0;
   padding-bottom: 0;
 }
 
-.form-resz h3 {
+.form-section h3 {
   color: #1f2937;
   margin-bottom: 20px;
   display: flex;
@@ -624,11 +761,11 @@ export default {
   font-size: 20px;
 }
 
-.form-resz h3 i {
+.form-section h3 i {
   color: #4f46e5;
 }
 
-.tipus-valasztas, .celcsoport-opciok {
+.type-selection, .target-group-options {
   display: grid;
   grid-template-columns: 1fr;
   gap: 15px;
@@ -636,7 +773,7 @@ export default {
   box-sizing: border-box;
 }
 
-.tipus-opcio, .celcsoport-opcio {
+.type-option, .target-group-option {
   border: 2px solid #e5e7eb;
   border-radius: 12px;
   padding: 15px;
@@ -646,117 +783,172 @@ export default {
   box-sizing: border-box;
 }
 
-.tipus-opcio:hover, .celcsoport-opcio:hover {
+.type-option:hover, .target-group-option:hover {
   border-color: #c7d2fe;
   transform: translateY(-2px);
 }
 
-.tipus-opcio.kivalasztott, .celcsoport-opcio.kivalasztott {
+.type-option.selected, .target-group-option.selected {
   border-color: #4f46e5;
   background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
 }
 
-.opcio-tartalom {
+.option-content {
   text-align: center;
   box-sizing: border-box;
 }
 
-.opcio-tartalom i {
+.option-content i {
   font-size: 36px;
   color: #4f46e5;
   margin-bottom: 10px;
 }
 
-.opcio-tartalom h4 {
+.option-content h4 {
   color: #1f2937;
   margin-bottom: 5px;
   font-size: 18px;
 }
 
-.opcio-tartalom p {
+.option-content p {
   color: #6b7280;
   font-size: 13px;
   line-height: 1.4;
 }
 
-.celcsoport-info {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+/* Új stílusok a globális megye választóhoz */
+.county-list {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 2px solid #e5e7eb;
   border-radius: 12px;
-  padding: 20px;
+  padding: 10px;
   margin-top: 15px;
-  box-sizing: border-box;
+  background: #f9fafb;
 }
 
-.info-doboz {
+.county-option {
   display: flex;
-  align-items: flex-start;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid #e5e7eb;
+  transition: all 0.3s;
+}
+
+.county-option:last-child {
+  border-bottom: none;
+}
+
+.county-option:hover {
+  background: #f3f4f6;
+}
+
+.county-option.selected {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+
+.county-option.own-county {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-left: 4px solid #10b981;
+}
+
+.county-checkbox {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  margin-bottom: 15px;
-  padding: 15px;
-  background: white;
+  cursor: pointer;
+  flex: 1;
+}
+
+.county-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #4f46e5;
+}
+
+.county-checkbox input[type="checkbox"]:disabled {
+  accent-color: #10b981;
+  cursor: not-allowed;
+}
+
+.county-name {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.own-county-badge {
+  font-size: 12px;
+  color: #10b981;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.school-count {
+  font-size: 13px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.selected-info {
+  margin-top: 15px;
+  padding: 12px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   border-radius: 8px;
-  border-left: 4px solid #0ea5e9;
-  box-sizing: border-box;
-}
-
-.info-doboz i {
-  color: #0ea5e9;
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.info-doboz p {
-  color: #0369a1;
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.kivalasztott-intezmeny {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 15px;
-  background: white;
-  border-radius: 8px;
-  border: 2px solid #10b981;
-  box-sizing: border-box;
+  color: #0369a1;
+  font-weight: 500;
 }
 
-.kivalasztott-intezmeny i {
-  color: #10b981;
+.selected-info i {
   font-size: 20px;
+  color: #0284c7;
 }
 
-.kivalasztott-intezmeny span {
+.selection-description {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.permission-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+  border-radius: 20px;
+  font-size: 11px;
   font-weight: 600;
-  color: #047857;
-  font-size: 16px;
+  text-transform: uppercase;
+}
+
+.county-list-summary {
+  display: block;
+  margin-top: 5px;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.5;
 }
 
 /* FORM ELEMEK */
-.valasztas-tipp {
-  padding: 15px;
-  background: #f9fafb;
-  border-radius: 8px;
-  text-align: center;
-  color: #6b7280;
-  font-size: 14px;
-  margin-top: 15px;
-  box-sizing: border-box;
-}
-
-.esemeny-adatok-form {
+.event-form {
   margin-top: 20px;
   box-sizing: border-box;
 }
 
-.form-csoport {
+.form-group {
   margin-bottom: 20px;
   box-sizing: border-box;
 }
 
-.form-csoport label {
+.form-group label {
   display: block;
   margin-bottom: 8px;
   color: #374151;
@@ -764,7 +956,7 @@ export default {
   font-size: 14px;
 }
 
-.form-csoport input, .form-csoport textarea {
+.form-group input, .form-group textarea {
   width: 100%;
   padding: 10px 12px;
   border: 2px solid #e5e7eb;
@@ -775,25 +967,25 @@ export default {
   box-sizing: border-box;
 }
 
-.form-csoport input:focus, .form-csoport textarea:focus {
+.form-group input:focus, .form-group textarea:focus {
   outline: none;
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
-.form-csoport textarea {
+.form-group textarea {
   min-height: 100px;
   resize: vertical;
 }
 
-.form-sor {
+.form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 15px;
   box-sizing: border-box;
 }
 
-.attekintes {
+.summary {
   background: #f9fafb;
   border-radius: 12px;
   padding: 15px;
@@ -801,24 +993,24 @@ export default {
   box-sizing: border-box;
 }
 
-.osszegzes-elem {
+.summary-item {
   padding: 10px 0;
   border-bottom: 1px solid #e5e7eb;
   font-size: 15px;
   line-height: 1.4;
 }
 
-.osszegzes-elem:last-child {
+.summary-item:last-child {
   border-bottom: none;
 }
 
-.osszegzes-elem strong {
+.summary-item strong {
   color: #374151;
   margin-right: 8px;
 }
 
 /* gombok */
-.form-muveletek {
+.form-actions {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -828,7 +1020,7 @@ export default {
   box-sizing: border-box;
 }
 
-.gomb {
+.btn {
   padding: 10px 20px;
   border: none;
   border-radius: 10px;
@@ -845,56 +1037,56 @@ export default {
   flex: 1;
 }
 
-.gomb-primary {
+.btn-primary {
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
 }
 
-.gomb-primary:hover:not(:disabled) {
+.btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
 }
 
-.gomb-secondary {
+.btn-secondary {
   background: #f1f5f9;
   color: #475569;
   border: 2px solid #e2e8f0;
 }
 
-.gomb-secondary:hover:not(:disabled) {
+.btn-secondary:hover:not(:disabled) {
   background: #e2e8f0;
 }
 
-.gomb-siker {
+.btn-success {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
 }
 
-.gomb-siker:hover:not(:disabled) {
+.btn-success:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
 }
 
-.gomb:disabled {
+.btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
 }
 
-/* reszponziv */
+/* Reszponzív kiegészítések */
 @media (max-width: 768px) {
-  .esemeny-keszito-oldal {
+  .event-creator-page {
     padding: 15px;
     align-items: flex-start;
   }
   
-  .esemeny-keszito-wrapper {
+  .event-creator-wrapper {
     margin: 50px 15px 15px;
     max-width: 100%;
   }
   
-  .vissza-gomb {
+  .back-button {
     top: 15px;
     left: 15px;
     padding: 8px 12px;
@@ -902,103 +1094,121 @@ export default {
     max-width: 110px;
   }
   
-  .keszito-fejlec {
+  .creator-header {
     padding: 20px;
   }
   
-  .keszito-fejlec h1 {
+  .creator-header h1 {
     font-size: 22px;
     flex-direction: row;
     gap: 10px;
   }
   
-  .alcim {
+  .subtitle {
     font-size: 12px;
   }
   
-  .keszito-tartalom {
+  .creator-content {
     padding: 20px;
   }
   
-  .lepesek {
+  .steps {
     gap: 5px;
   }
   
-  .lepes {
+  .step {
     min-width: 60px;
   }
   
-  .lepes-szam {
+  .step-number {
     width: 32px;
     height: 32px;
     font-size: 14px;
   }
   
-  .lepes-cimke {
+  .step-label {
     font-size: 11px;
     max-width: 70px;
   }
   
-  .form-resz h3 {
+  .form-section h3 {
     font-size: 18px;
   }
   
-  .opcio-tartalom h4 {
+  .option-content h4 {
     font-size: 16px;
   }
   
-  .opcio-tartalom i {
+  .option-content i {
     font-size: 32px;
   }
   
-  .form-csoport label {
+  .form-group label {
     font-size: 13px;
   }
   
-  .form-csoport input, .form-csoport textarea {
+  .form-group input, .form-group textarea {
     font-size: 14px;
     padding: 9px 11px;
   }
   
-  .form-sor {
+  .form-row {
     grid-template-columns: 1fr;
     gap: 12px;
   }
   
-  .gomb {
+  .btn {
     padding: 9px 16px;
     font-size: 14px;
   }
   
-  .form-muveletek {
+  .form-actions {
     flex-direction: row;
     gap: 10px;
   }
   
-  .jogosultsag-hiba {
+  .permission-error {
     padding: 20px;
   }
   
-  .jogosultsag-hiba i {
+  .permission-error i {
     font-size: 40px;
   }
   
-  .jogosultsag-hiba h3 {
+  .permission-error h3 {
     font-size: 18px;
+  }
+  
+  .county-list {
+    max-height: 350px;
+  }
+  
+  .county-option {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .school-count {
+    align-self: flex-end;
+  }
+  
+  .county-name {
+    font-size: 14px;
   }
 }
 
 @media (max-width: 480px) {
-  .esemeny-keszito-oldal {
+  .event-creator-page {
     padding: 10px;
   }
   
-  .esemeny-keszito-wrapper {
+  .event-creator-wrapper {
     margin: 45px 10px 10px;
     border-radius: 15px;
   }
   
-  .vissza-gomb {
+  .back-button {
     top: 10px;
     left: 10px;
     padding: 7px 10px;
@@ -1006,110 +1216,121 @@ export default {
     max-width: 100px;
   }
   
-  .keszito-fejlec {
+  .creator-header {
     padding: 15px;
   }
   
-  .keszito-fejlec h1 {
+  .creator-header h1 {
     font-size: 18px;
     gap: 8px;
   }
   
-  .alcim {
+  .subtitle {
     font-size: 12px;
   }
   
-  .keszito-tartalom {
+  .creator-content {
     padding: 15px;
   }
   
-  .lepes {
+  .step {
     min-width: 50px;
   }
   
-  .lepes-szam {
+  .step-number {
     width: 28px;
     height: 28px;
     font-size: 13px;
   }
   
-  .lepes-cimke {
+  .step-label {
     font-size: 10px;
     max-width: 60px;
   }
   
-  .form-resz h3 {
+  .form-section h3 {
     font-size: 16px;
     gap: 8px;
   }
   
-  .form-resz h3 i {
+  .form-section h3 i {
     font-size: 18px;
   }
   
-  .tipus-valasztas, .celcsoport-opciok {
+  .type-selection, .target-group-options {
     gap: 10px;
   }
   
-  .tipus-opcio, .celcsoport-opcio {
+  .type-option, .target-group-option {
     padding: 12px;
   }
   
-  .opcio-tartalom i {
+  .option-content i {
     font-size: 28px;
     margin-bottom: 8px;
   }
   
-  .opcio-tartalom h4 {
+  .option-content h4 {
     font-size: 15px;
     margin-bottom: 4px;
   }
   
-  .opcio-tartalom p {
+  .option-content p {
     font-size: 12px;
   }
   
-  .celcsoport-info {
-    padding: 15px;
-  }
-  
-  .info-doboz, .kivalasztott-intezmeny {
-    padding: 12px;
-  }
-  
-  .valasztas-tipp {
-    padding: 12px;
-    font-size: 13px;
-  }
-  
-  .form-muveletek {
+  .form-actions {
     flex-direction: column;
     gap: 8px;
   }
   
-  .gomb {
+  .btn {
     width: 100%;
     padding: 10px;
+  }
+  
+  .county-list {
+    max-height: 300px;
+    padding: 8px;
+  }
+  
+  .county-option {
+    padding: 10px;
+  }
+  
+  .county-checkbox {
+    gap: 8px;
+  }
+  
+  .county-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .own-county-badge {
+    display: block;
+    margin-left: 0;
+    margin-top: 4px;
   }
 }
 
 @media (min-width: 769px) {
-  .tipus-valasztas, .celcsoport-opciok {
+  .type-selection, .target-group-options {
     grid-template-columns: 1fr 1fr;
   }
   
-  .form-muveletek .gomb {
+  .form-actions .btn {
     flex: none;
     min-width: 140px;
   }
 }
 
 @media (min-width: 1024px) {
-  .esemeny-keszito-wrapper {
+  .event-creator-wrapper {
     max-width: 950px;
   }
   
-  .keszito-tartalom {
+  .creator-content {
     padding: 30px;
   }
 }

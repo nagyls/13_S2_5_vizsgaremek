@@ -40,8 +40,16 @@
                     <span>Profilom</span>
                   </router-link>
                   <router-link to="/events-list" class="menu-item">
-                    <i class='bx bx-calendar'></i>
+                    <i class='bx bx-calendar-event'></i>
                     <span>Események</span>
+                  </router-link>
+                  <router-link
+                    v-if="user.role === 'admin'"
+                    to="/institution-dashboard"
+                    class="menu-item"
+                  >
+                    <i class='bx bx-building-house'></i>
+                    <span>Intézményvezetői felület</span>
                   </router-link>
                   <div class="menu-divider"></div>
                   <button class="menu-item logout-btn" @click="logout">
@@ -327,6 +335,7 @@ export default {
   font-size: 32px;
   color: #4f46e5;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -336,6 +345,7 @@ export default {
   font-size: 24px;
   font-weight: 700;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

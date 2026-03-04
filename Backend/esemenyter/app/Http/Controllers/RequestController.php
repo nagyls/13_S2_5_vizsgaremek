@@ -23,6 +23,7 @@ class RequestController extends Controller
         $data = $requests->map(function ($item) {
             return [
                 'id' => $item->id,
+                'user_id' => $item->user_id,
                 'establishment_id' => $item->establishment_id,
                 'role' => $item->role,
                 'created_at' => $item->created_at,
@@ -46,6 +47,7 @@ class RequestController extends Controller
         $data = $requests->map(function ($item) {
             return [
                 'id' => $item->id,
+                'user_id' => $item->user_id,
                 'establishment_id' => $item->establishment_id,
                 'role' => $item->role,
                 'created_at' => $item->created_at,

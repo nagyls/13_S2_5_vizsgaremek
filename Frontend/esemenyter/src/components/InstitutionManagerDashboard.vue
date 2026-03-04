@@ -35,13 +35,17 @@
                   </div>
                 </div>
                 <div class="menu-items">
+                  <router-link to="/user-dashboard" class="menu-item">
+                    <i class='bx bx-building'></i>
+                    <span>Főoldal</span>
+                  </router-link>
+                  <router-link to="/events-list" class="menu-item">
+                    <i class='bx bx-calendar-event'></i>
+                    <span>Események</span>
+                  </router-link>
                   <router-link to="/profile" class="menu-item">
                     <i class='bx bx-user'></i>
                     <span>Profilom</span>
-                  </router-link>
-                  <router-link to="/institution-settings" class="menu-item">
-                    <i class='bx bx-building'></i>
-                    <span>Intézmény beállítások</span>
                   </router-link>
                   <div class="menu-divider"></div>
                   <button class="menu-item logout-btn" @click="logout">
@@ -487,7 +491,9 @@
 
             <div class="assignment-form">
               <div class="form-group">
-                <label for="class-select">Válassz osztályt:</label>
+                <label for="class-select">
+                  {{ selectedRequest?.role === 'teacher' ? 'Válassz osztályt (opcionális):' : 'Válassz osztályt:' }}
+                </label>
                 <select 
                   id="class-select"
                   v-model="selectedClassId" 
@@ -505,7 +511,9 @@
                 </select>
                 <p class="form-hint">
                   <i class='bx bx-info-circle'></i>
-                  Az elfogadáshoz kötelező osztályt választani.
+                  {{ selectedRequest?.role === 'teacher'
+                    ? 'Tanár elfogadása osztály választása nélkül is lehetséges.'
+                    : 'Az elfogadáshoz kötelező osztályt választani.' }}
                 </p>
               </div>
             </div>
@@ -521,7 +529,7 @@
             <button 
               class="btn-primary" 
               @click="approveRequest"
-              :disabled="!selectedClassId"
+              :disabled="selectedRequest?.role === 'student' && !selectedClassId"
             >
               <i class='bx bx-check'></i>
               Kérelem elfogadása
@@ -821,12 +829,14 @@ export default {
         // - request.user: { id, name, email }
         // - request.name + request.email
         this.establishmentRequests = allRequests.map(request => {
+          const resolvedRequestId = request.id ?? request.request_id ?? null;
           const resolvedUserId = request.user_id ?? request.user?.id ?? null;
           const resolvedName = (request.user?.name || request.name || '').toString().trim();
           const resolvedEmail = (request.user?.email || request.email || '').toString().trim();
 
           return {
             ...request,
+            id: resolvedRequestId,
             user_id: resolvedUserId,
             user: request.user || {
               id: resolvedUserId,
@@ -856,7 +866,9 @@ export default {
     
     async loadInstitutionUsers(institutionId) {
       try {
-        const token = localStorage.getItem('esemenyter_token');
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
         
         const studentsResponse = await axios.get(`http://127.0.0.1:8000/api/members/students/${institutionId}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
@@ -876,7 +888,9 @@ export default {
     // Osztályok betöltése intézmény ID alapján
     async loadClasses(institutionId) {
       try {
-        const token = localStorage.getItem('esemenyter_token');
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
 
         const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/classes`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -975,13 +989,15 @@ export default {
       this.isCreatingClass = true;
 
       try {
-        const token = localStorage.getItem('esemenyter_token');
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
 
         const classData = {
           name: this.newClass.name || 'Új osztály',
           grade: parsedGrade,
           capacity: parsedCapacity,
-          teacher_id: this.newClass.teacher_id || null,
+          user_id: this.newClass.teacher_id || null,
           establishment_id: this.user.institution_id
         };
 
@@ -1055,22 +1071,30 @@ export default {
     
     async approveRequest() {
       try {
-        if (!this.selectedClassId) {
+        if (this.selectedRequest?.role === 'student' && !this.selectedClassId) {
           this.errorMessage = 'Az elfogadáshoz válassz osztályt.';
           this.showNotification(this.errorMessage, 'warning');
           return;
         }
 
-        const token = localStorage.getItem('esemenyter_token');
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
         const establishmentId = this.user.institution_id;
-        const requestId = this.selectedRequest.id;
-        const userId = this.selectedRequest.user_id;
+        const requestId = this.selectedRequest?.id ?? this.selectedRequest?.request_id;
+        const userId = this.selectedRequest?.user_id ?? this.selectedRequest?.user?.id;
         const role = this.selectedRequest.role;
+
+        if (!requestId) {
+          this.errorMessage = 'A kérelem azonosítója hiányzik, frissítsd az oldalt és próbáld újra.';
+          this.showNotification(this.errorMessage, 'error');
+          return;
+        }
 
         await axios.post('http://127.0.0.1:8000/api/establishment/requests/handle', {
           establishment_id: establishmentId,
           action: 'accept',
-          request_id: [requestId]
+          request_id: [Number(requestId)]
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -1104,7 +1128,7 @@ export default {
         }
       
         // Eltávolítjuk a listából
-        const index = this.establishmentRequests.findIndex(r => r.id === requestId);
+        const index = this.establishmentRequests.findIndex(r => Number(r.id) === Number(requestId));
         if (index !== -1) {
           this.establishmentRequests.splice(index, 1);
         }
@@ -1130,18 +1154,26 @@ export default {
       }
 
       try {
-        const token = localStorage.getItem('esemenyter_token');
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+        const requestId = request?.id ?? request?.request_id;
+
+        if (!requestId) {
+          this.showNotification('A kérelem azonosítója hiányzik, frissítsd az oldalt és próbáld újra.', 'error');
+          return;
+        }
 
         await axios.post('http://127.0.0.1:8000/api/establishment/requests/handle', {
           establishment_id: this.user.institution_id,
           action: 'reject',
-          request_id: [request.id]
+          request_id: [Number(requestId)]
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
         // Eltávolítjuk a listából
-        const index = this.establishmentRequests.findIndex(r => r.id === request.id);
+        const index = this.establishmentRequests.findIndex(r => Number(r.id) === Number(requestId));
         if (index !== -1) {
           this.establishmentRequests.splice(index, 1);
         }
@@ -1359,22 +1391,26 @@ export default {
 }
 
 .logo-text {
-  line-height: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .site-title {
   font-size: 24px;
   font-weight: 700;
   background: linear-gradient(135deg, #667eea, #764ba2);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
 }
 
 .site-subtitle {
-  font-size: 12px;
-  color: #6b7280;
   margin: 0;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
 }
 
 /* User profile */

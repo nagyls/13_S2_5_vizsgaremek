@@ -3,26 +3,61 @@
     <header class="events-header">
       <div class="container">
         <div class="header-content">
-          <button class="back-button" @click="$router.push('/user-dashboard')">
-            <i class='bx bx-arrow-back'></i>
-            <span>Főoldal</span>
-          </button>
-          
-          <div class="logo-title logo-cim">
-            <i class='bx bx-calendar-star'></i>
-            <h1>Események</h1>
+          <div class="logo-title" @click="$router.push('/user-dashboard')">
+            <i class='bx bx-calendar-heart'></i>
+            <div class="logo-text">
+              <h1 class="site-title">EseményTér</h1>
+              <p class="site-subtitle">Ahol minden esemény helyet kap</p>
+            </div>
           </div>
           
-          <div class="user-info" v-if="currentUser">
-            <div class="avatar-circle">
-              <span>{{ userInitials }}</span>
+          <div class="user-profile" v-if="currentUser">
+            <div class="user-avatar" @click.stop="toggleUserMenu">
+              <div class="avatar-circle">
+                <span>{{ userInitials }}</span>
+              </div>
+              <div class="user-status">
+                <div class="status-dot online"></div>
+              </div>
             </div>
-            <div class="user-data">
-              <span class="name">{{ currentUser.nev }}</span>
-              <span class="role" :class="normalizedRole">
-                {{ roleDisplay }}
-              </span>
-            </div>
+
+            <transition name="slide-fade">
+              <div v-if="showUserMenu" class="user-menu" @click.stop>
+                <div class="menu-header">
+                  <div class="menu-user-info">
+                    <h4>{{ currentUser.nev || currentUser.name || 'Felhasználó' }}</h4>
+                    <p class="user-email">{{ currentUser.email || '' }}</p>
+                  </div>
+                  <div class="role-badge" :class="normalizedRole">
+                    {{ roleDisplay }}
+                  </div>
+                </div>
+
+                <div class="menu-items">
+                  <router-link to="/user-dashboard" class="menu-item">
+                    <i class='bx bx-home'></i>
+                    <span>Főoldal</span>
+                  </router-link>
+                  <router-link
+                    v-if="normalizedRole === 'admin'"
+                    to="/institution-dashboard"
+                    class="menu-item"
+                  >
+                    <i class='bx bx-building-house'></i>
+                    <span>Intézményvezetői felület</span>
+                  </router-link>
+                  <router-link to="/profile" class="menu-item">
+                    <i class='bx bx-user'></i>
+                    <span>Profilom</span>
+                  </router-link>
+                  <div class="menu-divider"></div>
+                  <button class="menu-item logout-btn" @click="logout">
+                    <i class='bx bx-log-out'></i>
+                    <span>Kijelentkezés</span>
+                  </button>
+                </div>
+              </div>
+            </transition>
           </div>
         </div>
       </div>
@@ -95,21 +130,21 @@
               <div class="chip-container">
                 <button 
                   class="chip" 
-                  :class="{ 'aktiv': filters.type === '' }"
+                  :class="{ 'active': filters.type === '' }"
                   @click="filters.type = ''; loadEvents()"
                 >
                   Összes
                 </button>
                 <button 
                   class="chip" 
-                  :class="{ 'aktiv': filters.type === 'local' }"
+                  :class="{ 'active': filters.type === 'local' }"
                   @click="filters.type = 'local'; loadEvents()"
                 >
                   <i class='bx bx-building'></i> Helyi
                 </button>
                 <button 
                   class="chip" 
-                  :class="{ 'aktiv': filters.type === 'global' }"
+                  :class="{ 'active': filters.type === 'global' }"
                   @click="filters.type = 'global'; loadEvents()"
                 >
                   <i class='bx bx-world'></i> Globális
@@ -122,21 +157,21 @@
               <div class="chip-container">
                 <button 
                   class="chip" 
-                  :class="{ 'aktiv': filters.status === '' }"
+                  :class="{ 'active': filters.status === '' }"
                   @click="filters.status = ''; loadEvents()"
                 >
                   Összes
                 </button>
                 <button 
                   class="chip" 
-                  :class="{ 'aktiv': filters.status === 'open' }"
+                  :class="{ 'active': filters.status === 'open' }"
                   @click="filters.status = 'open'; loadEvents()"
                 >
                   <i class='bx bx-check-circle'></i> Aktív
                 </button>
                 <button 
                   class="chip" 
-                  :class="{ 'aktiv': filters.status === 'closed' }"
+                  :class="{ 'active': filters.status === 'closed' }"
                   @click="filters.status = 'closed'; loadEvents()"
                 >
                   <i class='bx bx-x-circle'></i> Lezárt
@@ -149,21 +184,21 @@
               <div class="sorting-buttons">
                 <button 
                   class="sorting-button" 
-                  :class="{ 'aktiv': filters.sorting === 'newest' }"
+                  :class="{ 'active': filters.sorting === 'newest' }"
                   @click="filters.sorting = 'newest'; loadEvents()"
                 >
                   <i class='bx bx-sort-down'></i> Legújabb
                 </button>
                 <button 
                   class="sorting-button" 
-                  :class="{ 'aktiv': filters.sorting === 'oldest' }"
+                  :class="{ 'active': filters.sorting === 'oldest' }"
                   @click="filters.sorting = 'oldest'; loadEvents()"
                 >
                   <i class='bx bx-sort-up'></i> Legrégebbi
                 </button>
                 <button 
                   class="sorting-button" 
-                  :class="{ 'aktiv': filters.sorting === 'start_date' }"
+                  :class="{ 'active': filters.sorting === 'start_date' }"
                   @click="filters.sorting = 'start_date'; loadEvents()"
                 >
                   <i class='bx bx-calendar'></i> Kezdés
@@ -175,7 +210,7 @@
 
         <!-- Események lista -->
         <div class="events-list">
-          <div v-if="isLoading" class="status-card betoltes">
+          <div v-if="isLoading" class="status-card loading">
             <div class="loader">
               <div class="spinner"></div>
             </div>
@@ -274,6 +309,7 @@ export default {
       events: [],
       isLoading: true,
       currentUser: null,
+      showUserMenu: false,
       filters: {
         type: '',
         status: '',
@@ -288,13 +324,22 @@ export default {
     },
 
     userInitials() {
-      if (!this.currentUser?.nev) return '?';
-      return this.currentUser.nev
+      const fullName = (this.currentUser?.nev || this.currentUser?.name || '').toString().trim();
+      if (fullName) {
+        return fullName
         .split(' ')
         .map(word => word[0])
         .join('')
         .toUpperCase()
         .substring(0, 2);
+      }
+
+      const email = (this.currentUser?.email || '').toString().trim();
+      if (email) {
+        return email[0].toUpperCase();
+      }
+
+      return '?';
     },
     
     roleDisplay() {
@@ -328,8 +373,49 @@ export default {
     await this.loadCurrentUser();
     await this.loadEvents();
   },
+
+  mounted() {
+    document.addEventListener('click', this.closeUserMenu);
+  },
+
+  beforeUnmount() {
+    document.removeEventListener('click', this.closeUserMenu);
+  },
   
   methods: {
+    toggleUserMenu() {
+      this.showUserMenu = !this.showUserMenu;
+    },
+
+    closeUserMenu() {
+      this.showUserMenu = false;
+    },
+
+    async logout() {
+      try {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+
+        await axios.delete('http://127.0.0.1:8000/api/logout', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+      } catch (error) {
+        console.error('Logout hiba:', error);
+      } finally {
+        localStorage.removeItem('esemenyter_user');
+        localStorage.removeItem('esemenyter_token');
+        localStorage.removeItem('CurrentInstitution');
+        localStorage.removeItem('remember_me');
+        sessionStorage.removeItem('esemenyter_user');
+        sessionStorage.removeItem('esemenyter_token');
+        sessionStorage.removeItem('CurrentInstitution');
+        delete axios.defaults.headers.common['Authorization'];
+        this.showUserMenu = false;
+        this.$router.push('/');
+      }
+    },
+
     async loadCurrentUser() {
       try {
         const savedUser =
@@ -446,36 +532,19 @@ export default {
   gap: 20px;
 }
 
-.back-button {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.875rem 1.75rem;
-  background: rgba(255, 255, 255, 0.95);
-  border: none;
-  border-radius: 50px;
-  color: #2d3748;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-  backdrop-filter: blur(10px);
-}
-
-.back-button:hover {
-  transform: translateX(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  background: white;
-}
-
-.logo-cim {
+.logo-title {
   display: flex;
   align-items: center;
   gap: 12px;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
 }
 
-.logo-cim i {
+.logo-title:hover {
+  opacity: 0.8;
+}
+
+.logo-title i {
   font-size: 32px;
   color: #667eea;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -484,9 +553,9 @@ export default {
   -webkit-text-fill-color: transparent;
 }
 
-.logo-cim h1 {
+.site-title {
   margin: 0;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-clip: text;
@@ -494,19 +563,166 @@ export default {
   -webkit-text-fill-color: transparent;
 }
 
-.user-info {
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.site-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.user-profile {
+  position: relative;
+}
+
+.user-avatar {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 50px;
+  transition: background 0.3s ease;
+}
+
+.user-avatar:hover {
+  background: #f3f4f6;
+}
+
+.user-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  width: 300px;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.menu-header {
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea10, #764ba210);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.menu-user-info h4 {
+  margin: 0 0 5px 0;
+  color: #374151;
+  font-size: 16px;
+}
+
+.user-email {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.role-badge.institution {
+  background: #4f46e5;
+  color: white;
+}
+
+.role-badge.student {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.role-badge.teacher {
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.role-badge.admin,
+.role-badge.institution_manager {
+  background: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+}
+
+.menu-items {
+  padding: 10px;
+}
+
+.menu-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 12px 6px 6px;
-  background: white;
-  border-radius: 50px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 12px 16px;
+  border-radius: 10px;
+  color: #374151;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  width: 100%;
+  border: none;
+  background: none;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.menu-item:hover {
+  background: #f3f4f6;
+  color: #4f46e5;
+}
+
+.menu-item i {
+  font-size: 20px;
+  color: #6b7280;
+  transition: color 0.3s ease;
+}
+
+.menu-item:hover i {
+  color: #4f46e5;
+}
+
+.menu-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0;
+}
+
+.logout-btn {
+  color: #ef4444;
+}
+
+.logout-btn i {
+  color: #ef4444;
+}
+
+.logout-btn:hover {
+  background: #fee2e2;
+}
+
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
 }
 
 .avatar-circle {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 50%;
   display: flex;
@@ -514,29 +730,28 @@ export default {
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
 }
 
-.user-data {
-  display: flex;
-  flex-direction: column;
+.user-status {
+  position: relative;
 }
 
-.user-data .name {
-  font-weight: 600;
-  color: #333;
-  font-size: 14px;
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
 }
 
-.user-data .role {
-  font-size: 12px;
-  color: #666;
+.status-dot.online {
+  background: #10b981;
+  box-shadow: 0 0 0 2px white;
 }
-
-.role.student { color: #10b981; }
-.role.teacher { color: #f97316; }
-.role.admin { color: #8b5cf6; }
-.role.institution_manager { color: #8b5cf6; }
 
 /* Hero szekció (EventDetails-ből) */
 .hero-section {
@@ -612,7 +827,7 @@ export default {
   margin-bottom: 2rem;
 }
 
-.stat-kartya {
+.stat-card {
   background: white;
   border-radius: 24px;
   padding: 1.5rem;
@@ -623,12 +838,12 @@ export default {
   transition: all 0.3s;
 }
 
-.stat-kartya:hover {
+.stat-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
 
-.stat-ikon {
+.stat-icon {
   width: 60px;
   height: 60px;
   background: linear-gradient(135deg, #667eea20, #764ba220);
@@ -638,24 +853,24 @@ export default {
   justify-content: center;
 }
 
-.stat-ikon i {
+.stat-icon i {
   font-size: 2rem;
   color: #667eea;
 }
 
-.stat-adat {
+.stat-data {
   display: flex;
   flex-direction: column;
 }
 
-.stat-szam {
+.stat-number {
   font-size: 2rem;
   font-weight: 700;
   color: #1a202c;
   line-height: 1.2;
 }
 
-.stat-cimke {
+.stat-label {
   font-size: 0.875rem;
   color: #718096;
 }
@@ -755,7 +970,7 @@ export default {
   transform: translateY(-2px);
 }
 
-.chip.aktiv {
+.chip.active {
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
 }
@@ -786,7 +1001,7 @@ export default {
   transform: translateY(-2px);
 }
 
-.sorting-button.aktiv {
+.sorting-button.active {
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
 }
@@ -984,7 +1199,7 @@ export default {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
-.status-card.betoltes .loader {
+.status-card.loading .loader {
   margin-bottom: 1.5rem;
 }
 
@@ -1080,11 +1295,6 @@ export default {
   .header-content {
     flex-direction: column;
     text-align: center;
-  }
-  
-  .back-button {
-    width: 100%;
-    justify-content: center;
   }
   
   .hero-content {
