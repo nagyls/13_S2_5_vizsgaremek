@@ -34,9 +34,9 @@ class StaffController extends Controller
     {
         request()->validate([
             'establishment_id' => 'required|integer|exists:establishments,id',
-            'class_id' => 'required|integer|exists:class_models,id',
+            'class_id' => 'required|integer|exists:classes,id',
             'teacher_id'   => 'required|integer|exists:users,id',
-        ],[
+        ], [
             'teacher_id.required' => 'A teacher_id mező kötelező.',
             'teacher_id.integer' => 'A teacher_id értéknek egész számnak kell lennie.',
             'teacher_id.exists' => 'A teacher_id értéknek léteznie kell a users táblában.'
@@ -44,7 +44,7 @@ class StaffController extends Controller
         $user = $request->user();
         $establishmentId = $request->input('establishment_id');
         $classId = $request->input('class_id');
-        
+
         if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
             return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
         }
