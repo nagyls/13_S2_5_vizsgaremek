@@ -10,6 +10,6 @@ class EventShown extends Model
     protected $fillable = [
         'event_id',
         'user_id',
-        'class_id',
     ];
+    const UPDATED_AT = null;
 }

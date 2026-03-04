@@ -13,6 +13,7 @@ class Event extends Model
         'title',
         'description',
         'content',
+        'chat_enabled',
         'start_date',
         'end_date',
         'status',

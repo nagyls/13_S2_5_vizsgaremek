@@ -25,7 +25,26 @@ class EventController extends Controller
             'description' => 'required|string',
             'content' => 'nullable|string',
             'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
+            'end_date' => 'required|date|after:start_date',
+            'chat_enabled' => 'boolean',
+            'establishment_ids' => 'array',
+            'establishment_ids.*' => 'integer|exists:establishments,id',
+            'class_ids' => 'array',
+            'class_ids.*' => 'integer|exists:classes,id',
+        ],[
+            'type.required' => 'Az esemény típusának megadása kötelező.',
+            'type.in' => 'Az esemény típusa csak "local" vagy "global" lehet.',
+            'title.required' => 'Az esemény címének megadása kötelező.',
+            'title.string' => 'Az esemény címének szöveges értéknek kell lennie.',
+            'title.max' => 'Az esemény címének legfeljebb 255 karakter hosszúnak kell lennie.',
+            'description.required' => 'Az esemény leírásának megadása kötelező.',
+            'description.string' => 'Az esemény leírásának szöveges értéknek kell lennie.',
+            'content.string' => 'Az esemény tartalmának szöveges értéknek kell lennie.',
+            'start_date.required' => 'Az esemény kezdő dátumának megadása kötelező.',
+            'start_date.date' => 'Az esemény kezdő dátumának érvényes dátumnak kell lennie.',
+            'end_date.required' => 'Az esemény záró dátumának megadása kötelező.',
+            'end_date.date' => 'Az esemény záró dátumának érvényes dátumnak kell lennie.',
+            'end_date.after' => 'Az esemény záró dátumának a kezdő dátummal későbbinek kell lennie.',
         ]);
 
 
@@ -48,24 +67,17 @@ class EventController extends Controller
     public function getEvents(Request $request)
     {
         $user = $request->user();
-
         $events = Event::where('end_date', '>=', Carbon::now())
             ->where(function ($query) use ($user) {
-
                 if ($user) {
                     $visibleEventIds = EventShown::where(function ($query2) use ($user) {
                         $query2->where('user_id', $user->id);
-                        if (property_exists($user, 'class_id') && $user->class_id !== null) {
-                            $query2->orWhere('class_id', $user->class_id);
-                        }
                     })->pluck('event_id');
-
                     $query->orWhereIn('id', $visibleEventIds);
                 }
             })->get();
-
         return response()->json([
             'events' => $events
         ]);
-    }
+    }  
 }
