@@ -80,7 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/establishment/classes/add-students', [StudentController::class, 'storeInClass']);
     Route::post('/establishment/classes/remove-students', [StudentController::class, 'removeFromClass']);
 
-    Route::patch('/establishment/{establishment}/classes/{class}', [StaffController::class, 'updateClassTeacher']);
+    Route::patch('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'updateClassTeacher']);
 //kérelmek
     Route::get('/establishment/{establishment}/requests/students', [RequestController::class, 'getStudentRequests']);
     Route::get('/establishment/{establishment}/requests/teachers', [RequestController::class, 'getTeacherRequests']);

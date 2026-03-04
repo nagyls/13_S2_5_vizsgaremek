@@ -26,7 +26,7 @@ class StudentController extends Controller
 
         $students = User::join('students', 'users.id', '=', 'students.user_id')
             ->where('students.establishment_id', $establishmentId)
-            ->select('users.*', 'students.alias', 'students.id as student_id')
+            ->select('users.id','students.id as student_id','users.name', 'students.alias','users.email', 'students.created_at','students.updated_at')
             ->distinct()
             ->get();
 
