@@ -24,7 +24,6 @@ class RequestController extends Controller
             return [
                 'id' => $item->id,
                 'user_id' => $item->user_id,
-                'establishment_id' => $item->establishment_id,
                 'role' => $item->role,
                 'created_at' => $item->created_at,
                 'name' => $item->userFromId->name,
@@ -48,7 +47,6 @@ class RequestController extends Controller
             return [
                 'id' => $item->id,
                 'user_id' => $item->user_id,
-                'establishment_id' => $item->establishment_id,
                 'role' => $item->role,
                 'created_at' => $item->created_at,
                 'name' => $item->userFromId->name,

@@ -1117,10 +1117,11 @@ export default {
           }
 
           if (role === 'teacher') {
+            await this.loadInstitutionUsers(establishmentId);
+            const acceptedTeacher = this.teachers.find(teacher => Number(teacher.id) === Number(userId));
+
             await axios.patch(`http://127.0.0.1:8000/api/establishment/${establishmentId}/classes/${this.selectedClassId}`, {
-              establishment_id: establishmentId,
-              class_id: this.selectedClassId,
-              teacher_id: userId
+              teacher_id: acceptedTeacher.id
             }, {
               headers: { Authorization: `Bearer ${token}` }
             });
