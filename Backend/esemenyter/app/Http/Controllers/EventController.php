@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\EventShown;
-use Carbon\Carbon;
 
 class EventController extends Controller
 {
@@ -39,30 +38,43 @@ class EventController extends Controller
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
         ]);
+        EventShown::create([
+            'event_id' => $event->id,
+            'user_id' => $user->id,
+        ]);
+        foreach ($user->class->students as $student) {
+            EventShown::create([
+                'event_id' => $event->id,
+                'user_id' => $student->id,
+                'establishment_id' => $student->establishment_id,
+            ]);
+        }
+
 
         return response()->json([
             'message' => 'Esemény létrehozva',
             'event' => $event
         ], 201);
     }
-    public function getEvents(Request $request)
+    public function getEvents(Request $request, int $establishmentId)
     {
         $user = $request->user();
 
-        $events = Event::where('end_date', '>=', Carbon::now())
-            ->where(function ($query) use ($user) {
+        if (!$user) {
+            return response()->json(['message' => 'nem jogosult'], 401);
+        }
+        if(!$this->isMemberEstablishment($user, $establishmentId)){
+            return response()->json(['message' => 'nem jogosult'], 401);
+        }
 
-                if ($user) {
-                    $visibleEventIds = EventShown::where(function ($query2) use ($user) {
-                        $query2->where('user_id', $user->id);
-                        if (property_exists($user, 'class_id') && $user->class_id !== null) {
-                            $query2->orWhere('class_id', $user->class_id);
-                        }
-                    })->pluck('event_id');
+        $visibleEventIds = EventShown::where('user_id', $user->id)
+            ->where('establishment_id', $establishmentId)
+            ->distinct()
+            ->pluck('event_id');
 
-                    $query->orWhereIn('id', $visibleEventIds);
-                }
-            })->get();
+        $events = Event::whereIn('id', $visibleEventIds)
+            ->orderBy('start_date', 'asc')
+            ->get();
 
         return response()->json([
             'events' => $events

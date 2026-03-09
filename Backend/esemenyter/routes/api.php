@@ -63,7 +63,7 @@ Route::prefix('establishments')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
 //esemény kezelés
-    Route::get('/events', [EventController::class, 'getEvents']);
+    Route::get('/establishment/{establishment}/events', [EventController::class, 'getEvents']);
     Route::post('/events', [EventController::class, 'store']);
     Route::get('/events', [EventController::class, 'index']);
     Route::get('/events/{event}', [EventController::class, 'show']);

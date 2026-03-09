@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class EventShown extends Model
 {
     //
+    protected $table = 'event_shows';
     protected $fillable = [
         'event_id',
         'user_id',
-        'class_id',
+        'establishment_id',
     ];
 }
