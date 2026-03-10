@@ -25,11 +25,11 @@ class EventController extends Controller
             'content' => 'nullable|string',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            
         ]);
 
-
-
-        $event = Event::create([
+        if($validated['type'] === 'local'){
+            $event = Event::create([
             'user_id' => $user->id,
             'type' => $validated['type'],
             'title' => $validated['title'],
@@ -37,11 +37,16 @@ class EventController extends Controller
             'content' => $validated['content'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
-        ]);
-        EventShown::create([
-            'event_id' => $event->id,
-            'user_id' => $user->id,
-        ]);
+            ]);
+            EventShown::create([
+                'event_id' => $event->id,
+                'user_id' => $user->id,
+                'establishment_id' => $user->establishment_id,
+            ]);
+        }
+
+
+        
         foreach ($user->class->students as $student) {
             EventShown::create([
                 'event_id' => $event->id,
