@@ -46,29 +46,63 @@ class EventController extends Controller
             'end_date.date' => 'Az esemény végdátuma érvényes dátum kell legyen.',
             'end_date.after_or_equal' => 'Az esemény végdátuma nem lehet korábbi a kezdődátumnál.',
         ]);
+        if($validated['type'] == 'local'){
+            if($this->isStaffEstablishment($user, $validated['establishment_id'] )){
 
-        if($validated['type'] === 'local'){
-            $event = Event::create([
-            'user_id' => $user->id,
-            'type' => $validated['type'],
-            'title' => $validated['title'],
-            'description' => $validated['description'],
-            'content' => $validated['content'],
-            'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'],
-            ]);
-            EventShown::create([
-                'event_id' => $event->id,
-                'user_id' => $user->id,
-                'establishment_id' => $user->establishment_id,
-            ]);
+                if($validated['type'] == 'global'){
+                    if($this->isAdminEstablishment($user, $validated['establishment_id'])){
+                        $event = Event::create([
+                            'user_id' => $user->id,
+                            'type' => $validated['type'],
+                            'title' => $validated['title'],
+                            'description' => $validated['description'],
+                            'content' => $validated['content'],
+                            'start_date' => $validated['start_date'],
+                            'end_date' => $validated['end_date'],
+                        ]);
+                        EventShown::create([
+                            'event_id' => $event->id,
+                            'user_id' => $user->id,
+                            'establishment_id' => $user->establishment_id,
+                        ]);
+                    }
+                    else{
+                        return response()->json(['message' => 'nem jogosult'], 401);
+                    }
+                }
+                $event = Event::create([
+                    'user_id' => $user->id,
+                    'type' => $validated['type'],
+                    'title' => $validated['title'],
+                    'description' => $validated['description'],
+                    'content' => $validated['content'],
+                    'start_date' => $validated['start_date'],
+                    'end_date' => $validated['end_date'],
+                ]);
+                EventShown::create([
+                    'event_id' => $event->id,
+                    'user_id' => $user->id,
+                    'establishment_id' => $user->establishment_id,
+                ]);
+            }
+            else{
+                return response()->json(['message' => 'nem jogosult'], 401);
+            }
+        }
+       
+        
+       
+
+     
+            
+            
             foreach ($user->class->students as $student) {
             EventShown::create([
                 'event_id' => $event->id,
                 'user_id' => $student->id,
                 'establishment_id' => $student->establishment_id,
             ]);
-        }
+        
 
         }
 
