@@ -63,33 +63,37 @@ Route::prefix('establishments')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
 //esemény kezelés
-    Route::get('/establishment/{establishment}/events', [EventController::class, 'getEvents']);
+    Route::get('/establishment/{establishmentId}/events', [EventController::class, 'getEvents']);
     Route::post('/establishment/events', [EventController::class, 'store']);
+    Route::get('/establishment/{establishmentId}/event-access', [EventController::class, 'getCollabEvents']);
+    // handle (accept/reject) collaboration requests -> PATCH (partial update)
+    Route::patch('/establishment/event-access', [EventController::class, 'handleCollabEvents']);
 //intézmény kezelés
     Route::get('/establishment/role', [EstablishmentController::class, 'getRole']);
     Route::post('/establishment/create', [EstablishmentController::class, 'store']);
     Route::get('/establishment/mine', [EstablishmentController::class, 'getMyEstablishments']);
-    Route::get('/establishment/{id}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
+    Route::get('/establishment/{establishmentId}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
 //osztály kezelés
-    Route::get('/establishment/{establishment}/classes', [ClassController::class, 'getClasses']);
-    Route::get('/establishment/{establishment}/classes/{class}', [ClassController::class, 'getClassMembers']);
+    Route::get('/establishment/{establishmentId}/classes', [ClassController::class, 'getClasses']);
+    Route::get('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'getClassMembers']);
 
     Route::post('/establishment/classes/create', [ClassController::class, 'store']);
-    Route::post('/establishment/classes/add-students', [StudentController::class, 'storeInClass']);
-    Route::post('/establishment/classes/remove-students', [StudentController::class, 'removeFromClass']);
-
+    // modify class membership -> PATCH
+    Route::patch('/establishment/classes/add-students', [StudentController::class, 'storeInClass']);
+    Route::patch('/establishment/classes/remove-students', [StudentController::class, 'removeFromClass']);
     Route::patch('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'updateClassTeacher']);
 //kérelmek
-    Route::get('/establishment/{establishment}/requests/students', [RequestController::class, 'getStudentRequests']);
-    Route::get('/establishment/{establishment}/requests/teachers', [RequestController::class, 'getTeacherRequests']);
+    Route::get('/establishment/{establishmentId}/requests/students', [RequestController::class, 'getStudentRequests']);
+    Route::get('/establishment/{establishmentId}/requests/teachers', [RequestController::class, 'getTeacherRequests']);
 
     Route::post('/establishment/requests/create', [RequestController::class, 'submitRequest']);
-    Route::post('/establishment/requests/handle', [RequestController::class, 'handleRequest']);
+    // handle request state changes -> PATCH
+    Route::patch('/establishment/requests/handle', [RequestController::class, 'handleRequest']);
 
-    Route::delete('/establishment/{establishment}/requests/revoke', [RequestController::class, 'revokeRequest']);
+    Route::delete('/establishment/{establishmentId}/requests/revoke', [RequestController::class, 'revokeRequest']);
 });
 
 Route::prefix('members')->group(function () {
-    Route::get('/students/{establishment}', [StudentController::class, 'getStudents']);
-    Route::get('/staff/{establishment}', [StaffController::class, 'getStaff']);
+    Route::get('/students/{establishmentId}', [StudentController::class, 'getStudents']);
+    Route::get('/staff/{establishmentId}', [StaffController::class, 'getStaff']);
 });

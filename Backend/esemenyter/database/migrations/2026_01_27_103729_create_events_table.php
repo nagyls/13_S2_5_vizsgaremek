@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->enum('type', ['local', 'global'])->default('local');
+            $table->foreignId('establishment_id')->constrained('establishments')->cascadeOnDelete();
             $table->string('title', 255);
             $table->boolean('chat_enabled')->default(true);
             $table->text('description')->nullable();
