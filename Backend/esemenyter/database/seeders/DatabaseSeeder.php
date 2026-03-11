@@ -56,7 +56,7 @@ class DatabaseSeeder extends Seeder
             'website' => 'https://pege.hu',
             'settlement_id' => $settlement->id,
         ]);
-
+        User::where('id', $user->id)->update(['establishment_id' => $est->id]);
 
         $class = ClassModel::create([
             'establishment_id' => $est->id,
@@ -72,16 +72,17 @@ class DatabaseSeeder extends Seeder
         ]);
 
 
-        $student = Student::create([
-            'alias' => 'primary_student',
-            'establishment_id' => $est->id,
-            'user_id' => $user->id,
-        ]);
+
 
 
         for ($i = 0; $i < 10; $i++) {
             $u = User::factory()->create();
         }
+        $student = Student::create([
+            'alias' => 'primary_student',
+            'establishment_id' => $est->id,
+            'user_id' => 2,
+        ]);
 
 
         $event = Event::create([
@@ -96,7 +97,7 @@ class DatabaseSeeder extends Seeder
         DB::table('event_shows')->insert([
             'event_id' => $event->id,
             'user_id' => $user->id,
-            'class_id' => $class->id,
+            'establishment_id' => $est->id,
             'created_at' => now(),
         ]);
 

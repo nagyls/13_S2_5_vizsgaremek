@@ -52,7 +52,7 @@
           <i class='bx bx-message-square-detail'></i>
         </div>
         <div class="felhivas-szoveg">
-          <h3>Szeretnél hozzászólni?</h3>
+          <h3>{{ isFormal ? 'Szeretne hozzászólni?' : 'Szeretnél hozzászólni?' }}</h3>
           <p>Jelentkezz be, hogy kommentelhess és csatlakozhass a beszélgetéshez!</p>
         </div>
         <router-link to="/bejelentkezes" class="bejelentkezes-gomb">
@@ -169,6 +169,10 @@ export default {
   },
 
   computed: {
+    isFormal() {
+      const user = this.$store?.state?.user || {};
+      return user.role === 'admin' || user.role === 'teacher' || user.role === 'institution_manager';
+    },
     felhasznaloInitial() {
       if (!this.aktualisFelhasznalo) return '?'
       const nev = this.aktualisFelhasznalo.name || this.aktualisFelhasznalo.username || 'Felhasználó'

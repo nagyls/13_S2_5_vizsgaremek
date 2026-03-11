@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->unsignedBigInteger('establishment_id')->nullable()->after('id');
+            $table->foreign('establishment_id')
+                  ->references('id')->on('establishments')
+                  ->onDelete('cascade');
+        });
+        Schema::table('events', function (Blueprint $table) {
+            $table->unsignedBigInteger('staff_id')->nullable()->after('establishment_id');
+            $table->foreign('staff_id')
+                  ->references('id')->on('staffs')
+                  ->onDelete('cascade');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['establishment_id']);
+            $table->dropColumn('establishment_id');
+        });
+    }
+};

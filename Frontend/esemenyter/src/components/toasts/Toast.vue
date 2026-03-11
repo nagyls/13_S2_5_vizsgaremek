@@ -6,6 +6,10 @@
       </div>
       <div class="toast-content">
         <div class="toast-message">{{ message }}</div>
+        <div v-if="type === 'confirm'" class="toast-actions">
+          <button class="toast-action cancel" @click="cancel">{{ meta.cancelText || 'Mégse' }}</button>
+          <button class="toast-action confirm" @click="confirm">{{ meta.confirmText || 'Igen' }}</button>
+        </div>
       </div>
       <button class="toast-close" @click="close">
         <i class='bx bx-x'></i>
@@ -20,7 +24,8 @@ export default {
   props: {
     message: { type: String, required: true },
     type: { type: String, default: 'error' },
-    duration: { type: Number, default: 4000 }
+    duration: { type: Number, default: 4000 },
+    meta: { type: Object, default: () => ({}) }
   },
   data() {
     return { visible: true }
@@ -31,7 +36,8 @@ export default {
         'toast-error': this.type === 'error',
         'toast-success': this.type === 'success',
         'toast-warning': this.type === 'warning',
-        'toast-info': this.type === 'info'
+        'toast-info': this.type === 'info',
+        'toast-confirm': this.type === 'confirm'
       }
     },
     iconClass() {
@@ -39,7 +45,8 @@ export default {
         error: 'bx bx-error-circle',
         success: 'bx bx-check-circle',
         warning: 'bx bx-error',
-        info: 'bx bx-info-circle'
+        info: 'bx bx-info-circle',
+        confirm: 'bx bx-help-circle'
       }
       return icons[this.type] || icons.error
     }
@@ -50,9 +57,18 @@ export default {
     }
   },
   methods: {
+    confirm() {
+      this.closeWith(true)
+    },
+    cancel() {
+      this.closeWith(false)
+    },
     close() {
+      this.closeWith(false)
+    },
+    closeWith(confirmed) {
       this.visible = false
-      setTimeout(() => this.$emit('closed'), 300)
+      setTimeout(() => this.$emit('closed', { confirmed }), 300)
     }
   }
 }
@@ -87,6 +103,34 @@ export default {
 .toast-icon { font-size: 24px; flex-shrink: 0; }
 .toast-content { flex: 1; }
 .toast-message { color: #1f2937; font-size: 15px; line-height: 1.5; font-weight: 500; }
+
+.toast-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.toast-action {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toast-action.cancel {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.toast-action.confirm {
+  background: #4f46e5;
+  color: white;
+}
+
+.toast-confirm { background: #f8f9ff; border-left-color: #4f46e5; }
+.toast-confirm .toast-icon { color: #4f46e5; }
 
 .toast-close {
   background: none;

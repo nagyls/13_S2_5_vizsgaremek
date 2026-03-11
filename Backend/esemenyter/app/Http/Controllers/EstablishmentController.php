@@ -6,7 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Models\Establishment;
 use App\Models\Staff;
-
+use App\Models\User;
+use Symfony\Component\Mime\Message;
 
 class EstablishmentController extends Controller
 {
@@ -14,9 +15,7 @@ class EstablishmentController extends Controller
     public function store(Request $request)
     {
 
-        if (!$request->user()) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
-        }
+        $user = $request->user();
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255', Rule::unique('establishments', 'title')],
@@ -46,11 +45,13 @@ class EstablishmentController extends Controller
         $validated['user_id'] = $request->user()->id;
         $establishment = Establishment::create($validated);
 
-        $Staff = Staff::create([
+        $staff = Staff::create([
             'role' => 'admin',
             'establishment_id' => $establishment->id,
             'user_id' => $request->user()->id,
         ]);
+
+        User::where('id', $request->user()->id)->update(['establishment_id' => $establishment->id]);
 
         return response()->json([
             'message' => 'Intézmény regisztrálva!',
@@ -111,6 +112,31 @@ class EstablishmentController extends Controller
 
         return response()->json([
             'data' => $establishments
+        ]);
+    }
+
+    public function getRole(Request $request)
+    {
+        $user = $request->user();
+
+        if ($this->isMemberEstablishment($user->id, $user->establishment_id)) {
+            if ($this->isStaffEstablishment($user->id, $user->establishment_id)) {
+                if ($this->isAdminEstablishment($user->id, $user->establishment_id)) {
+                    return response()->json([
+                        'role' => 'admin',
+                    ]);
+                }
+                return response()->json([
+                    'role' => 'teacher',
+                ]);
+            }
+            return response()->json([
+                'role' => 'student',
+            ]);
+        }
+        return response()->json([
+            'message' => 'Nem tagja egy intézménynek sem!',
+            403
         ]);
     }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 
 class UserAuthController extends Controller
 {
+    const AUTH_TOKEN_NAME = 'auth_token';
     //
     public function login(Request $request)
     {
@@ -21,30 +22,20 @@ class UserAuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Hibás jelszó!'], 401);
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Hibás jelszó vagy email!'], 401);
         }
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-        //intézmény azonosítók lekérése a userhez
-        $userTeacher = $user->staffs()->exists();
-        $userStudent = $user->students()->exists();
-
-
-
-        if ($userTeacher) {
-            $StaffEstablishments = $user->staffs()->pluck('establishment_id')->toArray();
-        }
-        if ($userStudent) {
-            $studentEstablishments = $user->students()->pluck('establishment_id')->toArray();
-        }
+        $token = $user->createToken(self::AUTH_TOKEN_NAME)->plainTextToken;
         return response()->json([
             'message' => 'Sikeres bejelentkezés!',
-            'user' => $user,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'establishment_id' => $user->establishment_id,
+            ],
             'token' => $token,
-            //'student_establishment_ids' => array_unique($studentEstablishments),
-            //'teacher_establishment_ids' => array_unique($StaffEstablishments),
         ]);
     }
-    public function storeStudent(Request $request) {}
+    
 }

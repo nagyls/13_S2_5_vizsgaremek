@@ -58,7 +58,7 @@
             </div>
             <h2>Válassz szerepkört</h2>
             <p class="section-subtitle">
-              Az alábbi lehetőségek közül választhatod ki, hogyan szeretnél részt venni az EseményTérben
+              {{ isFormal ? 'Az alábbi lehetőségek közül választhatja ki, hogyan szeretne részt venni az EseményTérben' : 'Az alábbi lehetőségek közül választhatod ki, hogyan szeretnél részt venni az EseményTérben' }}
             </p>
           </div>
           
@@ -933,7 +933,7 @@
 
 <script>
 import axios from 'axios';
-import { toast } from '../services/toast'
+import { toast } from '../../services/toast'
 
 export default {
   name: 'Dashboard',
@@ -1076,6 +1076,10 @@ export default {
         'admin': 'Adminisztrátor'
       };
       return roles[this.user.role] || this.user.role || 'Vendég';
+    },
+
+    isFormal() {
+      return this.user.role === 'admin' || this.user.role === 'teacher' || this.user.role === 'institution_manager';
     },
     
     // Diák kiválasztott elemek
@@ -1308,9 +1312,22 @@ export default {
           specialTeaching: this.user.specialTeaching || {}
         }
 
-        this.profileConfigured = !!userData.role
+        await this.fetchAndSaveRole(token);
+
+        if (!this.user.role && userData.role) {
+          this.user.role = userData.role;
+        }
+
+        this.selectedRole = this.user.role === 'institution_manager' ? 'admin' : this.user.role;
+
+        this.profileConfigured = !!this.user.role
         this.saveUserData()
         console.log('Felhasználói adatok betöltve:', this.user)
+
+        if (this.user.role === 'admin') {
+          this.$router.replace('/user-dashboard');
+          return;
+        }
 
       } catch (error) {
         console.error('Hiba a felhasználói adatok lekérésekor:', error)
@@ -1332,6 +1349,24 @@ export default {
           // Átirányítás
           this.$router.push('/');
         }
+      }
+    },
+
+    async fetchAndSaveRole(token) {
+      try {
+        const roleResponse = await axios.get('http://127.0.0.1:8000/api/establishment/role', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const roleFromApi = roleResponse.data?.role || '';
+
+        if (roleFromApi) {
+          this.user.role = roleFromApi;
+        }
+      } catch (error) {
+        console.error('Hiba a role lekérésekor:', error);
       }
     },
     
@@ -1786,10 +1821,46 @@ export default {
       this.adminNewCityName = '';
     },
     
+    async submitInstitutionRequest(establishmentId, role) {
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      if (!token) {
+        throw new Error('Nincs érvényes bejelentkezés.');
+      }
+
+      return axios.post(
+        `http://127.0.0.1:8000/api/establishment/requests/create`,
+        {
+          establishment_id: establishmentId,
+          role
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          }
+        }
+      );
+    },
+
     // Profil befejező metódusok
-    completeStudentProfileSetup() {
+    async completeStudentProfileSetup() {
+      try {
+        await this.submitInstitutionRequest(this.selectedSchoolId, 'student');
+      } catch (error) {
+        if (error.response?.status !== 409) {
+          toast.error('A csatlakozási kérelem elküldése sikertelen.');
+          return;
+        }
+      }
+
       this.profileConfigured = true;
-      this.user.role = this.selectedRole;
+      this.user.role = '';
+      this.user.pendingApproval = true;
+      this.user.requestedRole = 'student';
       this.user.region = this.selectedRegion?.title || '';
       this.user.district = this.selectedDistrict?.title || '';
       this.user.city = this.selectedCity?.title || '';
@@ -1800,9 +1871,20 @@ export default {
       this.$router.push('/pending-approval');
     },
     
-    completeTeacherProfileSetup() {
+    async completeTeacherProfileSetup() {
+      try {
+        await this.submitInstitutionRequest(this.teacherSelectedSchoolId, 'teacher');
+      } catch (error) {
+        if (error.response?.status !== 409) {
+          toast.error('A csatlakozási kérelem elküldése sikertelen.');
+          return;
+        }
+      }
+
       this.profileConfigured = true;
-      this.user.role = this.selectedRole;
+      this.user.role = '';
+      this.user.pendingApproval = true;
+      this.user.requestedRole = 'teacher';
       this.user.region = this.teacherSelectedRegion?.title || '';
       this.user.district = this.teacherSelectedDistrict?.title || '';
       this.user.city = this.teacherSelectedCity?.title || '';
@@ -1943,6 +2025,8 @@ export default {
         name: this.user.name,
         email: this.user.email,
         role: this.user.role,
+        pendingApproval: !!this.user.pendingApproval,
+        requestedRole: this.user.requestedRole || '',
         region: this.user.region,
         district: this.user.district,
         city: this.user.city,
@@ -2057,7 +2141,7 @@ export default {
   box-sizing: border-box;
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
@@ -2100,6 +2184,7 @@ export default {
   font-size: 32px;
   color: #4f46e5;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -2109,6 +2194,7 @@ export default {
   font-size: 24px;
   font-weight: 700;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -3074,7 +3160,7 @@ export default {
     height: 32px;
     font-size: 12px;
   }
-  
+
   .classes-grid {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
@@ -3086,6 +3172,21 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .logo-section {
+    justify-content: center;
+  }
+
+  .user-profile {
+    align-self: center;
+  }
+
   .role-cards-grid {
     grid-template-columns: 1fr;
   }

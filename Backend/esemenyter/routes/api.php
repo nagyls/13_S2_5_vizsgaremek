@@ -63,11 +63,10 @@ Route::prefix('establishments')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
 //esemény kezelés
-    Route::get('/events', [EventController::class, 'getEvents']);
-    Route::post('/events', [EventController::class, 'store']);
-    Route::get('/events', [EventController::class, 'index']);
-    Route::get('/events/{event}', [EventController::class, 'show']);
+    Route::get('/establishment/{establishment}/events', [EventController::class, 'getEvents']);
+    Route::post('/establishment/events', [EventController::class, 'store']);
 //intézmény kezelés
+    Route::get('/establishment/role', [EstablishmentController::class, 'getRole']);
     Route::post('/establishment/create', [EstablishmentController::class, 'store']);
     Route::get('/establishment/mine', [EstablishmentController::class, 'getMyEstablishments']);
     Route::get('/establishment/{id}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
@@ -79,12 +78,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/establishment/classes/add-students', [StudentController::class, 'storeInClass']);
     Route::post('/establishment/classes/remove-students', [StudentController::class, 'removeFromClass']);
 
-    Route::patch('/establishment/{establishment}/classes/{class}', [StaffController::class, 'updateClassTeacher']);
+    Route::patch('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'updateClassTeacher']);
 //kérelmek
     Route::get('/establishment/{establishment}/requests/students', [RequestController::class, 'getStudentRequests']);
     Route::get('/establishment/{establishment}/requests/teachers', [RequestController::class, 'getTeacherRequests']);
 
-    Route::post('/establishment/{establishment}/requests', [RequestController::class, 'submitRequest']);
+    Route::post('/establishment/requests/create', [RequestController::class, 'submitRequest']);
     Route::post('/establishment/requests/handle', [RequestController::class, 'handleRequest']);
 
     Route::delete('/establishment/{establishment}/requests/revoke', [RequestController::class, 'revokeRequest']);

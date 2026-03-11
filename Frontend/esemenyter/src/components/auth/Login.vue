@@ -31,7 +31,7 @@
 
 <script>
 import axios from "axios";
-import { toast } from '../services/toast'
+import { toast } from '../../services/toast'
 
 export default {
   name: 'Login',
@@ -50,6 +50,50 @@ export default {
     togglePassword() {
       this.showPassword = !this.showPassword;
     },
+
+        getRedirectPath(userData) {
+            const role = userData?.role || '';
+
+            if (role === 'institution_manager') return '/institution-dashboard';
+            if (role === 'admin' || role === 'teacher' || role === 'student') return '/user-dashboard';
+            return '/dashboard';
+        },
+
+        async fetchRole(token) {
+            try {
+                const roleResponse = await axios.get('http://127.0.0.1:8000/api/establishment/role', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                return roleResponse.data?.role || '';
+            } catch (error) {
+                console.error('Role lekérési hiba:', error);
+                return '';
+            }
+        },
+
+        saveAuthData(userData, token) {
+            if (this.rememberMe) {
+                localStorage.setItem('esemenyter_user', JSON.stringify(userData));
+                localStorage.setItem('esemenyter_token', token);
+            } else {
+                sessionStorage.setItem('esemenyter_user', JSON.stringify(userData));
+                sessionStorage.setItem('esemenyter_token', token);
+            }
+        },
+
+        saveCurrentInstitution(institutionId) {
+            if (!institutionId) return;
+
+            const hasLocalToken = !!localStorage.getItem('esemenyter_token');
+            if (hasLocalToken || this.rememberMe) {
+                localStorage.setItem('CurrentInstitution', String(institutionId));
+                sessionStorage.removeItem('CurrentInstitution');
+            } else {
+                sessionStorage.setItem('CurrentInstitution', String(institutionId));
+                localStorage.removeItem('CurrentInstitution');
+            }
+        },
 
     async login() {
       this.loading = true;
@@ -77,26 +121,31 @@ export default {
         // 🔥 2️⃣ Axios header beállítás
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
+                const userResponse = await axios.get('http://127.0.0.1:8000/api/user', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                const role = await this.fetchRole(token);
+                const backendUser = userResponse.data || {};
+
         const userData = {
-          id: res.data.user.id,
-          name: res.data.user.name,
-          email: res.data.user.email,
-          is_teacher: res.data.is_teacher || false,
-          is_student: res.data.is_student || false,
-          establishment_ids: res.data.establishment_ids || [],
-          isLoggedIn: true,
-          loggedInAt: new Date().toISOString()
+                    id: backendUser.id || res.data.user.id,
+                    name: backendUser.name || res.data.user.name,
+                    email: backendUser.email || res.data.user.email,
+                    role: role || backendUser.role || '',
+                    institution_id: backendUser.establishment_id || null,
+                    is_teacher: res.data.is_teacher || false,
+                    is_student: res.data.is_student || false,
+                    establishment_ids: res.data.establishment_ids || [],
+                    isLoggedIn: true,
+                    loggedInAt: new Date().toISOString()
         };
 
-        if (this.rememberMe) {
-          localStorage.setItem('esemenyter_user', JSON.stringify(userData));
-          localStorage.setItem('esemenyter_token', token);
-        } else {
-          sessionStorage.setItem('esemenyter_user', JSON.stringify(userData));
-          sessionStorage.setItem('esemenyter_token', token);
-        }
+                this.saveCurrentInstitution(userData.institution_id);
 
-        this.$router.push('/dashboard');
+                this.saveAuthData(userData, token);
+
+                this.$router.push(this.getRedirectPath(userData));
 
       } catch (err) {
         console.error("Bejelentkezési hiba:", err);
@@ -122,8 +171,35 @@ export default {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
       axios.get('http://127.0.0.1:8000/api/user')
-        .then(() => {
-          this.$router.push('/dashboard');
+                .then(async (response) => {
+                    const userData = JSON.parse(
+                        localStorage.getItem('esemenyter_user') ||
+                        sessionStorage.getItem('esemenyter_user') ||
+                        '{}'
+                    );
+
+                    const role = await this.fetchRole(token);
+                    const backendUser = response.data || {};
+                    const mergedUserData = {
+                        ...userData,
+                        id: backendUser.id || userData.id,
+                        name: backendUser.name || userData.name,
+                        email: backendUser.email || userData.email,
+                        role: role || backendUser.role || userData.role || '',
+                        institution_id: backendUser.establishment_id || userData.institution_id || null,
+                        isLoggedIn: true,
+                    };
+
+                    const hasLocalToken = !!localStorage.getItem('esemenyter_token');
+                    if (hasLocalToken) {
+                        localStorage.setItem('esemenyter_user', JSON.stringify(mergedUserData));
+                    } else {
+                        sessionStorage.setItem('esemenyter_user', JSON.stringify(mergedUserData));
+                    }
+
+                    this.saveCurrentInstitution(mergedUserData.institution_id);
+
+                    this.$router.push(this.getRedirectPath(mergedUserData));
         })
         .catch(() => {
           localStorage.clear();
