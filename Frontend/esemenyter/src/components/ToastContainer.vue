@@ -6,7 +6,8 @@
       :message="toast.message"
       :type="toast.type"
       :duration="toast.duration"
-      @closed="removeToast(toast.id)"
+      :meta="toast.meta"
+      @closed="removeToast(toast.id, $event)"
     />
   </div>
 </template>
@@ -21,15 +22,21 @@ export default {
     return { toasts: [] }
   },
   methods: {
-    addToast(message, type = 'error', duration = 4000) {
+    addToast(message, type = 'error', duration = 4000, meta = {}) {
       const id = Date.now() + Math.random()
-      this.toasts.push({ id, message, type, duration })
+      this.toasts.push({ id, message, type, duration, meta })
       if (this.toasts.length > 5) this.toasts.shift()
       return id
     },
-    removeToast(id) {
+    removeToast(id, payload) {
       const index = this.toasts.findIndex(t => t.id === id)
-      if (index !== -1) this.toasts.splice(index, 1)
+      if (index !== -1) {
+        const toast = this.toasts[index]
+        if (typeof toast?.meta?.resolve === 'function') {
+          toast.meta.resolve(Boolean(payload?.confirmed))
+        }
+        this.toasts.splice(index, 1)
+      }
     },
     error(message, duration) { return this.addToast(message, 'error', duration) },
     success(message, duration) { return this.addToast(message, 'success', duration) },

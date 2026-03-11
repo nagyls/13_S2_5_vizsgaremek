@@ -437,7 +437,7 @@ export default {
           this.events = [];
           return;
         }
-        
+
         this.events = await this.fetchEventsFromApi();
         
       } catch (error) {
@@ -447,13 +447,81 @@ export default {
         this.isLoading = false;
       }
     },
-    
+
+    getCurrentInstitutionId() {
+      const storedInstitutionId =
+        localStorage.getItem('CurrentInstitution') ||
+        sessionStorage.getItem('CurrentInstitution') ||
+        this.currentUser?.institution_id ||
+        this.currentUser?.establishment_id;
+
+      const institutionId = Number(storedInstitutionId);
+      return Number.isFinite(institutionId) && institutionId > 0 ? institutionId : null;
+    },
+
+    normalizeEventStatus(status) {
+      const normalized = String(status || '').toLowerCase();
+
+      if (normalized === 'ongoing' || normalized === 'open') {
+        return 'open';
+      }
+
+      if (normalized === 'ended' || normalized === 'closed') {
+        return 'closed';
+      }
+
+      if (normalized === 'upcoming') {
+        return 'open';
+      }
+
+      return 'open';
+    },
+
+    normalizeEventForList(event) {
+      const normalizedStatus = this.normalizeEventStatus(event?.status);
+      const creatorName =
+        event?.creator_name ||
+        event?.creator?.name ||
+        event?.user?.name ||
+        'Ismeretlen szervező';
+
+      return {
+        ...event,
+        status: normalizedStatus,
+        creator_name: creatorName,
+        participants: Number(event?.participants || event?.participant_count || 0),
+        favorites: Number(event?.favorites || event?.favorite_count || 0),
+        comment_count: Number(event?.comment_count || event?.comments_count || 0)
+      };
+    },
+
     async fetchEventsFromApi() {
-      const { data } = await axios.get('http://127.0.0.1:8000/api/events', {
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      const institutionId = this.getCurrentInstitutionId();
+      const shouldUseInstitutionEndpoint =
+        ['student', 'teacher'].includes(this.normalizedRole) &&
+        Number.isFinite(Number(institutionId)) &&
+        Number(institutionId) > 0;
+
+      const endpoint = shouldUseInstitutionEndpoint
+        ? `http://127.0.0.1:8000/api/establishment/${institutionId}/events`
+        : 'http://127.0.0.1:8000/api/events';
+
+      const response = await axios.get(endpoint, {
         headers: {
-          Accept: 'application/json'
-        }
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        // Itt helyben kezeljuk a hibakat, hogy ne triggerelodjon globalis kijelentkeztetes.
+        validateStatus: (status) => status >= 200 && status < 600
       });
+
+      if (response.status >= 400) return [];
+
+      const { data } = response;
 
       const incomingEvents = Array.isArray(data)
         ? data
@@ -462,6 +530,7 @@ export default {
           : [];
 
       return incomingEvents
+        .map((event) => this.normalizeEventForList(event))
         .filter(event => {
           if (this.filters.type && event.type !== this.filters.type) return false;
           if (this.filters.status && event.status !== this.filters.status) return false;

@@ -24,26 +24,36 @@ import Profile from './components/Profile.vue'
 import ToastContainer from './components/Toast.vue'
 import './style.css'
 
+const AUTH_DEBUG = import.meta.env.VITE_DEBUG_AUTH === 'true'
+
 // Axios interceptor - automatikusan csatolja a tokent az Authorization header-be
 axios.interceptors.request.use(config => {
   try {
-    // Check for token in localStorage first, then in sessionStorage
-    let token = localStorage.getItem('esemenyter_token');
-    if (!token) {
-      token = sessionStorage.getItem('esemenyter_token');
+    if (!config.headers) {
+      config.headers = {}
     }
-    
+
+    // Check for token in localStorage first, then in sessionStorage
+    let token = localStorage.getItem('esemenyter_token')
+    if (!token) {
+      token = sessionStorage.getItem('esemenyter_token')
+    }
+
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log('Token hozzáadva a kéréshez:', token.substring(0, 20) + '...');
-    } else {
-      console.warn('Nincs token a kéréshez!');
+      config.headers.Authorization = `Bearer ${token}`
+      if (AUTH_DEBUG) {
+        console.log('Token hozzáadva a kéréshez:', token.substring(0, 20) + '...')
+      }
+    } else if (AUTH_DEBUG) {
+      console.warn('Nincs token a kéréshez!')
     }
   } catch (error) {
-    console.error('Token lekérési hiba:', error);
+    if (AUTH_DEBUG) {
+      console.error('Token lekérési hiba:', error)
+    }
   }
-  return config;
-});
+  return config
+})
 
 // Válasz interceptor - kezeli a 401-es hibákat
 axios.interceptors.response.use(

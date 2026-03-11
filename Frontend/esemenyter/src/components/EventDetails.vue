@@ -253,7 +253,8 @@ export default {
       attendingCount: 0,
       notAttendingCount: 0,
       favoriteCount: 0,
-      userParticipation: null
+      userParticipation: null,
+      studentHasClass: null
     }
   },
   
@@ -356,6 +357,11 @@ export default {
         this.$router.push('/login')
         return
       }
+
+      const canParticipate = await this.canCurrentUserParticipate()
+      if (!canParticipate) {
+        return
+      }
       
       try {
         const participationData = JSON.parse(localStorage.getItem('esemeny_resztvetel') || '[]')
@@ -386,6 +392,95 @@ export default {
       } catch (error) {
         console.error('Hiba a részvétel küldésekor:', error)
         this.showMessage('Hiba történt a válasz küldése közben.', 'error')
+      }
+    },
+
+    async canCurrentUserParticipate() {
+      if (!this.currentUser) {
+        return false
+      }
+
+      if (this.currentUser.role !== 'student') {
+        return true
+      }
+
+      if (this.studentHasClass === null) {
+        this.studentHasClass = await this.checkStudentClassMembership()
+      }
+
+      const hasClass = this.studentHasClass
+
+      if (!hasClass) {
+        this.showMessage('Osztályhoz nem rendelt diákként nem tudsz eseményre jelentkezni.', 'warning')
+        return false
+      }
+
+      return true
+    },
+
+    async checkStudentClassMembership() {
+      try {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token')
+
+        if (!token) {
+          return false
+        }
+
+        const institutionId =
+          this.currentUser?.establishment_id ||
+          localStorage.getItem('CurrentInstitution') ||
+          sessionStorage.getItem('CurrentInstitution') ||
+          localStorage.getItem('institutionId') ||
+          sessionStorage.getItem('institutionId')
+
+        if (!institutionId) {
+          return false
+        }
+
+        const classesResponse = await fetch(`http://127.0.0.1:8000/api/establishment/${institutionId}/classes`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json'
+          }
+        })
+
+        if (!classesResponse.ok) {
+          return false
+        }
+
+        const classesPayload = await classesResponse.json()
+        const classes = Array.isArray(classesPayload?.data) ? classesPayload.data : []
+
+        for (const classItem of classes) {
+          const membersResponse = await fetch(
+            `http://127.0.0.1:8000/api/establishment/${institutionId}/classes/${classItem.id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json'
+              }
+            }
+          )
+
+          if (!membersResponse.ok) {
+            continue
+          }
+
+          const membersPayload = await membersResponse.json()
+          const members = Array.isArray(membersPayload?.data) ? membersPayload.data : []
+          const belongsToClass = members.some(member => Number(member?.id) === Number(this.currentUser.id))
+
+          if (belongsToClass) {
+            return true
+          }
+        }
+
+        return false
+      } catch (error) {
+        console.error('Hiba az osztály tagság ellenőrzése során:', error)
+        return false
       }
     },
     
