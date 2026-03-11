@@ -97,7 +97,7 @@ class DatabaseSeeder extends Seeder
         DB::table('event_shows')->insert([
             'event_id' => $event->id,
             'user_id' => $user->id,
-            'class_id' => $class->id,
+            'establishment_id' => $est->id,
             'created_at' => now(),
         ]);
 

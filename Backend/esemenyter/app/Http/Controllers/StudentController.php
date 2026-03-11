@@ -13,27 +13,6 @@ use App\Models\Student;
 
 class StudentController extends Controller
 {
-    // Diákok lekérdezése
-    public function getStudents($establishmentId)
-    {
-        $establishment = Establishment::find($establishmentId);
-        if (!$establishment) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Intézmény nem található!'
-            ], 400);
-        }
-
-        $students = User::join('students', 'users.id', '=', 'students.user_id')
-            ->where('students.establishment_id', $establishmentId)
-            ->select('users.id','students.id as student_id','users.name', 'students.alias','users.email', 'students.created_at','students.updated_at')
-            ->distinct()
-            ->get();
-
-        return response()->json([
-            'data' => $students
-        ]);
-    }
     // Diák hozzáadása osztályhoz
     public function storeInClass(Request $request)
     {
@@ -72,7 +51,7 @@ class StudentController extends Controller
 
         $studentIds = $request->input('student_id');
         
-        // Check all students exist and belong to the establishment in ONE query
+
         $validStudentsIds = Student::whereIn('id', $studentIds)
             ->where('establishment_id', $establishmentId)
             ->pluck('id')
@@ -115,5 +94,117 @@ class StudentController extends Controller
             'message' => 'Diák(ok) hozzáadva az osztályhoz!'
         ]);
     }
+    public function removeFromClass(Request $request)
+    {
+        $user = $request->user();
+        request()->validate([
+            'establishment_id' => 'required|integer|exists:establishments,id',
+            'class_id' => 'required|integer|exists:classes,id',
+            'student_id'   => 'required|array',
+            'student_id.*' => 'integer|exists:students,id',
+        ]);
+        $establishmentId = $request->input('establishment_id');
+        $classId = $request->input('class_id');
+        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
 
+        $establishment = Establishment::find($establishmentId);
+        $class = ClassModel::find($classId);
+
+        if ($class && $establishment && $class->establishment_id != $establishmentId) {
+            return response()->json([
+                'errors' => 'Az osztály nem tartozik az intézményhez!'
+            ], 400); 
+        }
+
+        $studentIds = $request->input('student_id');
+        
+
+        $validStudentsIds = Student::whereIn('id', $studentIds)
+            ->where('establishment_id', $establishmentId)
+            ->pluck('id')
+            ->toArray();
+            
+        if (count($validStudentsIds) !== count($studentIds)) {
+            $invalidIds = array_diff($studentIds, $validStudentsIds);
+            return response()->json([
+                'errors' => "Diák ID(k): " . implode(', ', $invalidIds) . " nem létezik vagy nem tartozik az intézményhez!"
+            ], 400);
+        }
+
+        $userIds = Student::whereIn('id', $studentIds)
+            ->pluck('user_id')
+            ->toArray();
+
+        ClassStudent::where('class_id', $classId)
+            ->whereIn('user_id', $userIds)
+            ->delete();
+
+        return response()->json([
+            'message' => 'Diák(ok) eltávolítva az osztályból!'
+        ]);
+    }
+    // Diákok lekérdezése
+    public function getStudents($establishmentId)
+    {
+        $establishment = Establishment::find($establishmentId);
+        if (!$establishment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Intézmény nem található!'
+            ], 400);
+        }
+
+        $students = User::join('students', 'users.id', '=', 'students.user_id')
+            ->where('students.establishment_id', $establishmentId)
+            ->select('users.id','students.id as student_id','users.name', 'students.alias','users.email', 'students.created_at','students.updated_at')
+            ->distinct()
+            ->get();
+
+        return response()->json([
+            'data' => $students
+        ]);
+    }
+
+    public function removeStudents(Request $request)
+    {
+        $user = $request->user();
+        request()->validate([
+            'establishment_id' => 'required|integer|exists:establishments,id',
+            'student_id'   => 'required|array',
+            'student_id.*' => 'integer|exists:students,id',
+        ]);
+        $establishmentId = $request->input('establishment_id');
+
+        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
+
+        $studentIds = $request->input('student_id');
+
+   
+        $validStudentsIds = Student::whereIn('id', $studentIds)
+            ->where('establishment_id', $establishmentId)
+            ->pluck('id')
+            ->toArray();
+
+        if (count($validStudentsIds) !== count($studentIds)) {
+            $invalidIds = array_diff($studentIds, $validStudentsIds);
+            return response()->json([
+                'errors' => "Diák ID(k): " . implode(', ', $invalidIds) . " nem létezik vagy nem tartozik az intézményhez!"
+            ], 400);
+        }
+
+        $userIds = Student::whereIn('id', $studentIds)
+            ->pluck('user_id')
+            ->toArray();
+
+        ClassStudent::whereIn('user_id', $userIds)
+            ->delete();
+
+        return response()->json([
+            'message' => 'Diák(ok) eltávolítva az osztályból!'
+        ]);
+    }
 }
