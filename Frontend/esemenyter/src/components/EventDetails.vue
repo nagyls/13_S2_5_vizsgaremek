@@ -183,7 +183,7 @@
             <!-- Részvétel -->
             <div v-if="eventData.status === 'open' && currentUser" class="info-card participation">
               <h3><i class='bx bx-check-shield'></i> Részvétel</h3>
-              <p class="participation-description">Hogyan szeretnél részt venni az eseményen?</p>
+              <p class="participation-description">{{ isFormal ? 'Hogyan szeretne részt venni az eseményen?' : 'Hogyan szeretnél részt venni az eseményen?' }}</p>
               <div class="participation-options">
                 <button @click="submitParticipation('y')" 
                         class="answer-button attending" 
@@ -261,6 +261,12 @@ export default {
   created() {
     this.loadEvent()
     this.loadCurrentUser()
+  },
+  
+  computed: {
+    isFormal() {
+      return this.currentUser?.role === 'admin' || this.currentUser?.role === 'teacher' || this.currentUser?.role === 'institution_manager';
+    }
   },
   
   methods: {

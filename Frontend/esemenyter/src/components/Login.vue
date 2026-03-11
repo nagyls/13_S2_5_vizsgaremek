@@ -56,7 +56,6 @@ export default {
 
             if (role === 'institution_manager') return '/institution-dashboard';
             if (role === 'admin' || role === 'teacher' || role === 'student') return '/user-dashboard';
-            if (userData?.pendingApproval) return '/pending-approval';
             return '/dashboard';
         },
 

@@ -1,8 +1,10 @@
 <template>
   <div class="user-dashboard">
+    <!-- HEADER -->
     <header class="main-header">
       <div class="container">
         <div class="header-content">
+          <!-- Logo -->
           <div class="logo-section" @click="$router.push('/user-dashboard')">
             <div class="logo-icon">
               <i class='bx bx-calendar-heart'></i>
@@ -12,7 +14,8 @@
               <p class="site-subtitle">Ahol minden esemény helyet kap</p>
             </div>
           </div>
-          
+
+          <!-- User menu -->
           <div class="user-profile">
             <div class="user-avatar" @click="toggleUserMenu">
               <div class="avatar-circle">
@@ -22,7 +25,7 @@
                 <div class="status-dot online"></div>
               </div>
             </div>
-            
+
             <transition name="slide-fade">
               <div v-if="showUserMenu" class="user-menu">
                 <div class="menu-header">
@@ -44,7 +47,7 @@
                     <span>Események</span>
                   </router-link>
                   <router-link
-                    v-if="user.role === 'admin'"
+                    v-if="user.role === 'admin' || user.role === 'institution_manager'"
                     to="/institution-dashboard"
                     class="menu-item"
                   >
@@ -64,57 +67,108 @@
       </div>
     </header>
 
+    <!-- MAIN CONTENT -->
     <main class="main-content">
       <div class="container">
-        <!-- Sikeres profilbeállítás utáni üzenet -->
-        <div class="success-section">
-          <div class="success-card">
-            <div class="success-icon">
+        <!-- Welcome Hero -->
+        <div class="welcome-section">
+          <div class="welcome-card">
+            <div class="welcome-icon">
               <i class='bx bx-party'></i>
             </div>
-            <h3>Profilod kész!</h3>
-            <p>Sikeresen beállítottad a profilodat. Most már teljes mértékben használhatod az EseményTér funkcióit.</p>
-
-            <!-- Gombok szerepkör alapján -->
-            <div class="success-buttons">
-              <button class="btn-primary btn-success" @click="goToEvents">
-                <i class='bx bx-calendar'></i>
-                Események megtekintése
-              </button>
-
-              <!-- Intézményvezetői felület gomb - csak admin/institution_manager szerepkörnél -->
-              <button 
-                v-if="user.role === 'institution_manager' || user.role === 'admin'" 
-                class="btn-primary btn-institution" 
-                @click="goToInstitutionDashboard"
-              >
-                <i class='bx bx-building-house'></i>
-                Intézményvezetői felület
-              </button>
-            </div>
-
-            <div class="success-actions">
-              <button class="btn-text" @click="goToProfile">
-                <i class='bx bx-user'></i>
-                Profiladatok megtekintése
-              </button>
+            <h2>{{ welcomeText }}</h2>
+            <p class="welcome-text">
+              Sikeresen beállítottad a profilodat. Most már teljes mértékben használhatod az EseményTér funkcióit.
+            </p>
+            <div class="role-indicator">
+              <span class="role-label">Szerepköröd:</span>
+              <span class="role-value" :class="user.role">{{ roleDisplayName }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Dashboard tartalom (később bővíthető) -->
-        <div v-if="user.role === 'student'" class="role-content">
-          <!-- Diák specifikus tartalom -->
+        <!-- Navigation Hub -->
+        <div class="nav-hub">
+          <h3 class="hub-title">
+            <i class='bx bx-compass'></i>
+            {{ navHubTitle }}
+          </h3>
+
+          <div class="nav-grid">
+            <!-- Események kártya (mindenkinek) -->
+            <div class="nav-card" @click="goToEvents">
+              <div class="card-icon events">
+                <i class='bx bx-calendar-star'></i>
+              </div>
+              <h4>Események</h4>
+              <p>Böngéssz az események között, jelentkezz és vegyél részt</p>
+              <div class="card-footer">
+                <span class="btn-text">
+                  Megtekintés <i class='bx bx-right-arrow-alt'></i>
+                </span>
+              </div>
+            </div>
+
+            <!-- Profil kártya (mindenkinek) -->
+            <div class="nav-card" @click="goToProfile">
+              <div class="card-icon profile">
+                <i class='bx bx-user-circle'></i>
+              </div>
+              <h4>Profilom</h4>
+              <p>Tekintsd meg és szerkeszd a profiladataidat</p>
+              <div class="card-footer">
+                <span class="btn-text">
+                  Megnyitás <i class='bx bx-right-arrow-alt'></i>
+                </span>
+              </div>
+            </div>
+
+            <!-- Intézményvezetői felület (admin/institution_manager) -->
+            <div
+              v-if="user.role === 'admin' || user.role === 'institution_manager'"
+              class="nav-card"
+              @click="goToInstitutionDashboard"
+            >
+              <div class="card-icon institution">
+                <i class='bx bx-building-house'></i>
+              </div>
+              <h4>Intézményvezetői felület</h4>
+              <p>Kezeld az intézményed, osztályokat és kérelmeket</p>
+              <div class="card-footer">
+                <span class="btn-text">
+                  Vezérlőpult <i class='bx bx-right-arrow-alt'></i>
+                </span>
+              </div>
+            </div>
+
+            <!-- További kártyák később bővíthetők -->
+            <!-- <div class="nav-card coming-soon">
+              <div class="card-icon soon">
+                <i class='bx bx-time'></i>
+              </div>
+              <h4>További funkciók</h4>
+              <p>Új lehetőségek hamarosan érkeznek</p>
+              <div class="card-footer">
+                <span class="badge-soon">Hamarosan</span>
+              </div>
+            </div> -->
+          </div>
         </div>
-        <div v-else-if="user.role === 'teacher'" class="role-content">
-          <!-- Tanár specifikus tartalom -->
-        </div>
-        <div v-else-if="user.role === 'admin' || user.role === 'institution_manager'" class="role-content">
-          <!-- Admin specifikus tartalom -->
+
+        <!-- Quick Info (opcionális) -->
+        <div v-if="user.role === 'student' || user.role === 'teacher'" class="info-section">
+          <div class="info-card">
+            <i class='bx bx-info-circle'></i>
+            <div class="info-content">
+              <h4>{{ helpTitle }}</h4>
+              <p>{{ isFormal ? 'Ha bármilyen kérdése van, keresd bátran az intézmény adminisztrátorát.' : 'Ha bármilyen kérdésed van, keresd bátran az intézményed adminisztrátorát.' }}</p>
+            </div>
+          </div>
         </div>
       </div>
     </main>
 
+    <!-- Floating Action Button -->
     <button v-if="showScrollTop" class="fab" @click="scrollToTop">
       <i class='bx bx-chevron-up'></i>
     </button>
@@ -126,7 +180,7 @@ import axios from 'axios';
 
 export default {
   name: 'UserDashboard',
-  
+
   data() {
     return {
       user: {
@@ -148,7 +202,7 @@ export default {
       showScrollTop: false
     }
   },
-  
+
   computed: {
     userInitials() {
       return this.user.name
@@ -158,7 +212,7 @@ export default {
         .toUpperCase()
         .substring(0, 2);
     },
-    
+
     roleDisplayName() {
       const roles = {
         'student': 'Diák',
@@ -167,9 +221,26 @@ export default {
         'institution_manager': 'Intézményvezető'
       };
       return roles[this.user.role] || this.user.role;
+    },
+
+    isFormal() {
+      return this.user.role === 'admin' || this.user.role === 'teacher' || this.user.role === 'institution_manager';
+    },
+
+    welcomeText() {
+      const firstName = this.user.name.split(' ')[0];
+      return this.isFormal ? `Üdvözlöm, ${firstName}!` : `Üdvözöllek, ${firstName}!`;
+    },
+
+    navHubTitle() {
+      return this.isFormal ? 'Hová szeretne menni?' : 'Hová szeretnél menni?';
+    },
+
+    helpTitle() {
+      return this.isFormal ? 'Segítségre van szüksége?' : 'Segítségre van szükséged?';
     }
   },
-  
+
   methods: {
     loadUserData() {
       const savedUser =
@@ -189,14 +260,14 @@ export default {
         const userData = JSON.parse(savedUser);
         if (userData.isLoggedIn) {
           this.user = { ...this.user, ...userData };
-        
+
           // Ha nincs szerepkör beállítva, irányítsuk vissza a dashboardra
           if (!this.user.role) {
             this.$router.push('/dashboard');
             return;
-            }
-            // Ellenőrizzük, hogy van-e függőben lévő kérelme
-            this.checkPendingStatus();
+          }
+          // Ellenőrizzük, hogy van-e függőben lévő kérelme
+          this.checkPendingStatus();
         } else {
           this.$router.push('/');
         }
@@ -228,23 +299,23 @@ export default {
         console.error('Hiba a függőben lévő kérelem ellenőrzésekor:', error);
       }
     },
-    
+
     toggleUserMenu() {
       this.showUserMenu = !this.showUserMenu;
     },
-    
+
     goToEvents() {
       this.$router.push('/events-list');
     },
-    
+
     goToProfile() {
       this.$router.push('/profile');
     },
-    
+
     goToInstitutionDashboard() {
       this.$router.push('/institution-dashboard');
     },
-    
+
     logout() {
       axios.delete('http://127.0.0.1:8000/api/logout')
         .finally(() => {
@@ -260,27 +331,27 @@ export default {
           this.$router.push('/');
         });
     },
-    
+
     scrollToTop() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
-    
+
     handleScroll() {
       this.showScrollTop = window.scrollY > 300;
     }
   },
-  
+
   mounted() {
     this.loadUserData();
     window.addEventListener('scroll', this.handleScroll);
-    
+
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.user-profile')) {
         this.showUserMenu = false;
       }
     });
   },
-  
+
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
   }
@@ -288,12 +359,18 @@ export default {
 </script>
 
 <style scoped>
-.user-dashboard {
+/* ===== Alap stílusok ===== */
+* {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
-  font-family: "Poppins", sans-serif;
+}
+
+.user-dashboard {
   min-height: 100vh;
-  width: 100%;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  width: 100%;
 }
 
 .container {
@@ -302,7 +379,7 @@ export default {
   padding: 0 20px;
 }
 
-/* FEJLÉC */
+/* ===== FEJLÉC ===== */
 .main-header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -311,6 +388,7 @@ export default {
   position: sticky;
   top: 0;
   z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 }
 
 .header-content {
@@ -319,6 +397,7 @@ export default {
   align-items: center;
 }
 
+/* Logo */
 .logo-section {
   display: flex;
   align-items: center;
@@ -340,7 +419,12 @@ export default {
   -webkit-text-fill-color: transparent;
 }
 
-.logo-text h1 {
+.logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.site-title {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
@@ -348,6 +432,7 @@ export default {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  line-height: 1.2;
 }
 
 .site-subtitle {
@@ -357,7 +442,7 @@ export default {
   font-weight: 500;
 }
 
-/* Felhasználó profil */
+/* ===== USER PROFIL ===== */
 .user-profile {
   position: relative;
 }
@@ -365,6 +450,8 @@ export default {
 .user-avatar {
   cursor: pointer;
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .avatar-circle {
@@ -379,6 +466,7 @@ export default {
   font-weight: 600;
   font-size: 16px;
   transition: transform 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .user-avatar:hover .avatar-circle {
@@ -400,16 +488,17 @@ export default {
 
 .status-dot.online {
   background: #10b981;
+  box-shadow: 0 0 0 2px white;
 }
 
-/* Felhasználó menü */
+/* ===== USER MENÜ ===== */
 .user-menu {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
   background: white;
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   width: 300px;
   overflow: hidden;
   z-index: 1000;
@@ -424,6 +513,7 @@ export default {
 .menu-user-info h4 {
   margin: 0 0 5px 0;
   font-size: 18px;
+  font-weight: 600;
 }
 
 .user-email {
@@ -432,6 +522,7 @@ export default {
   opacity: 0.9;
 }
 
+/* Role badge a menüben */
 .role-badge {
   display: inline-block;
   padding: 4px 12px;
@@ -451,11 +542,7 @@ export default {
   color: #f97316;
 }
 
-.role-badge.admin {
-  background: rgba(139, 92, 246, 0.2);
-  color: #8b5cf6;
-}
-
+.role-badge.admin,
 .role-badge.institution_manager {
   background: rgba(139, 92, 246, 0.2);
   color: #8b5cf6;
@@ -504,6 +591,10 @@ export default {
   color: #ef4444;
 }
 
+.logout-btn:hover {
+  background: #fee2e2;
+}
+
 /* Animációk */
 .slide-fade-enter-active,
 .slide-fade-leave-active {
@@ -516,107 +607,285 @@ export default {
   transform: translateY(-10px);
 }
 
-/* SIKER SZEKCIÓ */
-.success-section {
-  padding: 80px 0;
+/* ===== MAIN CONTENT ===== */
+.main-content {
+  padding: 60px 0;
 }
 
-.success-card {
+/* ===== WELCOME SECTION ===== */
+.welcome-section {
+  margin-bottom: 60px;
+}
+
+.welcome-card {
   text-align: center;
   background: white;
   border-radius: 32px;
-  padding: 60px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  padding: 48px 32px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
 }
 
-.success-icon {
+.welcome-card::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, #667eea20, #764ba220);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.welcome-card::after {
+  content: '';
+  position: absolute;
+  bottom: -50px;
+  left: -50px;
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, #764ba220, #667eea20);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.welcome-icon {
   font-size: 80px;
-  color: #10b981;
-  margin-bottom: 32px;
+  color: #4f46e5;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
 }
 
-.success-card h3 {
-  font-size: 32px;
+.welcome-card h2 {
+  font-size: 36px;
   font-weight: 700;
   margin-bottom: 16px;
   color: #111827;
+  position: relative;
+  z-index: 1;
 }
 
-.success-card p {
+.welcome-text {
   font-size: 18px;
   color: #6b7280;
-  max-width: 500px;
-  margin: 0 auto 32px;
+  max-width: 600px;
+  margin: 0 auto 24px;
   line-height: 1.6;
+  position: relative;
+  z-index: 1;
 }
 
-.success-buttons {
+.role-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: #f3f4f6;
+  border-radius: 50px;
+  position: relative;
+  z-index: 1;
+}
+
+.role-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.role-value {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 50px;
+}
+
+.role-value.student {
+  background: #10b98120;
+  color: #10b981;
+}
+
+.role-value.teacher {
+  background: #f9731620;
+  color: #f97316;
+}
+
+.role-value.admin,
+.role-value.institution_manager {
+  background: #8b5cf620;
+  color: #8b5cf6;
+}
+
+/* ===== NAVIGATION HUB ===== */
+.nav-hub {
+  margin-bottom: 60px;
+}
+
+.hub-title {
   display: flex;
-  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 28px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 40px;
+}
+
+.hub-title i {
+  color: #4f46e5;
+  font-size: 32px;
+}
+
+.nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.nav-card {
+  background: white;
+  border-radius: 24px;
+  padding: 32px 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.nav-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 30px 50px rgba(102, 126, 234, 0.2);
+}
+
+.nav-card.coming-soon {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.nav-card.coming-soon:hover {
+  transform: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.card-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
   justify-content: center;
   margin-bottom: 24px;
-  flex-wrap: wrap;
+  font-size: 40px;
+  color: white;
 }
 
-.btn-success {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  padding: 18px 36px;
-  font-size: 18px;
+.card-icon.events {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
 }
 
-.btn-institution {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  padding: 18px 36px;
-  font-size: 18px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+.card-icon.profile {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
 }
 
-.btn-institution:hover {
-  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+.card-icon.institution {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
 }
 
-.success-actions {
-  margin-top: 24px;
+.card-icon.soon {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  box-shadow: 0 10px 20px rgba(156, 163, 175, 0.3);
+}
+
+.nav-card h4 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.nav-card p {
+  font-size: 16px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin-bottom: 24px;
+  flex-grow: 1;
+}
+
+.card-footer {
+  margin-top: auto;
 }
 
 .btn-text {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: none;
-  border: none;
   color: #4f46e5;
+  font-weight: 500;
   font-size: 16px;
-  cursor: pointer;
-  transition: color 0.3s;
+  transition: gap 0.3s ease;
 }
 
-.btn-text:hover {
-  color: #7c73ff;
+.nav-card:hover .btn-text {
+  gap: 12px;
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
+.badge-soon {
+  display: inline-block;
+  padding: 6px 16px;
+  background: #f3f4f6;
+  color: #6b7280;
   border-radius: 50px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ===== INFO SECTION ===== */
+.info-section {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.info-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: white;
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+}
+
+.info-card i {
+  font-size: 32px;
+  color: #4f46e5;
+  opacity: 0.5;
+}
+
+.info-content h4 {
+  font-size: 16px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  color: #111827;
+  margin-bottom: 4px;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+.info-content p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
 }
 
-/* FLOATING ACTION BUTTON */
+/* ===== FLOATING ACTION BUTTON ===== */
 .fab {
   position: fixed;
   bottom: 30px;
@@ -624,7 +893,7 @@ export default {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   border: none;
   cursor: pointer;
@@ -642,7 +911,7 @@ export default {
   box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
 }
 
-/* RESZPONZÍV */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;
@@ -663,34 +932,77 @@ export default {
     width: 280px;
     right: -20px;
   }
-  
-  .success-card {
-    padding: 40px 20px;
+
+  .welcome-card {
+    padding: 32px 20px;
   }
-  
-  .success-icon {
-    font-size: 60px;
+
+  .welcome-card h2 {
+    font-size: 28px;
   }
-  
-  .success-card h3 {
-    font-size: 24px;
-  }
-  
-  .success-card p {
+
+  .welcome-text {
     font-size: 16px;
   }
-  
-  .success-buttons {
-    flex-direction: column;
+
+  .hub-title {
+    font-size: 24px;
   }
-  
-  .btn-success, .btn-institution {
-    width: 100%;
-    justify-content: center;
+
+  .nav-grid {
+    gap: 20px;
+  }
+
+  .nav-card {
+    padding: 24px 20px;
+  }
+
+  .card-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 30px;
+  }
+
+  .nav-card h4 {
+    font-size: 20px;
+  }
+
+  .nav-card p {
+    font-size: 14px;
   }
 }
 
 @media (max-width: 480px) {
+  .main-content {
+    padding: 40px 0;
+  }
+
+  .welcome-icon {
+    font-size: 60px;
+  }
+
+  .welcome-card h2 {
+    font-size: 24px;
+  }
+
+  .role-indicator {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .hub-title {
+    font-size: 20px;
+  }
+
+  .nav-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .info-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
   .fab {
     width: 48px;
     height: 48px;

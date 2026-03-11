@@ -143,6 +143,7 @@ router.beforeEach((to, from, next) => {
 
 router.afterEach((to) => {
   document.title = (to.meta.title ? to.meta.title + ' – EseményTér' : 'EseményTér');
+  window.scrollTo(0, 0);
 });
 
 export default router

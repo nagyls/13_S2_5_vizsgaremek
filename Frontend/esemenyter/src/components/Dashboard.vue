@@ -58,7 +58,7 @@
             </div>
             <h2>Válassz szerepkört</h2>
             <p class="section-subtitle">
-              Az alábbi lehetőségek közül választhatod ki, hogyan szeretnél részt venni az EseményTérben
+              {{ isFormal ? 'Az alábbi lehetőségek közül választhatja ki, hogyan szeretne részt venni az EseményTérben' : 'Az alábbi lehetőségek közül választhatod ki, hogyan szeretnél részt venni az EseményTérben' }}
             </p>
           </div>
           
@@ -1076,6 +1076,10 @@ export default {
         'admin': 'Adminisztrátor'
       };
       return roles[this.user.role] || this.user.role || 'Vendég';
+    },
+
+    isFormal() {
+      return this.user.role === 'admin' || this.user.role === 'teacher' || this.user.role === 'institution_manager';
     },
     
     // Diák kiválasztott elemek
