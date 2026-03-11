@@ -31,7 +31,7 @@
 
 <script>
 import axios from "axios";
-import { toast } from '../services/toast'
+import { toast } from '../../services/toast'
 
 export default {
   name: 'Login',
