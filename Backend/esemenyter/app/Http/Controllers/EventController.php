@@ -32,7 +32,7 @@ class EventController extends Controller
             'end_date' => 'required|date|after:start_date',
             'users' => 'array|required',
             'users.*' => 'exists:users,id',
-        ],[
+        ], [
             'type.required' => 'A típus megadása kötelező.',
             'type.in' => 'A típusnak "local" vagy "global" értéknek kell lennie.',
             'establishment_id.required' => 'Az intézmény azonosító megadása kötelező.',
@@ -57,7 +57,7 @@ class EventController extends Controller
         ]);
 
 
-        $users = $validated['users'] ;
+        $users = $validated['users'];
         $collabIds = $validated['collab_establishment_ids'] ?? [];
 
         if ($validated['type'] == 'local') {
@@ -145,9 +145,9 @@ class EventController extends Controller
                             'created_at' => now(),
                             'updated_at' => now(),
                         ];
-                     }
+                    }
                 }
-                
+
 
                 // kollaborációs kérelmek létrehozása
                 if (!empty($collabIds)) {
@@ -172,39 +172,53 @@ class EventController extends Controller
         ], 201);
     }
 
-    public function handeleCollabEvents(Request $request, int $establishmentId)
+    public function handleCollabEvents(Request $request, int $establishmentId)
     {
         $user = $request->user();
-        if (!$this->isAdminEstablishment($user, $establishmentId)) {
+        if (!$user) {
             return response()->json(['message' => 'nem jogosult'], 401);
         }
+        if (!$this->isAdminEstablishment($user, $establishmentId)) {
+            return response()->json(['message' => 'nem jogosult'], 403);
+        }
+
         $validated = $request->validate([
             'event_id' => 'required|exists:events,id',
             'action' => 'required|in:accept,reject',
             'users' => 'array|required_if:action,accept',
             'users.*' => 'exists:users,id',
-        ],[
+        ], [
             'event_id.required' => 'Az esemény azonosító megadása kötelező.',
             'event_id.exists' => 'A megadott esemény nem található.',
             'action.required' => 'A művelet megadása kötelező.',
             'action.in' => 'A műveletnek "accept" vagy "reject" értéknek kell lennie.',
         ]);
 
-        $users = $validated['users'] ?? [];
-        if($validated['action'] == 'accept'){
-            foreach ($users as $userId) {
-                if($this->isMemberEstablishment($userId, $establishmentId)){
-                    EventShown::create([
-                        'event_id' => $validated['event_id'],
-                        'user_id' => $userId,
-                        'establishment_id' => $establishmentId,
-                    ]);
+        $eventId = $validated['event_id'];
+
+        DB::transaction(function () use ($validated, $establishmentId, $eventId) {
+            //kérelem törlése
+            EventRequest::where('event_id', $eventId)
+                ->where('establishment_id', $establishmentId)
+                ->delete();
+
+            if ($validated['action'] === 'accept') {
+                $users = $validated['users'] ?? [];
+                foreach ($users as $userId) {
+                    if ($this->isMemberEstablishment($userId, $establishmentId)) {
+                        EventShown::firstOrCreate([
+                            'event_id' => $eventId,
+                            'user_id' => $userId,
+                            'establishment_id' => $establishmentId,
+                        ]);
+                    }
                 }
             }
-        }
+        });
+
         return response()->json([
             'message' => 'Művelet végrehajtva',
-        ]);
+        ], 200);
     }
 
     public function getCollabEvents(Request $request, int $establishmentId)
@@ -215,7 +229,7 @@ class EventController extends Controller
             return response()->json(['message' => 'nem jogosult'], 401);
         }
 
-        if(!$this->isAdminEstablishment($user, $establishmentId)){
+        if (!$this->isAdminEstablishment($user, $establishmentId)) {
             return response()->json(['message' => 'nem jogosult'], 401);
         }
 
@@ -241,7 +255,7 @@ class EventController extends Controller
         if (!$user) {
             return response()->json(['message' => 'nem jogosult'], 401);
         }
-        if(!$this->isMemberEstablishment($user, $establishmentId)){
+        if (!$this->isMemberEstablishment($user, $establishmentId)) {
             return response()->json(['message' => 'nem jogosult'], 401);
         }
 
@@ -257,5 +271,5 @@ class EventController extends Controller
         return response()->json([
             'events' => $events
         ]);
-    }  
+    }
 }
