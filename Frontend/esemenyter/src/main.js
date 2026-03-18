@@ -26,6 +26,26 @@ import './style.css'
 
 const AUTH_DEBUG = import.meta.env.VITE_DEBUG_AUTH === 'true'
 
+function shouldForceLogoutOn401(error) {
+  const message = String(error?.response?.data?.message || '').toLowerCase()
+  const errorText = String(error?.response?.data?.error || '').toLowerCase()
+
+  // These usually indicate an expired/invalid/missing token.
+  const authSignals = [
+    'unauthenticated',
+    'unauthorized',
+    'token',
+    'jogosulatlan'
+  ]
+
+  // Backend business authorization errors should not hard logout the user.
+  if (message.includes('nem jogosult') || errorText.includes('nem jogosult')) {
+    return false
+  }
+
+  return authSignals.some(signal => message.includes(signal) || errorText.includes(signal))
+}
+
 // Axios interceptor - automatikusan csatolja a tokent az Authorization header-be
 axios.interceptors.request.use(config => {
   try {
@@ -60,21 +80,30 @@ axios.interceptors.response.use(
   response => response,
   error => {
     if (error.response && error.response.status === 401) {
-      console.error('401 hiba - jogosulatlan hozzáférés');
-      
-      // Token törlése
-      localStorage.removeItem('esemenyter_token');
-      localStorage.removeItem('esemenyter_user');
-      sessionStorage.removeItem('esemenyter_token');
-      sessionStorage.removeItem('esemenyter_user');
-      
-      // Ha nem a login oldalon vagyunk, irányítsunk át
-      if (!window.location.pathname.includes('/login') && 
-          !window.location.pathname.includes('/mainpage')) {
-        window.location.href = '/mainpage';
+      const forceLogout = shouldForceLogoutOn401(error)
+
+      if (forceLogout) {
+        console.error('401 hiba - érvénytelen munkamenet, kijelentkeztetés')
+
+        // Token törlése
+        localStorage.removeItem('esemenyter_token')
+        localStorage.removeItem('esemenyter_user')
+        sessionStorage.removeItem('esemenyter_token')
+        sessionStorage.removeItem('esemenyter_user')
+
+        // Ha nem a login oldalon vagyunk, irányítsunk át
+        if (!window.location.pathname.includes('/login') &&
+            !window.location.pathname.includes('/mainpage')) {
+          window.location.href = '/mainpage'
+        }
+      } else if (AUTH_DEBUG) {
+        console.warn('401 érkezett, de nem auth lejárat: nem történik automatikus kijelentkeztetés', {
+          message: error?.response?.data?.message,
+          url: error?.config?.url
+        })
       }
     }
-    return Promise.reject(error);
+    return Promise.reject(error)
   }
 );
 

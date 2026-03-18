@@ -261,9 +261,13 @@
               
               <div class="card-footer">
                 <div class="stats">
-                  <div class="stat-item" title="Résztvevők">
+                  <div class="stat-item" title="Részt vesz">
                     <i class='bx bx-user-check'></i>
-                    <span>{{ event.participants || 0 }}</span>
+                    <span>{{ event.attending_count ?? event.participants ?? 0 }}</span>
+                  </div>
+                  <div class="stat-item" title="Nem vesz részt">
+                    <i class='bx bx-user-x'></i>
+                    <span>{{ event.not_attending_count ?? 0 }}</span>
                   </div>
                   <div class="stat-item" title="Kedvencek">
                     <i class='bx bx-star'></i>
@@ -272,6 +276,7 @@
                   <div class="stat-item" title="Hozzászólások">
                     <i class='bx bx-message-square-detail'></i>
                     <span>{{ event.comment_count || 0 }}</span>
+                    <small>Komment</small>
                   </div>
                 </div>
                 
@@ -357,7 +362,7 @@ export default {
     },
     
     totalParticipants() {
-      return this.events.reduce((accumulator, event) => accumulator + (event.participants || 0), 0);
+      return this.events.reduce((accumulator, event) => accumulator + (event.attending_count ?? event.participants ?? 0), 0);
     },
     
     canCreateEvent() {
@@ -490,6 +495,8 @@ export default {
         status: normalizedStatus,
         creator_name: creatorName,
         participants: Number(event?.participants || event?.participant_count || 0),
+        attending_count: Number(event?.attending_count || event?.participants || event?.participant_count || 0),
+        not_attending_count: Number(event?.not_attending_count || 0),
         favorites: Number(event?.favorites || event?.favorite_count || 0),
         comment_count: Number(event?.comment_count || event?.comments_count || 0)
       };
@@ -501,14 +508,13 @@ export default {
         sessionStorage.getItem('esemenyter_token');
 
       const institutionId = this.getCurrentInstitutionId();
-      const shouldUseInstitutionEndpoint =
-        ['student', 'teacher'].includes(this.normalizedRole) &&
-        Number.isFinite(Number(institutionId)) &&
-        Number(institutionId) > 0;
+      const normalizedInstitutionId = Number(institutionId);
 
-      const endpoint = shouldUseInstitutionEndpoint
-        ? `http://127.0.0.1:8000/api/establishment/${institutionId}/events`
-        : 'http://127.0.0.1:8000/api/events';
+      if (!Number.isFinite(normalizedInstitutionId) || normalizedInstitutionId <= 0) {
+        return [];
+      }
+
+      const endpoint = `http://127.0.0.1:8000/api/establishment/${normalizedInstitutionId}/events`;
 
       const response = await axios.get(endpoint, {
         headers: {
@@ -1222,20 +1228,36 @@ export default {
 
 .stats {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.35rem;
   color: #718096;
   font-size: 0.75rem;
+  background: #eef2ff;
+  border: 1px solid #dbe4ff;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
 }
 
 .stat-item i {
   font-size: 1rem;
   color: #667eea;
+}
+
+.stat-item span {
+  color: #334155;
+  font-weight: 700;
+}
+
+.stat-item small {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 
 .details-button {

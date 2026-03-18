@@ -25,6 +25,7 @@ class EventController extends Controller
             'establishment_id' => 'required|exists:establishments,id',
             'collab_establishment_ids' => 'array|required_if:type,global',
             'collab_establishment_ids.*' => 'exists:establishments,id',
+            'target_group' => 'nullable|string|in:sajat_osztaly,evfolyam,teljes_iskola|required_if:type,local',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'content' => 'nullable|string',
@@ -40,6 +41,8 @@ class EventController extends Controller
             'collab_establishment_ids.array' => 'A kollab_establishment_ids mezőnek tömbnek kell lennie.',
             'collab_establishment_ids.required_if' => 'A kollaboráló intézmények megadása kötelező globális esemény esetén.',
             'collab_establishment_ids.*.exists' => 'A megadott kollaboráló intézmény nem található.',
+            'target_group.required_if' => 'Helyi eseménynél a célcsoport megadása kötelező.',
+            'target_group.in' => 'A célcsoport értéke csak sajat_osztaly, evfolyam vagy teljes_iskola lehet.',
             'title.required' => 'A cím megadása kötelező.',
             'title.string' => 'A címnek szövegnek kell lennie.',
             'title.max' => 'A cím nem lehet hosszabb, mint :max karakter.',
@@ -61,13 +64,15 @@ class EventController extends Controller
         $collabIds = $validated['collab_establishment_ids'] ?? [];
 
         if ($validated['type'] == 'local') {
-            if (!$this->isStaffEstablishment($user, $validated['establishment_id'])) {
+            if (!$this->isStaffEstablishment($user->id, $validated['establishment_id'])) {
                 return response()->json(['message' => 'nem jogosult'], 401);
             }
 
             $event = DB::transaction(function () use ($user, $validated, $users) {
                 $event = Event::create([
                     'user_id' => $user->id,
+                    'establishment_id' => $validated['establishment_id'],
+                    'target_group' => $validated['target_group'] ?? 'teljes_iskola',
                     'type' => $validated['type'],
                     'title' => $validated['title'],
                     'description' => $validated['description'],
@@ -89,6 +94,10 @@ class EventController extends Controller
 
                 // eredeti intézmény felhasználói láthatóság
                 foreach ($users as $userId) {
+                    if ((int) $userId === (int) $user->id) {
+                        continue;
+                    }
+
                     if ($this->isMemberEstablishment($userId, $validated['establishment_id'])) {
                         $shownRows[] = [
                             'event_id' => $event->id,
@@ -109,13 +118,15 @@ class EventController extends Controller
         }
 
         if ($validated['type'] == 'global') {
-            if (!$this->isAdminEstablishment($user, $validated['establishment_id'])) {
+            if (!$this->isAdminEstablishment($user->id, $validated['establishment_id'])) {
                 return response()->json(['message' => 'nem jogosult'], 401);
             }
 
             $event = DB::transaction(function () use ($user, $validated, $users, $collabIds) {
                 $event = Event::create([
                     'user_id' => $user->id,
+                    'establishment_id' => $validated['establishment_id'],
+                    'target_group' => null,
                     'type' => $validated['type'],
                     'title' => $validated['title'],
                     'description' => $validated['description'],
@@ -137,6 +148,10 @@ class EventController extends Controller
 
                 // Intézményi felhasználók láthatósága
                 foreach ($users as $userId) {
+                    if ((int) $userId === (int) $user->id) {
+                        continue;
+                    }
+
                     if ($this->isMemberEstablishment($userId, $validated['establishment_id'])) {
                         $shownRows[] = [
                             'event_id' => $event->id,
@@ -178,7 +193,7 @@ class EventController extends Controller
         if (!$user) {
             return response()->json(['message' => 'nem jogosult'], 401);
         }
-        if (!$this->isAdminEstablishment($user, $establishmentId)) {
+        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
             return response()->json(['message' => 'nem jogosult'], 403);
         }
 
@@ -229,7 +244,7 @@ class EventController extends Controller
             return response()->json(['message' => 'nem jogosult'], 401);
         }
 
-        if (!$this->isAdminEstablishment($user, $establishmentId)) {
+        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
             return response()->json(['message' => 'nem jogosult'], 401);
         }
 
@@ -255,21 +270,151 @@ class EventController extends Controller
         if (!$user) {
             return response()->json(['message' => 'nem jogosult'], 401);
         }
-        if (!$this->isMemberEstablishment($user, $establishmentId)) {
+        if (!$this->isMemberEstablishment($user->id, $establishmentId)) {
             return response()->json(['message' => 'nem jogosult'], 401);
         }
 
-        $visibleEventIds = EventShown::where('user_id', $user->id)
-            ->where('establishment_id', $establishmentId)
-            ->distinct()
-            ->pluck('event_id');
+        $hasClassMembership = DB::table('class_students')
+            ->join('classes', 'classes.id', '=', 'class_students.class_id')
+            ->where('class_students.user_id', $user->id)
+            ->where('classes.establishment_id', $establishmentId)
+            ->exists();
 
-        $events = Event::whereIn('id', $visibleEventIds)
-            ->orderBy('start_date', 'asc')
-            ->get();
+        if ($hasClassMembership) {
+            $visibleEventIds = EventShown::where('establishment_id', $establishmentId)
+                ->distinct()
+                ->pluck('event_id');
+
+            $events = Event::whereIn('id', $visibleEventIds)
+                ->orderBy('start_date', 'asc')
+                ->get();
+        } else {
+            $directlyAssignedEventIds = EventShown::where('establishment_id', $establishmentId)
+                ->where('user_id', $user->id)
+                ->select('event_id');
+
+            $schoolWideEventIds = EventShown::where('establishment_id', $establishmentId)
+                ->select('event_id');
+
+            $events = Event::where('establishment_id', $establishmentId)
+                ->where(function ($query) use ($directlyAssignedEventIds, $schoolWideEventIds) {
+                    $query->whereIn('id', $directlyAssignedEventIds)
+                        ->orWhere(function ($schoolWideQuery) use ($schoolWideEventIds) {
+                            $schoolWideQuery->where('type', 'local')
+                                ->where('target_group', 'teljes_iskola')
+                                ->whereIn('id', $schoolWideEventIds);
+                        });
+                })
+                ->orderBy('start_date', 'asc')
+                ->get();
+        }
+
+        $eventIds = $events->pluck('id')->all();
+
+        $feedbackStatsByEvent = collect();
+        $userFeedbackByEvent = collect();
+        $commentCountsByEvent = collect();
+
+        if (!empty($eventIds)) {
+            $feedbackStatsByEvent = DB::table('event_feedbacks')
+                ->select(
+                    'event_id',
+                    DB::raw("SUM(CASE WHEN answer = 'y' THEN 1 ELSE 0 END) as attending_count"),
+                    DB::raw("SUM(CASE WHEN answer = 'n' THEN 1 ELSE 0 END) as not_attending_count")
+                )
+                ->whereIn('event_id', $eventIds)
+                ->groupBy('event_id')
+                ->get()
+                ->keyBy('event_id');
+
+            $userFeedbackByEvent = DB::table('event_feedbacks')
+                ->whereIn('event_id', $eventIds)
+                ->where('user_id', $user->id)
+                ->pluck('answer', 'event_id');
+
+            $commentCountsByEvent = DB::table('event_messages')
+                ->select('event_id', DB::raw('COUNT(*) as comment_count'))
+                ->whereIn('event_id', $eventIds)
+                ->groupBy('event_id')
+                ->get()
+                ->keyBy('event_id');
+        }
+
+        $events = $events->map(function ($event) use ($feedbackStatsByEvent, $userFeedbackByEvent, $commentCountsByEvent) {
+            $stats = $feedbackStatsByEvent->get($event->id);
+            $commentStats = $commentCountsByEvent->get($event->id);
+
+            $event->attending_count = (int) ($stats->attending_count ?? 0);
+            $event->not_attending_count = (int) ($stats->not_attending_count ?? 0);
+            $event->participant_count = (int) ($stats->attending_count ?? 0);
+            $event->participants = (int) ($stats->attending_count ?? 0);
+            $event->comment_count = (int) ($commentStats->comment_count ?? 0);
+            $event->user_participation = $userFeedbackByEvent->get($event->id);
+
+            return $event;
+        });
 
         return response()->json([
             'events' => $events
+        ]);
+    }
+
+    public function setParticipation(Request $request, int $eventId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'nem jogosult'], 401);
+        }
+
+        $validated = $request->validate([
+            'answer' => 'required|in:y,n',
+        ], [
+            'answer.required' => 'A válasz megadása kötelező.',
+            'answer.in' => 'A válasz csak "y" vagy "n" lehet.',
+        ]);
+
+        $event = Event::find($eventId);
+        if (!$event) {
+            return response()->json(['message' => 'Az esemény nem található.'], 404);
+        }
+
+        $canSeeEvent = EventShown::where('event_id', $eventId)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (!$canSeeEvent) {
+            return response()->json(['message' => 'nem jogosult'], 403);
+        }
+
+        DB::table('event_feedbacks')->updateOrInsert(
+            [
+                'event_id' => $eventId,
+                'user_id' => $user->id,
+            ],
+            [
+                'answer' => $validated['answer'],
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        $attendingCount = DB::table('event_feedbacks')
+            ->where('event_id', $eventId)
+            ->where('answer', 'y')
+            ->count();
+
+        $notAttendingCount = DB::table('event_feedbacks')
+            ->where('event_id', $eventId)
+            ->where('answer', 'n')
+            ->count();
+
+        return response()->json([
+            'message' => 'Részvételi válasz mentve.',
+            'answer' => $validated['answer'],
+            'attending_count' => $attendingCount,
+            'not_attending_count' => $notAttendingCount,
+            'participant_count' => $attendingCount,
         ]);
     }
 }

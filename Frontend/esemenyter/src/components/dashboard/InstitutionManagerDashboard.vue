@@ -983,7 +983,7 @@ export default {
         return { success: false, processedCount: 0 };
       }
 
-      await axios.post('http://127.0.0.1:8000/api/establishment/requests/handle', {
+      await axios.patch('http://127.0.0.1:8000/api/establishment/requests/handle', {
         establishment_id: this.user.institution_id,
         action,
         request_id: requestIds
@@ -1364,7 +1364,7 @@ export default {
           return;
         }
 
-        await axios.post('http://127.0.0.1:8000/api/establishment/requests/handle', {
+        await axios.patch('http://127.0.0.1:8000/api/establishment/requests/handle', {
           establishment_id: establishmentId,
           action: 'accept',
           request_id: [Number(requestId)]
@@ -1379,7 +1379,7 @@ export default {
             const acceptedStudent = this.students.find(student => Number(student.id) === Number(userId));
 
             if (acceptedStudent?.student_id) {
-              await axios.post('http://127.0.0.1:8000/api/establishment/classes/add-students', {
+              await axios.patch('http://127.0.0.1:8000/api/establishment/classes/add-students', {
                 establishment_id: establishmentId,
                 class_id: this.selectedClassId,
                 student_id: [acceptedStudent.student_id]
@@ -1543,7 +1543,7 @@ export default {
         }
 
         if (currentClassId && currentClassId !== targetClassId) {
-          await axios.post('http://127.0.0.1:8000/api/establishment/classes/remove-students', {
+          await axios.patch('http://127.0.0.1:8000/api/establishment/classes/remove-students', {
             establishment_id: establishmentId,
             class_id: currentClassId,
             student_id: [student.student_id]
@@ -1553,7 +1553,7 @@ export default {
         }
 
         if (targetClassId) {
-          await axios.post('http://127.0.0.1:8000/api/establishment/classes/add-students', {
+          await axios.patch('http://127.0.0.1:8000/api/establishment/classes/add-students', {
             establishment_id: establishmentId,
             class_id: targetClassId,
             student_id: [student.student_id]

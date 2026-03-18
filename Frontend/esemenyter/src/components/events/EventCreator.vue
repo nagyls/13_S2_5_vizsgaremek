@@ -120,6 +120,57 @@
               </label>
             </div>
           </div>
+
+          <div
+            v-if="selectedSchoolTargetGroup !== 'teljes_iskola'"
+            class="class-target-dashboard"
+          >
+            <h4>
+              <i class='bx bx-layout'></i>
+              Osztály célzás
+            </h4>
+
+            <div v-if="isLoadingClasses" class="class-target-state">
+              Osztályok betöltése...
+            </div>
+
+            <div v-else-if="!institutionClasses.length" class="class-target-state warning">
+              Nem található osztály az intézményben. Kérlek hozz létre legalább egy osztályt.
+            </div>
+
+            <template v-else>
+              <div v-if="requiresManualClassSelection" class="class-target-help">
+                Ehhez a célzáshoz válassz egy osztályt. A rendszer ebből számolja a címzetteket.
+              </div>
+
+              <div v-else-if="effectiveTargetClassId" class="class-target-help success">
+                Automatikusan a saját osztályod lesz használva:
+                <strong>{{ selectedTargetClassDisplay }}</strong>
+              </div>
+
+              <div
+                v-if="requiresManualClassSelection"
+                class="class-target-grid"
+              >
+                <label
+                  v-for="classItem in institutionClasses"
+                  :key="classItem.id"
+                  class="class-target-card"
+                  :class="{ selected: Number(selectedClassId) === Number(classItem.id) }"
+                >
+                  <input
+                    type="radio"
+                    name="class-target"
+                    :value="String(classItem.id)"
+                    v-model="selectedClassId"
+                    hidden
+                  >
+                  <div class="class-target-title">{{ formatClassLabel(classItem) }}</div>
+                  <div class="class-target-meta">{{ classItem.student_count || 0 }} tanuló</div>
+                </label>
+              </div>
+            </template>
+          </div>
         </div>
 
         <!-- 3. ESEMÉNY ADATAI (közös rész) -->
@@ -177,6 +228,9 @@
               <div class="summary-item">
                 <strong>Célcsoport:</strong> {{ getSchoolTargetLabel(selectedSchoolTargetGroup) }}
               </div>
+              <div v-if="selectedSchoolTargetGroup !== 'teljes_iskola'" class="summary-item">
+                <strong>Alap osztály:</strong> {{ selectedTargetClassDisplay || 'Nincs kiválasztva' }}
+              </div>
               <div class="summary-item">
                 <strong>Intézmény:</strong> {{ userInstitution.name }}
               </div>
@@ -222,12 +276,17 @@ export default {
     return {
       // FELHASZNÁLÓ ADATAI
       userRole: 'student',
+      currentUserId: null,
       userInstitution: {
         id: 1,
         name: 'Kossuth Lajos Gimnázium',
         countyId: 1
       },
       userCountyId: 1,
+      institutionUserIds: [],
+      institutionClasses: [],
+      selectedClassId: '',
+      isLoadingClasses: false,
       
       // LÉPTETŐ ADATOK
       currentStep: 1,
@@ -314,7 +373,15 @@ export default {
           if (this.selectedEventScope === 'global') {
             return this.selectedCountyIds.length > 0
           } else {
-            return this.selectedSchoolTargetGroup !== ''
+            if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
+              return this.selectedSchoolTargetGroup !== ''
+            }
+
+            if (!this.institutionClasses.length) {
+              return false
+            }
+
+            return Boolean(this.effectiveTargetClassId)
           }
         
         case 3:
@@ -331,6 +398,62 @@ export default {
     
     counties() {
       return this.countiesList
+    },
+
+    assignedClasses() {
+      if (!this.currentUserId) {
+        return []
+      }
+
+      return this.institutionClasses.filter(
+        classItem => Number(classItem?.user_id) === Number(this.currentUserId)
+      )
+    },
+
+    defaultAssignedClassId() {
+      if (!this.assignedClasses.length) {
+        return null
+      }
+
+      return Number(this.assignedClasses[0]?.id) || null
+    },
+
+    requiresManualClassSelection() {
+      if (this.selectedEventScope !== 'school') {
+        return false
+      }
+
+      if (!['sajat_osztaly', 'evfolyam'].includes(this.selectedSchoolTargetGroup)) {
+        return false
+      }
+
+      return !this.defaultAssignedClassId
+    },
+
+    effectiveTargetClassId() {
+      if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
+        return null
+      }
+
+      if (this.requiresManualClassSelection) {
+        return Number(this.selectedClassId) || null
+      }
+
+      return this.defaultAssignedClassId
+    },
+
+    selectedTargetClassDisplay() {
+      const classId = Number(this.effectiveTargetClassId)
+      if (!classId) {
+        return ''
+      }
+
+      const classItem = this.institutionClasses.find(item => Number(item?.id) === classId)
+      if (!classItem) {
+        return ''
+      }
+
+      return this.formatClassLabel(classItem)
     }
   },
   
@@ -354,6 +477,12 @@ export default {
           this.selectedCountyIds = [this.userCountyId, ...newValue]
         })
       }
+    },
+
+    selectedSchoolTargetGroup() {
+      if (!this.requiresManualClassSelection) {
+        this.selectedClassId = this.defaultAssignedClassId ? String(this.defaultAssignedClassId) : ''
+      }
     }
   },
   
@@ -371,6 +500,7 @@ export default {
         if (savedUser) {
           const user = JSON.parse(savedUser)
           this.userRole = String(user?.role || 'student').toLowerCase()
+          this.currentUserId = Number(user?.id || 0) || null
 
           if (user?.institution_id) {
             this.userInstitution.id = Number(user.institution_id)
@@ -386,6 +516,91 @@ export default {
 
       this.loadCounties()
       this.loadInstitutionData()
+      this.loadInstitutionUsers()
+      this.loadInstitutionClasses()
+    },
+
+    async loadInstitutionClasses() {
+      try {
+        const institutionId = Number(this.userInstitution.id)
+        if (!institutionId) {
+          this.institutionClasses = []
+          return
+        }
+
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token')
+
+        if (!token) {
+          this.institutionClasses = []
+          return
+        }
+
+        this.isLoadingClasses = true
+
+        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/classes`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        })
+
+        this.institutionClasses = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : []
+
+        if (this.defaultAssignedClassId) {
+          this.selectedClassId = String(this.defaultAssignedClassId)
+        }
+      } catch (error) {
+        console.error('Osztályok betöltési hiba:', error)
+        this.institutionClasses = []
+      } finally {
+        this.isLoadingClasses = false
+      }
+    },
+
+    async loadInstitutionUsers() {
+      try {
+        const institutionId = Number(this.userInstitution.id)
+        if (!institutionId) {
+          this.institutionUserIds = this.currentUserId ? [this.currentUserId] : []
+          return
+        }
+
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token')
+
+        if (!token) {
+          this.institutionUserIds = this.currentUserId ? [this.currentUserId] : []
+          return
+        }
+
+        const [studentsResponse, staffResponse] = await Promise.all([
+          axios.get(`http://127.0.0.1:8000/api/members/students/${institutionId}`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+          }).catch(() => ({ data: { data: [] } })),
+          axios.get(`http://127.0.0.1:8000/api/members/staff/${institutionId}`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+          }).catch(() => ({ data: { data: [] } }))
+        ])
+
+        const studentIds = Array.isArray(studentsResponse?.data?.data)
+          ? studentsResponse.data.data.map(item => Number(item?.id)).filter(Number.isFinite)
+          : []
+        const staffIds = Array.isArray(staffResponse?.data?.data)
+          ? staffResponse.data.data.map(item => Number(item?.id)).filter(Number.isFinite)
+          : []
+
+        const merged = new Set([...studentIds, ...staffIds])
+        if (this.currentUserId) {
+          merged.add(Number(this.currentUserId))
+        }
+
+        this.institutionUserIds = Array.from(merged)
+      } catch (error) {
+        console.error('Intézményi felhasználók betöltési hiba:', error)
+        this.institutionUserIds = this.currentUserId ? [this.currentUserId] : []
+      }
     },
 
     async loadInstitutionData() {
@@ -418,9 +633,98 @@ export default {
           name: institution.title || institution.name || this.userInstitution.name,
           countyId: Number(institution.region_id || this.userInstitution.countyId || 1)
         }
+
+        this.userCountyId = Number(this.userInstitution.countyId) || this.userCountyId
       } catch (error) {
         console.error('Intézmény betöltési hiba:', error)
       }
+    },
+
+    formatClassLabel(classItem) {
+      const grade = Number(classItem?.grade)
+      const className = String(classItem?.name || '').trim()
+
+      if (Number.isFinite(grade) && className) {
+        return `${grade}.${className}`
+      }
+
+      return className || `Osztály #${classItem?.id ?? '?'}`
+    },
+
+    async fetchClassMemberUserIds(classId, token) {
+      const institutionId = Number(this.userInstitution.id)
+      if (!institutionId || !classId) {
+        return []
+      }
+
+      const response = await axios.get(
+        `http://127.0.0.1:8000/api/establishment/${institutionId}/classes/${classId}`,
+        {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        }
+      )
+
+      const members = Array.isArray(response?.data?.data) ? response.data.data : []
+      return members
+        .map(member => Number(member?.id))
+        .filter(Number.isFinite)
+    },
+
+    async resolveLocalTargetUserIds(token) {
+      const currentUserIds = this.currentUserId ? [Number(this.currentUserId)] : []
+
+      if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
+        return this.institutionUserIds
+      }
+
+      const baseClassId = Number(this.effectiveTargetClassId)
+      if (!baseClassId) {
+        throw new Error('Nincs kiválasztott osztály a célzáshoz.')
+      }
+
+      if (this.selectedSchoolTargetGroup === 'sajat_osztaly') {
+        const ownClassUsers = await this.fetchClassMemberUserIds(baseClassId, token)
+        const selectedClass = this.institutionClasses.find(item => Number(item?.id) === baseClassId)
+        const homeroomTeacherId = Number(selectedClass?.user_id)
+
+        return Array.from(new Set([
+          ...ownClassUsers,
+          ...(Number.isFinite(homeroomTeacherId) ? [homeroomTeacherId] : []),
+          ...currentUserIds
+        ]))
+      }
+
+      if (this.selectedSchoolTargetGroup === 'evfolyam') {
+        const baseClass = this.institutionClasses.find(item => Number(item?.id) === baseClassId)
+        const baseGrade = Number(baseClass?.grade)
+
+        let classIds = [baseClassId]
+        if (Number.isFinite(baseGrade)) {
+          classIds = this.institutionClasses
+            .filter(item => Number(item?.grade) === baseGrade)
+            .map(item => Number(item?.id))
+            .filter(Number.isFinite)
+        }
+
+        const memberResponses = await Promise.all(
+          classIds.map(classId =>
+            this.fetchClassMemberUserIds(classId, token).catch(() => [])
+          )
+        )
+
+        const gradeTeacherIds = this.institutionClasses
+          .filter(item => classIds.includes(Number(item?.id)))
+          .map(item => Number(item?.user_id))
+          .filter(Number.isFinite)
+
+        return Array.from(new Set([
+          ...memberResponses.flat(),
+          ...gradeTeacherIds,
+          ...currentUserIds
+        ]))
+      }
+
+      return this.institutionUserIds
     },
 
     async loadCounties() {
@@ -445,6 +749,78 @@ export default {
       } catch (error) {
         console.error('Megyék betöltési hiba:', error)
       }
+    },
+
+    async resolveCollabEstablishmentIdsByCounties(countyIds) {
+      const normalizedCountyIds = Array.from(
+        new Set((countyIds || []).map(id => Number(id)).filter(Number.isFinite))
+      )
+
+      if (!normalizedCountyIds.length) {
+        return []
+      }
+
+      const districtResponses = await Promise.all(
+        normalizedCountyIds.map(countyId =>
+          axios.get('http://127.0.0.1:8000/api/innerregions/all', {
+            params: { region_id: countyId },
+            headers: { Accept: 'application/json' }
+          }).catch(() => ({ data: { data: [] } }))
+        )
+      )
+
+      const districtIds = Array.from(new Set(
+        districtResponses.flatMap(response =>
+          (Array.isArray(response?.data?.data) ? response.data.data : [])
+            .map(item => Number(item?.id))
+            .filter(Number.isFinite)
+        )
+      ))
+
+      if (!districtIds.length) {
+        return []
+      }
+
+      const settlementResponses = await Promise.all(
+        districtIds.map(innerRegionId =>
+          axios.get('http://127.0.0.1:8000/api/settlements/all', {
+            params: { inner_region_id: innerRegionId },
+            headers: { Accept: 'application/json' }
+          }).catch(() => ({ data: { data: [] } }))
+        )
+      )
+
+      const settlementIds = Array.from(new Set(
+        settlementResponses.flatMap(response =>
+          (Array.isArray(response?.data?.data) ? response.data.data : [])
+            .map(item => Number(item?.id))
+            .filter(Number.isFinite)
+        )
+      ))
+
+      if (!settlementIds.length) {
+        return []
+      }
+
+      const establishmentResponses = await Promise.all(
+        settlementIds.map(settlementId =>
+          axios.get('http://127.0.0.1:8000/api/establishments', {
+            params: { settlement_id: settlementId },
+            headers: { Accept: 'application/json' }
+          }).catch(() => ({ data: { data: [] } }))
+        )
+      )
+
+      const sourceEstablishmentId = Number(this.userInstitution.id)
+      const collabIds = Array.from(new Set(
+        establishmentResponses.flatMap(response =>
+          (Array.isArray(response?.data?.data) ? response.data.data : [])
+            .map(item => Number(item?.id))
+            .filter(Number.isFinite)
+        )
+      )).filter(id => id !== sourceEstablishmentId)
+
+      return collabIds
     },
     
     getEventScopeLabel(scope) {
@@ -520,6 +896,21 @@ export default {
           return
         }
 
+        const establishmentId = Number(this.userInstitution.id)
+        if (!establishmentId) {
+          toast.error('Hiányzó intézmény azonosító. Frissítsd az oldalt és próbáld újra.')
+          return
+        }
+
+        if (!this.institutionUserIds.length) {
+          await this.loadInstitutionUsers()
+        }
+
+        if (!this.institutionUserIds.length) {
+          toast.error('Nem sikerült betölteni az intézmény felhasználóit.')
+          return
+        }
+
         // Adatok összeállítása a backend elvárásai szerint
         const payload = {
           title: this.eventForm.title,
@@ -527,18 +918,38 @@ export default {
           content: this.eventForm.content,
           start_date: this.eventForm.startDateTime,
           end_date: this.eventForm.endDateTime,
-          type: this.selectedEventScope === 'global' ? 'global' : 'local'
+          type: this.selectedEventScope === 'global' ? 'global' : 'local',
+          establishment_id: establishmentId,
+          users: this.institutionUserIds
         }
 
         if (this.selectedEventScope === 'global') {
-          payload.counties = this.selectedCountyIds
-        } 
-        else {
+          const collabEstablishmentIds = await this.resolveCollabEstablishmentIdsByCounties(this.selectedCountyIds)
+
+          if (!collabEstablishmentIds.length) {
+            toast.warning('A kiválasztott vármegyékből nem találtunk más intézményt. Válassz további vármegyét.')
+            return
+          }
+
+          payload.collab_establishment_ids = collabEstablishmentIds
+        } else {
           payload.target_group = this.selectedSchoolTargetGroup
-          payload.institution_id = this.userInstitution.id
+
+          // Ensure newly assigned class teachers are included in targeting even if
+          // assignments changed after this page was opened.
+          await this.loadInstitutionClasses()
+
+          const localTargetUserIds = await this.resolveLocalTargetUserIds(token)
+
+          if (!localTargetUserIds.length) {
+            toast.warning('A kiválasztott célcsoporthoz nem találtunk címzett felhasználót.')
+            return
+          }
+
+          payload.users = localTargetUserIds
         }
 
-        await axios.post('http://127.0.0.1:8000/api/events', payload, {
+        await axios.post('http://127.0.0.1:8000/api/establishment/events', payload, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',
@@ -1028,6 +1439,87 @@ export default {
   background: #f8fafc;
   padding: 12px;
   border-radius: 12px;
+}
+
+.class-target-dashboard {
+  margin-top: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 18px;
+  background: #f8fafc;
+}
+
+.class-target-dashboard h4 {
+  margin: 0 0 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+.class-target-state {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 14px;
+}
+
+.class-target-state.warning {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.class-target-help {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #dbeafe;
+  color: #1e3a8a;
+  font-size: 14px;
+}
+
+.class-target-help.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.class-target-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.class-target-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.class-target-card:hover {
+  border-color: #94a3b8;
+}
+
+.class-target-card.selected {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 1px #4f46e5;
+  background: #eef2ff;
+}
+
+.class-target-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.class-target-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #64748b;
 }
 
 /* FORM ELEMEK */
