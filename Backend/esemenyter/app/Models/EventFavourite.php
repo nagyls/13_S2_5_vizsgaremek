@@ -8,7 +8,7 @@ class EventFavourite extends Model
 {
     //
     protected $fillable = [
-        'event_id',
+        'event_s_id',
         'user_id',
     ];
 }

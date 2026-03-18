@@ -13,4 +13,5 @@ class EventShown extends Model
         'user_id',
         'establishment_id',
     ];
+    const UPDATED_AT = null;
 }

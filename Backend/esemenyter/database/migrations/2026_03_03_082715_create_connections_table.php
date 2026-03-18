@@ -17,12 +17,6 @@ return new class extends Migration
                   ->references('id')->on('establishments')
                   ->onDelete('cascade');
         });
-        Schema::table('events', function (Blueprint $table) {
-            $table->unsignedBigInteger('staff_id')->nullable()->after('establishment_id');
-            $table->foreign('staff_id')
-                  ->references('id')->on('staffs')
-                  ->onDelete('cascade');
-        });
     }
 
     /**

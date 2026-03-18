@@ -88,11 +88,11 @@ class DatabaseSeeder extends Seeder
         $event = Event::create([
             'user_id' => $user->id,
             'type' => 'local',
+            'establishment_id' => $est->id,
             'title' => 'Első esemény',
             'description' => 'Ez az első esemény leírása.',
             'content' => 'Ez az első esemény tartalma.',
         ]);
-
 
         DB::table('event_shows')->insert([
             'event_id' => $event->id,
