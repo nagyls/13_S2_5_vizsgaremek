@@ -151,7 +151,7 @@ export default {
   computed: {
     isFormal() {
       const user = this.$store?.state?.user || {};
-      return user.role === 'admin' || user.role === 'teacher' || user.role === 'institution_manager';
+      return user.role === 'admin' || user.role === 'teacher';
     },
     felhasznaloInitial() {
       if (!this.aktualisFelhasznalo) return '?'

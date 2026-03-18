@@ -62,6 +62,33 @@ class EstablishmentController extends Controller
 
     public function getEstablishments(Request $request)
     {
+        if ($request->has('region_id') && !empty($request->region_id)) {
+            $regionId = (int) $request->region_id;
+
+            $query = Establishment::query()
+                ->join('settlements', 'settlements.id', '=', 'establishments.settlement_id')
+                ->join('inner_regions', 'inner_regions.id', '=', 'settlements.inner_region_id')
+                ->where('inner_regions.region_id', $regionId)
+                ->select('establishments.id', 'establishments.title')
+                ->distinct();
+
+            if ($request->has('search') && !empty($request->search)) {
+                $search = $request->search;
+                $query->where('establishments.title', 'LIKE', "%{$search}%");
+            }
+
+            $establishments = $query->orderBy('establishments.title')->get();
+
+            return response()->json([
+                'data' => $establishments->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'title' => $item->title,
+                    ];
+                })->values(),
+            ]);
+        }
+
         $query = Establishment::query();
         if ($request->has('search') && !empty($request->search) && $request->has('settlement_id') && !empty($request->settlement_id)) {
             $search = $request->search;

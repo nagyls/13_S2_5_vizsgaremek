@@ -351,8 +351,7 @@ export default {
       const roles = {
         'student': 'Diák',
         'teacher': 'Tanár',
-        'admin': 'Admin',
-        'institution_manager': 'Intézményvezető'
+        'admin': 'Admin'
       };
       return roles[this.normalizedRole] || 'Vendég';
     },
@@ -366,7 +365,7 @@ export default {
     },
     
     canCreateEvent() {
-      return ['teacher', 'admin', 'institution_manager'].includes(this.normalizedRole);
+      return ['teacher', 'admin'].includes(this.normalizedRole);
     },
     
     hasActiveFilters() {
@@ -725,8 +724,7 @@ export default {
   color: #f97316;
 }
 
-.role-badge.admin,
-.role-badge.institution_manager {
+.role-badge.admin {
   background: rgba(139, 92, 246, 0.2);
   color: #8b5cf6;
 }

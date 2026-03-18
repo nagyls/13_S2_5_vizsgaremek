@@ -278,9 +278,9 @@ export default {
       userRole: 'student',
       currentUserId: null,
       userInstitution: {
-        id: 1,
+        id: null,
         name: 'Kossuth Lajos Gimnázium',
-        countyId: 1
+        countyId: null
       },
       userCountyId: 1,
       institutionUserIds: [],
@@ -345,7 +345,11 @@ export default {
   
   computed: {
     hasPermission() {
-      return ['admin', 'teacher', 'institution_manager'].includes(this.userRole)
+      return ['admin', 'teacher'].includes(this.userRole)
+    },
+
+    canCreateGlobalEvent() {
+      return this.userRole === 'admin'
     },
     
     roleMessage() {
@@ -355,16 +359,13 @@ export default {
       if (this.userRole === 'admin') {
         return 'Adminisztrátorként globális és iskolai eseményt is létrehozhatsz'
       }
-      if (this.userRole === 'institution_manager') {
-        return 'Intézményvezetőként iskolai szintű eseményt hozhatsz létre'
-      }
       return 'Nincs jogosultságod eseményt létrehozni'
     },
     
     canProceed() {
       switch (this.currentStep) {
         case 1: 
-          if (this.selectedEventScope === 'global' && this.userRole !== 'admin') {
+          if (this.selectedEventScope === 'global' && !this.canCreateGlobalEvent) {
             return false
           }
           return this.selectedEventScope !== ''
@@ -466,6 +467,10 @@ export default {
         }
       } else {
         this.selectedSchoolTargetGroup = 'sajat_osztaly'
+
+        if (!this.institutionClasses.length) {
+          this.loadInstitutionClasses()
+        }
       }
     },
     
@@ -483,6 +488,12 @@ export default {
       if (!this.requiresManualClassSelection) {
         this.selectedClassId = this.defaultAssignedClassId ? String(this.defaultAssignedClassId) : ''
       }
+    },
+
+    currentStep(newValue) {
+      if (newValue === 2 && this.selectedEventScope === 'school' && !this.institutionClasses.length) {
+        this.loadInstitutionClasses()
+      }
     }
   },
   
@@ -491,33 +502,91 @@ export default {
   },
   
   methods: {
-    initialize() {
+    async initialize() {
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token')
+
       try {
         const savedUser =
           localStorage.getItem('esemenyter_user') ||
           sessionStorage.getItem('esemenyter_user')
 
+        const savedInstitutionId =
+          localStorage.getItem('CurrentInstitution') ||
+          sessionStorage.getItem('CurrentInstitution')
+
+        let mergedUser = null
+
         if (savedUser) {
           const user = JSON.parse(savedUser)
+          mergedUser = { ...user }
           this.userRole = String(user?.role || 'student').toLowerCase()
           this.currentUserId = Number(user?.id || 0) || null
 
-          if (user?.institution_id) {
-            this.userInstitution.id = Number(user.institution_id)
+          const userInstitutionId = Number(user?.institution_id || user?.establishment_id || 0)
+          const storageInstitutionId = Number(savedInstitutionId || 0)
+
+          if (storageInstitutionId > 0) {
+            this.userInstitution.id = storageInstitutionId
+          } else if (userInstitutionId > 0) {
+            this.userInstitution.id = userInstitutionId
+          }
+        }
+
+        if (token) {
+          const headers = {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json'
+          }
+
+          const [userResponse, roleResponse] = await Promise.all([
+            axios.get('http://127.0.0.1:8000/api/user', { headers }).catch(() => null),
+            axios.get('http://127.0.0.1:8000/api/establishment/role', { headers }).catch(() => null)
+          ])
+
+          const backendUser = userResponse?.data || {}
+          const backendRole = String(roleResponse?.data?.role || '').toLowerCase()
+
+          if (backendRole) {
+            this.userRole = backendRole
+          }
+
+          if (Number(backendUser?.id) > 0) {
+            this.currentUserId = Number(backendUser.id)
+          }
+
+          const backendInstitutionId = Number(backendUser?.establishment_id || 0)
+          if (backendInstitutionId > 0 && !Number(savedInstitutionId || 0)) {
+            this.userInstitution.id = backendInstitutionId
+          }
+
+          if (mergedUser) {
+            mergedUser = {
+              ...mergedUser,
+              id: this.currentUserId || mergedUser.id,
+              role: this.userRole,
+              institution_id: Number(this.userInstitution.id) || null
+            }
+
+            if (localStorage.getItem('esemenyter_token')) {
+              localStorage.setItem('esemenyter_user', JSON.stringify(mergedUser))
+            } else {
+              sessionStorage.setItem('esemenyter_user', JSON.stringify(mergedUser))
+            }
           }
         }
       } catch (error) {
         console.error('Felhasználó inicializálási hiba:', error)
       }
 
-      if (this.userRole !== 'admin') {
+      if (!this.canCreateGlobalEvent) {
         this.selectedEventScope = 'school'
       }
 
-      this.loadCounties()
-      this.loadInstitutionData()
-      this.loadInstitutionUsers()
-      this.loadInstitutionClasses()
+      await this.loadInstitutionData()
+      await this.loadCounties()
+      await this.loadInstitutionUsers()
     },
 
     async loadInstitutionClasses() {
@@ -760,6 +829,30 @@ export default {
         return []
       }
 
+      const sourceEstablishmentId = Number(this.userInstitution.id)
+
+      // Fast path: one request per county using region filter on establishments.
+      const directResponses = await Promise.all(
+        normalizedCountyIds.map(countyId =>
+          axios.get('http://127.0.0.1:8000/api/establishments', {
+            params: { region_id: countyId },
+            headers: { Accept: 'application/json' }
+          }).catch(() => ({ data: { data: [] } }))
+        )
+      )
+
+      const directIds = Array.from(new Set(
+        directResponses.flatMap(response =>
+          (Array.isArray(response?.data?.data) ? response.data.data : [])
+            .map(item => Number(item?.id))
+            .filter(Number.isFinite)
+        )
+      )).filter(id => id !== sourceEstablishmentId)
+
+      if (directIds.length) {
+        return directIds
+      }
+
       const districtResponses = await Promise.all(
         normalizedCountyIds.map(countyId =>
           axios.get('http://127.0.0.1:8000/api/innerregions/all', {
@@ -811,7 +904,6 @@ export default {
         )
       )
 
-      const sourceEstablishmentId = Number(this.userInstitution.id)
       const collabIds = Array.from(new Set(
         establishmentResponses.flatMap(response =>
           (Array.isArray(response?.data?.data) ? response.data.data : [])
@@ -883,6 +975,11 @@ export default {
         return
       }
 
+      if (this.selectedEventScope === 'global' && !this.canCreateGlobalEvent) {
+        toast.error('Nincs jogosultságod globális esemény létrehozására.')
+        return
+      }
+
       this.isSubmitting = true
 
       try {
@@ -902,15 +999,6 @@ export default {
           return
         }
 
-        if (!this.institutionUserIds.length) {
-          await this.loadInstitutionUsers()
-        }
-
-        if (!this.institutionUserIds.length) {
-          toast.error('Nem sikerült betölteni az intézmény felhasználóit.')
-          return
-        }
-
         // Adatok összeállítása a backend elvárásai szerint
         const payload = {
           title: this.eventForm.title,
@@ -919,8 +1007,7 @@ export default {
           start_date: this.eventForm.startDateTime,
           end_date: this.eventForm.endDateTime,
           type: this.selectedEventScope === 'global' ? 'global' : 'local',
-          establishment_id: establishmentId,
-          users: this.institutionUserIds
+          establishment_id: establishmentId
         }
 
         if (this.selectedEventScope === 'global') {
@@ -934,6 +1021,15 @@ export default {
           payload.collab_establishment_ids = collabEstablishmentIds
         } else {
           payload.target_group = this.selectedSchoolTargetGroup
+
+          if (!this.institutionUserIds.length) {
+            await this.loadInstitutionUsers()
+          }
+
+          if (!this.institutionUserIds.length) {
+            toast.error('Nem sikerült betölteni az intézmény felhasználóit.')
+            return
+          }
 
           // Ensure newly assigned class teachers are included in targeting even if
           // assignments changed after this page was opened.

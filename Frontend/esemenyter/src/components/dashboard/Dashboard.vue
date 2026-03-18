@@ -1079,7 +1079,7 @@ export default {
     },
 
     isFormal() {
-      return this.user.role === 'admin' || this.user.role === 'teacher' || this.user.role === 'institution_manager';
+      return this.user.role === 'admin' || this.user.role === 'teacher';
     },
     
     // Diák kiválasztott elemek
@@ -1318,7 +1318,7 @@ export default {
           this.user.role = userData.role;
         }
 
-        this.selectedRole = this.user.role === 'institution_manager' ? 'admin' : this.user.role;
+        this.selectedRole = this.user.role;
 
         this.profileConfigured = !!this.user.role
         this.saveUserData()
@@ -1960,7 +1960,7 @@ export default {
         }
 
         this.profileConfigured = true;
-        this.user.role = 'institution_manager';
+        this.user.role = 'admin';
         this.user.institution_id = institutionId;
         this.user.region = this.adminSelectedRegion?.title || '';
         this.user.district = this.adminSelectedDistrict?.title || '';

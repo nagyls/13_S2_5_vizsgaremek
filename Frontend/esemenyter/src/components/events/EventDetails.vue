@@ -3,7 +3,7 @@
     <div class="container">
       <!-- Navigáció -->
       <div class="navigation">
-        <button class="btn-back" @click="backToEvents">
+        <button class="btn-back" @click="$router.back()">
           <i class='bx bx-arrow-back'></i>
           <span><-- Vissza az eseményekhez</span>
         </button>
@@ -114,6 +114,26 @@
                 <img :src="eventData.image_url" :alt="eventData.title">
               </div>
             </div>
+
+            <!-- Komment szekció -->
+            <div class="comment-section">
+              <div class="comment-header">
+                <div class="header-left">
+                  <i class='bx bx-message-dots'></i>
+                  <h2>Hozzászólások</h2>
+                </div>
+                <div class="comment-counter">
+                  <span>{{ commentCount }}</span>
+                  <span>komment</span>
+                </div>
+              </div>
+              
+              <CommentBox 
+                :esemenyId="parseInt(eventId)"
+                :aktualisFelhasznalo="currentUser"
+                @komment-sikeres="onCommentAdded"
+              />
+            </div>
           </div>
 
           <!-- Jobb oldali oszlop -->
@@ -204,25 +224,6 @@
           </div>
         </div>
 
-        <!-- Komment szekció -->
-        <div class="comment-section">
-          <div class="comment-header">
-            <div class="header-left">
-              <i class='bx bx-message-dots'></i>
-              <h2>Hozzászólások</h2>
-            </div>
-            <div class="comment-counter">
-              <span>{{ commentCount }}</span>
-              <span>komment</span>
-            </div>
-          </div>
-          
-          <CommentBox 
-            :esemenyId="parseInt(eventId)"
-            :aktualisFelhasznalo="currentUser"
-            @komment-sikeres="onCommentAdded"
-          />
-        </div>
       </div>
     </div>
   </div>
@@ -263,7 +264,7 @@ export default {
   
   computed: {
     isFormal() {
-      return this.currentUser?.role === 'admin' || this.currentUser?.role === 'teacher' || this.currentUser?.role === 'institution_manager';
+      return this.currentUser?.role === 'admin' || this.currentUser?.role === 'teacher';
     }
   },
   
@@ -369,7 +370,35 @@ export default {
           : []
 
       const foundEvent = events.find(item => Number(item?.id) === Number(eventId))
-      return foundEvent ? this.normalizeEvent(foundEvent) : null
+      if (foundEvent) {
+        return this.normalizeEvent(foundEvent)
+      }
+
+      // Fallback: admin meghívott globális események az event-access végpontról.
+      const collabResponse = await axios.get(
+        `http://127.0.0.1:8000/api/establishment/${institutionId}/event-access`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json'
+          },
+          validateStatus: (status) => status >= 200 && status < 600
+        }
+      )
+
+      if (collabResponse.status >= 400) {
+        return null
+      }
+
+      const collabPayload = collabResponse.data
+      const collabEvents = Array.isArray(collabPayload)
+        ? collabPayload
+        : Array.isArray(collabPayload?.events)
+          ? collabPayload.events
+          : []
+
+      const foundCollabEvent = collabEvents.find(item => Number(item?.id) === Number(eventId))
+      return foundCollabEvent ? this.normalizeEvent(foundCollabEvent) : null
     },
     
     async loadCurrentUser() {
@@ -1202,7 +1231,6 @@ export default {
   background: white;
   border-radius: 24px;
   padding: 2rem;
-  margin-top: 2rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 

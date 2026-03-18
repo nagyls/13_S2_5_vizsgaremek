@@ -90,7 +90,85 @@
                 <span class="stat-value">{{ totalPendingRequests }}</span>
                 <span class="stat-label">Függő kérelem</span>
               </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ pendingGlobalEventRequests }}</span>
+                <span class="stat-label">Globális meghívás</span>
+              </div>
             </div>
+          </div>
+        </div>
+
+        <div class="requests-section">
+          <div class="section-header">
+            <h3>
+              <i class='bx bx-world'></i>
+              Globális esemény meghívások
+            </h3>
+          </div>
+
+          <div v-if="isLoadingCollabEvents" class="empty-state">
+            <i class='bx bx-loader-circle bx-spin'></i>
+            <h4>Betöltés...</h4>
+            <p>Globális esemény meghívások lekérése folyamatban.</p>
+          </div>
+
+          <div v-else-if="collabEvents.length" class="requests-grid">
+            <div
+              v-for="eventItem in collabEvents"
+              :key="eventItem.id"
+              class="request-card pending"
+            >
+              <div class="request-header">
+                <div class="user-avatar-medium">
+                  <span>{{ (eventItem.title || 'E')[0]?.toUpperCase() }}</span>
+                </div>
+                <div class="user-info">
+                  <h4>{{ eventItem.title || 'Névtelen esemény' }}</h4>
+                  <p class="user-email">{{ formatDate(eventItem.start_date) }} - {{ formatDate(eventItem.end_date) }}</p>
+                </div>
+              </div>
+
+              <div class="request-body">
+                <div class="info-row">
+                  <i class='bx bx-detail'></i>
+                  <span>{{ eventItem.description || 'Nincs leírás megadva.' }}</span>
+                </div>
+              </div>
+
+              <div class="request-actions request-actions-stacked">
+                <router-link
+                  :to="`/esemenyek/${eventItem.id}`"
+                  class="btn-details btn-details-full"
+                >
+                  <i class='bx bx-show'></i>
+                  <span>Részletek</span>
+                </router-link>
+                <div class="request-actions-inline">
+                  <button
+                    class="btn-approve"
+                    @click="handleCollabEventRequest(eventItem.id, 'accept')"
+                    :disabled="processingCollabEventId === Number(eventItem.id)"
+                  >
+                    <i class='bx bx-check'></i>
+                    <span>{{ processingCollabEventId === Number(eventItem.id) ? 'Feldolgozás...' : 'Elfogadás' }}</span>
+                  </button>
+                  <button
+                    class="btn-reject"
+                    @click="handleCollabEventRequest(eventItem.id, 'reject')"
+                    :disabled="processingCollabEventId === Number(eventItem.id)"
+                  >
+                    <i class='bx bx-x'></i>
+                    <span>{{ processingCollabEventId === Number(eventItem.id) ? 'Feldolgozás...' : 'Elutasítás' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="empty-state">
+            <i class='bx bx-inbox'></i>
+            <h4>Nincs globális esemény meghívás</h4>
+            <p>Ha egy másik intézmény globális eseményre meghív, itt fog megjelenni.</p>
           </div>
         </div>
 
@@ -672,7 +750,7 @@ export default {
         name: '',
         email: '',
         institution_id: null,
-        role: 'institution_manager'
+        role: 'admin'
       },
       institution: {
         id: null,
@@ -685,6 +763,9 @@ export default {
         totalTeachers: 0,
         totalClasses: 0
       },
+      collabEvents: [],
+      isLoadingCollabEvents: false,
+      processingCollabEventId: null,
       establishmentRequests: [], // Összes kérelem a táblából
       allUsers: [], // Összes felhasználó
       students: [], // Diákok
@@ -745,6 +826,10 @@ export default {
     // Összes függőben lévő kérelem
     totalPendingRequests() {
       return this.establishmentRequests.length;
+    },
+
+    pendingGlobalEventRequests() {
+      return this.collabEvents.length;
     },
     
     // Diák kérelmek
@@ -1076,6 +1161,8 @@ export default {
         });
         this.syncRequestSelectionWithPendingList();
 
+        await this.loadCollabEvents(institutionId);
+
         // Diákok és tanárok betöltése (akik már csatlakoztak)
         await this.loadInstitutionUsers(institutionId);
 
@@ -1091,6 +1178,81 @@ export default {
       } catch (error) {
         console.error('Hiba az adatok betöltésekor:', error);
         this.showNotification('Hiba történt az adatok betöltésekor', 'error');
+      }
+    },
+
+    async loadCollabEvents(institutionId) {
+      try {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+
+        if (!token || !institutionId) {
+          this.collabEvents = [];
+          return;
+        }
+
+        this.isLoadingCollabEvents = true;
+
+        const response = await axios.get(
+          `http://127.0.0.1:8000/api/establishment/${institutionId}/event-access`,
+          {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+          }
+        );
+
+        this.collabEvents = Array.isArray(response?.data?.events) ? response.data.events : [];
+      } catch (error) {
+        console.error('Hiba a globális esemény kérelmek betöltésekor:', error);
+        this.collabEvents = [];
+      } finally {
+        this.isLoadingCollabEvents = false;
+      }
+    },
+
+    async handleCollabEventRequest(eventId, action) {
+      try {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+        const establishmentId = this.user.institution_id;
+
+        if (!token || !establishmentId) {
+          this.showNotification('Hiányzó hitelesítés vagy intézmény azonosító.', 'error');
+          return;
+        }
+
+        const eventIdNumber = Number(eventId);
+        if (!eventIdNumber) {
+          this.showNotification('Hiányzó esemény azonosító.', 'error');
+          return;
+        }
+
+        this.processingCollabEventId = eventIdNumber;
+
+        await axios.patch(
+          `http://127.0.0.1:8000/api/establishment/${establishmentId}/event-access`,
+          {
+            event_id: eventIdNumber,
+            action
+          },
+          {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+          }
+        );
+
+        this.collabEvents = this.collabEvents.filter(event => Number(event.id) !== eventIdNumber);
+
+        if (action === 'accept') {
+          this.showNotification('Globális esemény elfogadva.', 'success');
+        } else {
+          this.showNotification('Globális esemény kérés elutasítva.', 'warning');
+        }
+      } catch (error) {
+        console.error('Hiba a globális esemény kérés feldolgozásakor:', error);
+        this.showNotification(error.response?.data?.message || 'Hiba történt a kérés feldolgozásakor.', 'error');
+      } finally {
+        this.processingCollabEventId = null;
       }
     },
     
@@ -1676,8 +1838,8 @@ export default {
             this.user.institution_id = Number(storedInstitutionId);
           }
           
-          // Ellenőrizzük, hogy intézményvezető-e
-          if (this.user.role !== 'institution_manager' && this.user.role !== 'admin') {
+          // Ellenőrizzük, hogy admin-e
+          if (this.user.role !== 'admin') {
             this.$router.push('/dashboard');
             return;
           }
@@ -2293,6 +2455,16 @@ export default {
   gap: 10px;
 }
 
+.request-actions-stacked {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.request-actions-inline {
+  display: flex;
+  gap: 10px;
+}
+
 .btn-approve, .btn-reject {
   flex: 1;
   display: flex;
@@ -2306,6 +2478,33 @@ export default {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.btn-details {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.btn-details-full {
+  width: 100%;
+}
+
+.btn-details:hover {
+  background: #e0e7ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
 }
 
 .btn-approve {
