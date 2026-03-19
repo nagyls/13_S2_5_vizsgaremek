@@ -116,17 +116,18 @@
         </div>
 
         <!-- Szűrők és keresés -->
-        <div class="filters-section">
-          <div class="filter-header">
-            <h3><i class='bx bx-filter-alt'></i> Szűrők és rendezés</h3>
+        <div class="filters-section compact">
+          <div class="filter-header compact">
+            <h3><i class='bx bx-filter-alt'></i> <span class="filter-label">Szűrés:</span></h3>
             <button v-if="hasActiveFilters" class="clear-button" @click="clearFilters">
-              <i class='bx bx-reset'></i> Szűrők törlése
+              <i class='bx bx-reset'></i>
+              <span>Szűrők törlése</span>
             </button>
           </div>
           
-          <div class="filter-row">
-            <div class="filter-group">
-              <label><i class='bx bx-world'></i> Típus:</label>
+          <div class="filter-row compact">
+            <div class="filter-group inline">
+              <label class="inline-label"><i class='bx bx-world'></i></label>
               <div class="chip-container">
                 <button 
                   class="chip" 
@@ -152,8 +153,8 @@
               </div>
             </div>
             
-            <div class="filter-group">
-              <label><i class='bx bx-calendar'></i> Állapot:</label>
+            <div class="filter-group inline">
+              <label class="inline-label"><i class='bx bx-calendar'></i></label>
               <div class="chip-container">
                 <button 
                   class="chip" 
@@ -179,8 +180,8 @@
               </div>
             </div>
             
-            <div class="filter-group sorting">
-              <label><i class='bx bx-sort'></i> Rendezés:</label>
+            <div class="filter-group inline sorting">
+              <label class="inline-label"><i class='bx bx-sort'></i></label>
               <div class="sorting-buttons">
                 <button 
                   class="sorting-button" 
@@ -953,131 +954,201 @@ export default {
 .filters-section {
   background: white;
   border-radius: 24px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.filters-section.compact {
+  padding: 1rem;
 }
 
 .filter-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid #f0f0f0;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.filter-header.compact {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
 }
 
 .filter-header h3 {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1a202c;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
   margin: 0;
+}
+
+.filter-label {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .filter-label {
+    display: inline;
+  }
 }
 
 .filter-header h3 i {
   color: #667eea;
+  font-size: 1.1rem;
 }
 
 .clear-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: #ffebee;
+  padding: 0.6rem 1.2rem;
+  background: #fee2e2;
   border: none;
   border-radius: 50px;
-  color: #ef4444;
-  font-size: 0.875rem;
-  font-weight: 500;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .clear-button:hover {
-  background: #ef4444;
+  background: #dc2626;
   color: white;
 }
 
 .filter-row {
   display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.filter-row.compact {
+  gap: 2rem;
+}
+
+.filter-group {
+  display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.5rem;
+  min-width: fit-content;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+}
+
+.filter-group.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
 }
 
 .filter-group label {
-  display: block;
-  margin-bottom: 0.75rem;
   color: #4a5568;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
+}
+
+.inline-label {
+  margin-bottom: 0 !important;
+  display: inline-flex;
+  padding: 0.35rem 0.5rem;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #667eea;
+  font-size: 0.9rem;
 }
 
 .chip-container {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 
 .chip {
-  padding: 0.625rem 1.25rem;
-  background: #f7fafc;
-  border: 2px solid transparent;
+  padding: 0.475rem 0.95rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
   border-radius: 50px;
-  color: #4a5568;
-  font-size: 0.875rem;
+  color: #4b5563;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s;
+  justify-content: center;
+  gap: 0.3rem;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .chip:hover {
-  background: #edf2f7;
-  transform: translateY(-2px);
+  background: #e5e7eb;
+  border-color: #d1d5db;
 }
 
 .chip.active {
   background: linear-gradient(135deg, #667eea, #764ba2);
+  border-color: #667eea;
   color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.chip i {
+  font-size: 0.9rem;
 }
 
 .sorting-buttons {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 
 .sorting-button {
-  padding: 0.625rem 1.25rem;
-  background: #f7fafc;
-  border: 2px solid transparent;
+  padding: 0.475rem 0.95rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
   border-radius: 50px;
-  color: #4a5568;
-  font-size: 0.875rem;
+  color: #4b5563;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s;
+  justify-content: center;
+  gap: 0.3rem;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .sorting-button:hover {
-  background: #edf2f7;
-  transform: translateY(-2px);
+  background: #e5e7eb;
+  border-color: #d1d5db;
 }
 
 .sorting-button.active {
   background: linear-gradient(135deg, #667eea, #764ba2);
+  border-color: #667eea;
   color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.sorting-button i {
+  font-size: 0.9rem;
 }
 
 /* Események grid */
@@ -1432,19 +1503,28 @@ export default {
     justify-content: center;
   }
   
-  .filter-header {
+  .filter-row {
     flex-direction: column;
-    gap: 1rem;
     align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .filter-group {
+    width: 100%;
+  }
+  
+  .filter-group.inline {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  .chip-container {
+    width: 100%;
   }
   
   .sorting-buttons {
-    flex-direction: column;
-  }
-  
-  .sorting-button {
     width: 100%;
-    justify-content: center;
   }
 }
 
@@ -1457,13 +1537,31 @@ export default {
     font-size: 1.75rem;
   }
   
+  .filters-section {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .filter-header h3 {
+    font-size: 0.85rem;
+  }
+  
+  .filter-label {
+    display: none !important;
+  }
+  
   .chip-container {
-    flex-direction: column;
+    gap: 0.35rem;
   }
   
   .chip {
-    width: 100%;
-    justify-content: center;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  .sorting-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
   }
 }
 </style>
