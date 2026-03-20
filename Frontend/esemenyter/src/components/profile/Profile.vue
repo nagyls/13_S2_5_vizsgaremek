@@ -328,7 +328,7 @@
               </div>
 
               <!-- Intézményvezetői adatok -->
-              <div v-if="user.role === 'institution_manager'" class="form-section">
+              <div v-if="user.role === 'admin'" class="form-section">
                 <h2><i class='bx bx-building-house'></i> Intézmény adatok</h2>
                 
                 <div class="form-grid">
@@ -560,7 +560,7 @@
               </div>
 
               <!-- Intézményvezetői adatok -->
-              <div v-if="user.role === 'institution_manager'" class="info-card">
+              <div v-if="user.role === 'admin'" class="info-card">
                 <h3><i class='bx bx-building-house'></i> Intézmény adatok</h3>
                 <div class="info-list">
                   <div class="info-item">
@@ -726,8 +726,7 @@ export default {
       const roles = {
         'student': 'Diák',
         'teacher': 'Tanár',
-        'admin': 'Adminisztrátor',
-        'institution_manager': 'Intézményvezető'
+        'admin': 'Adminisztrátor'
       };
       return roles[this.user.role] || this.user.role;
     },
@@ -736,8 +735,7 @@ export default {
       const icons = {
         'student': 'bx bx-graduation',
         'teacher': 'bx bx-chalkboard',
-        'admin': 'bx bx-cog',
-        'institution_manager': 'bx bx-building-house'
+        'admin': 'bx bx-cog'
       };
       return icons[this.user.role] || 'bx bx-user';
     },
@@ -913,7 +911,7 @@ export default {
         };
         
         // Ha intézményvezető, iskola adatok mentése
-        if (this.user.role === 'institution_manager') {
+        if (this.user.role === 'admin') {
           updateData.school_name = this.editForm.school;
           updateData.school_address = this.editForm.schoolAddress;
           updateData.school_phone = this.editForm.schoolPhone;
@@ -996,7 +994,7 @@ export default {
     },
     
     goToDashboard() {
-      if (this.user.role === 'institution_manager' || this.user.role === 'admin') {
+      if (this.user.role === 'admin') {
         this.$router.push('/user-dashboard');
       } else if (this.user.role) {
         this.$router.push('/user-dashboard');
@@ -1330,8 +1328,7 @@ export default {
   color: #f97316;
 }
 
-.profile-role.admin,
-.profile-role.institution_manager {
+.profile-role.admin {
   background: rgba(139, 92, 246, 0.1);
   color: #8b5cf6;
 }

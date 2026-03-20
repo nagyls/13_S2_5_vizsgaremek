@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import ToastContainer from './components/ToastContainer.vue'
+import ToastContainer from './components/toasts/ToastContainer.vue'
 import { setToastContainer } from './services/toast'
 
 export default {

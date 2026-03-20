@@ -10,6 +10,8 @@ class Event extends Model
     protected $fillable = [
         'staff_id',
         'user_id',
+        'establishment_id',
+        'target_group',
         'type',
         'title',
         'description',
@@ -21,8 +23,8 @@ class Event extends Model
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
     ];
 
     public function user()

@@ -58,7 +58,7 @@
             </div>
             <h2>Válassz szerepkört</h2>
             <p class="section-subtitle">
-              Az alábbi lehetőségek közül választhatod ki, hogyan szeretnél részt venni az EseményTérben
+              {{ isFormal ? 'Az alábbi lehetőségek közül választhatja ki, hogyan szeretne részt venni az EseményTérben' : 'Az alábbi lehetőségek közül választhatod ki, hogyan szeretnél részt venni az EseményTérben' }}
             </p>
           </div>
           
@@ -933,7 +933,7 @@
 
 <script>
 import axios from 'axios';
-import { toast } from '../services/toast'
+import { toast } from '../../services/toast'
 
 export default {
   name: 'Dashboard',
@@ -1076,6 +1076,10 @@ export default {
         'admin': 'Adminisztrátor'
       };
       return roles[this.user.role] || this.user.role || 'Vendég';
+    },
+
+    isFormal() {
+      return this.user.role === 'admin' || this.user.role === 'teacher';
     },
     
     // Diák kiválasztott elemek
@@ -1314,7 +1318,7 @@ export default {
           this.user.role = userData.role;
         }
 
-        this.selectedRole = this.user.role === 'institution_manager' ? 'admin' : this.user.role;
+        this.selectedRole = this.user.role;
 
         this.profileConfigured = !!this.user.role
         this.saveUserData()
@@ -1956,7 +1960,7 @@ export default {
         }
 
         this.profileConfigured = true;
-        this.user.role = 'institution_manager';
+        this.user.role = 'admin';
         this.user.institution_id = institutionId;
         this.user.region = this.adminSelectedRegion?.title || '';
         this.user.district = this.adminSelectedDistrict?.title || '';

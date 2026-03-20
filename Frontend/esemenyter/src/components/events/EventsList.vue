@@ -116,17 +116,18 @@
         </div>
 
         <!-- Szűrők és keresés -->
-        <div class="filters-section">
-          <div class="filter-header">
-            <h3><i class='bx bx-filter-alt'></i> Szűrők és rendezés</h3>
+        <div class="filters-section compact">
+          <div class="filter-header compact">
+            <h3><i class='bx bx-filter-alt'></i> <span class="filter-label">Szűrés:</span></h3>
             <button v-if="hasActiveFilters" class="clear-button" @click="clearFilters">
-              <i class='bx bx-reset'></i> Szűrők törlése
+              <i class='bx bx-reset'></i>
+              <span>Szűrők törlése</span>
             </button>
           </div>
           
-          <div class="filter-row">
-            <div class="filter-group">
-              <label><i class='bx bx-world'></i> Típus:</label>
+          <div class="filter-row compact">
+            <div class="filter-group inline">
+              <label class="inline-label"><i class='bx bx-world'></i></label>
               <div class="chip-container">
                 <button 
                   class="chip" 
@@ -152,8 +153,8 @@
               </div>
             </div>
             
-            <div class="filter-group">
-              <label><i class='bx bx-calendar'></i> Állapot:</label>
+            <div class="filter-group inline">
+              <label class="inline-label"><i class='bx bx-calendar'></i></label>
               <div class="chip-container">
                 <button 
                   class="chip" 
@@ -179,8 +180,8 @@
               </div>
             </div>
             
-            <div class="filter-group sorting">
-              <label><i class='bx bx-sort'></i> Rendezés:</label>
+            <div class="filter-group inline sorting">
+              <label class="inline-label"><i class='bx bx-sort'></i></label>
               <div class="sorting-buttons">
                 <button 
                   class="sorting-button" 
@@ -261,9 +262,13 @@
               
               <div class="card-footer">
                 <div class="stats">
-                  <div class="stat-item" title="Résztvevők">
+                  <div class="stat-item" title="Részt vesz">
                     <i class='bx bx-user-check'></i>
-                    <span>{{ event.participants || 0 }}</span>
+                    <span>{{ event.attending_count ?? event.participants ?? 0 }}</span>
+                  </div>
+                  <div class="stat-item" title="Nem vesz részt">
+                    <i class='bx bx-user-x'></i>
+                    <span>{{ event.not_attending_count ?? 0 }}</span>
                   </div>
                   <div class="stat-item" title="Kedvencek">
                     <i class='bx bx-star'></i>
@@ -272,6 +277,7 @@
                   <div class="stat-item" title="Hozzászólások">
                     <i class='bx bx-message-square-detail'></i>
                     <span>{{ event.comment_count || 0 }}</span>
+                    <small>Komment</small>
                   </div>
                 </div>
                 
@@ -346,8 +352,7 @@ export default {
       const roles = {
         'student': 'Diák',
         'teacher': 'Tanár',
-        'admin': 'Admin',
-        'institution_manager': 'Intézményvezető'
+        'admin': 'Admin'
       };
       return roles[this.normalizedRole] || 'Vendég';
     },
@@ -357,11 +362,11 @@ export default {
     },
     
     totalParticipants() {
-      return this.events.reduce((accumulator, event) => accumulator + (event.participants || 0), 0);
+      return this.events.reduce((accumulator, event) => accumulator + (event.attending_count ?? event.participants ?? 0), 0);
     },
     
     canCreateEvent() {
-      return ['teacher', 'admin', 'institution_manager'].includes(this.normalizedRole);
+      return ['teacher', 'admin'].includes(this.normalizedRole);
     },
     
     hasActiveFilters() {
@@ -437,7 +442,7 @@ export default {
           this.events = [];
           return;
         }
-        
+
         this.events = await this.fetchEventsFromApi();
         
       } catch (error) {
@@ -447,13 +452,82 @@ export default {
         this.isLoading = false;
       }
     },
-    
+
+    getCurrentInstitutionId() {
+      const storedInstitutionId =
+        localStorage.getItem('CurrentInstitution') ||
+        sessionStorage.getItem('CurrentInstitution') ||
+        this.currentUser?.institution_id ||
+        this.currentUser?.establishment_id;
+
+      const institutionId = Number(storedInstitutionId);
+      return Number.isFinite(institutionId) && institutionId > 0 ? institutionId : null;
+    },
+
+    normalizeEventStatus(status) {
+      const normalized = String(status || '').toLowerCase();
+
+      if (normalized === 'ongoing' || normalized === 'open') {
+        return 'open';
+      }
+
+      if (normalized === 'ended' || normalized === 'closed') {
+        return 'closed';
+      }
+
+      if (normalized === 'upcoming') {
+        return 'open';
+      }
+
+      return 'open';
+    },
+
+    normalizeEventForList(event) {
+      const normalizedStatus = this.normalizeEventStatus(event?.status);
+      const creatorName =
+        event?.creator_name ||
+        event?.creator?.name ||
+        event?.user?.name ||
+        'Ismeretlen szervező';
+
+      return {
+        ...event,
+        status: normalizedStatus,
+        creator_name: creatorName,
+        participants: Number(event?.participants || event?.participant_count || 0),
+        attending_count: Number(event?.attending_count || event?.participants || event?.participant_count || 0),
+        not_attending_count: Number(event?.not_attending_count || 0),
+        favorites: Number(event?.favorites || event?.favorite_count || 0),
+        comment_count: Number(event?.comment_count || event?.comments_count || 0)
+      };
+    },
+
     async fetchEventsFromApi() {
-      const { data } = await axios.get('http://127.0.0.1:8000/api/events', {
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      const institutionId = this.getCurrentInstitutionId();
+      const normalizedInstitutionId = Number(institutionId);
+
+      if (!Number.isFinite(normalizedInstitutionId) || normalizedInstitutionId <= 0) {
+        return [];
+      }
+
+      const endpoint = `http://127.0.0.1:8000/api/establishment/${normalizedInstitutionId}/events`;
+
+      const response = await axios.get(endpoint, {
         headers: {
-          Accept: 'application/json'
-        }
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        // Itt helyben kezeljuk a hibakat, hogy ne triggerelodjon globalis kijelentkeztetes.
+        validateStatus: (status) => status >= 200 && status < 600
       });
+
+      if (response.status >= 400) return [];
+
+      const { data } = response;
 
       const incomingEvents = Array.isArray(data)
         ? data
@@ -462,6 +536,7 @@ export default {
           : [];
 
       return incomingEvents
+        .map((event) => this.normalizeEventForList(event))
         .filter(event => {
           if (this.filters.type && event.type !== this.filters.type) return false;
           if (this.filters.status && event.status !== this.filters.status) return false;
@@ -502,8 +577,9 @@ export default {
 <style scoped>
 /* Alap stílusok (EventDetails-ből átvéve) */
 .events-page {
-  min-width: 100vw;
+  width: 100%;
   min-height: 100vh;
+  overflow-x: hidden;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
@@ -649,8 +725,7 @@ export default {
   color: #f97316;
 }
 
-.role-badge.admin,
-.role-badge.institution_manager {
+.role-badge.admin {
   background: rgba(139, 92, 246, 0.2);
   color: #8b5cf6;
 }
@@ -879,131 +954,201 @@ export default {
 .filters-section {
   background: white;
   border-radius: 24px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.filters-section.compact {
+  padding: 1rem;
 }
 
 .filter-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid #f0f0f0;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.filter-header.compact {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
 }
 
 .filter-header h3 {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1a202c;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
   margin: 0;
+}
+
+.filter-label {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .filter-label {
+    display: inline;
+  }
 }
 
 .filter-header h3 i {
   color: #667eea;
+  font-size: 1.1rem;
 }
 
 .clear-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: #ffebee;
+  padding: 0.6rem 1.2rem;
+  background: #fee2e2;
   border: none;
   border-radius: 50px;
-  color: #ef4444;
-  font-size: 0.875rem;
-  font-weight: 500;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .clear-button:hover {
-  background: #ef4444;
+  background: #dc2626;
   color: white;
 }
 
 .filter-row {
   display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.filter-row.compact {
+  gap: 2rem;
+}
+
+.filter-group {
+  display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.5rem;
+  min-width: fit-content;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+}
+
+.filter-group.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
 }
 
 .filter-group label {
-  display: block;
-  margin-bottom: 0.75rem;
   color: #4a5568;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
+}
+
+.inline-label {
+  margin-bottom: 0 !important;
+  display: inline-flex;
+  padding: 0.35rem 0.5rem;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #667eea;
+  font-size: 0.9rem;
 }
 
 .chip-container {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 
 .chip {
-  padding: 0.625rem 1.25rem;
-  background: #f7fafc;
-  border: 2px solid transparent;
+  padding: 0.475rem 0.95rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
   border-radius: 50px;
-  color: #4a5568;
-  font-size: 0.875rem;
+  color: #4b5563;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s;
+  justify-content: center;
+  gap: 0.3rem;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .chip:hover {
-  background: #edf2f7;
-  transform: translateY(-2px);
+  background: #e5e7eb;
+  border-color: #d1d5db;
 }
 
 .chip.active {
   background: linear-gradient(135deg, #667eea, #764ba2);
+  border-color: #667eea;
   color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.chip i {
+  font-size: 0.9rem;
 }
 
 .sorting-buttons {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 
 .sorting-button {
-  padding: 0.625rem 1.25rem;
-  background: #f7fafc;
-  border: 2px solid transparent;
+  padding: 0.475rem 0.95rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
   border-radius: 50px;
-  color: #4a5568;
-  font-size: 0.875rem;
+  color: #4b5563;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s;
+  justify-content: center;
+  gap: 0.3rem;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .sorting-button:hover {
-  background: #edf2f7;
-  transform: translateY(-2px);
+  background: #e5e7eb;
+  border-color: #d1d5db;
 }
 
 .sorting-button.active {
   background: linear-gradient(135deg, #667eea, #764ba2);
+  border-color: #667eea;
   color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.sorting-button i {
+  font-size: 0.9rem;
 }
 
 /* Események grid */
@@ -1152,20 +1297,36 @@ export default {
 
 .stats {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.35rem;
   color: #718096;
   font-size: 0.75rem;
+  background: #eef2ff;
+  border: 1px solid #dbe4ff;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
 }
 
 .stat-item i {
   font-size: 1rem;
   color: #667eea;
+}
+
+.stat-item span {
+  color: #334155;
+  font-weight: 700;
+}
+
+.stat-item small {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 
 .details-button {
@@ -1296,6 +1457,13 @@ export default {
     flex-direction: column;
     text-align: center;
   }
+
+  .user-menu {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(300px, calc(100vw - 2rem));
+  }
   
   .hero-content {
     padding: 2rem;
@@ -1335,34 +1503,65 @@ export default {
     justify-content: center;
   }
   
-  .filter-header {
+  .filter-row {
     flex-direction: column;
-    gap: 1rem;
     align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .filter-group {
+    width: 100%;
+  }
+  
+  .filter-group.inline {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  .chip-container {
+    width: 100%;
   }
   
   .sorting-buttons {
-    flex-direction: column;
-  }
-  
-  .sorting-button {
     width: 100%;
-    justify-content: center;
   }
 }
 
 @media (max-width: 480px) {
+  .container {
+    padding: 0.75rem;
+  }
+
   .hero-title {
     font-size: 1.75rem;
   }
   
+  .filters-section {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .filter-header h3 {
+    font-size: 0.85rem;
+  }
+  
+  .filter-label {
+    display: none !important;
+  }
+  
   .chip-container {
-    flex-direction: column;
+    gap: 0.35rem;
   }
   
   .chip {
-    width: 100%;
-    justify-content: center;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  .sorting-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
   }
 }
 </style>

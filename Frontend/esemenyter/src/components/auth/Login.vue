@@ -31,7 +31,7 @@
 
 <script>
 import axios from "axios";
-import { toast } from '../services/toast'
+import { toast } from '../../services/toast'
 
 export default {
   name: 'Login',
@@ -54,9 +54,7 @@ export default {
         getRedirectPath(userData) {
             const role = userData?.role || '';
 
-            if (role === 'institution_manager') return '/institution-dashboard';
             if (role === 'admin' || role === 'teacher' || role === 'student') return '/user-dashboard';
-            if (userData?.pendingApproval) return '/pending-approval';
             return '/dashboard';
         },
 

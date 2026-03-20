@@ -88,6 +88,7 @@ class DatabaseSeeder extends Seeder
         $event = Event::create([
             'user_id' => $user->id,
             'type' => 'local',
+            'target_group' => 'teljes_iskola',
             'establishment_id' => $est->id,
             'title' => 'Első esemény',
             'description' => 'Ez az első esemény leírása.',
@@ -116,10 +117,12 @@ class DatabaseSeeder extends Seeder
         ]);
 
 
-        EventFavourite::create([
-            'event_id' => $event->id,
-            'user_id' => $user->id,
-        ]);
+        // Temporary: event_favourites schema currently does not have event_id,
+        // so this seed is disabled until the migration/model naming is aligned.
+        // EventFavourite::create([
+        //     'event_id' => $event->id,
+        //     'user_id' => $user->id,
+        // ]);
 
 
         $pollId = DB::table('polls')->insertGetId([

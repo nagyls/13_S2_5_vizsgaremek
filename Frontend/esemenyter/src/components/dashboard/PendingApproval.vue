@@ -1,5 +1,6 @@
 <template>
   <div class="pending-approval">
+    <!-- HEADER -->
     <header class="main-header">
       <div class="container">
         <div class="header-content">
@@ -48,17 +49,18 @@
       </div>
     </header>
 
+    <!-- MAIN CONTENT -->
     <main class="main-content">
       <div class="container">
         <div class="pending-card">
           <div class="pending-icon">
-            <i class='bx bx-time'></i>
+            <i class='bx bx-time-five'></i>
           </div>
           
-          <h2>Csatlakozási kérelmed elbírálás alatt</h2>
+          <h2>Csatlakozási kérelmed elbírálás alatt áll</h2>
           
           <p class="pending-message">
-            Köszönjük, hogy csatlakozni szeretnél a(z) 
+            Köszönjük, hogy csatlakozni szeretnél a(z)
             <strong>{{ user.school || 'kiválasztott iskolához' }}</strong>!
           </p>
           
@@ -66,64 +68,51 @@
             <i class='bx bx-info-circle'></i>
             <p>
               Kérelmedet az intézményvezető hamarosan elbírálja. 
-              Amint elfogadásra kerül, értesítést kapsz és teljes hozzáférést kapsz a rendszerhez.
+              <!-- Amint elfogadásra kerül, értesítést kapsz és teljes hozzáférést kapsz a rendszerhez. -->
+              Amint elfogadásra kerül, hozzáférést kapsz a teljes rendszerhez.
             </p>
           </div>
 
-          <div class="status-timeline">
-            <div class="timeline-item completed">
-              <div class="timeline-dot">
-                <i class='bx bx-check'></i>
+          <div class="status-indicator">
+            <div class="status-line">
+              <div class="status-step completed">
+                <div class="step-icon">
+                  <i class='bx bx-check'></i>
+                </div>
+                <span class="step-label">Profil létrehozva</span>
               </div>
-              <div class="timeline-content">
-                <h4>Profil létrehozva</h4>
-                <p>{{ formatDate(user.created_at) }}</p>
+              <div class="status-step active">
+                <div class="step-icon">
+                  <i class='bx bx-time'></i>
+                </div>
+                <span class="step-label">Elbírálás alatt</span>
+              </div>
+              <div class="status-step">
+                <div class="step-icon">
+                  <i class='bx bx-check-circle'></i>
+                </div>
+                <span class="step-label">Jóváhagyva</span>
               </div>
             </div>
+          </div>
 
-            <div class="timeline-item active">
-              <div class="timeline-dot">
-                <i class='bx bx-time'></i>
-              </div>
-              <div class="timeline-content">
-                <h4>Csatlakozási kérelem elküldve</h4>
-                <p>{{ formatDate(user.requested_at) }}</p>
-              </div>
-            </div>
-
-            <div class="timeline-item pending">
-              <div class="timeline-dot">
-                <i class='bx bx-hourglass'></i>
-              </div>
-              <div class="timeline-content">
-                <h4>Intézményvezetői jóváhagyás</h4>
-                <p>Folyamatban...</p>
-              </div>
-            </div>
+          <div class="info-message">
+            <i class='bx bx-envelope'></i>
+            <p>
+              Amint a kérelmedet elbírálták, hozzáférést kapsz a további funkciókhoz.
+              Ez általában 1-2 munkanapot igénybe vehet.
+            </p>
           </div>
 
           <div class="action-buttons">
-            <button class="btn-primary" @click="checkStatus">
-              <i class='bx bx-refresh'></i>
-              Státusz ellenőrzése
+            <button class="btn-outline" @click="goToDashboard">
+              <i class='bx bx-arrow-back'></i>
+              Vissza a főoldalra
             </button>
           </div>
-
-          <p class="help-text">
-            <i class='bx bx-help-circle'></i>
-            Kérdés esetén vedd fel a kapcsolatot az intézményvezetővel.
-          </p>
         </div>
       </div>
     </main>
-
-    <!-- Értesítés -->
-    <transition name="toast">
-      <div v-if="showToast" class="toast-notification" :class="toastType">
-        <i :class="toastIcon"></i>
-        <span>{{ toastMessage }}</span>
-      </div>
-    </transition>
 
     <!-- Floating Action Button -->
     <button v-if="showScrollTop" class="fab" @click="scrollToTop">
@@ -146,15 +135,10 @@ export default {
         email: '',
         role: '',
         school: '',
-        schoolId: null,
-        created_at: null,
-        requested_at: null
+        schoolId: null
       },
       showUserMenu: false,
-      showScrollTop: false,
-      showToast: false,
-      toastMessage: '',
-      toastType: 'info'
+      showScrollTop: false
     }
   },
   
@@ -175,15 +159,6 @@ export default {
         'teacher': 'Tanár'
       };
       return roles[this.user.role] || this.user.role;
-    },
-    
-    toastIcon() {
-      return {
-        success: 'bx bx-check-circle',
-        error: 'bx bx-error-circle',
-        warning: 'bx bx-error',
-        info: 'bx bx-info-circle'
-      }[this.toastType];
     }
   },
   
@@ -192,129 +167,32 @@ export default {
       const savedUser =
         localStorage.getItem('esemenyter_user') ||
         sessionStorage.getItem('esemenyter_user');
+      
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      if (!savedUser || !token) {
+        this.$router.push('/');
+        return;
+      }
+
       if (savedUser) {
         const userData = JSON.parse(savedUser);
         if (userData.isLoggedIn) {
-          this.user = { 
-            ...this.user, 
-            ...userData,
-            created_at: userData.created_at || new Date().toISOString(),
-            requested_at: userData.requested_at || new Date().toISOString()
-          };
-          
-          // Ellenőrizzük a felhasználó státuszát a backendben
-          this.checkUserStatus();
+          this.user = { ...this.user, ...userData };
         } else {
           this.$router.push('/');
         }
-      } else {
-        this.$router.push('/');
       }
-    },
-    
-    async checkUserStatus() {
-      try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token');
-
-        if (!token) {
-          this.$router.push('/');
-          return;
-        }
-
-        const response = await axios.get('http://127.0.0.1:8000/api/user', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        const hasEstablishedMembership = !!response.data?.establishment_id;
-
-        if (hasEstablishedMembership) {
-          await this.refreshUserData();
-        }
-      } catch (error) {
-        console.error('Hiba a státusz ellenőrzésekor:', error);
-      }
-    },
-    
-    async refreshUserData() {
-      try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token');
-
-        const response = await axios.get('http://127.0.0.1:8000/api/user', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        const userData = response.data.data || response.data;
-        
-        const savedUserRaw =
-          localStorage.getItem('esemenyter_user') ||
-          sessionStorage.getItem('esemenyter_user');
-        const savedUser = savedUserRaw ? JSON.parse(savedUserRaw) : {};
-        const updatedUser = { ...savedUser, ...userData };
-        localStorage.setItem('esemenyter_user', JSON.stringify(updatedUser));
-        sessionStorage.setItem('esemenyter_user', JSON.stringify(updatedUser));
-        
-        if (userData.establishment_id) {
-          this.showNotification('Kérelmed elfogadásra került! Átirányítás...', 'success');
-          setTimeout(() => {
-            this.$router.push('/user-dashboard');
-          }, 2000);
-        }
-        
-      } catch (error) {
-        console.error('Hiba a felhasználói adatok frissítésekor:', error);
-      }
-    },
-    
-    async checkStatus() {
-      this.showNotification('Státusz ellenőrzése...', 'info');
-      
-      try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token');
-
-        const response = await axios.get('http://127.0.0.1:8000/api/user', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (response.data?.establishment_id) {
-          this.showNotification('Kérelmed elfogadásra került! Átirányítás...', 'success');
-          await this.refreshUserData();
-        } else {
-          this.showNotification('Kérelmed még elbírálás alatt áll.', 'info');
-        }
-        
-      } catch (error) {
-        console.error('Hiba a státusz ellenőrzésekor:', error);
-        this.showNotification('Hiba történt a státusz lekérésekor', 'error');
-      }
-    },
-    
-    formatDate(date) {
-      if (!date) return 'Ismeretlen';
-      return new Date(date).toLocaleDateString('hu-HU', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
     },
     
     toggleUserMenu() {
       this.showUserMenu = !this.showUserMenu;
     },
     
-    showNotification(message, type = 'info') {
-      this.toastMessage = message;
-      this.toastType = type;
-      this.showToast = true;
-      
-      setTimeout(() => {
-        this.showToast = false;
-      }, 3000);
+    goToDashboard() {
+      this.$router.push('/user-dashboard');
     },
     
     scrollToTop() {
@@ -359,12 +237,18 @@ export default {
 </script>
 
 <style scoped>
-.pending-approval {
+/* ===== ALAP STÍLUSOK ===== */
+* {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
-  font-family: "Poppins", sans-serif;
+}
+
+.pending-approval {
   min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   width: 100%;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
 .container {
@@ -373,15 +257,16 @@ export default {
   padding: 0 20px;
 }
 
-/* FEJLÉC */
+/* ===== HEADER ===== */
 .main-header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   padding: 16px 0;
   position: sticky;
   top: 0;
   z-index: 1000;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
@@ -390,26 +275,43 @@ export default {
   align-items: center;
 }
 
+/* Logo */
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.logo-section:hover {
+  transform: scale(1.02);
 }
 
 .logo-icon {
-  font-size: 32px;
-  color: #4f46e5;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 28px;
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
 }
 
-.logo-text h1 {
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.site-title {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -422,7 +324,7 @@ export default {
   font-weight: 500;
 }
 
-/* Felhasználó profil */
+/* ===== USER PROFIL ===== */
 .user-profile {
   position: relative;
 }
@@ -430,12 +332,14 @@ export default {
 .user-avatar {
   cursor: pointer;
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .avatar-circle {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -444,6 +348,7 @@ export default {
   font-weight: 600;
   font-size: 16px;
   transition: transform 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .user-avatar:hover .avatar-circle {
@@ -465,16 +370,17 @@ export default {
 
 .status-dot.online {
   background: #10b981;
+  box-shadow: 0 0 0 2px white;
 }
 
-/* Felhasználó menü */
+/* ===== USER MENÜ ===== */
 .user-menu {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
   background: white;
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   width: 300px;
   overflow: hidden;
   z-index: 1000;
@@ -482,13 +388,14 @@ export default {
 
 .menu-header {
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
 }
 
 .menu-user-info h4 {
   margin: 0 0 5px 0;
   font-size: 18px;
+  font-weight: 600;
 }
 
 .user-email {
@@ -497,6 +404,7 @@ export default {
   opacity: 0.9;
 }
 
+/* Role badge */
 .role-badge {
   display: inline-block;
   padding: 4px 12px;
@@ -533,7 +441,6 @@ export default {
   font-size: 14px;
   cursor: pointer;
   transition: background 0.2s;
-  text-decoration: none;
 }
 
 .menu-item:hover {
@@ -559,7 +466,11 @@ export default {
   color: #ef4444;
 }
 
-/* Animációk */
+.logout-btn:hover {
+  background: #fee2e2;
+}
+
+/* ===== ANIMÁCIÓK ===== */
 .slide-fade-enter-active,
 .slide-fade-leave-active {
   transition: all 0.3s ease;
@@ -571,7 +482,7 @@ export default {
   transform: translateY(-10px);
 }
 
-/* Fő tartalom */
+/* ===== MAIN CONTENT ===== */
 .main-content {
   padding: 80px 0;
   min-height: calc(100vh - 80px);
@@ -579,36 +490,60 @@ export default {
   align-items: center;
 }
 
-/* Pending card */
+/* ===== PENDING CARD ===== */
 .pending-card {
   background: white;
   border-radius: 32px;
   padding: 60px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
   max-width: 700px;
   margin: 0 auto;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.pending-card::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, #667eea10, #764ba210);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.pending-card::after {
+  content: '';
+  position: absolute;
+  bottom: -50px;
+  left: -50px;
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, #764ba210, #667eea10);
+  border-radius: 50%;
+  z-index: 0;
 }
 
 .pending-icon {
-  font-size: 80px;
+  font-size: 100px;
   color: #f59e0b;
   margin-bottom: 32px;
-  animation: pulse 2s infinite;
+  position: relative;
+  z-index: 1;
+  animation: gentlePulse 2s infinite ease-in-out;
 }
 
-@keyframes pulse {
-  0% {
+@keyframes gentlePulse {
+  0%, 100% {
     transform: scale(1);
     opacity: 1;
   }
   50% {
-    transform: scale(1.1);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
+    transform: scale(1.05);
+    opacity: 0.9;
   }
 }
 
@@ -617,6 +552,8 @@ export default {
   font-weight: 700;
   margin-bottom: 20px;
   color: #111827;
+  position: relative;
+  z-index: 1;
 }
 
 .pending-message {
@@ -624,26 +561,32 @@ export default {
   color: #4b5563;
   line-height: 1.6;
   margin-bottom: 30px;
+  position: relative;
+  z-index: 1;
 }
 
 .pending-message strong {
   color: #4f46e5;
+  font-weight: 600;
 }
 
+/* ===== INFO BOX ===== */
 .info-box {
   background: #f0f9ff;
-  border-left: 4px solid #3b82f6;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 40px;
   display: flex;
   align-items: flex-start;
-  gap: 15px;
+  gap: 16px;
   text-align: left;
+  border: 1px solid #bae6fd;
+  position: relative;
+  z-index: 1;
 }
 
 .info-box i {
-  font-size: 24px;
+  font-size: 28px;
   color: #3b82f6;
   flex-shrink: 0;
 }
@@ -652,119 +595,135 @@ export default {
   margin: 0;
   color: #0369a1;
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-/* Timeline */
-.status-timeline {
+/* ===== STATUS INDICATOR ===== */
+.status-indicator {
   margin: 40px 0;
   position: relative;
-  padding-left: 30px;
+  z-index: 1;
 }
 
-.status-timeline::before {
+.status-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.status-line::before {
   content: '';
   position: absolute;
-  left: 15px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
+  top: 25px;
+  left: 60px;
+  right: 60px;
+  height: 2px;
   background: #e5e7eb;
+  z-index: 0;
 }
 
-.timeline-item {
-  position: relative;
-  margin-bottom: 30px;
+.status-step {
   display: flex;
-  align-items: flex-start;
-  gap: 20px;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+  flex: 1;
 }
 
-.timeline-item:last-child {
-  margin-bottom: 0;
-}
-
-.timeline-dot {
-  position: absolute;
-  left: -30px;
-  width: 32px;
-  height: 32px;
+.step-icon {
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   background: white;
   border: 2px solid #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1;
+  font-size: 24px;
+  color: #9ca3af;
+  transition: all 0.3s ease;
 }
 
-.timeline-item.completed .timeline-dot {
+.status-step.completed .step-icon {
   background: #10b981;
   border-color: #10b981;
   color: white;
 }
 
-.timeline-item.active .timeline-dot {
+.status-step.active .step-icon {
   background: #f59e0b;
   border-color: #f59e0b;
   color: white;
-  animation: pulse 2s infinite;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
 }
 
-.timeline-item.pending .timeline-dot {
-  background: #9ca3af;
-  border-color: #9ca3af;
-  color: white;
-}
-
-.timeline-dot i {
-  font-size: 18px;
-}
-
-.timeline-content {
-  flex: 1;
-  text-align: left;
-  padding-left: 20px;
-}
-
-.timeline-content h4 {
-  margin: 0 0 5px 0;
-  font-size: 18px;
-  color: #111827;
-}
-
-.timeline-content p {
-  margin: 0;
+.step-label {
   font-size: 14px;
+  font-weight: 500;
   color: #6b7280;
+  text-align: center;
 }
 
-.timeline-item.completed .timeline-content h4 {
+.status-step.completed .step-label {
   color: #10b981;
 }
 
-.timeline-item.active .timeline-content h4 {
+.status-step.active .step-label {
   color: #f59e0b;
+  font-weight: 600;
 }
 
-/* Action buttons */
+/* ===== INFO MESSAGE ===== */
+.info-message {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: #f3f4f6;
+  border-radius: 16px;
+  margin: 30px 0;
+  text-align: left;
+  position: relative;
+  z-index: 1;
+}
+
+.info-message i {
+  font-size: 28px;
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.info-message p {
+  margin: 0;
+  color: #374151;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ===== ACTION BUTTONS ===== */
 .action-buttons {
   display: flex;
   gap: 16px;
   justify-content: center;
-  margin: 40px 0 20px;
+  margin-top: 40px;
+  position: relative;
+  z-index: 1;
 }
 
 .btn-outline {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 28px;
+  padding: 14px 32px;
   background: transparent;
   border: 2px solid #4f46e5;
   color: #4f46e5;
   border-radius: 50px;
   font-weight: 600;
+  font-size: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -772,112 +731,15 @@ export default {
 .btn-outline:hover {
   background: #4f46e5;
   color: white;
-}
-
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 28px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 50px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
 }
 
-.help-text {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  color: #6b7280;
-  font-size: 14px;
-  margin-top: 20px;
+.btn-outline i {
+  font-size: 20px;
 }
 
-.help-text i {
-  color: #4f46e5;
-}
-
-/* Toast értesítések */
-.toast-notification {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  padding: 16px 24px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  z-index: 3000;
-  min-width: 300px;
-  border-left: 4px solid;
-}
-
-.toast-notification.success {
-  border-left-color: #10b981;
-}
-
-.toast-notification.error {
-  border-left-color: #ef4444;
-}
-
-.toast-notification.warning {
-  border-left-color: #f59e0b;
-}
-
-.toast-notification.info {
-  border-left-color: #3b82f6;
-}
-
-.toast-notification i {
-  font-size: 24px;
-}
-
-.toast-notification.success i {
-  color: #10b981;
-}
-
-.toast-notification.error i {
-  color: #ef4444;
-}
-
-.toast-notification.warning i {
-  color: #f59e0b;
-}
-
-.toast-notification.info i {
-  color: #3b82f6;
-}
-
-.toast-notification span {
-  font-size: 14px;
-  color: #374151;
-}
-
-/* Toast animáció */
-.toast-enter-active,
-.toast-leave-active {
-  transition: all 0.3s ease;
-}
-
-.toast-enter-from,
-.toast-leave-to {
-  opacity: 0;
-  transform: translateX(30px);
-}
-
-/* FAB gomb */
+/* ===== FLOATING ACTION BUTTON ===== */
 .fab {
   position: fixed;
   bottom: 30px;
@@ -885,7 +747,7 @@ export default {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   border: none;
   cursor: pointer;
@@ -903,7 +765,7 @@ export default {
   box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
 }
 
-/* Reszponzív */
+/* ===== RESPONZÍV ===== */
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;
@@ -923,49 +785,63 @@ export default {
   .main-content {
     padding: 40px 0;
   }
-  
+
   .pending-card {
-    padding: 40px 20px;
+    padding: 40px 24px;
   }
-  
+
   .pending-icon {
-    font-size: 60px;
+    font-size: 80px;
   }
-  
+
   .pending-card h2 {
     font-size: 24px;
   }
-  
+
   .pending-message {
     font-size: 16px;
   }
-  
+
   .info-box {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    padding: 20px;
   }
-  
+
+  .status-line::before {
+    left: 40px;
+    right: 40px;
+  }
+
+  .step-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .step-label {
+    font-size: 12px;
+  }
+
+  .info-message {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+
   .action-buttons {
     flex-direction: column;
   }
-  
-  .btn-outline,
-  .btn-primary {
+
+  .btn-outline {
     width: 100%;
     justify-content: center;
   }
-  
+
   .user-menu {
     width: 280px;
     right: -20px;
-  }
-  
-  .toast-notification {
-    left: 20px;
-    right: 20px;
-    min-width: auto;
-    bottom: 20px;
   }
 }
 
@@ -977,14 +853,35 @@ export default {
     bottom: 20px;
     right: 20px;
   }
-  
-  .timeline-item {
-    flex-direction: column;
+
+  .pending-icon {
+    font-size: 60px;
   }
-  
-  .timeline-content {
-    padding-left: 0;
-    margin-top: 10px;
+
+  .status-line {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .status-line::before {
+    display: none;
+  }
+
+  .status-step {
+    flex-direction: row;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .step-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .step-label {
+    font-size: 14px;
+    text-align: left;
   }
 }
 </style>
