@@ -62,28 +62,27 @@ Route::prefix('establishments')->group(function () {
 
 
 Route::middleware('auth:sanctum')->group(function () {
-//esemény kezelés
+    //esemény kezelés
     Route::get('/establishment/{establishmentId}/events', [EventController::class, 'getEvents']);
     Route::post('/establishment/events', [EventController::class, 'store']);
     Route::patch('/events/{eventId}/participation', [EventController::class, 'setParticipation']);
     Route::get('/establishment/{establishmentId}/event-access', [EventController::class, 'getCollabEvents']);
-    // pass establishmentId as path param so controller receives it from route
     Route::patch('/establishment/{establishmentId}/event-access', [EventController::class, 'handleCollabEvents']);
-//intézmény kezelés
+    //intézmény kezelés
     Route::get('/establishment/role', [EstablishmentController::class, 'getRole']);
     Route::post('/establishment/create', [EstablishmentController::class, 'store']);
     Route::get('/establishment/mine', [EstablishmentController::class, 'getMyEstablishments']);
     Route::get('/establishment/{establishmentId}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
-//osztály kezelés
+    //osztály kezelés
     Route::get('/establishment/{establishmentId}/classes', [ClassController::class, 'getClasses']);
     Route::get('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'getClassMembers']);
-
+    Route::delete('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'deleteClass']);
     Route::post('/establishment/classes/create', [ClassController::class, 'store']);
     // modify class membership -> PATCH
     Route::patch('/establishment/classes/add-students', [StudentController::class, 'storeInClass']);
     Route::patch('/establishment/classes/remove-students', [StudentController::class, 'removeFromClass']);
     Route::patch('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'updateClassTeacher']);
-//kérelmek
+    //kérelmek
     Route::get('/establishment/{establishmentId}/requests/students', [RequestController::class, 'getStudentRequests']);
     Route::get('/establishment/{establishmentId}/requests/teachers', [RequestController::class, 'getTeacherRequests']);
 

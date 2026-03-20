@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('event_shows', function (Blueprint $table) {
             $table->id();
+            $table->boolean('is_favourite')->default(false);
             $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('establishment_id')->constrained('establishments')->cascadeOnDelete();

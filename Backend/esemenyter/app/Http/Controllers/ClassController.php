@@ -99,9 +99,48 @@ class ClassController extends Controller
             'data' => $students
         ]);
     }
+    public function getClassMemmbersInMass(Request $request, $establishmentId)
+    {
+        $user = $request->user();
+        if (!$this->isStaffEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
+        $validated = validator($request->all(), [
+            'class_ids' => 'required|array',
+            'class_ids.*' => 'integer|exists:classes,id',
+        ], [
+            'class_ids.required' => 'A class_ids mező kötelező.',
+            'class_ids.array' => 'A class_ids mezőnek tömbnek kell lennie.',
+            'class_ids.*.integer' => 'A class_ids tömb elemeinek egész számnak kell lennie.',
+            'class_ids.*.exists' => 'A class_ids tömb elemeinek léteznie kell a classes táblában.',
+        ])->validate();
+
+        //  A megadott osztályok az adott intézményhez tartoznak-e
+        $classesInEstablishment = ClassModel::whereIn('id', $validated['class_ids'])
+            ->where('establishment_id', $establishmentId)
+            ->pluck('id')
+            ->toArray();
+
+        $invalidIds = array_values(array_diff($validated['class_ids'], $classesInEstablishment));
+        if (!empty($invalidIds)) {
+            return response()->json([
+                'message' => 'Egy vagy több osztály nem tartozik az intézményhez!',
+                'invalid_class_ids' => $invalidIds
+            ], 400);
+        }
+
+        $userIds = User::join('class_students', 'users.id', '=', 'class_students.user_id')
+            ->whereIn('class_students.class_id', $classesInEstablishment)
+            ->distinct()
+            ->pluck('users.id');
+
+        return response()->json([
+            'student_ids' => $userIds
+        ]);
+    }
     public function updateClassTeacher(Request $request, $establishmentId, $classId)
     {
-        
+
         request()->validate([
             'teacher_id'   => 'required|integer|exists:users,id',
         ], [
@@ -121,7 +160,7 @@ class ClassController extends Controller
                 'message' => 'Osztály nem található!'
             ], 400);
         }
-        
+
         $user = $request->user();;
         $classId = $request->input('class_id');
 
@@ -129,13 +168,13 @@ class ClassController extends Controller
             return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
         }
 
-        
+
         if (!$this->isStaffEstablishment($request->teacher_id, $establishmentId)) {
             return response()->json([
                 'message' => 'A megadott tanár nem tagja az intézménynek!'
             ], 400);
         }
-        
+
         // Tanár hozzárendelése az osztályhoz
         $class->user_id = $request->teacher_id;
         $class->save();
@@ -143,5 +182,22 @@ class ClassController extends Controller
         return response()->json([
             'message' => 'Tanár sikeresen hozzárendelve az osztályhoz!'
         ]);
+    }
+    //Osztály törlése
+    public function deleteClass(Request $request, $establishmentId, $classId)
+    {
+        $user = $request->user();
+        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
+        $class = ClassModel::find($classId);
+        if (!$class) {
+            return response()->json(['message' => 'Osztály nem található!'], 404);
+        }
+        if ($class->establishment_id != $establishmentId) {
+            return response()->json(['message' => 'Az osztály nem tartozik az intézményhez!'], 400);
+        }
+        $class->delete();
+        return response()->json(['message' => 'Osztály sikeresen törölve!']);
     }
 }
