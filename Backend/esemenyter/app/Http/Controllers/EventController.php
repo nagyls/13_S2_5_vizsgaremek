@@ -25,7 +25,6 @@ class EventController extends Controller
             'establishment_id' => 'required|exists:establishments,id',
             'collab_establishment_ids' => 'array|required_if:type,global|min:1',
             'collab_establishment_ids.*' => 'exists:establishments,id',
-            'target_group' => 'nullable|string|in:sajat_osztaly,evfolyam,teljes_iskola|required_if:type,local',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'content' => 'nullable|string',
@@ -65,12 +64,7 @@ class EventController extends Controller
 
 
         $users = $validated['users'] ?? [];
-        $collabIds = collect($validated['collab_establishment_ids'] ?? [])
-            ->map(fn($id) => (int) $id)
-            ->filter(fn($id) => $id > 0 && $id !== (int) $validated['establishment_id'])
-            ->unique()
-            ->values()
-            ->all();
+        $collabIds = $validated['collab_establishment_ids'] ?? [];
 
         if ($validated['type'] == 'local') {
             if (!$this->isStaffEstablishment($user, $validated['establishment_id'])) {
@@ -81,7 +75,6 @@ class EventController extends Controller
                 $event = Event::create([
                     'user_id' => $user->id,
                     'establishment_id' => $validated['establishment_id'],
-                    'target_group' => $validated['target_group'] ?? 'teljes_iskola',
                     'type' => $validated['type'],
                     'title' => $validated['title'],
                     'description' => $validated['description'],
@@ -131,23 +124,6 @@ class EventController extends Controller
                 return response()->json(['message' => 'nem jogosult'], 403);
             }
 
-            if (empty($collabIds)) {
-                return response()->json(['message' => 'Legalább egy másik intézményt ki kell választani globális eseményhez.'], 422);
-            }
-
-            $users = DB::table('students')
-                ->where('establishment_id', $validated['establishment_id'])
-                ->pluck('user_id')
-                ->merge(
-                    DB::table('staffs')
-                        ->where('establishment_id', $validated['establishment_id'])
-                        ->pluck('user_id')
-                )
-                ->push($user->id)
-                ->unique()
-                ->values()
-                ->all();
-
             $event = DB::transaction(function () use ($user, $validated, $users, $collabIds) {
                 $event = Event::create([
                     'user_id' => $user->id,
@@ -174,10 +150,6 @@ class EventController extends Controller
 
                 // Intézményi felhasználók láthatósága
                 foreach ($users as $userId) {
-                    if ((int) $userId === (int) $user->id) {
-                        continue;
-                    }
-
                     if ($this->isMemberEstablishment($userId, $validated['establishment_id'])) {
                         $shownRows[] = [
                             'event_id' => $event->id,
@@ -249,18 +221,7 @@ class EventController extends Controller
                 ->delete();
 
             if ($validated['action'] === 'accept') {
-                $users = DB::table('students')
-                    ->where('establishment_id', $establishmentId)
-                    ->pluck('user_id')
-                    ->merge(
-                        DB::table('staffs')
-                            ->where('establishment_id', $establishmentId)
-                            ->pluck('user_id')
-                    )
-                    ->unique()
-                    ->values()
-                    ->all();
-
+                $users = $validated['users'] ?? [];
                 foreach ($users as $userId) {
                     if ($this->isMemberEstablishment($userId, $establishmentId)) {
                         EventShown::firstOrCreate([
@@ -284,7 +245,6 @@ class EventController extends Controller
             return response()->json(['message' => 'nem jogosult'], 401);
         }
 
-        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
         if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
             return response()->json(['message' => 'nem jogosult'], 401);
         }
@@ -335,16 +295,10 @@ class EventController extends Controller
             return response()->json(['message' => 'nem jogosult'], 403);
         }
 
-        $hasClassMembership = DB::table('class_students')
-            ->join('classes', 'classes.id', '=', 'class_students.class_id')
-            ->where('class_students.user_id', $user->id)
-            ->where('classes.establishment_id', $establishmentId)
-            ->exists();
 
-        if ($hasClassMembership) {
-            $visibleEventIds = EventShown::where('establishment_id', $establishmentId)
-                ->distinct()
-                ->pluck('event_id');
+        $visibleEventIds = EventShown::where('establishment_id', $establishmentId)
+            ->distinct()
+            ->pluck('event_id');
 
         $events = Event::whereIn('id', $visibleEventIds)
             ->orderBy('start_date', 'asc')
@@ -404,65 +358,6 @@ class EventController extends Controller
         });
         return response()->json([
             'events' => $events
-        ]);
-    }
-
-    public function setParticipation(Request $request, int $eventId)
-    {
-        $user = $request->user();
-
-        if (!$user) {
-            return response()->json(['message' => 'nem jogosult'], 401);
-        }
-
-        $validated = $request->validate([
-            'answer' => 'required|in:y,n',
-        ], [
-            'answer.required' => 'A válasz megadása kötelező.',
-            'answer.in' => 'A válasz csak "y" vagy "n" lehet.',
-        ]);
-
-        $event = Event::find($eventId);
-        if (!$event) {
-            return response()->json(['message' => 'Az esemény nem található.'], 404);
-        }
-
-        $canSeeEvent = EventShown::where('event_id', $eventId)
-            ->where('user_id', $user->id)
-            ->exists();
-
-        if (!$canSeeEvent) {
-            return response()->json(['message' => 'nem jogosult'], 403);
-        }
-
-        DB::table('event_feedbacks')->updateOrInsert(
-            [
-                'event_id' => $eventId,
-                'user_id' => $user->id,
-            ],
-            [
-                'answer' => $validated['answer'],
-                'updated_at' => now(),
-                'created_at' => now(),
-            ]
-        );
-
-        $attendingCount = DB::table('event_feedbacks')
-            ->where('event_id', $eventId)
-            ->where('answer', 'y')
-            ->count();
-
-        $notAttendingCount = DB::table('event_feedbacks')
-            ->where('event_id', $eventId)
-            ->where('answer', 'n')
-            ->count();
-
-        return response()->json([
-            'message' => 'Részvételi válasz mentve.',
-            'answer' => $validated['answer'],
-            'attending_count' => $attendingCount,
-            'not_attending_count' => $notAttendingCount,
-            'participant_count' => $attendingCount,
         ]);
     }
 

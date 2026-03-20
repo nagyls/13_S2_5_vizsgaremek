@@ -11,7 +11,6 @@ class Event extends Model
         'staff_id',
         'user_id',
         'establishment_id',
-        'target_group',
         'type',
         'title',
         'description',
