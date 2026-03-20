@@ -1,0 +1,14 @@
+﻿ALGORITMUS: KollabEsemenyKerelmekListazasa
+
+BEMENET:
+- establishmentId
+
+LEPESEK:
+1. Auth user ellenorzese.
+2. Admin jogosultsag ellenorzese az intezmenyben.
+3. EventRequest rekordokbol event_id-k kigyujtese.
+4. Esemnyek lekerese start_date szerint.
+5. creator_name kiegeszites.
+6. Valasz: event lista.
+
+ALGORITMUS VEGE

@@ -1,0 +1,8 @@
+﻿ALGORITMUS: Kijelentkezes
+
+LEPESEK:
+1. Auth user aktualis tokenjenek lekerese.
+2. Aktualis access token torlese.
+3. Valasz: "Sikeres kijelentkezes".
+
+ALGORITMUS VEGE
