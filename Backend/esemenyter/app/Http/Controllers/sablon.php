@@ -23,15 +23,16 @@ class EventController extends Controller
         $validated = $request->validate([
             'type' => 'required|in:local,global',
             'establishment_id' => 'required|exists:establishments,id',
-            'collab_establishment_ids' => 'array|required_if:type,global',
+            'collab_establishment_ids' => 'array|required_if:type,global|min:1',
             'collab_establishment_ids.*' => 'exists:establishments,id',
+            'target_group' => 'nullable|string|in:sajat_osztaly,evfolyam,teljes_iskola|required_if:type,local',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'content' => 'nullable|string',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
-            'users'   => 'required|array|min:1',
-            'users.*' => 'integer|distinct|exists:users,id',
+            'users' => 'array|required_if:type,local',
+            'users.*' => 'exists:users,id',
         ], [
             'type.required' => 'A típus megadása kötelező.',
             'type.in' => 'A típusnak "local" vagy "global" értéknek kell lennie.',
@@ -39,7 +40,10 @@ class EventController extends Controller
             'establishment_id.exists' => 'A megadott intézmény nem található.',
             'collab_establishment_ids.array' => 'A kollab_establishment_ids mezőnek tömbnek kell lennie.',
             'collab_establishment_ids.required_if' => 'A kollaboráló intézmények megadása kötelező globális esemény esetén.',
+            'collab_establishment_ids.min' => 'Legalább egy kollaboráló intézményt meg kell adni globális eseményhez.',
             'collab_establishment_ids.*.exists' => 'A megadott kollaboráló intézmény nem található.',
+            'target_group.required_if' => 'Helyi eseménynél a célcsoport megadása kötelező.',
+            'target_group.in' => 'A célcsoport értéke csak sajat_osztaly, evfolyam vagy teljes_iskola lehet.',
             'title.required' => 'A cím megadása kötelező.',
             'title.string' => 'A címnek szövegnek kell lennie.',
             'title.max' => 'A cím nem lehet hosszabb, mint :max karakter.',
@@ -51,26 +55,30 @@ class EventController extends Controller
             'end_date.required' => 'A befejező dátum megadása kötelező.',
             'end_date.date' => 'A befejező dátumnak érvényes dátumnak kell lennie.',
             'end_date.after' => 'A befejező dátumnak a kezdő dátunál később kell lennie.',
-            'users.required' => 'A felhasználók megadása kötelező.',
             'users.array' => 'A users mezőnek tömbnek kell lennie.',
-            'users.min' => 'Legalább :min felhasználót meg kell adni.',
-            'users.*.integer' => 'A felhasználó azonosítónak számnak kell lennie.',
-            'users.*.distinct' => 'A felhasználók között nem lehetnek ismétlődő értékek.',
+            'users.required_if' => 'A felhasználók megadása kötelező helyi esemény esetén.',
             'users.*.exists' => 'A megadott felhasználó nem található.',
         ]);
 
 
-        $users = $validated['users'];
-        $collabIds = $validated['collab_establishment_ids'] ?? [];
+        $users = $validated['users'] ?? [];
+        $collabIds = collect($validated['collab_establishment_ids'] ?? [])
+            ->map(fn($id) => (int) $id)
+            ->filter(fn($id) => $id > 0 && $id !== (int) $validated['establishment_id'])
+            ->unique()
+            ->values()
+            ->all();
 
         if ($validated['type'] == 'local') {
-            if (!$this->isStaffEstablishment($user, $validated['establishment_id'])) {
-                return response()->json(['message' => 'nem jogosult'], 403);
+            if (!$this->isStaffEstablishment($user->id, $validated['establishment_id'])) {
+                return response()->json(['message' => 'nem jogosult'], 401);
             }
 
             $event = DB::transaction(function () use ($user, $validated, $users) {
                 $event = Event::create([
                     'user_id' => $user->id,
+                    'establishment_id' => $validated['establishment_id'],
+                    'target_group' => $validated['target_group'] ?? 'teljes_iskola',
                     'type' => $validated['type'],
                     'title' => $validated['title'],
                     'description' => $validated['description'],
@@ -92,6 +100,10 @@ class EventController extends Controller
 
                 // eredeti intézmény felhasználói láthatóság
                 foreach ($users as $userId) {
+                    if ((int) $userId === (int) $user->id) {
+                        continue;
+                    }
+
                     if ($this->isMemberEstablishment($userId, $validated['establishment_id'])) {
                         $shownRows[] = [
                             'event_id' => $event->id,
@@ -112,13 +124,32 @@ class EventController extends Controller
         }
 
         if ($validated['type'] == 'global') {
-            if (!$this->isAdminEstablishment($user, $validated['establishment_id'])) {
-                return response()->json(['message' => 'nem jogosult'], 403);
+            if (!$this->isAdminEstablishment($user->id, $validated['establishment_id'])) {
+                return response()->json(['message' => 'nem jogosult'], 401);
             }
+
+            if (empty($collabIds)) {
+                return response()->json(['message' => 'Legalább egy másik intézményt ki kell választani globális eseményhez.'], 422);
+            }
+
+            $users = DB::table('students')
+                ->where('establishment_id', $validated['establishment_id'])
+                ->pluck('user_id')
+                ->merge(
+                    DB::table('staffs')
+                        ->where('establishment_id', $validated['establishment_id'])
+                        ->pluck('user_id')
+                )
+                ->push($user->id)
+                ->unique()
+                ->values()
+                ->all();
 
             $event = DB::transaction(function () use ($user, $validated, $users, $collabIds) {
                 $event = Event::create([
                     'user_id' => $user->id,
+                    'establishment_id' => $validated['establishment_id'],
+                    'target_group' => null,
                     'type' => $validated['type'],
                     'title' => $validated['title'],
                     'description' => $validated['description'],
@@ -140,6 +171,10 @@ class EventController extends Controller
 
                 // Intézményi felhasználók láthatósága
                 foreach ($users as $userId) {
+                    if ((int) $userId === (int) $user->id) {
+                        continue;
+                    }
+
                     if ($this->isMemberEstablishment($userId, $validated['establishment_id'])) {
                         $shownRows[] = [
                             'event_id' => $event->id,
@@ -181,25 +216,20 @@ class EventController extends Controller
         if (!$user) {
             return response()->json(['message' => 'nem jogosult'], 401);
         }
-        if (!$this->isAdminEstablishment($user, $establishmentId)) {
+        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
             return response()->json(['message' => 'nem jogosult'], 403);
         }
 
         $validated = $request->validate([
             'event_id' => 'required|exists:events,id',
             'action' => 'required|in:accept,reject',
-            'users' => 'array|required_if:action,accept',
-            'users.*' => 'integer|distinct|exists:users,id',
+            'users' => 'array',
+            'users.*' => 'exists:users,id',
         ], [
             'event_id.required' => 'Az esemény azonosító megadása kötelező.',
             'event_id.exists' => 'A megadott esemény nem található.',
             'action.required' => 'A művelet megadása kötelező.',
             'action.in' => 'A műveletnek "accept" vagy "reject" értéknek kell lennie.',
-            'users.array' => 'A users mezőnek tömbnek kell lennie.',
-            'users.required_if' => 'A felhasználók megadása kötelező az elfogadás művelet esetén.',
-            'users.*.integer' => 'A felhasználó azonosítónak számnak kell lennie.',
-            'users.*.distinct' => 'A felhasználók között nem lehetnek ismétlődő értékek.',
-            'users.*.exists' => 'A megadott felhasználó nem található.',
         ]);
 
         $eventId = $validated['event_id'];
@@ -211,7 +241,18 @@ class EventController extends Controller
                 ->delete();
 
             if ($validated['action'] === 'accept') {
-                $users = $validated['users'] ?? [];
+                $users = DB::table('students')
+                    ->where('establishment_id', $establishmentId)
+                    ->pluck('user_id')
+                    ->merge(
+                        DB::table('staffs')
+                            ->where('establishment_id', $establishmentId)
+                            ->pluck('user_id')
+                    )
+                    ->unique()
+                    ->values()
+                    ->all();
+
                 foreach ($users as $userId) {
                     if ($this->isMemberEstablishment($userId, $establishmentId)) {
                         EventShown::firstOrCreate([
@@ -224,7 +265,9 @@ class EventController extends Controller
             }
         });
 
-        return response()->json(['message' => 'Művelet végrehajtva'], 200);
+        return response()->json([
+            'message' => 'Művelet végrehajtva',
+        ], 200);
     }
 
     public function getCollabEvents(Request $request, int $establishmentId)
@@ -271,18 +314,43 @@ class EventController extends Controller
         if (!$user) {
             return response()->json(['message' => 'nem jogosult'], 401);
         }
-        if (!$this->isMemberEstablishment($user, $establishmentId)) {
-            return response()->json(['message' => 'nem jogosult'], 403);
+        if (!$this->isMemberEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'nem jogosult'], 401);
         }
 
-        $visibleEventIds = EventShown::where('user_id', $user->id)
-            ->where('establishment_id', $establishmentId)
-            ->distinct()
-            ->pluck('event_id');
+        $hasClassMembership = DB::table('class_students')
+            ->join('classes', 'classes.id', '=', 'class_students.class_id')
+            ->where('class_students.user_id', $user->id)
+            ->where('classes.establishment_id', $establishmentId)
+            ->exists();
 
-        $events = Event::whereIn('id', $visibleEventIds)
-            ->orderBy('start_date', 'asc')
-            ->get();
+        if ($hasClassMembership) {
+            $visibleEventIds = EventShown::where('establishment_id', $establishmentId)
+                ->distinct()
+                ->pluck('event_id');
+
+            $events = Event::whereIn('id', $visibleEventIds)
+                ->orderBy('start_date', 'asc')
+                ->get();
+        } else {
+            $directlyAssignedEventIds = EventShown::where('establishment_id', $establishmentId)
+                ->where('user_id', $user->id)
+                ->select('event_id');
+
+            $schoolWideEventIds = EventShown::where('establishment_id', $establishmentId)
+                ->select('event_id');
+
+            $events = Event::where(function ($query) use ($directlyAssignedEventIds, $schoolWideEventIds) {
+                $query->whereIn('id', $directlyAssignedEventIds)
+                    ->orWhere(function ($schoolWideQuery) use ($schoolWideEventIds) {
+                        $schoolWideQuery->where('type', 'local')
+                            ->where('target_group', 'teljes_iskola')
+                            ->whereIn('id', $schoolWideEventIds);
+                    });
+            })
+                ->orderBy('start_date', 'asc')
+                ->get();
+        }
 
         if ($events->isNotEmpty()) {
             $creatorNames = DB::table('users')
@@ -293,6 +361,8 @@ class EventController extends Controller
                 $event->creator_name = $creatorNames[$event->user_id] ?? 'Ismeretlen szervező';
             });
         }
+
+        $eventIds = $events->pluck('id')->all();
 
         $feedbackStatsByEvent = collect();
         $userFeedbackByEvent = collect();
@@ -336,6 +406,7 @@ class EventController extends Controller
 
             return $event;
         });
+
         return response()->json([
             'events' => $events
         ]);
