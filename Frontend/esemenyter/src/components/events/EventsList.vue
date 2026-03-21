@@ -81,6 +81,12 @@
             </div>
             <h1 class="hero-title">Fedezd fel az eseményeket</h1>
             <p class="hero-description">Csatlakozz iskolád eseményeihez, vagy fedezz fel globális programokat.</p>
+            <div class="hero-actions">
+              <router-link to="/events-calendar" class="hero-calendar-btn">
+                <i class='bx bx-calendar-week'></i>
+                Naptár nézet
+              </router-link>
+            </div>
           </div>
         </div>
 
@@ -247,6 +253,10 @@
               <div class="card-content">
                 <h3>{{ event.title }}</h3>
                 <p class="description">{{ event.description }}</p>
+                <div v-if="event.is_recurring" class="recurring-note">
+                  <i class='bx bx-repeat'></i>
+                  <span>Heti ismétlődő alkalom</span>
+                </div>
                 
                 <div class="meta-info">
                   <div class="meta-row">
@@ -492,6 +502,9 @@ export default {
 
       return {
         ...event,
+        id: Number(event?.id),
+        is_recurring: Boolean(event?.is_recurring),
+        recurrence_parent_event_id: event?.recurrence_parent_event_id ? Number(event?.recurrence_parent_event_id) : null,
         status: normalizedStatus,
         creator_name: creatorName,
         participants: Number(event?.participants || event?.participant_count || 0),
@@ -500,6 +513,66 @@ export default {
         favorites: Number(event?.favorites || event?.favorite_count || 0),
         comment_count: Number(event?.comment_count || event?.comments_count || 0)
       };
+    },
+
+    collapseRecurringSeries(events) {
+      const now = Date.now();
+      const groupedRecurring = new Map();
+      const standalone = [];
+
+      const buildRecurringFallbackKey = (event) => {
+        const startValue = String(event?.start_date || '');
+        const timeMatch = startValue.match(/(\d{2}:\d{2})/);
+        const startTime = timeMatch ? timeMatch[1] : '00:00';
+
+        return [
+          Number(event?.user_id || 0),
+          Number(event?.establishment_id || 0),
+          String(event?.title || '').trim().toLowerCase(),
+          String(event?.recurrence_frequency || ''),
+          String(event?.recurrence_until || ''),
+          startTime
+        ].join('|');
+      };
+
+      events.forEach((event) => {
+        if (!event?.is_recurring) {
+          standalone.push(event);
+          return;
+        }
+
+        const seriesKey = event?.recurrence_parent_event_id
+          ? `parent:${Number(event.recurrence_parent_event_id)}`
+          : `fallback:${buildRecurringFallbackKey(event)}`;
+
+        if (!groupedRecurring.has(seriesKey)) {
+          groupedRecurring.set(seriesKey, []);
+        }
+
+        groupedRecurring.get(seriesKey).push(event);
+      });
+
+      const recurringRepresentatives = Array.from(groupedRecurring.values()).map((seriesEvents) => {
+        const validEvents = seriesEvents.filter(item => !Number.isNaN(new Date(item?.start_date).getTime()));
+        if (!validEvents.length) {
+          return seriesEvents[0];
+        }
+
+        const upcoming = validEvents
+          .filter(item => new Date(item.start_date).getTime() >= now)
+          .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+
+        if (upcoming.length) {
+          return upcoming[0];
+        }
+
+        const latestPast = validEvents
+          .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+
+        return latestPast[0];
+      });
+
+      return [...standalone, ...recurringRepresentatives];
     },
 
     async fetchEventsFromApi() {
@@ -535,8 +608,12 @@ export default {
           ? data.events
           : [];
 
-      return incomingEvents
-        .map((event) => this.normalizeEventForList(event))
+      const normalizedEvents = incomingEvents
+        .map((event) => this.normalizeEventForList(event));
+
+      const collapsedEvents = this.collapseRecurringSeries(normalizedEvents);
+
+      return collapsedEvents
         .filter(event => {
           if (this.filters.type && event.type !== this.filters.type) return false;
           if (this.filters.status && event.status !== this.filters.status) return false;
@@ -892,6 +969,29 @@ export default {
   font-size: 1.25rem;
   opacity: 0.9;
   max-width: 600px;
+}
+
+.hero-actions {
+  margin-top: 1.25rem;
+}
+
+.hero-calendar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 0.85rem 1.2rem;
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(34, 197, 94, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-calendar-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(34, 197, 94, 0.45);
 }
 
 /* Statisztika kártyák (EventDetails-ből) */
@@ -1265,6 +1365,20 @@ export default {
   overflow: hidden;
 }
 
+.recurring-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  padding: 0.25rem 0.5rem;
+  background: #ecfdf3;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  color: #166534;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .meta-info {
   display: flex;
   flex-direction: column;
@@ -1300,6 +1414,7 @@ export default {
   gap: 0.5rem;
   flex-wrap: wrap;
 }
+
 
 .stat-item {
   display: flex;

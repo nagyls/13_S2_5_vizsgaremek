@@ -20,11 +20,25 @@ class Event extends Model
         'start_date',
         'end_date',
         'status',
+
+        //SZAKKÖR MÓDOSÍTÁS
+        'is_recurring',
+        'recurrence_frequency',
+        'recurrence_until',
+        'recurrence_parent_event_id',
+        'cancelled_at',
+        //
     ];
 
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+
+        //SZAKKÖR MÓDOSÍTÁS
+        'recurrence_until' => 'datetime',
+        'is_recurring' => 'boolean',
+        'cancelled_at' => 'datetime',
+        //
     ];
 
     public function user()

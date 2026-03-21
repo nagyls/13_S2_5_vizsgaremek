@@ -66,6 +66,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/establishment/{establishmentId}/events', [EventController::class, 'getEvents']);
     Route::post('/establishment/events', [EventController::class, 'store']);
     Route::patch('/events/{eventId}/participation', [EventController::class, 'setParticipation']);
+
+    Route::patch('/events/{eventId}/occurrence', [EventController::class, 'manageOccurrence']);  //SZAKKÖR MÓDOSÍTÁS
+    
     Route::get('/establishment/{establishmentId}/event-access', [EventController::class, 'getCollabEvents']);
     // pass establishmentId as path param so controller receives it from route
     Route::patch('/establishment/{establishmentId}/event-access', [EventController::class, 'handleCollabEvents']);
