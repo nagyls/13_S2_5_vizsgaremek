@@ -5,7 +5,7 @@
         <div class="header-content">
           <div class="logo-section" @click="$router.push('/user-dashboard')">
             <div class="logo-icon">
-              <i class='bx bx-calendar-heart'></i>
+              <img :src="logo2" alt="EseményTér logó" class="logo-image">
             </div>
             <div class="logo-text">
               <h1 class="site-title">EseményTér</h1>
@@ -858,12 +858,14 @@
 <script>
 import axios from 'axios';
 import { toast } from '../../services/toast';
+import logo2 from '../../assets/logo2.svg';
 
 export default {
   name: 'InstitutionManagerDashboard',
   
   data() {
     return {
+      logo2,
       user: {
         id: null,
         name: '',
@@ -2234,14 +2236,20 @@ export default {
 .logo-icon {
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 28px;
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+  background: #ffffff;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);
+  overflow: hidden;
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .logo-text {

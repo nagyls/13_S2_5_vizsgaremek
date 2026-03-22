@@ -6,7 +6,7 @@
         <div class="header-content">
           <div class="logo-section" @click="$router.push('/user-dashboard')">
             <div class="logo-icon">
-              <i class='bx bx-calendar-heart'></i>
+              <img :src="logo2" alt="EseményTér logó" class="logo-image">
             </div>
             <div class="logo-text">
               <h1 class="site-title">EseményTér</h1>
@@ -190,12 +190,14 @@
 
 <script>
 import axios from 'axios'
+import logo2 from '../../assets/logo2.svg'
 
 export default {
   name: 'EventCalendar',
 
   data() {
     return {
+      logo2,
       currentUser: null,
       isLoading: true,
       events: [],
@@ -525,14 +527,20 @@ export default {
 .logo-icon {
   width: 44px;
   height: 44px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 24px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .logo-text h1 {

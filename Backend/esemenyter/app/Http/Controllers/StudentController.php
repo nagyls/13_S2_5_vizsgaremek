@@ -88,7 +88,7 @@ class StudentController extends Controller
         }
 
         if (!empty($toInsert)) {
-            $this->backfillExistingEventVisibilityForClassMembers($establishmentId, $classId, $toInsert);
+            $this->retroactiveEventShow($establishmentId, $classId, $toInsert);
         }
 
         if (!empty($alreadyExists)) {
@@ -269,7 +269,7 @@ class StudentController extends Controller
                 if (!empty($toInsert)) {
                     $class = ClassModel::find($classId);
                     if ($class) {
-                        $this->backfillExistingEventVisibilityForClassMembers((int) $class->establishment_id, (int) $classId, $toInsert);
+                        $this->retroactiveEventShow((int) $class->establishment_id, (int) $classId, $toInsert);
                     }
                 }
             }
@@ -283,7 +283,7 @@ class StudentController extends Controller
         return response()->json(['message' => 'Osztály tagság frissítve']);
     }
 
-    private function backfillExistingEventVisibilityForClassMembers(int $establishmentId, int $classId, array $userIds): void
+    private function retroactiveEventShow(int $establishmentId, int $classId, array $userIds): void
     {
         $class = ClassModel::find($classId);
         if (!$class) {

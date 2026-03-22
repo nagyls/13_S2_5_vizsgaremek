@@ -5,7 +5,7 @@
         <div class="header-content">
           <div class="logo-section" @click="$router.push('/')">
             <div class="logo-icon">
-              <i class='bx bx-calendar-heart'></i>
+              <img :src="logo2" alt="EseményTér logó" class="logo-image">
             </div>
             <div class="logo-text">
               <h1 class="site-title">EseményTér</h1>
@@ -137,7 +137,7 @@
         <div class="footer-content">
           <div class="footer-brand">
             <div class="footer-logo">
-              <i class='bx bx-calendar-heart'></i>
+              <img :src="logo2" alt="EseményTér logó" class="footer-logo-image">
               <span>EseményTér</span>
             </div>
             <p class="footer-tagline">
@@ -186,11 +186,14 @@
 </template>
 
 <script>
+import logo2 from '../../assets/logo2.svg'
+
 export default {
   name: 'MainPage',
   
   data() {
     return {
+      logo2,
       showScrollTop: false
     }
   },
@@ -280,12 +283,22 @@ export default {
 }
 
 .logo-icon {
-  font-size: 32px;
-  color: #4f46e5;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .logo-text h1 {
@@ -619,6 +632,13 @@ export default {
   gap: 12px;
   font-size: 24px;
   font-weight: 700;
+}
+
+.footer-logo-image {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
 }
 
 .footer-tagline {
