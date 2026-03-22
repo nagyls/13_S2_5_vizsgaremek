@@ -12,6 +12,9 @@ class Event extends Model
         'user_id',
         'establishment_id',
         'type',
+        'target_group',
+        'target_class_ids',
+        'target_grade_ids',
         'title',
         'description',
         'content',
@@ -24,6 +27,8 @@ class Event extends Model
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'target_class_ids' => 'array',
+        'target_grade_ids' => 'array',
     ];
 
     public function user()

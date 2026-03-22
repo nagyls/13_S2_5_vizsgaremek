@@ -107,69 +107,125 @@
           
           <div class="target-group-selection">
             <div class="target-group-options">
-              <label v-for="target in schoolTargetOptions" 
+              <div v-for="target in schoolTargetOptions" 
                      :key="target.value"
                      class="target-group-option"
-                     :class="{ 'selected': selectedSchoolTargetGroup === target.value }">
-                <input type="radio" v-model="selectedSchoolTargetGroup" :value="target.value" hidden>
+                     :class="{ 'selected': selectedSchoolTargetGroup === target.value }"
+                     @click="selectSchoolTargetGroup(target.value)">
                 <div class="option-content">
                   <i :class="target.icon"></i>
                   <h4>{{ target.label }}</h4>
                   <p>{{ target.description }}</p>
                 </div>
-              </label>
-            </div>
-          </div>
-
-          <div
-            v-if="selectedSchoolTargetGroup !== 'teljes_iskola'"
-            class="class-target-dashboard"
-          >
-            <h4>
-              <i class='bx bx-layout'></i>
-              Osztály célzás
-            </h4>
-
-            <div v-if="isLoadingClasses" class="class-target-state">
-              Osztályok betöltése...
-            </div>
-
-            <div v-else-if="!institutionClasses.length" class="class-target-state warning">
-              Nem található osztály az intézményben. Kérlek hozz létre legalább egy osztályt.
-            </div>
-
-            <template v-else>
-              <div v-if="requiresManualClassSelection" class="class-target-help">
-                Ehhez a célzáshoz válassz egy osztályt. A rendszer ebből számolja a címzetteket.
-              </div>
-
-              <div v-else-if="effectiveTargetClassId" class="class-target-help success">
-                Automatikusan a saját osztályod lesz használva:
-                <strong>{{ selectedTargetClassDisplay }}</strong>
-              </div>
-
-              <div
-                v-if="requiresManualClassSelection"
-                class="class-target-grid"
-              >
-                <label
-                  v-for="classItem in institutionClasses"
-                  :key="classItem.id"
-                  class="class-target-card"
-                  :class="{ selected: Number(selectedClassId) === Number(classItem.id) }"
+                <div
+                  v-if="selectedSchoolTargetGroup === target.value && target.value === 'osztaly_szintu'"
+                  class="target-selector-panel"
+                  @click.stop
                 >
-                  <input
-                    type="radio"
-                    name="class-target"
-                    :value="String(classItem.id)"
-                    v-model="selectedClassId"
-                    hidden
-                  >
-                  <div class="class-target-title">{{ formatClassLabel(classItem) }}</div>
-                  <div class="class-target-meta">{{ classItem.student_count || 0 }} tanuló</div>
-                </label>
+                  <div class="selector-toolbar">
+                    <div class="class-target-help">
+                      Válaszd ki a címzett osztályokat, vagy jelöld be egyszerre az összeset.
+                    </div>
+                    <div class="bulk-actions">
+                      <button type="button" class="selector-btn" @click="selectAllClasses">
+                        Összes osztály
+                      </button>
+                      <button type="button" class="selector-btn secondary" @click="clearSelectedClasses">
+                        Törlés
+                      </button>
+                    </div>
+                  </div>
+
+                  <div v-if="isLoadingClasses" class="class-target-state">
+                    Osztályok betöltése...
+                  </div>
+
+                  <div v-else-if="!institutionClasses.length" class="class-target-state warning">
+                    Nem található osztály az intézményben. Kérlek hozz létre legalább egy osztályt.
+                  </div>
+
+                  <div v-else class="class-target-grid">
+                    <label
+                      v-for="classItem in institutionClasses"
+                      :key="classItem.id"
+                      class="class-target-card"
+                      :class="{ selected: selectedClassIds.includes(Number(classItem.id)) }"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="selectedClassIds.includes(Number(classItem.id))"
+                        @change="toggleClassSelection(classItem.id)"
+                      >
+                      <div class="class-target-copy">
+                        <div class="class-target-title">{{ formatClassLabel(classItem) }}</div>
+                        <div class="class-target-meta">{{ classItem.student_count || 0 }} tanuló</div>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div v-if="selectedClassIds.length" class="selected-info compact">
+                    <i class='bx bx-check-circle'></i>
+                    <span>{{ selectedClassIds.length }} osztály kijelölve</span>
+                  </div>
+                </div>
+
+                <div
+                  v-if="selectedSchoolTargetGroup === target.value && target.value === 'evfolyam_szintu'"
+                  class="target-selector-panel"
+                  @click.stop
+                >
+                  <div class="selector-toolbar">
+                    <div class="class-target-help">
+                      Válaszd ki a címzett évfolyamokat, vagy jelöld be egyszerre az összeset.
+                    </div>
+                    <div class="bulk-actions">
+                      <button type="button" class="selector-btn" @click="selectAllGrades">
+                        Összes évfolyam
+                      </button>
+                      <button type="button" class="selector-btn secondary" @click="clearSelectedGrades">
+                        Törlés
+                      </button>
+                    </div>
+                  </div>
+
+                  <div v-if="isLoadingGrades" class="class-target-state">
+                    Évfolyamok betöltése...
+                  </div>
+
+                  <div v-else-if="!institutionGrades.length" class="class-target-state warning">
+                    Nem található évfolyam az intézményben.
+                  </div>
+
+                  <div v-else class="class-target-grid">
+                    <label
+                      v-for="gradeItem in institutionGrades"
+                      :key="gradeItem.grade"
+                      class="class-target-card"
+                      :class="{ selected: selectedGradeIds.includes(Number(gradeItem.grade)) }"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="selectedGradeIds.includes(Number(gradeItem.grade))"
+                        @change="toggleGradeSelection(gradeItem.grade)"
+                      >
+                      <div class="class-target-copy">
+                        <div class="class-target-title">{{ getGradeLabel(gradeItem.grade) }}</div>
+                        <div class="class-target-meta">{{ gradeItem.class_count || 0 }} osztály</div>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div v-if="selectedGradeIds.length" class="selected-info compact">
+                    <i class='bx bx-check-circle'></i>
+                    <span>{{ selectedGradeIds.length }} évfolyam kijelölve</span>
+                  </div>
+                </div>
               </div>
-            </template>
+            </div>
+
+            <div v-if="selectedSchoolTargetGroup === 'teljes_iskola'" class="class-target-help success school-wide-info">
+              A teljes intézmény minden felhasználója megkapja az eseményt.
+            </div>
           </div>
         </div>
 
@@ -192,11 +248,11 @@
             <div class="form-row">
               <div class="form-group">
                 <label>Kezdés *</label>
-                <input type="datetime-local" v-model="eventForm.startDateTime" :min="todayMin" required>
+                <input type="date" v-model="eventForm.startDateTime" :min="todayMin" required>
               </div>
               <div class="form-group">
                 <label>Befejezés *</label>
-                <input type="datetime-local" v-model="eventForm.endDateTime" :min="eventForm.startDateTime || todayMin" required>
+                <input type="date" v-model="eventForm.endDateTime" :min="eventForm.startDateTime || todayMin" required>
               </div>
             </div>
           </div>
@@ -229,7 +285,7 @@
                 <strong>Célcsoport:</strong> {{ getSchoolTargetLabel(selectedSchoolTargetGroup) }}
               </div>
               <div v-if="selectedSchoolTargetGroup !== 'teljes_iskola'" class="summary-item">
-                <strong>Alap osztály:</strong> {{ selectedTargetClassDisplay || 'Nincs kiválasztva' }}
+                <strong>Kijelölés:</strong> {{ selectedTargetSummary || 'Nincs kiválasztva' }}
               </div>
               <div class="summary-item">
                 <strong>Intézmény:</strong> {{ userInstitution.name }}
@@ -266,15 +322,14 @@
 </template>
 
 <script>
-import axios from 'axios';
+import axios from 'axios'
 import { toast } from '../../services/toast'
 
 export default {
   name: 'EsemenyKeszito',
-  
+
   data() {
     return {
-      // FELHASZNÁLÓ ADATAI
       userRole: 'student',
       currentUserId: null,
       userInstitution: {
@@ -285,25 +340,18 @@ export default {
       userCountyId: 1,
       institutionUserIds: [],
       institutionClasses: [],
-      selectedClassId: '',
+      institutionGrades: [],
+      selectedClassIds: [],
+      selectedGradeIds: [],
       isLoadingClasses: false,
-      
-      // LÉPTETŐ ADATOK
+      isLoadingGrades: false,
       currentStep: 1,
       isSubmitting: false,
-      todayMin: new Date().toISOString().slice(0, 16),
-      
-      // ESEMÉNY SZINT
+      todayMin: new Date().toISOString().slice(0, 10),
       selectedEventScope: 'school',
-      
-      // GLOBÁLIS ESEMÉNY ADATOK
       selectedCountyIds: [],
       countiesList: [],
-      
-      // ISKOLAI ESEMÉNY ADATOK
-      selectedSchoolTargetGroup: 'sajat_osztaly',
-      
-      // ESEMÉNY ADATOK
+      selectedSchoolTargetGroup: 'osztaly_szintu',
       eventForm: {
         title: '',
         description: '',
@@ -311,38 +359,35 @@ export default {
         startDateTime: '',
         endDateTime: ''
       },
-      
-      // KONFIGURÁCIÓK
       steps: [
         { number: 1, label: 'Szint' },
         { number: 2, label: 'Célcsoport' },
         { number: 3, label: 'Adatok' },
         { number: 4, label: 'Létrehozás' }
       ],
-      
       schoolTargetOptions: [
-        { 
-          value: 'sajat_osztaly', 
-          label: 'Saját osztály', 
-          icon: 'bx bx-user', 
-          description: 'Csak a saját osztályod diákjai és tanárai látják' 
+        {
+          value: 'osztaly_szintu',
+          label: 'Osztály szintű',
+          icon: 'bx bx-user',
+          description: 'A kijelölt osztályok diákjai és osztályfőnökei látják'
         },
-        { 
-          value: 'evfolyam', 
-          label: 'Évfolyam szintű', 
-          icon: 'bx bx-group', 
-          description: 'A saját osztályod és az évfolyam többi osztálya' 
+        {
+          value: 'evfolyam_szintu',
+          label: 'Évfolyam szintű',
+          icon: 'bx bx-group',
+          description: 'A kijelölt évfolyamok összes osztálya megkapja'
         },
-        { 
-          value: 'teljes_iskola', 
-          label: 'Teljes iskola', 
-          icon: 'bx bx-building-house', 
-          description: 'Az iskolában lévő összes felhasználó látja' 
+        {
+          value: 'teljes_iskola',
+          label: 'Teljes iskola',
+          icon: 'bx bx-building-house',
+          description: 'Az iskolában lévő összes felhasználó látja'
         }
       ]
     }
   },
-  
+
   computed: {
     hasPermission() {
       return ['admin', 'teacher'].includes(this.userRole)
@@ -351,7 +396,7 @@ export default {
     canCreateGlobalEvent() {
       return this.userRole === 'admin'
     },
-    
+
     roleMessage() {
       if (this.userRole === 'teacher') {
         return 'Osztályfőnökként iskolai szintű eseményt hozhatsz létre'
@@ -361,147 +406,173 @@ export default {
       }
       return 'Nincs jogosultságod eseményt létrehozni'
     },
-    
+
     canProceed() {
       switch (this.currentStep) {
-        case 1: 
+        case 1:
           if (this.selectedEventScope === 'global' && !this.canCreateGlobalEvent) {
             return false
           }
           return this.selectedEventScope !== ''
-        
+
         case 2:
           if (this.selectedEventScope === 'global') {
             return this.selectedCountyIds.length > 0
-          } else {
-            if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
-              return this.selectedSchoolTargetGroup !== ''
-            }
-
-            if (!this.institutionClasses.length) {
-              return false
-            }
-
-            return Boolean(this.effectiveTargetClassId)
           }
-        
+
+          if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
+            return true
+          }
+
+          if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+            return this.selectedClassIds.length > 0
+          }
+
+          if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+            return this.selectedGradeIds.length > 0
+          }
+
+          return false
+
         case 3:
           return this.validateEventForm()
-        
+
         default:
           return true
       }
     },
-    
+
     isFormValid() {
       return this.validateEventForm() && this.currentStep === 4
     },
-    
+
     counties() {
       return this.countiesList
     },
 
-    assignedClasses() {
-      if (!this.currentUserId) {
-        return []
-      }
-
-      return this.institutionClasses.filter(
-        classItem => Number(classItem?.user_id) === Number(this.currentUserId)
-      )
+    availableClassIds() {
+      return this.institutionClasses
+        .map(classItem => Number(classItem?.id))
+        .filter(Number.isFinite)
     },
 
-    defaultAssignedClassId() {
-      if (!this.assignedClasses.length) {
-        return null
-      }
-
-      return Number(this.assignedClasses[0]?.id) || null
+    availableGradeIds() {
+      return this.institutionGrades
+        .map(gradeItem => Number(gradeItem?.grade))
+        .filter(Number.isFinite)
     },
 
-    requiresManualClassSelection() {
-      if (this.selectedEventScope !== 'school') {
-        return false
-      }
-
-      if (!['sajat_osztaly', 'evfolyam'].includes(this.selectedSchoolTargetGroup)) {
-        return false
-      }
-
-      return !this.defaultAssignedClassId
+    selectedClassSummaries() {
+      return this.institutionClasses
+        .filter(classItem => this.selectedClassIds.includes(Number(classItem?.id)))
+        .map(classItem => this.formatClassLabel(classItem))
     },
 
-    effectiveTargetClassId() {
+    selectedGradeSummaries() {
+      return this.institutionGrades
+        .filter(gradeItem => this.selectedGradeIds.includes(Number(gradeItem?.grade)))
+        .map(gradeItem => this.getGradeLabel(gradeItem.grade))
+    },
+
+    selectedTargetSummary() {
       if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
-        return null
+        return 'Teljes intézmény'
       }
 
-      if (this.requiresManualClassSelection) {
-        return Number(this.selectedClassId) || null
+      if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+        return this.selectedClassSummaries.join(', ')
       }
 
-      return this.defaultAssignedClassId
-    },
-
-    selectedTargetClassDisplay() {
-      const classId = Number(this.effectiveTargetClassId)
-      if (!classId) {
-        return ''
+      if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+        return this.selectedGradeSummaries.join(', ')
       }
 
-      const classItem = this.institutionClasses.find(item => Number(item?.id) === classId)
-      if (!classItem) {
-        return ''
-      }
-
-      return this.formatClassLabel(classItem)
+      return ''
     }
   },
-  
+
   watch: {
-    // Ha az esemény szintje változik, reseteljük a megfelelő adatokat
     selectedEventScope(newValue) {
       if (newValue === 'global') {
         if (!this.selectedCountyIds.includes(this.userCountyId)) {
           this.selectedCountyIds = [this.userCountyId]
         }
-      } else {
-        this.selectedSchoolTargetGroup = 'sajat_osztaly'
+        return
+      }
 
-        if (!this.institutionClasses.length) {
-          this.loadInstitutionClasses()
-        }
+      this.selectedSchoolTargetGroup = 'osztaly_szintu'
+      if (!this.institutionClasses.length) {
+        this.loadInstitutionClasses()
+      }
+      if (!this.institutionGrades.length) {
+        this.loadInstitutionGrades()
       }
     },
-    
-    // Saját megye mindig legyen kiválasztva globális eseménynél
+
     selectedCountyIds(newValue) {
-      if (this.selectedEventScope === 'global' && 
-          !newValue.includes(this.userCountyId)) {
+      if (this.selectedEventScope === 'global' && !newValue.includes(this.userCountyId)) {
         this.$nextTick(() => {
           this.selectedCountyIds = [this.userCountyId, ...newValue]
         })
       }
     },
 
-    selectedSchoolTargetGroup() {
-      if (!this.requiresManualClassSelection) {
-        this.selectedClassId = this.defaultAssignedClassId ? String(this.defaultAssignedClassId) : ''
+    selectedSchoolTargetGroup(newValue) {
+      if (newValue === 'osztaly_szintu' && !this.institutionClasses.length) {
+        this.loadInstitutionClasses()
+      }
+
+      if (newValue === 'evfolyam_szintu') {
+        if (!this.institutionClasses.length) {
+          this.loadInstitutionClasses()
+        }
+        if (!this.institutionGrades.length) {
+          this.loadInstitutionGrades()
+        }
       }
     },
 
+    institutionClasses(newValue) {
+      const validIds = new Set(
+        newValue.map(classItem => Number(classItem?.id)).filter(Number.isFinite)
+      )
+      this.selectedClassIds = this.selectedClassIds.filter(classId => validIds.has(classId))
+
+      if (!this.institutionGrades.length) {
+        this.institutionGrades = this.buildGradesFromClasses(newValue)
+      }
+    },
+
+    institutionGrades(newValue) {
+      const validIds = new Set(
+        newValue.map(gradeItem => Number(gradeItem?.grade)).filter(Number.isFinite)
+      )
+      this.selectedGradeIds = this.selectedGradeIds.filter(gradeId => validIds.has(gradeId))
+    },
+
     currentStep(newValue) {
-      if (newValue === 2 && this.selectedEventScope === 'school' && !this.institutionClasses.length) {
-        this.loadInstitutionClasses()
+      if (newValue === 2 && this.selectedEventScope === 'school') {
+        if (!this.institutionClasses.length) {
+          this.loadInstitutionClasses()
+        }
+        if (!this.institutionGrades.length) {
+          this.loadInstitutionGrades()
+        }
       }
     }
   },
-  
+
   created() {
     this.initialize()
   },
-  
+
   methods: {
+    normalizeNumericList(values) {
+      return Array.from(
+        new Set((values || []).map(value => Number(value)).filter(Number.isFinite))
+      )
+    },
+
     async initialize() {
       const token =
         localStorage.getItem('esemenyter_token') ||
@@ -589,6 +660,26 @@ export default {
       await this.loadInstitutionUsers()
     },
 
+    buildGradesFromClasses(classes) {
+      const gradeMap = new Map()
+
+      for (const classItem of classes || []) {
+        const grade = Number(classItem?.grade)
+        if (!Number.isFinite(grade)) {
+          continue
+        }
+
+        gradeMap.set(grade, (gradeMap.get(grade) || 0) + 1)
+      }
+
+      return Array.from(gradeMap.entries())
+        .map(([grade, classCount]) => ({
+          grade,
+          class_count: classCount
+        }))
+        .sort((left, right) => left.grade - right.grade)
+    },
+
     async loadInstitutionClasses() {
       try {
         const institutionId = Number(this.userInstitution.id)
@@ -615,15 +706,49 @@ export default {
         this.institutionClasses = Array.isArray(response?.data?.data)
           ? response.data.data
           : []
-
-        if (this.defaultAssignedClassId) {
-          this.selectedClassId = String(this.defaultAssignedClassId)
-        }
       } catch (error) {
         console.error('Osztályok betöltési hiba:', error)
         this.institutionClasses = []
       } finally {
         this.isLoadingClasses = false
+      }
+    },
+
+    async loadInstitutionGrades() {
+      try {
+        const institutionId = Number(this.userInstitution.id)
+        if (!institutionId) {
+          this.institutionGrades = []
+          return
+        }
+
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token')
+
+        if (!token) {
+          this.institutionGrades = this.buildGradesFromClasses(this.institutionClasses)
+          return
+        }
+
+        this.isLoadingGrades = true
+
+        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/grades`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        })
+
+        const grades = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : []
+
+        this.institutionGrades = grades.length
+          ? grades
+          : this.buildGradesFromClasses(this.institutionClasses)
+      } catch (error) {
+        console.error('Évfolyamok betöltési hiba:', error)
+        this.institutionGrades = this.buildGradesFromClasses(this.institutionClasses)
+      } finally {
+        this.isLoadingGrades = false
       }
     },
 
@@ -709,6 +834,54 @@ export default {
       }
     },
 
+    selectSchoolTargetGroup(value) {
+      this.selectedSchoolTargetGroup = value
+    },
+
+    selectAllClasses() {
+      this.selectedClassIds = [...this.availableClassIds]
+    },
+
+    clearSelectedClasses() {
+      this.selectedClassIds = []
+    },
+
+    toggleClassSelection(classId) {
+      const normalizedClassId = Number(classId)
+      if (!Number.isFinite(normalizedClassId)) {
+        return
+      }
+
+      if (this.selectedClassIds.includes(normalizedClassId)) {
+        this.selectedClassIds = this.selectedClassIds.filter(item => item !== normalizedClassId)
+        return
+      }
+
+      this.selectedClassIds = [...this.selectedClassIds, normalizedClassId].sort((left, right) => left - right)
+    },
+
+    selectAllGrades() {
+      this.selectedGradeIds = [...this.availableGradeIds]
+    },
+
+    clearSelectedGrades() {
+      this.selectedGradeIds = []
+    },
+
+    toggleGradeSelection(grade) {
+      const normalizedGrade = Number(grade)
+      if (!Number.isFinite(normalizedGrade)) {
+        return
+      }
+
+      if (this.selectedGradeIds.includes(normalizedGrade)) {
+        this.selectedGradeIds = this.selectedGradeIds.filter(item => item !== normalizedGrade)
+        return
+      }
+
+      this.selectedGradeIds = [...this.selectedGradeIds, normalizedGrade].sort((left, right) => left - right)
+    },
+
     formatClassLabel(classItem) {
       const grade = Number(classItem?.grade)
       const className = String(classItem?.name || '').trim()
@@ -720,80 +893,88 @@ export default {
       return className || `Osztály #${classItem?.id ?? '?'}`
     },
 
-    async fetchClassMemberUserIds(classId, token) {
+    getGradeLabel(grade) {
+      return `${Number(grade)}. évfolyam`
+    },
+
+    async fetchClassMemberUserIdsInMass(classIds, token) {
       const institutionId = Number(this.userInstitution.id)
-      if (!institutionId || !classId) {
+      const normalizedClassIds = this.normalizeNumericList(classIds)
+
+      if (!institutionId || !normalizedClassIds.length) {
         return []
       }
 
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/establishment/${institutionId}/classes/${classId}`,
+        `http://127.0.0.1:8000/api/establishment/${institutionId}/classes/members`,
         {
+          params: { class_ids: normalizedClassIds },
           headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
         }
       )
 
-      const members = Array.isArray(response?.data?.data) ? response.data.data : []
-      return members
-        .map(member => Number(member?.id))
-        .filter(Number.isFinite)
+      const payload = response?.data || {}
+      const mergedIds = Array.isArray(payload?.user_ids) && payload.user_ids.length
+        ? payload.user_ids
+        : [...(payload?.student_ids || []), ...(payload?.teacher_ids || [])]
+
+      return this.normalizeNumericList(mergedIds)
+    },
+
+    async fetchGradeMemberUserIdsInMass(gradeIds, token) {
+      const institutionId = Number(this.userInstitution.id)
+      const normalizedGradeIds = this.normalizeNumericList(gradeIds)
+
+      if (!institutionId || !normalizedGradeIds.length) {
+        return []
+      }
+
+      const response = await axios.get(
+        `http://127.0.0.1:8000/api/establishment/${institutionId}/grades/members`,
+        {
+          params: { grade_ids: normalizedGradeIds },
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        }
+      )
+
+      const payload = response?.data || {}
+      const mergedIds = Array.isArray(payload?.user_ids) && payload.user_ids.length
+        ? payload.user_ids
+        : [...(payload?.student_ids || []), ...(payload?.teacher_ids || [])]
+
+      return this.normalizeNumericList(mergedIds)
     },
 
     async resolveLocalTargetUserIds(token) {
-      const currentUserIds = this.currentUserId ? [Number(this.currentUserId)] : []
-
       if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
-        return this.institutionUserIds
+        return this.normalizeNumericList(this.institutionUserIds)
       }
 
-      const baseClassId = Number(this.effectiveTargetClassId)
-      if (!baseClassId) {
-        throw new Error('Nincs kiválasztott osztály a célzáshoz.')
-      }
-
-      if (this.selectedSchoolTargetGroup === 'sajat_osztaly') {
-        const ownClassUsers = await this.fetchClassMemberUserIds(baseClassId, token)
-        const selectedClass = this.institutionClasses.find(item => Number(item?.id) === baseClassId)
-        const homeroomTeacherId = Number(selectedClass?.user_id)
-
-        return Array.from(new Set([
-          ...ownClassUsers,
-          ...(Number.isFinite(homeroomTeacherId) ? [homeroomTeacherId] : []),
-          ...currentUserIds
-        ]))
-      }
-
-      if (this.selectedSchoolTargetGroup === 'evfolyam') {
-        const baseClass = this.institutionClasses.find(item => Number(item?.id) === baseClassId)
-        const baseGrade = Number(baseClass?.grade)
-
-        let classIds = [baseClassId]
-        if (Number.isFinite(baseGrade)) {
-          classIds = this.institutionClasses
-            .filter(item => Number(item?.grade) === baseGrade)
-            .map(item => Number(item?.id))
-            .filter(Number.isFinite)
+      if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+        if (!this.selectedClassIds.length) {
+          throw new Error('Legalább egy osztályt ki kell választani.')
         }
 
-        const memberResponses = await Promise.all(
-          classIds.map(classId =>
-            this.fetchClassMemberUserIds(classId, token).catch(() => [])
-          )
-        )
-
-        const gradeTeacherIds = this.institutionClasses
-          .filter(item => classIds.includes(Number(item?.id)))
-          .map(item => Number(item?.user_id))
-          .filter(Number.isFinite)
-
-        return Array.from(new Set([
-          ...memberResponses.flat(),
-          ...gradeTeacherIds,
-          ...currentUserIds
-        ]))
+        const userIds = await this.fetchClassMemberUserIdsInMass(this.selectedClassIds, token)
+        return this.normalizeNumericList([
+          ...userIds,
+          ...(this.currentUserId ? [this.currentUserId] : [])
+        ])
       }
 
-      return this.institutionUserIds
+      if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+        if (!this.selectedGradeIds.length) {
+          throw new Error('Legalább egy évfolyamot ki kell választani.')
+        }
+
+        const userIds = await this.fetchGradeMemberUserIdsInMass(this.selectedGradeIds, token)
+        return this.normalizeNumericList([
+          ...userIds,
+          ...(this.currentUserId ? [this.currentUserId] : [])
+        ])
+      }
+
+      return this.normalizeNumericList(this.institutionUserIds)
     },
 
     async loadCounties() {
@@ -810,7 +991,7 @@ export default {
           return
         }
 
-        this.countiesList = apiCounties.map((county) => ({
+        this.countiesList = apiCounties.map(county => ({
           id: Number(county.id),
           name: county.title || county.name || county.nev || `Vármegye #${county.id}`,
           schoolCount: Number(county.iskolakSzama || county.schools_count || 0)
@@ -831,7 +1012,6 @@ export default {
 
       const sourceEstablishmentId = Number(this.userInstitution.id)
 
-      // Fast path: one request per county using region filter on establishments.
       const directResponses = await Promise.all(
         normalizedCountyIds.map(countyId =>
           axios.get('http://127.0.0.1:8000/api/establishments', {
@@ -904,49 +1084,58 @@ export default {
         )
       )
 
-      const collabIds = Array.from(new Set(
+      return Array.from(new Set(
         establishmentResponses.flatMap(response =>
           (Array.isArray(response?.data?.data) ? response.data.data : [])
             .map(item => Number(item?.id))
             .filter(Number.isFinite)
         )
       )).filter(id => id !== sourceEstablishmentId)
-
-      return collabIds
     },
-    
+
     getEventScopeLabel(scope) {
       const labels = {
-        'global': 'Globális esemény',
-        'school': 'Iskolai esemény'
+        global: 'Globális esemény',
+        school: 'Iskolai esemény'
       }
       return labels[scope] || scope
     },
-    
+
     getSchoolTargetLabel(targetGroup) {
       const target = this.schoolTargetOptions.find(option => option.value === targetGroup)
       return target ? target.label : targetGroup
     },
-    
+
     getSelectedCountyNames() {
-      return this.selectedCountyIds.map((id) => {
+      return this.selectedCountyIds.map(id => {
         const county = this.counties.find(item => item.id === id)
         return county ? county.name : id
       })
     },
-    
+
     validateEventForm() {
       const { title, description, startDateTime, endDateTime } = this.eventForm
-      
-      return title && title.trim() !== '' && 
-             description && description.trim() !== '' && 
-             startDateTime && startDateTime !== '' && 
-             endDateTime && endDateTime !== '' &&
-             new Date(startDateTime) <= new Date(endDateTime)
+
+      return title && title.trim() !== '' &&
+        description && description.trim() !== '' &&
+        startDateTime && startDateTime !== '' &&
+        endDateTime && endDateTime !== '' &&
+        new Date(startDateTime) <= new Date(endDateTime)
     },
-    
+
     formatDateTime(dateTime) {
-      if (!dateTime) return 'nincs megadva'
+      if (!dateTime) {
+        return 'nincs megadva'
+      }
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateTime)) {
+        return new Date(`${dateTime}T00:00:00`).toLocaleDateString('hu-HU', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        })
+      }
+
       const date = new Date(dateTime)
       return date.toLocaleString('hu-HU', {
         year: 'numeric',
@@ -956,19 +1145,19 @@ export default {
         minute: '2-digit'
       })
     },
-    
+
     nextStep() {
       if (this.currentStep < 4 && this.canProceed) {
         this.currentStep++
       }
     },
-    
+
     previousStep() {
       if (this.currentStep > 1) {
         this.currentStep--
       }
     },
-  
+
     async createEvent() {
       if (!this.isFormValid) {
         toast.warning('Kérjük, töltsd ki az összes kötelező mezőt!')
@@ -999,7 +1188,15 @@ export default {
           return
         }
 
-        // Adatok összeállítása a backend elvárásai szerint
+        if (!this.institutionUserIds.length) {
+          await this.loadInstitutionUsers()
+        }
+
+        if (!this.institutionUserIds.length) {
+          toast.error('Nem sikerült betölteni az intézmény felhasználóit.')
+          return
+        }
+
         const payload = {
           title: this.eventForm.title,
           description: this.eventForm.description,
@@ -1007,7 +1204,8 @@ export default {
           start_date: this.eventForm.startDateTime,
           end_date: this.eventForm.endDateTime,
           type: this.selectedEventScope === 'global' ? 'global' : 'local',
-          establishment_id: establishmentId
+          establishment_id: establishmentId,
+          users: this.normalizeNumericList(this.institutionUserIds)
         }
 
         if (this.selectedEventScope === 'global') {
@@ -1022,18 +1220,16 @@ export default {
         } else {
           payload.target_group = this.selectedSchoolTargetGroup
 
-          if (!this.institutionUserIds.length) {
-            await this.loadInstitutionUsers()
+          if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+            payload.selected_class_ids = this.normalizeNumericList(this.selectedClassIds)
           }
 
-          if (!this.institutionUserIds.length) {
-            toast.error('Nem sikerült betölteni az intézmény felhasználóit.')
-            return
+          if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+            payload.selected_grade_ids = this.normalizeNumericList(this.selectedGradeIds)
           }
 
-          // Ensure newly assigned class teachers are included in targeting even if
-          // assignments changed after this page was opened.
           await this.loadInstitutionClasses()
+          await this.loadInstitutionGrades()
 
           const localTargetUserIds = await this.resolveLocalTargetUserIds(token)
 
@@ -1055,7 +1251,6 @@ export default {
 
         toast.success('Esemény sikeresen létrehozva!')
         this.$router.push('/events-list')
-
       } catch (error) {
         console.error('Hiba az esemény létrehozásakor:', error)
 
@@ -1064,6 +1259,8 @@ export default {
         } else if (error.response?.data?.errors) {
           const errors = Object.values(error.response.data.errors).flat()
           toast.error('Hiba: ' + errors.join(' '))
+        } else if (error.message) {
+          toast.error('Hiba: ' + error.message)
         } else {
           toast.error('Ismeretlen hiba történt')
         }
@@ -1361,6 +1558,12 @@ export default {
   box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.2);
 }
 
+.target-group-option {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .option-content {
   text-align: left;
   box-sizing: border-box;
@@ -1537,6 +1740,53 @@ export default {
   border-radius: 12px;
 }
 
+.target-selector-panel {
+  border-top: 1px solid rgba(99, 102, 241, 0.2);
+  padding-top: 18px;
+}
+
+.selector-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.selector-btn {
+  border: 1px solid #c7d2fe;
+  background: white;
+  color: #4338ca;
+  border-radius: 12px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.selector-btn:hover {
+  background: #eef2ff;
+  border-color: #818cf8;
+}
+
+.selector-btn.secondary {
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.selector-btn.secondary:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
 .class-target-dashboard {
   margin-top: 24px;
   border: 1px solid #e2e8f0;
@@ -1594,6 +1844,9 @@ export default {
   background: white;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .class-target-card:hover {
@@ -1606,6 +1859,18 @@ export default {
   background: #eef2ff;
 }
 
+.class-target-card input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #4f46e5;
+  cursor: pointer;
+}
+
+.class-target-copy {
+  flex: 1;
+}
+
 .class-target-title {
   font-size: 15px;
   font-weight: 600;
@@ -1616,6 +1881,15 @@ export default {
   margin-top: 4px;
   font-size: 12px;
   color: #64748b;
+}
+
+.selected-info.compact {
+  margin-top: 12px;
+  padding: 12px 14px;
+}
+
+.school-wide-info {
+  margin-top: 16px;
 }
 
 /* FORM ELEMEK */
@@ -2028,6 +2302,19 @@ export default {
     flex-direction: column;
     gap: 10px;
   }
+
+  .selector-toolbar {
+    flex-direction: column;
+  }
+
+  .bulk-actions {
+    width: 100%;
+  }
+
+  .selector-btn {
+    flex: 1;
+    text-align: center;
+  }
   
   .btn {
     width: 100%;
@@ -2036,8 +2323,12 @@ export default {
 }
 
 @media (min-width: 769px) {
-  .type-selection, .target-group-options {
+  .type-selection {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .target-group-options {
+    grid-template-columns: 1fr;
   }
   
   .form-actions .btn {

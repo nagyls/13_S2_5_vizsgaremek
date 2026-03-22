@@ -74,6 +74,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/establishment/mine', [EstablishmentController::class, 'getMyEstablishments']);
     Route::get('/establishment/{establishmentId}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
     //osztály kezelés
+    Route::get('/establishment/{establishmentId}/classes/members', [ClassController::class, 'getClassMemmbersInMass']);
+    Route::get('/establishment/{establishmentId}/grades', [ClassController::class, 'getEstablishmentGrades']);
+    Route::get('/establishment/{establishmentId}/grades/members', [ClassController::class, 'getGradeMembersInMass']);
+    
     Route::get('/establishment/{establishmentId}/classes', [ClassController::class, 'getClasses']);
     Route::get('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'getClassMembers']);
     Route::delete('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'deleteClass']);
@@ -85,7 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //kérelmek
     Route::get('/establishment/{establishmentId}/requests/students', [RequestController::class, 'getStudentRequests']);
     Route::get('/establishment/{establishmentId}/requests/teachers', [RequestController::class, 'getTeacherRequests']);
-
+    
     Route::post('/establishment/requests/create', [RequestController::class, 'submitRequest']);
     // handle request state changes -> PATCH
     Route::patch('/establishment/requests/handle', [RequestController::class, 'handleRequest']);

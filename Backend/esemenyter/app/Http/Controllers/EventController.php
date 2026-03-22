@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\EventShown;
 use App\Models\EventRequest;
+use App\Models\ClassModel;
 use Illuminate\Support\Facades\DB;
 
 class EventController extends Controller
@@ -25,6 +26,11 @@ class EventController extends Controller
             'establishment_id' => 'required|exists:establishments,id',
             'collab_establishment_ids' => 'array|required_if:type,global|min:1',
             'collab_establishment_ids.*' => 'exists:establishments,id',
+            'target_group' => 'required_if:type,local|in:osztaly_szintu,evfolyam_szintu,teljes_iskola',
+            'selected_class_ids' => 'array|required_if:target_group,osztaly_szintu|min:1',
+            'selected_class_ids.*' => 'integer|exists:classes,id',
+            'selected_grade_ids' => 'array|required_if:target_group,evfolyam_szintu|min:1',
+            'selected_grade_ids.*' => 'integer|min:1',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'content' => 'nullable|string',
@@ -42,7 +48,7 @@ class EventController extends Controller
             'collab_establishment_ids.min' => 'Legalább egy kollaboráló intézményt meg kell adni globális eseményhez.',
             'collab_establishment_ids.*.exists' => 'A megadott kollaboráló intézmény nem található.',
             'target_group.required_if' => 'Helyi eseménynél a célcsoport megadása kötelező.',
-            'target_group.in' => 'A célcsoport értéke csak sajat_osztaly, evfolyam vagy teljes_iskola lehet.',
+            'target_group.in' => 'A célcsoport értéke csak osztaly_szintu, evfolyam_szintu vagy teljes_iskola lehet.',
             'title.required' => 'A cím megadása kötelező.',
             'title.string' => 'A címnek szövegnek kell lennie.',
             'title.max' => 'A cím nem lehet hosszabb, mint :max karakter.',
@@ -65,9 +71,41 @@ class EventController extends Controller
 
         $users = $validated['users'] ?? [];
         $collabIds = $validated['collab_establishment_ids'] ?? [];
+        $selectedClassIds = array_values(array_map('intval', $validated['selected_class_ids'] ?? []));
+        $selectedGradeIds = array_values(array_map('intval', $validated['selected_grade_ids'] ?? []));
+
+        if (($validated['target_group'] ?? null) === 'osztaly_szintu' && !empty($selectedClassIds)) {
+            $validClassIds = ClassModel::where('establishment_id', $validated['establishment_id'])
+                ->whereIn('id', $selectedClassIds)
+                ->pluck('id')
+                ->map(fn($id) => (int) $id)
+                ->toArray();
+
+            if (count($validClassIds) !== count($selectedClassIds)) {
+                return response()->json([
+                    'message' => 'Egy vagy több osztály nem tartozik az intézményhez!'
+                ], 400);
+            }
+        }
+
+        if (($validated['target_group'] ?? null) === 'evfolyam_szintu' && !empty($selectedGradeIds)) {
+            $validGrades = ClassModel::where('establishment_id', $validated['establishment_id'])
+                ->whereIn('grade', $selectedGradeIds)
+                ->pluck('grade')
+                ->map(fn($grade) => (int) $grade)
+                ->unique()
+                ->values()
+                ->toArray();
+
+            if (count($validGrades) !== count(array_unique($selectedGradeIds))) {
+                return response()->json([
+                    'message' => 'Egy vagy több évfolyam nem található az intézményben!'
+                ], 400);
+            }
+        }
 
         if ($validated['type'] == 'local') {
-            if (!$this->isStaffEstablishment($user, $validated['establishment_id'])) {
+            if (!$this->isStaffEstablishment($user->id, $validated['establishment_id'])) {
                 return response()->json(['message' => 'nem jogosult'], 403);
             }
 
@@ -76,6 +114,9 @@ class EventController extends Controller
                     'user_id' => $user->id,
                     'establishment_id' => $validated['establishment_id'],
                     'type' => $validated['type'],
+                    'target_group' => $validated['target_group'] ?? null,
+                    'target_class_ids' => ($validated['target_group'] ?? null) === 'osztaly_szintu' ? array_values(array_map('intval', $validated['selected_class_ids'] ?? [])) : null,
+                    'target_grade_ids' => ($validated['target_group'] ?? null) === 'evfolyam_szintu' ? array_values(array_map('intval', $validated['selected_grade_ids'] ?? [])) : null,
                     'title' => $validated['title'],
                     'description' => $validated['description'],
                     'content' => $validated['content'],
@@ -120,7 +161,7 @@ class EventController extends Controller
         }
 
         if ($validated['type'] == 'global') {
-            if (!$this->isAdminEstablishment($user, $validated['establishment_id'])) {
+            if (!$this->isAdminEstablishment($user->id, $validated['establishment_id'])) {
                 return response()->json(['message' => 'nem jogosult'], 403);
             }
 
@@ -128,7 +169,6 @@ class EventController extends Controller
                 $event = Event::create([
                     'user_id' => $user->id,
                     'establishment_id' => $validated['establishment_id'],
-                    'target_group' => null,
                     'type' => $validated['type'],
                     'title' => $validated['title'],
                     'description' => $validated['description'],
@@ -291,7 +331,7 @@ class EventController extends Controller
         if (!$user) {
             return response()->json(['message' => 'nem jogosult'], 401);
         }
-        if (!$this->isMemberEstablishment($user, $establishmentId)) {
+        if (!$this->isMemberEstablishment($user->id, $establishmentId)) {
             return response()->json(['message' => 'nem jogosult'], 403);
         }
 
