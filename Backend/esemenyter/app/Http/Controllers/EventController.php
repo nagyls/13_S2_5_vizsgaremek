@@ -27,7 +27,7 @@ class EventController extends Controller
             'establishment_id' => 'required|exists:establishments,id',
             'collab_establishment_ids' => 'array|required_if:type,global|min:1',
             'collab_establishment_ids.*' => 'exists:establishments,id',
-            'target_group' => 'required_if:type,local|in:osztaly_szintu,evfolyam_szintu,teljes_iskola',
+            'target_group' => 'required_if:type,local,global|in:osztaly_szintu,evfolyam_szintu,teljes_iskola',
             'selected_class_ids' => 'array|required_if:target_group,osztaly_szintu|min:1',
             'selected_class_ids.*' => 'integer|exists:classes,id',
             'selected_grade_ids' => 'array|required_if:target_group,evfolyam_szintu|min:1',
@@ -44,7 +44,7 @@ class EventController extends Controller
             'recurrence_until' => 'nullable|required_if:is_recurring,1|date',
             //
 
-            'users' => 'array|required_if:type,local',
+            'users' => 'array|required_if:type,local,global',
             'users.*' => 'exists:users,id',
         ], [
             'type.required' => 'A típus megadása kötelező.',
@@ -55,7 +55,7 @@ class EventController extends Controller
             'collab_establishment_ids.required_if' => 'A kollaboráló intézmények megadása kötelező globális esemény esetén.',
             'collab_establishment_ids.min' => 'Legalább egy kollaboráló intézményt meg kell adni globális eseményhez.',
             'collab_establishment_ids.*.exists' => 'A megadott kollaboráló intézmény nem található.',
-            'target_group.required_if' => 'Helyi eseménynél a célcsoport megadása kötelező.',
+            'target_group.required_if' => 'Eseménynél a célcsoport megadása kötelező.',
             'target_group.in' => 'A célcsoport értéke csak osztaly_szintu, evfolyam_szintu vagy teljes_iskola lehet.',
             'title.required' => 'A cím megadása kötelező.',
             'title.string' => 'A címnek szövegnek kell lennie.',
@@ -68,7 +68,7 @@ class EventController extends Controller
             'end_date.required' => 'A befejező dátum megadása kötelező.',
             'end_date.date' => 'A befejező dátumnak érvényes dátumnak kell lennie.',
             'end_date.after' => 'A befejező dátumnak a kezdő dátunál később kell lennie.',
-            'users.required' => 'A felhasználók megadása kötelező.',
+            'users.required_if' => 'A felhasználók megadása kötelező.',
 
             //SZAKKÖR MÓDOSÍTÁS
             'is_recurring.boolean' => 'Az ismétlődés mező értéke csak igaz vagy hamis lehet.',
@@ -227,6 +227,9 @@ class EventController extends Controller
                     'user_id' => $user->id,
                     'establishment_id' => $validated['establishment_id'],
                     'type' => $validated['type'],
+                    'target_group' => $validated['target_group'] ?? null,
+                    'target_class_ids' => ($validated['target_group'] ?? null) === 'osztaly_szintu' ? array_values(array_map('intval', $validated['selected_class_ids'] ?? [])) : null,
+                    'target_grade_ids' => ($validated['target_group'] ?? null) === 'evfolyam_szintu' ? array_values(array_map('intval', $validated['selected_grade_ids'] ?? [])) : null,
                     'title' => $validated['title'],
                     'description' => $validated['description'],
                     'content' => $validated['content'],

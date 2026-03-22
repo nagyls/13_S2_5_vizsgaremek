@@ -108,10 +108,18 @@
             <i class='bx bx-check-circle'></i>
             <span>{{ selectedCountyIds.length }} vármegye kiválasztva</span>
           </div>
+
+          <div v-if="selectedCountyIds.length > 0 && isCheckingGlobalCollab" class="class-target-state">
+            Intézmények ellenőrzése a kiválasztott vármegyékben...
+          </div>
+
+          <div v-if="selectedCountyIds.length > 0 && !isCheckingGlobalCollab && globalCollabCount === 0" class="class-target-state warning">
+            A kiválasztott vármegyékben nem található másik intézmény. Válassz további vármegyét.
+          </div>
         </div>
 
-        <!-- 2. ISKOLAI ESEMÉNY - CÉLCSOPORT KIVÁLASZTÁSA -->
-        <div v-if="currentStep === 2 && selectedEventScope === 'school'" class="form-section">
+        <!-- 2. CÉLCSOPORT KIVÁLASZTÁSA -->
+        <div v-if="currentStep === 2" class="form-section">
           <h3><i class='bx bx-target-lock'></i> 2. Célcsoport kiválasztása</h3>
           
           <div class="target-group-selection">
@@ -347,6 +355,12 @@
                   {{ getSelectedCountyNames().join(', ') }}
                 </span>
               </div>
+              <div class="summary-item">
+                <strong>Célcsoport:</strong> {{ getSchoolTargetLabel(selectedSchoolTargetGroup) }}
+              </div>
+              <div v-if="selectedSchoolTargetGroup !== 'teljes_iskola'" class="summary-item">
+                <strong>Kijelölés:</strong> {{ selectedTargetSummary || 'Nincs kiválasztva' }}
+              </div>
             </template>
             
             <!-- Iskolai esemény részletei -->
@@ -445,6 +459,9 @@ export default {
       todayMin: new Date().toISOString().slice(0, 10),
       selectedEventScope: 'school',
       selectedCountyIds: [],
+      globalCollabCount: 0,
+      globalCollabIds: [],
+      isCheckingGlobalCollab: false,
       countiesList: [],
       selectedSchoolTargetGroup: 'osztaly_szintu',
       eventForm: {
@@ -528,7 +545,27 @@ export default {
 
         case 2:
           if (this.selectedEventScope === 'global') {
-            return this.selectedCountyIds.length > 0
+            if (this.selectedCountyIds.length === 0) {
+              return false
+            }
+
+            if (this.isCheckingGlobalCollab || this.globalCollabCount === 0) {
+              return false
+            }
+
+            if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
+              return true
+            }
+
+            if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+              return this.selectedClassIds.length > 0
+            }
+
+            if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+              return this.selectedGradeIds.length > 0
+            }
+
+            return false
           }
 
           if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
@@ -605,6 +642,9 @@ export default {
   watch: {
     selectedEventScope(newValue) {
       if (newValue === 'global') {
+        this.selectedSchoolTargetGroup = 'teljes_iskola'
+        this.selectedClassIds = []
+        this.selectedGradeIds = []
         this.eventForm.isRecurring = false
         this.eventForm.recurrenceWeekday = '1'
         this.eventForm.recurrenceStartTime = ''
@@ -613,11 +653,24 @@ export default {
 
         if (!this.selectedCountyIds.includes(this.userCountyId)) {
           this.selectedCountyIds = [this.userCountyId]
+          // selectedCountyIds watcher will call refreshGlobalCollabCount()
+        } else {
+          this.refreshGlobalCollabCount()
+        }
+
+        if (!this.institutionClasses.length) {
+          this.loadInstitutionClasses()
+        }
+        if (!this.institutionGrades.length) {
+          this.loadInstitutionGrades()
         }
         return
       }
 
       this.selectedSchoolTargetGroup = 'osztaly_szintu'
+      this.globalCollabCount = 0
+      this.globalCollabIds = []
+      this.isCheckingGlobalCollab = false
       if (!this.institutionClasses.length) {
         this.loadInstitutionClasses()
       }
@@ -631,6 +684,11 @@ export default {
         this.$nextTick(() => {
           this.selectedCountyIds = [this.userCountyId, ...newValue]
         })
+        return
+      }
+
+      if (this.selectedEventScope === 'global') {
+        this.refreshGlobalCollabCount()
       }
     },
 
@@ -681,7 +739,7 @@ export default {
     },
 
     currentStep(newValue) {
-      if (newValue === 2 && this.selectedEventScope === 'school') {
+      if (newValue === 2 && (this.selectedEventScope === 'school' || this.selectedEventScope === 'global')) {
         if (!this.institutionClasses.length) {
           this.loadInstitutionClasses()
         }
@@ -697,6 +755,36 @@ export default {
   },
 
   methods: {
+    async refreshGlobalCollabCount() {
+      if (this.selectedEventScope !== 'global') {
+        this.globalCollabCount = 0
+        this.globalCollabIds = []
+        this.isCheckingGlobalCollab = false
+        return
+      }
+
+      if (!this.selectedCountyIds.length) {
+        this.globalCollabCount = 0
+        this.globalCollabIds = []
+        this.isCheckingGlobalCollab = false
+        return
+      }
+
+      this.isCheckingGlobalCollab = true
+
+      try {
+        const collabEstablishmentIds = await this.resolveCollabEstablishmentIdsByCounties(this.selectedCountyIds)
+        this.globalCollabIds = collabEstablishmentIds
+        this.globalCollabCount = collabEstablishmentIds.length
+      } catch (error) {
+        console.error('Kollaboráló intézmények ellenőrzési hiba:', error)
+        this.globalCollabCount = 0
+        this.globalCollabIds = []
+      } finally {
+        this.isCheckingGlobalCollab = false
+      }
+    },
+
     normalizeNumericList(values) {
       return Array.from(
         new Set((values || []).map(value => Number(value)).filter(Number.isFinite))
@@ -1142,80 +1230,17 @@ export default {
 
       const sourceEstablishmentId = Number(this.userInstitution.id)
 
-      const directResponses = await Promise.all(
+      const responses = await Promise.all(
         normalizedCountyIds.map(countyId =>
           axios.get('http://127.0.0.1:8000/api/establishments', {
             params: { region_id: countyId },
-            headers: { Accept: 'application/json' }
-          }).catch(() => ({ data: { data: [] } }))
-        )
-      )
-
-      const directIds = Array.from(new Set(
-        directResponses.flatMap(response =>
-          (Array.isArray(response?.data?.data) ? response.data.data : [])
-            .map(item => Number(item?.id))
-            .filter(Number.isFinite)
-        )
-      )).filter(id => id !== sourceEstablishmentId)
-
-      if (directIds.length) {
-        return directIds
-      }
-
-      const districtResponses = await Promise.all(
-        normalizedCountyIds.map(countyId =>
-          axios.get('http://127.0.0.1:8000/api/innerregions/all', {
-            params: { region_id: countyId },
-            headers: { Accept: 'application/json' }
-          }).catch(() => ({ data: { data: [] } }))
-        )
-      )
-
-      const districtIds = Array.from(new Set(
-        districtResponses.flatMap(response =>
-          (Array.isArray(response?.data?.data) ? response.data.data : [])
-            .map(item => Number(item?.id))
-            .filter(Number.isFinite)
-        )
-      ))
-
-      if (!districtIds.length) {
-        return []
-      }
-
-      const settlementResponses = await Promise.all(
-        districtIds.map(innerRegionId =>
-          axios.get('http://127.0.0.1:8000/api/settlements/all', {
-            params: { inner_region_id: innerRegionId },
-            headers: { Accept: 'application/json' }
-          }).catch(() => ({ data: { data: [] } }))
-        )
-      )
-
-      const settlementIds = Array.from(new Set(
-        settlementResponses.flatMap(response =>
-          (Array.isArray(response?.data?.data) ? response.data.data : [])
-            .map(item => Number(item?.id))
-            .filter(Number.isFinite)
-        )
-      ))
-
-      if (!settlementIds.length) {
-        return []
-      }
-
-      const establishmentResponses = await Promise.all(
-        settlementIds.map(settlementId =>
-          axios.get('http://127.0.0.1:8000/api/establishments', {
-            params: { settlement_id: settlementId },
             headers: { Accept: 'application/json' }
           }).catch(() => ({ data: { data: [] } }))
         )
       )
 
       return Array.from(new Set(
-        establishmentResponses.flatMap(response =>
+        responses.flatMap(response =>
           (Array.isArray(response?.data?.data) ? response.data.data : [])
             .map(item => Number(item?.id))
             .filter(Number.isFinite)
@@ -1347,13 +1372,6 @@ export default {
       const minutes = String(endDate.getMinutes()).padStart(2, '0')
 
       return `${year}-${month}-${day}T${hours}:${minutes}`
-      const { title, description, startDateTime, endDateTime } = this.eventForm
-
-      return title && title.trim() !== '' &&
-        description && description.trim() !== '' &&
-        startDateTime && startDateTime !== '' &&
-        endDateTime && endDateTime !== '' &&
-        new Date(startDateTime) <= new Date(endDateTime)
     },
 
     formatDateTime(dateTime) {
@@ -1379,10 +1397,19 @@ export default {
       })
     },
 
-    nextStep() {
-      if (this.currentStep < 4 && this.canProceed) {
-        this.currentStep++
+    async nextStep() {
+      if (!(this.currentStep < 4 && this.canProceed)) {
+        return
       }
+
+      if (this.currentStep === 2 && this.selectedEventScope === 'global') {
+        if (!this.globalCollabIds.length) {
+          toast.warning('A kiválasztott vármegyékből nem találtunk más intézményt. Válassz további vármegyét.')
+          return
+        }
+      }
+
+      this.currentStep++
     },
 
     previousStep() {
@@ -1447,24 +1474,11 @@ export default {
           start_date: resolvedStartDateTime,
           end_date: resolvedEndDateTime,
           type: this.selectedEventScope === 'global' ? 'global' : 'local',
-          establishment_id: establishmentId,
-          users: this.normalizeNumericList(this.institutionUserIds)
-        }
-
-        if (this.selectedEventScope === 'school' && this.eventForm.isRecurring) {
-          payload.is_recurring = true
-          payload.recurrence_frequency = 'weekly'
-          payload.recurrence_until = this.eventForm.recurrenceUntil
-        }
-
-        if (this.selectedEventScope === 'school' && this.eventForm.isRecurring) {
-          payload.is_recurring = true
-          payload.recurrence_frequency = 'weekly'
-          payload.recurrence_until = this.eventForm.recurrenceUntil
+          establishment_id: establishmentId
         }
 
         if (this.selectedEventScope === 'global') {
-          const collabEstablishmentIds = await this.resolveCollabEstablishmentIdsByCounties(this.selectedCountyIds)
+          const collabEstablishmentIds = this.globalCollabIds
 
           if (!collabEstablishmentIds.length) {
             toast.warning('A kiválasztott vármegyékből nem találtunk más intézményt. Válassz további vármegyét.')
@@ -1472,6 +1486,34 @@ export default {
           }
 
           payload.collab_establishment_ids = collabEstablishmentIds
+
+          payload.target_group = this.selectedSchoolTargetGroup
+
+          if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+            payload.selected_class_ids = this.normalizeNumericList(this.selectedClassIds)
+          }
+
+          if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+            payload.selected_grade_ids = this.normalizeNumericList(this.selectedGradeIds)
+          }
+
+          if (this.eventForm.isRecurring) {
+            payload.is_recurring = true
+            payload.recurrence_frequency = 'weekly'
+            payload.recurrence_until = this.eventForm.recurrenceUntil
+          }
+
+          await this.loadInstitutionClasses()
+          await this.loadInstitutionGrades()
+
+          const localTargetUserIds = await this.resolveLocalTargetUserIds(token)
+
+          if (!localTargetUserIds.length) {
+            toast.warning('A kiválasztott célcsoporthoz nem találtunk címzett felhasználót.')
+            return
+          }
+
+          payload.users = localTargetUserIds
         } else {
           payload.target_group = this.selectedSchoolTargetGroup
 

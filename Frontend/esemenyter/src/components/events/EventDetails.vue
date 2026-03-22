@@ -52,7 +52,7 @@
               </span>
             </div>
             <h1 class="hero-title">{{ eventData.title }}</h1>
-            <div class="hero-actions">
+            <div v-if="!isReadOnlyMode" class="hero-actions">
               <button v-if="currentUser" class="icon-button" @click="toggleFavorite">
                 <i class='bx bx-star' :class="{ 'active': eventData.isFavorite }"></i>
                 <span class="btn-text">Kedvenc</span>
@@ -116,7 +116,7 @@
             </div>
 
             <!-- Komment szekció -->
-            <div class="comment-section">
+            <div v-if="!isReadOnlyMode" class="comment-section">
               <div class="comment-header">
                 <div class="header-left">
                   <i class='bx bx-message-dots'></i>
@@ -134,6 +134,7 @@
                 @komment-sikeres="onCommentAdded"
               />
             </div>
+
           </div>
 
           <!-- Jobb oldali oszlop -->
@@ -197,7 +198,7 @@
             </div>
 
             <!-- Részvétel -->
-            <div v-if="eventData.status === 'open' && currentUser" class="info-card participation">
+            <div v-if="!isReadOnlyMode && eventData.status === 'open' && currentUser" class="info-card participation">
               <h3><i class='bx bx-check-shield'></i> Részvétel</h3>
               <p class="participation-description">{{ isFormal ? 'Hogyan szeretne részt venni az eseményen?' : 'Hogyan szeretnél részt venni az eseményen?' }}</p>
               <div class="participation-options">
@@ -314,8 +315,12 @@ export default {
       return this.currentUser?.role === 'admin' || this.currentUser?.role === 'teacher';
     },
 
+    isReadOnlyMode() {
+      return String(this.$route?.query?.readonly || '') === '1'
+    },
+
     canManageOccurrence() {
-      return Number(this.currentUser?.id) > 0 && Number(this.eventData?.user_id) === Number(this.currentUser?.id)
+      return !this.isReadOnlyMode && Number(this.currentUser?.id) > 0 && Number(this.eventData?.user_id) === Number(this.currentUser?.id)
     }
   },
   
@@ -501,6 +506,11 @@ export default {
     },
     
     async submitParticipation(answer) {
+      if (this.isReadOnlyMode) {
+        this.showMessage('Csak megtekintés módban a részvétel nem módosítható.', 'info')
+        return
+      }
+
       if (!this.currentUser) {
         this.showMessage('A részvételhez be kell jelentkezned!', 'info')
         this.$router.push('/login')
@@ -655,6 +665,11 @@ export default {
     },
     
     async toggleFavorite() {
+      if (this.isReadOnlyMode) {
+        this.showMessage('Csak megtekintés módban a kedvencek módosítása nem elérhető.', 'info')
+        return
+      }
+
       if (!this.currentUser) {
         this.showMessage('A kedvencekhez adáshoz jelentkezz be!', 'info')
         return
@@ -664,6 +679,11 @@ export default {
     },
     
     shareEvent() {
+      if (this.isReadOnlyMode) {
+        this.showMessage('Csak megtekintés módban a megosztás nem elérhető.', 'info')
+        return
+      }
+
       if (navigator.share) {
         navigator.share({
           title: this.eventData.title,
@@ -698,6 +718,11 @@ export default {
     },
 
     async rescheduleOccurrence() {
+      if (this.isReadOnlyMode) {
+        this.showMessage('Csak megtekintés módban az alkalom nem módosítható.', 'warning')
+        return
+      }
+
       if (!this.canManageOccurrence) {
         this.showMessage('Csak a létrehozó módosíthatja ezt az alkalmat.', 'warning')
         return
@@ -756,6 +781,11 @@ export default {
     },
 
     async cancelOccurrence() {
+      if (this.isReadOnlyMode) {
+        this.showMessage('Csak megtekintés módban az alkalom nem törölhető.', 'warning')
+        return
+      }
+
       if (!this.canManageOccurrence) {
         this.showMessage('Csak a létrehozó törölheti ezt az alkalmat.', 'warning')
         return
