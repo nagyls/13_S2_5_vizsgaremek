@@ -62,6 +62,15 @@
               </div>
             </label>
           </div>
+
+          <div class="recurrence-guide">
+            <i class='bx bx-info-circle'></i>
+            <span>
+              Ismétlődő (heti) eseményt az <strong>Iskolai szintű esemény</strong> kiválasztása után,
+              a <strong>3. lépésben</strong> tudsz bekapcsolni a
+              <strong>"Heti ismétlődő esemény"</strong> kapcsolóval.
+            </span>
+          </div>
         </div>
 
         <!-- 2. GLOBÁLIS ESEMÉNY - MEGYÉK KIVÁLASZTÁSA -->
@@ -232,6 +241,10 @@
         <!-- 3. ESEMÉNY ADATAI (közös rész) -->
         <div v-if="currentStep === 3" class="form-section">
           <h3><i class='bx bx-edit'></i> 3. Esemény adatai</h3>
+          <div v-if="selectedEventScope === 'school'" class="recurrence-guide compact">
+            <i class='bx bx-repeat'></i>
+            <span>Itt kapcsolhatod be az ismétlődést a "Heti ismétlődő esemény" opcióval.</span>
+          </div>
           <div class="event-form">
             <div class="form-group">
               <label>Cím *</label>
@@ -246,13 +259,70 @@
               <textarea v-model="eventForm.content" placeholder="Bővebb tartalom, instrukciók"></textarea>
             </div>
             <div class="form-row">
-              <div class="form-group">
+              <div v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)" class="form-group">
                 <label>Kezdés *</label>
                 <input type="date" v-model="eventForm.startDateTime" :min="todayMin" required>
               </div>
-              <div class="form-group">
+              <div v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)" class="form-group">
                 <label>Befejezés *</label>
                 <input type="date" v-model="eventForm.endDateTime" :min="eventForm.startDateTime || todayMin" required>
+              </div>
+            </div>
+
+            <div v-if="selectedEventScope === 'school'" class="form-group recurrence-toggle">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="eventForm.isRecurring">
+                <span>Heti ismétlődő esemény (pl. szakkör)</span>
+              </label>
+              <p class="field-help">Bekapcsolás esetén a rendszer heti alkalmakat hoz létre, és a részvétel alkalmonként külön indul.</p>
+            </div>
+
+            <div v-if="selectedEventScope === 'school' && eventForm.isRecurring" class="recurrence-flow">
+              <div class="recurrence-step">
+                <label>1. Melyik nap legyen az esemény? *</label>
+                <select v-model="eventForm.recurrenceWeekday" required>
+                  <option v-for="option in recurrenceWeekdayOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="recurrence-step">
+                <label>2. Hánykor kezdődjön? *</label>
+                <input type="time" v-model="eventForm.recurrenceStartTime" required>
+              </div>
+
+              <div class="recurrence-step">
+                <label>3. Meddig tartson? (perc) *</label>
+                <input
+                  type="number"
+                  v-model.number="eventForm.recurrenceDurationMinutes"
+                  min="15"
+                  step="5"
+                  required
+                >
+              </div>
+
+              <div class="recurrence-step">
+                <label>4. Melyik dátumkor induljon az esemény? *</label>
+                <input
+                  type="date"
+                  v-model="eventForm.recurrenceStartDate"
+                  :min="todayMin.slice(0, 10)"
+                  required
+                >
+                <p class="field-help">A rendszer az első alkalmat a kiválasztott naphoz igazítja.</p>
+              </div>
+
+              <div class="recurrence-step">
+                <label>5. Meddig ismétlődjön az esemény? *</label>
+                <input
+                  type="date"
+                  v-model="eventForm.recurrenceUntil"
+                  :min="eventForm.recurrenceStartDate || todayMin.slice(0, 10)"
+                  required
+                >
+                <p class="field-help">Az esemény hetente ismétlődik a megadott dátumig.</p>
               </div>
             </div>
           </div>
@@ -295,9 +365,34 @@
             <div class="summary-item">
               <strong>Cím:</strong> {{ eventForm.title || '(nincs megadva)' }}
             </div>
-            <div class="summary-item">
-              <strong>Időpont:</strong> {{ formatDateTime(eventForm.startDateTime) }} - {{ formatDateTime(eventForm.endDateTime) }}
-            </div>
+            <template v-if="selectedEventScope === 'school' && eventForm.isRecurring">
+              <div class="summary-item">
+                <strong>Nap:</strong> {{ getWeekdayLabel(eventForm.recurrenceWeekday) }}
+              </div>
+              <div class="summary-item">
+                <strong>Kezdés:</strong> {{ eventForm.recurrenceStartTime || 'nincs megadva' }}
+              </div>
+              <div class="summary-item">
+                <strong>Első alkalom:</strong> {{ formatDateTime(buildRecurringStartDateTime()) }}
+              </div>
+              <div class="summary-item">
+                <strong>Alkalom vége:</strong> {{ formatDateTime(buildRecurringEndDateTime()) }}
+              </div>
+              <div class="summary-item">
+                <strong>Időtartam:</strong> {{ eventForm.recurrenceDurationMinutes }} perc
+              </div>
+              <div class="summary-item">
+                <strong>Ismétlődés:</strong> Hetente, {{ formatDateTime(eventForm.recurrenceUntil + 'T00:00') }} dátumig
+              </div>
+            </template>
+            <template v-else>
+              <div class="summary-item">
+                <strong>Kezdés:</strong> {{ formatDateTime(eventForm.startDateTime) }}
+              </div>
+              <div class="summary-item">
+                <strong>Befejezés:</strong> {{ formatDateTime(eventForm.endDateTime) }}
+              </div>
+            </template>
           </div>
         </div>
 
@@ -357,8 +452,24 @@ export default {
         description: '',
         content: '',
         startDateTime: '',
-        endDateTime: ''
+        endDateTime: '',
+        isRecurring: false,
+        recurrenceWeekday: '1',
+        recurrenceStartTime: '',
+        recurrenceStartDate: '',
+        recurrenceUntil: '',
+        recurrenceDurationMinutes: 90
       },
+
+      recurrenceWeekdayOptions: [
+        { value: '1', label: 'Hétfő' },
+        { value: '2', label: 'Kedd' },
+        { value: '3', label: 'Szerda' },
+        { value: '4', label: 'Csütörtök' },
+        { value: '5', label: 'Péntek' }
+      ],
+      
+      // KONFIGURÁCIÓK
       steps: [
         { number: 1, label: 'Szint' },
         { number: 2, label: 'Célcsoport' },
@@ -494,6 +605,12 @@ export default {
   watch: {
     selectedEventScope(newValue) {
       if (newValue === 'global') {
+        this.eventForm.isRecurring = false
+        this.eventForm.recurrenceWeekday = '1'
+        this.eventForm.recurrenceStartTime = ''
+        this.eventForm.recurrenceStartDate = ''
+        this.eventForm.recurrenceUntil = ''
+
         if (!this.selectedCountyIds.includes(this.userCountyId)) {
           this.selectedCountyIds = [this.userCountyId]
         }
@@ -548,6 +665,19 @@ export default {
         newValue.map(gradeItem => Number(gradeItem?.grade)).filter(Number.isFinite)
       )
       this.selectedGradeIds = this.selectedGradeIds.filter(gradeId => validIds.has(gradeId))
+    },
+
+    'eventForm.isRecurring'(newValue) {
+      if (newValue) {
+        this.eventForm.endDateTime = ''
+        if (!this.eventForm.recurrenceStartDate) {
+          this.eventForm.recurrenceStartDate = this.todayMin.slice(0, 10)
+        }
+      } else {
+        this.eventForm.recurrenceStartTime = ''
+        this.eventForm.recurrenceStartDate = ''
+        this.eventForm.recurrenceUntil = ''
+      }
     },
 
     currentStep(newValue) {
@@ -1114,6 +1244,109 @@ export default {
     },
 
     validateEventForm() {
+      const {
+        title,
+        description,
+        startDateTime,
+        endDateTime,
+        isRecurring,
+        recurrenceWeekday,
+        recurrenceStartTime,
+        recurrenceStartDate,
+        recurrenceUntil,
+        recurrenceDurationMinutes
+      } = this.eventForm
+
+      const hasCommonFields =
+        title && title.trim() !== '' &&
+        description && description.trim() !== ''
+
+      if (!hasCommonFields) {
+        return false
+      }
+
+      const isSchoolRecurring = this.selectedEventScope === 'school' && isRecurring
+
+      if (isSchoolRecurring) {
+        const weekday = Number(recurrenceWeekday)
+        const weekdayValid = Number.isFinite(weekday) && weekday >= 1 && weekday <= 5
+        const startTimeValid = Boolean(recurrenceStartTime)
+        const startDateValid = Boolean(recurrenceStartDate)
+        const duration = Number(recurrenceDurationMinutes)
+        const durationValid = Number.isFinite(duration) && duration >= 15
+        const recurrenceDateValid = recurrenceUntil && recurrenceUntil !== '' && recurrenceStartDate && new Date(`${recurrenceUntil}T23:59:59`) >= new Date(`${recurrenceStartDate}T00:00:00`)
+        return weekdayValid && startTimeValid && startDateValid && durationValid && recurrenceDateValid
+      }
+
+      if (!startDateTime || startDateTime === '') {
+        return false
+      }
+
+      return endDateTime && endDateTime !== '' && new Date(startDateTime) <= new Date(endDateTime)
+    },
+
+    getWeekdayLabel(weekdayValue) {
+      const found = this.recurrenceWeekdayOptions.find(option => Number(option.value) === Number(weekdayValue))
+      return found?.label || 'Ismeretlen nap'
+    },
+
+    buildRecurringStartDateTime() {
+      const { recurrenceStartDate, recurrenceStartTime, recurrenceWeekday } = this.eventForm
+
+      if (!recurrenceStartDate || !recurrenceStartTime) {
+        return ''
+      }
+
+      const [hours, minutes] = String(recurrenceStartTime).split(':').map(Number)
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+        return ''
+      }
+
+      const targetWeekday = Number(recurrenceWeekday)
+      if (!Number.isFinite(targetWeekday)) {
+        return ''
+      }
+
+      const firstDate = new Date(`${recurrenceStartDate}T00:00:00`)
+      if (Number.isNaN(firstDate.getTime())) {
+        return ''
+      }
+
+      const currentWeekday = ((firstDate.getDay() + 6) % 7) + 1
+      const dayOffset = (targetWeekday - currentWeekday + 7) % 7
+      firstDate.setDate(firstDate.getDate() + dayOffset)
+      firstDate.setHours(hours, minutes, 0, 0)
+
+      const year = firstDate.getFullYear()
+      const month = String(firstDate.getMonth() + 1).padStart(2, '0')
+      const day = String(firstDate.getDate()).padStart(2, '0')
+      const hh = String(firstDate.getHours()).padStart(2, '0')
+      const mm = String(firstDate.getMinutes()).padStart(2, '0')
+
+      return `${year}-${month}-${day}T${hh}:${mm}`
+    },
+
+    buildRecurringEndDateTime() {
+      const startDateTime = this.buildRecurringStartDateTime()
+      const duration = Number(this.eventForm.recurrenceDurationMinutes)
+
+      if (!startDateTime || !Number.isFinite(duration) || duration < 15) {
+        return ''
+      }
+
+      const startDate = new Date(startDateTime)
+      if (Number.isNaN(startDate.getTime())) {
+        return ''
+      }
+
+      const endDate = new Date(startDate.getTime() + (duration * 60 * 1000))
+      const year = endDate.getFullYear()
+      const month = String(endDate.getMonth() + 1).padStart(2, '0')
+      const day = String(endDate.getDate()).padStart(2, '0')
+      const hours = String(endDate.getHours()).padStart(2, '0')
+      const minutes = String(endDate.getMinutes()).padStart(2, '0')
+
+      return `${year}-${month}-${day}T${hours}:${minutes}`
       const { title, description, startDateTime, endDateTime } = this.eventForm
 
       return title && title.trim() !== '' &&
@@ -1197,15 +1430,37 @@ export default {
           return
         }
 
+        const resolvedStartDateTime =
+          this.selectedEventScope === 'school' && this.eventForm.isRecurring
+            ? this.buildRecurringStartDateTime()
+            : this.eventForm.startDateTime
+
+        const resolvedEndDateTime =
+          this.selectedEventScope === 'school' && this.eventForm.isRecurring
+            ? this.buildRecurringEndDateTime()
+            : this.eventForm.endDateTime
+
         const payload = {
           title: this.eventForm.title,
           description: this.eventForm.description,
           content: this.eventForm.content,
-          start_date: this.eventForm.startDateTime,
-          end_date: this.eventForm.endDateTime,
+          start_date: resolvedStartDateTime,
+          end_date: resolvedEndDateTime,
           type: this.selectedEventScope === 'global' ? 'global' : 'local',
           establishment_id: establishmentId,
           users: this.normalizeNumericList(this.institutionUserIds)
+        }
+
+        if (this.selectedEventScope === 'school' && this.eventForm.isRecurring) {
+          payload.is_recurring = true
+          payload.recurrence_frequency = 'weekly'
+          payload.recurrence_until = this.eventForm.recurrenceUntil
+        }
+
+        if (this.selectedEventScope === 'school' && this.eventForm.isRecurring) {
+          payload.is_recurring = true
+          payload.recurrence_frequency = 'weekly'
+          payload.recurrence_until = this.eventForm.recurrenceUntil
         }
 
         if (this.selectedEventScope === 'global') {
@@ -1533,6 +1788,30 @@ export default {
   gap: 20px;
   margin-top: 20px;
   box-sizing: border-box;
+}
+
+.recurrence-guide {
+  margin-top: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #ecfeff;
+  border: 1px solid #a5f3fc;
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.recurrence-guide i {
+  color: #0891b2;
+  font-size: 18px;
+  margin-top: 1px;
+}
+
+.recurrence-guide.compact {
+  margin: 0 0 14px;
 }
 
 .type-option, .target-group-option {
@@ -1912,7 +2191,7 @@ export default {
   letter-spacing: 0.3px;
 }
 
-.form-group input, .form-group textarea {
+.form-group input, .form-group textarea, .form-group select {
   width: 100%;
   padding: 14px 16px;
   border: 1px solid #e2e8f0;
@@ -1924,7 +2203,7 @@ export default {
   background: #f8fafc;
 }
 
-.form-group input:focus, .form-group textarea:focus {
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
   outline: none;
   border-color: #667eea;
   background: white;
@@ -1940,6 +2219,64 @@ export default {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+  box-sizing: border-box;
+}
+
+.recurrence-toggle {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.field-help {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.recurrence-flow {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.recurrence-step {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.recurrence-step label {
+  display: block;
+  margin-bottom: 8px;
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.recurrence-step input,
+.recurrence-step select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 14px;
+  background: #ffffff;
   box-sizing: border-box;
 }
 

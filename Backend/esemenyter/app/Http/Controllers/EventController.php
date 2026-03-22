@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\EventShown;
 use App\Models\EventRequest;
+use Illuminate\Support\Carbon;  ////SZAKKÖR MÓDOSÍTÁS
 use App\Models\ClassModel;
 use Illuminate\Support\Facades\DB;
 
@@ -36,8 +37,15 @@ class EventController extends Controller
             'content' => 'nullable|string',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
-            'users'   => 'required|array|min:1',
-            'users.*' => 'integer|distinct|exists:users,id',
+
+            //SZAKKÖR MÓDOSÍTÁS
+            'is_recurring' => 'sometimes|boolean',
+            'recurrence_frequency' => 'nullable|required_if:is_recurring,1|in:weekly',
+            'recurrence_until' => 'nullable|required_if:is_recurring,1|date',
+            //
+
+            'users' => 'array|required_if:type,local',
+            'users.*' => 'exists:users,id',
         ], [
             'type.required' => 'A típus megadása kötelező.',
             'type.in' => 'A típusnak "local" vagy "global" értéknek kell lennie.',
@@ -61,6 +69,15 @@ class EventController extends Controller
             'end_date.date' => 'A befejező dátumnak érvényes dátumnak kell lennie.',
             'end_date.after' => 'A befejező dátumnak a kezdő dátunál később kell lennie.',
             'users.required' => 'A felhasználók megadása kötelező.',
+
+            //SZAKKÖR MÓDOSÍTÁS
+            'is_recurring.boolean' => 'Az ismétlődés mező értéke csak igaz vagy hamis lehet.',
+            'recurrence_frequency.required_if' => 'Ismétlődő eseménynél meg kell adni a gyakoriságot.',
+            'recurrence_frequency.in' => 'Jelenleg csak heti ismétlődés támogatott.',
+            'recurrence_until.required_if' => 'Ismétlődő eseménynél záró dátum megadása kötelező.',
+            'recurrence_until.date' => 'Az ismétlődés záró dátuma érvényes dátum legyen.',
+            //
+
             'users.array' => 'A users mezőnek tömbnek kell lennie.',
             'users.min' => 'Legalább :min felhasználót meg kell adni.',
             'users.*.integer' => 'A felhasználó azonosítónak számnak kell lennie.',
@@ -68,6 +85,26 @@ class EventController extends Controller
             'users.*.exists' => 'A megadott felhasználó nem található.',
         ]);
 
+        //SZAKKÖR MÓDOSÍTÁS
+        $isRecurring = (bool) ($validated['is_recurring'] ?? false);
+
+        if ($isRecurring) {
+            $recurrenceUntilEndOfDay = Carbon::parse($validated['recurrence_until'])->endOfDay();
+            $firstStart = Carbon::parse($validated['start_date']);
+
+            if ($recurrenceUntilEndOfDay->lt($firstStart)) {
+                return response()->json([
+                    'message' => 'Az ismétlődés záró dátuma nem lehet korábbi, mint az első alkalom napja.'
+                ], 422);
+            }
+        }
+
+        if ($isRecurring && $validated['type'] !== 'local') {
+            return response()->json([
+                'message' => 'Ismétlődő eseményt jelenleg csak helyi eseménynél lehet létrehozni.'
+            ], 422);
+        }
+        //
 
         $users = $validated['users'] ?? [];
         $collabIds = $validated['collab_establishment_ids'] ?? [];
@@ -109,7 +146,9 @@ class EventController extends Controller
                 return response()->json(['message' => 'nem jogosult'], 403);
             }
 
-            $event = DB::transaction(function () use ($user, $validated, $users) {
+            //eredeti: 
+        //  $event = DB::transaction(function () use ($user, $validated, $users) {
+            $event = DB::transaction(function () use ($user, $validated, $users, $isRecurring) { //SZAKKÖR MÓDOSÍTÁS
                 $event = Event::create([
                     'user_id' => $user->id,
                     'establishment_id' => $validated['establishment_id'],
@@ -122,6 +161,14 @@ class EventController extends Controller
                     'content' => $validated['content'],
                     'start_date' => $validated['start_date'],
                     'end_date' => $validated['end_date'],
+
+                    //SZAKKÖR MÓDOSÍTÁS
+                    'status' => 'upcoming',
+                    'is_recurring' => $isRecurring,
+                    'recurrence_frequency' => $isRecurring ? ($validated['recurrence_frequency'] ?? 'weekly') : null,
+                    'recurrence_until' => $isRecurring ? $validated['recurrence_until'] : null,
+                    'recurrence_parent_event_id' => null,
+                    //
                 ]);
 
                 $shownRows = [];
@@ -156,6 +203,16 @@ class EventController extends Controller
                     EventShown::insert($shownRows);
                 }
 
+                //SZAKKÖR MÓDOSÍTÁS
+                if ($isRecurring) {
+                    $this->createWeeklyOccurrences(
+                        $event,
+                        $validated['recurrence_until'],
+                        $shownRows
+                    );
+                }
+                //
+
                 return $event;
             });
         }
@@ -175,6 +232,15 @@ class EventController extends Controller
                     'content' => $validated['content'],
                     'start_date' => $validated['start_date'],
                     'end_date' => $validated['end_date'],
+
+                    //SZAKKÖR MÓDOSÍTÁS
+                    'status' => 'upcoming',
+                    'is_recurring' => false,
+                    'recurrence_frequency' => null,
+                    'recurrence_until' => null,
+                    'recurrence_parent_event_id' => null,
+                    //
+
                 ]);
 
                 $shownRows = [];
@@ -224,6 +290,58 @@ class EventController extends Controller
             'event' => $event
         ], 201);
     }
+
+    //SZAKKÖR MÓDOSÍTÁS
+    private function createWeeklyOccurrences(Event $event, string $recurrenceUntil, array $shownRows): void
+    {
+        $startDate = Carbon::parse($event->start_date);
+        $endDate = Carbon::parse($event->end_date);
+        $untilDate = Carbon::parse($recurrenceUntil)->endOfDay();
+
+        $nextStart = $startDate->copy()->addWeek();
+        $nextEnd = $endDate->copy()->addWeek();
+
+        $maxOccurrences = 104;
+        $iteration = 0;
+
+        while ($nextStart->lte($untilDate) && $iteration < $maxOccurrences) {
+            $occurrence = Event::create([
+                'user_id' => $event->user_id,
+                'establishment_id' => $event->establishment_id,
+                'target_group' => $event->target_group,
+                'type' => $event->type,
+                'title' => $event->title,
+                'description' => $event->description,
+                'content' => $event->content,
+                'start_date' => $nextStart->copy()->toDateTimeString(),
+                'end_date' => $nextEnd->copy()->toDateTimeString(),
+                'status' => $event->status ?: 'upcoming',
+                'is_recurring' => true,
+                'recurrence_frequency' => 'weekly',
+                'recurrence_until' => $event->recurrence_until,
+                'recurrence_parent_event_id' => $event->id,
+            ]);
+
+            if (!empty($shownRows)) {
+                $occurrenceShownRows = array_map(function ($row) use ($occurrence) {
+                    return [
+                        'event_id' => $occurrence->id,
+                        'user_id' => $row['user_id'],
+                        'establishment_id' => $row['establishment_id'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }, $shownRows);
+
+                EventShown::insert($occurrenceShownRows);
+            }
+
+            $nextStart->addWeek();
+            $nextEnd->addWeek();
+            $iteration++;
+        }
+    }
+    //
 
     public function handleCollabEvents(Request $request, int $establishmentId)
     {
@@ -337,6 +455,10 @@ class EventController extends Controller
 
 
         $visibleEventIds = EventShown::where('establishment_id', $establishmentId)
+
+                //SZAKKÖR MÓDOSÍTÁS
+                ->where('user_id', $user->id)
+                //
             ->distinct()
             ->pluck('event_id');
 
@@ -459,4 +581,59 @@ class EventController extends Controller
             'participant_count' => $attendingCount,
         ]);
     }
+
+    //SZAKKÖR MÓDOSÍTÁS
+    public function manageOccurrence(Request $request, int $eventId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'nem jogosult'], 401);
+        }
+
+        $event = Event::find($eventId);
+        if (!$event) {
+            return response()->json(['message' => 'Az esemény nem található.'], 404);
+        }
+
+        if ((int) $event->user_id !== (int) $user->id) {
+            return response()->json(['message' => 'Csak a létrehozó módosíthatja az alkalmat.'], 403);
+        }
+
+        $validated = $request->validate([
+            'action' => 'required|in:reschedule,cancel',
+            'start_date' => 'nullable|required_if:action,reschedule|date',
+            'end_date' => 'nullable|required_if:action,reschedule|date|after:start_date',
+        ], [
+            'action.required' => 'A művelet megadása kötelező.',
+            'action.in' => 'A művelet csak reschedule vagy cancel lehet.',
+            'start_date.required_if' => 'Áthelyezésnél új kezdési időpont szükséges.',
+            'start_date.date' => 'A kezdési időpont érvénytelen.',
+            'end_date.required_if' => 'Áthelyezésnél új befejezési időpont szükséges.',
+            'end_date.date' => 'A befejezési időpont érvénytelen.',
+            'end_date.after' => 'A befejezésnek későbbinek kell lennie, mint a kezdés.',
+        ]);
+
+        if ($validated['action'] === 'cancel') {
+            $event->status = 'ended';
+            $event->cancelled_at = now();
+            $event->save();
+
+            return response()->json([
+                'message' => 'Az alkalom elmaradtként jelölve.',
+            ]);
+        }
+
+        $event->start_date = $validated['start_date'];
+        $event->end_date = $validated['end_date'];
+        $event->status = 'upcoming';
+        $event->cancelled_at = null;
+        $event->save();
+
+        return response()->json([
+            'message' => 'Az alkalom időpontja sikeresen módosítva.',
+            'event' => $event,
+        ]);
+    }
 }
+//

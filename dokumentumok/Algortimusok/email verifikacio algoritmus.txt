@@ -1,0 +1,12 @@
+﻿ALGORITMUS: EmailVerifikacio
+
+RESZFOLYAMATOK:
+1. Verify link:
+   - ha mar verified, visszajelzes;
+   - kulonben markEmailAsVerified + Verified event.
+2. Ujrakuldes:
+   - nem verified usernek uj verifikacios email kuldese.
+3. Statusz:
+   - verified boolean visszaadasa.
+
+ALGORITMUS VEGE

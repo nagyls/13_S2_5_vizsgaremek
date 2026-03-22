@@ -5,7 +5,7 @@
       <div class="navigation">
         <button class="btn-back" @click="$router.back()">
           <i class='bx bx-arrow-back'></i>
-          <span><-- Vissza az eseményekhez</span>
+          <span><-- Vissza</span>
         </button>
       </div>
 
@@ -221,6 +221,48 @@
                 </button>
               </div>
             </div>
+
+            <div v-if="canManageOccurrence" class="info-card occurrence-manager">
+              <h3><i class='bx bx-wrench'></i> Alkalom kezelése</h3>
+              <p class="participation-description">Létrehozóként módosíthatod az adott alkalom időpontját, vagy elmaradtként törölheted.</p>
+
+              <div class="occurrence-form-grid">
+                <label>
+                  Kezdés
+                  <input type="datetime-local" v-model="occurrenceForm.startDateTime">
+                </label>
+                <label>
+                  Befejezés
+                  <input type="datetime-local" v-model="occurrenceForm.endDateTime">
+                </label>
+              </div>
+
+              <div class="occurrence-actions">
+                <button
+                  class="answer-button attending"
+                  :disabled="isUpdatingOccurrence"
+                  @click="rescheduleOccurrence"
+                >
+                  <i class='bx bx-time-five'></i>
+                  <div class="answer-content">
+                    <span class="answer-title">Időpont módosítása</span>
+                    <span class="answer-description">Az adott alkalom átütemezése</span>
+                  </div>
+                </button>
+
+                <button
+                  class="answer-button not-attending"
+                  :disabled="isUpdatingOccurrence"
+                  @click="cancelOccurrence"
+                >
+                  <i class='bx bx-calendar-x'></i>
+                  <div class="answer-content">
+                    <span class="answer-title">Alkalom elmarad</span>
+                    <span class="answer-description">Az adott alkalom törlése</span>
+                  </div>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -253,7 +295,12 @@ export default {
       notAttendingCount: 0,
       favoriteCount: 0,
       userParticipation: null,
-      studentHasClass: null
+      studentHasClass: null,
+      isUpdatingOccurrence: false,
+      occurrenceForm: {
+        startDateTime: '',
+        endDateTime: ''
+      }
     }
   },
   
@@ -265,6 +312,10 @@ export default {
   computed: {
     isFormal() {
       return this.currentUser?.role === 'admin' || this.currentUser?.role === 'teacher';
+    },
+
+    canManageOccurrence() {
+      return Number(this.currentUser?.id) > 0 && Number(this.eventData?.user_id) === Number(this.currentUser?.id)
     }
   },
   
@@ -329,6 +380,8 @@ export default {
         }
         
         this.eventData = foundEvent
+        this.occurrenceForm.startDateTime = this.toDateTimeLocalValue(foundEvent.start_date)
+        this.occurrenceForm.endDateTime = this.toDateTimeLocalValue(foundEvent.end_date)
         await Promise.all([
           this.loadStats(),
           this.loadParticipationStatus()
@@ -627,6 +680,133 @@ export default {
     copyLink() {
       navigator.clipboard.writeText(window.location.href)
       this.showMessage('Link másolva a vágólapra!', 'success')
+    },
+
+    toDateTimeLocalValue(dateString) {
+      if (!dateString) {
+        return ''
+      }
+
+      const normalized = String(dateString).trim().replace(' ', 'T')
+      const match = normalized.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/)
+
+      if (!match) {
+        return ''
+      }
+
+      return `${match[1]}T${match[2]}`
+    },
+
+    async rescheduleOccurrence() {
+      if (!this.canManageOccurrence) {
+        this.showMessage('Csak a létrehozó módosíthatja ezt az alkalmat.', 'warning')
+        return
+      }
+
+      if (!this.occurrenceForm.startDateTime || !this.occurrenceForm.endDateTime) {
+        this.showMessage('Add meg az új kezdési és befejezési időpontot.', 'warning')
+        return
+      }
+
+      if (new Date(this.occurrenceForm.startDateTime) >= new Date(this.occurrenceForm.endDateTime)) {
+        this.showMessage('A befejezés legyen későbbi, mint a kezdés.', 'warning')
+        return
+      }
+
+      const token = this.getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      this.isUpdatingOccurrence = true
+
+      try {
+        const response = await axios.patch(
+          `http://127.0.0.1:8000/api/events/${this.eventId}/occurrence`,
+          {
+            action: 'reschedule',
+            start_date: this.occurrenceForm.startDateTime,
+            end_date: this.occurrenceForm.endDateTime
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+              'Content-Type': 'application/json'
+            },
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          const message = response?.data?.message || 'Nem sikerült átütemezni az alkalmat.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        this.showMessage(response?.data?.message || 'Alkalom időpontja módosítva.', 'success')
+        await this.loadEvent()
+      } catch (error) {
+        console.error('Átütemezési hiba:', error)
+        this.showMessage('Hiba történt az alkalom módosításakor.', 'error')
+      } finally {
+        this.isUpdatingOccurrence = false
+      }
+    },
+
+    async cancelOccurrence() {
+      if (!this.canManageOccurrence) {
+        this.showMessage('Csak a létrehozó törölheti ezt az alkalmat.', 'warning')
+        return
+      }
+
+      const confirmCancel = await toast.confirm('Biztosan elmaradtként jelölöd ezt az alkalmat?', {
+        confirmText: 'Igen, elmarad',
+        cancelText: 'Mégse'
+      })
+      if (!confirmCancel) {
+        return
+      }
+
+      const token = this.getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      this.isUpdatingOccurrence = true
+
+      try {
+        const response = await axios.patch(
+          `http://127.0.0.1:8000/api/events/${this.eventId}/occurrence`,
+          { action: 'cancel' },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+              'Content-Type': 'application/json'
+            },
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          const message = response?.data?.message || 'Nem sikerült elmaradtként jelölni az alkalmat.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        this.showMessage(response?.data?.message || 'Az alkalom elmaradtként jelölve.', 'success')
+        setTimeout(() => {
+          this.$router.push('/events-list')
+        }, 900)
+      } catch (error) {
+        console.error('Alkalom törlési hiba:', error)
+        this.showMessage('Hiba történt az alkalom törlésekor.', 'error')
+      } finally {
+        this.isUpdatingOccurrence = false
+      }
     },
     
     formatDate(dateString) {
@@ -1163,6 +1343,33 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.occurrence-manager .occurrence-form-grid {
+  display: grid;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.occurrence-manager .occurrence-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  color: #475569;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.occurrence-manager .occurrence-form-grid input {
+  border: 1px solid #dbe3f0;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.92rem;
+}
+
+.occurrence-manager .occurrence-actions {
+  display: grid;
+  gap: 0.7rem;
 }
 
 .answer-button {

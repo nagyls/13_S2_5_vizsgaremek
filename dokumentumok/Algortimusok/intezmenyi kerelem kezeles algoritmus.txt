@@ -1,0 +1,21 @@
+﻿ALGORITMUS: IntezmenyiKerelemKezeles
+
+BEMENET:
+- establishment_id
+- action: accept vagy reject
+- request_id[]
+
+LEPESEK:
+1. Input validacio.
+2. Admin jogosultsag ellenorzese.
+3. Csak az adott intezmenyhez tartozo requestek feldolgozasa.
+4. Ha accept:
+   - teacher -> Staff rekord letrehozasa,
+   - student -> Student rekord letrehozasa,
+   - user.establishment_id frissitese,
+   - request torlese.
+5. Ha reject:
+   - requestek torlese.
+6. Valasz: accepted/rejected darabszam.
+
+ALGORITMUS VEGE

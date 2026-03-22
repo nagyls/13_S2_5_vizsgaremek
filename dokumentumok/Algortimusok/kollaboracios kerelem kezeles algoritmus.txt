@@ -1,0 +1,16 @@
+﻿ALGORITMUS: KollabKerelemKezelese
+
+BEMENET:
+- establishmentId
+- event_id
+- action: accept vagy reject
+
+LEPESEK:
+1. Auth + admin jogosultsag ellenorzese.
+2. event_id es action validalasa.
+3. Tranzakcio:
+   - EventRequest torles az adott intezmenyre,
+   - ha accept: intezmeny tagok event_shown lathatosaganak letrehozasa.
+4. Valasz: "Muvelet vegrehajtva".
+
+ALGORITMUS VEGE
