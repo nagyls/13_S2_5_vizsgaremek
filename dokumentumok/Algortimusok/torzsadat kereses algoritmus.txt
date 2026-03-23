@@ -1,0 +1,12 @@
+﻿ALGORITMUS: TorzsadatKereses
+
+RESZFOLYAMATOK:
+1. Regiok listazasa es keresese.
+2. Jarasok listazasa es keresese (region_id szurovel).
+3. Telepulesek listazasa es keresese (inner_region_id szurovel).
+4. Intezmenyek listazasa:
+   - settlement_id vagy region_id alapu szures,
+   - opcionális title search.
+5. Sajat intezmenyek es intezmeny reszletek lekerdezese.
+
+ALGORITMUS VEGE

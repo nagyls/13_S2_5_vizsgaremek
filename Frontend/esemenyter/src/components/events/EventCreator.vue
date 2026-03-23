@@ -62,6 +62,15 @@
               </div>
             </label>
           </div>
+
+          <div class="recurrence-guide">
+            <i class='bx bx-info-circle'></i>
+            <span>
+              Ismétlődő (heti) eseményt az <strong>Iskolai szintű esemény</strong> kiválasztása után,
+              a <strong>3. lépésben</strong> tudsz bekapcsolni a
+              <strong>"Heti ismétlődő esemény"</strong> kapcsolóval.
+            </span>
+          </div>
         </div>
 
         <!-- 2. GLOBÁLIS ESEMÉNY - MEGYÉK KIVÁLASZTÁSA -->
@@ -99,25 +108,140 @@
             <i class='bx bx-check-circle'></i>
             <span>{{ selectedCountyIds.length }} vármegye kiválasztva</span>
           </div>
+
+          <div v-if="selectedCountyIds.length > 0 && isCheckingGlobalCollab" class="class-target-state">
+            Intézmények ellenőrzése a kiválasztott vármegyékben...
+          </div>
+
+          <div v-if="selectedCountyIds.length > 0 && !isCheckingGlobalCollab && globalCollabCount === 0" class="class-target-state warning">
+            A kiválasztott vármegyékben nem található másik intézmény. Válassz további vármegyét.
+          </div>
         </div>
 
-        <!-- 2. ISKOLAI ESEMÉNY - CÉLCSOPORT KIVÁLASZTÁSA -->
-        <div v-if="currentStep === 2 && selectedEventScope === 'school'" class="form-section">
+        <!-- 2. CÉLCSOPORT KIVÁLASZTÁSA -->
+        <div v-if="currentStep === 2" class="form-section">
           <h3><i class='bx bx-target-lock'></i> 2. Célcsoport kiválasztása</h3>
           
           <div class="target-group-selection">
             <div class="target-group-options">
-              <label v-for="target in schoolTargetOptions" 
+              <div v-for="target in schoolTargetOptions" 
                      :key="target.value"
                      class="target-group-option"
-                     :class="{ 'selected': selectedSchoolTargetGroup === target.value }">
-                <input type="radio" v-model="selectedSchoolTargetGroup" :value="target.value" hidden>
+                     :class="{ 'selected': selectedSchoolTargetGroup === target.value }"
+                     @click="selectSchoolTargetGroup(target.value)">
                 <div class="option-content">
                   <i :class="target.icon"></i>
                   <h4>{{ target.label }}</h4>
                   <p>{{ target.description }}</p>
                 </div>
-              </label>
+                <div
+                  v-if="selectedSchoolTargetGroup === target.value && target.value === 'osztaly_szintu'"
+                  class="target-selector-panel"
+                  @click.stop
+                >
+                  <div class="selector-toolbar">
+                    <div class="class-target-help">
+                      Válaszd ki a címzett osztályokat, vagy jelöld be egyszerre az összeset.
+                    </div>
+                    <div class="bulk-actions">
+                      <button type="button" class="selector-btn" @click="selectAllClasses">
+                        Összes osztály
+                      </button>
+                      <button type="button" class="selector-btn secondary" @click="clearSelectedClasses">
+                        Törlés
+                      </button>
+                    </div>
+                  </div>
+
+                  <div v-if="isLoadingClasses" class="class-target-state">
+                    Osztályok betöltése...
+                  </div>
+
+                  <div v-else-if="!institutionClasses.length" class="class-target-state warning">
+                    Nem található osztály az intézményben. Kérlek hozz létre legalább egy osztályt.
+                  </div>
+
+                  <div v-else class="class-target-grid">
+                    <label
+                      v-for="classItem in institutionClasses"
+                      :key="classItem.id"
+                      class="class-target-card"
+                      :class="{ selected: selectedClassIds.includes(Number(classItem.id)) }"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="selectedClassIds.includes(Number(classItem.id))"
+                        @change="toggleClassSelection(classItem.id)"
+                      >
+                      <div class="class-target-copy">
+                        <div class="class-target-title">{{ formatClassLabel(classItem) }}</div>
+                        <div class="class-target-meta">{{ classItem.student_count || 0 }} tanuló</div>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div v-if="selectedClassIds.length" class="selected-info compact">
+                    <i class='bx bx-check-circle'></i>
+                    <span>{{ selectedClassIds.length }} osztály kijelölve</span>
+                  </div>
+                </div>
+
+                <div
+                  v-if="selectedSchoolTargetGroup === target.value && target.value === 'evfolyam_szintu'"
+                  class="target-selector-panel"
+                  @click.stop
+                >
+                  <div class="selector-toolbar">
+                    <div class="class-target-help">
+                      Válaszd ki a címzett évfolyamokat, vagy jelöld be egyszerre az összeset.
+                    </div>
+                    <div class="bulk-actions">
+                      <button type="button" class="selector-btn" @click="selectAllGrades">
+                        Összes évfolyam
+                      </button>
+                      <button type="button" class="selector-btn secondary" @click="clearSelectedGrades">
+                        Törlés
+                      </button>
+                    </div>
+                  </div>
+
+                  <div v-if="isLoadingGrades" class="class-target-state">
+                    Évfolyamok betöltése...
+                  </div>
+
+                  <div v-else-if="!institutionGrades.length" class="class-target-state warning">
+                    Nem található évfolyam az intézményben.
+                  </div>
+
+                  <div v-else class="class-target-grid">
+                    <label
+                      v-for="gradeItem in institutionGrades"
+                      :key="gradeItem.grade"
+                      class="class-target-card"
+                      :class="{ selected: selectedGradeIds.includes(Number(gradeItem.grade)) }"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="selectedGradeIds.includes(Number(gradeItem.grade))"
+                        @change="toggleGradeSelection(gradeItem.grade)"
+                      >
+                      <div class="class-target-copy">
+                        <div class="class-target-title">{{ getGradeLabel(gradeItem.grade) }}</div>
+                        <div class="class-target-meta">{{ gradeItem.class_count || 0 }} osztály</div>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div v-if="selectedGradeIds.length" class="selected-info compact">
+                    <i class='bx bx-check-circle'></i>
+                    <span>{{ selectedGradeIds.length }} évfolyam kijelölve</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="selectedSchoolTargetGroup === 'teljes_iskola'" class="class-target-help success school-wide-info">
+              A teljes intézmény minden felhasználója megkapja az eseményt.
             </div>
           </div>
         </div>
@@ -125,6 +249,10 @@
         <!-- 3. ESEMÉNY ADATAI (közös rész) -->
         <div v-if="currentStep === 3" class="form-section">
           <h3><i class='bx bx-edit'></i> 3. Esemény adatai</h3>
+          <div v-if="selectedEventScope === 'school'" class="recurrence-guide compact">
+            <i class='bx bx-repeat'></i>
+            <span>Itt kapcsolhatod be az ismétlődést a "Heti ismétlődő esemény" opcióval.</span>
+          </div>
           <div class="event-form">
             <div class="form-group">
               <label>Cím *</label>
@@ -139,13 +267,70 @@
               <textarea v-model="eventForm.content" placeholder="Bővebb tartalom, instrukciók"></textarea>
             </div>
             <div class="form-row">
-              <div class="form-group">
+              <div v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)" class="form-group">
                 <label>Kezdés *</label>
-                <input type="datetime-local" v-model="eventForm.startDateTime" :min="todayMin" required>
+                <input type="date" v-model="eventForm.startDateTime" :min="todayMin" required>
               </div>
-              <div class="form-group">
+              <div v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)" class="form-group">
                 <label>Befejezés *</label>
-                <input type="datetime-local" v-model="eventForm.endDateTime" :min="eventForm.startDateTime || todayMin" required>
+                <input type="date" v-model="eventForm.endDateTime" :min="eventForm.startDateTime || todayMin" required>
+              </div>
+            </div>
+
+            <div v-if="selectedEventScope === 'school'" class="form-group recurrence-toggle">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="eventForm.isRecurring">
+                <span>Heti ismétlődő esemény (pl. szakkör)</span>
+              </label>
+              <p class="field-help">Bekapcsolás esetén a rendszer heti alkalmakat hoz létre, és a részvétel alkalmonként külön indul.</p>
+            </div>
+
+            <div v-if="selectedEventScope === 'school' && eventForm.isRecurring" class="recurrence-flow">
+              <div class="recurrence-step">
+                <label>1. Melyik nap legyen az esemény? *</label>
+                <select v-model="eventForm.recurrenceWeekday" required>
+                  <option v-for="option in recurrenceWeekdayOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="recurrence-step">
+                <label>2. Hánykor kezdődjön? *</label>
+                <input type="time" v-model="eventForm.recurrenceStartTime" required>
+              </div>
+
+              <div class="recurrence-step">
+                <label>3. Meddig tartson? (perc) *</label>
+                <input
+                  type="number"
+                  v-model.number="eventForm.recurrenceDurationMinutes"
+                  min="15"
+                  step="5"
+                  required
+                >
+              </div>
+
+              <div class="recurrence-step">
+                <label>4. Melyik dátumkor induljon az esemény? *</label>
+                <input
+                  type="date"
+                  v-model="eventForm.recurrenceStartDate"
+                  :min="todayMin.slice(0, 10)"
+                  required
+                >
+                <p class="field-help">A rendszer az első alkalmat a kiválasztott naphoz igazítja.</p>
+              </div>
+
+              <div class="recurrence-step">
+                <label>5. Meddig ismétlődjön az esemény? *</label>
+                <input
+                  type="date"
+                  v-model="eventForm.recurrenceUntil"
+                  :min="eventForm.recurrenceStartDate || todayMin.slice(0, 10)"
+                  required
+                >
+                <p class="field-help">Az esemény hetente ismétlődik a megadott dátumig.</p>
               </div>
             </div>
           </div>
@@ -170,12 +355,21 @@
                   {{ getSelectedCountyNames().join(', ') }}
                 </span>
               </div>
+              <div class="summary-item">
+                <strong>Célcsoport:</strong> {{ getSchoolTargetLabel(selectedSchoolTargetGroup) }}
+              </div>
+              <div v-if="selectedSchoolTargetGroup !== 'teljes_iskola'" class="summary-item">
+                <strong>Kijelölés:</strong> {{ selectedTargetSummary || 'Nincs kiválasztva' }}
+              </div>
             </template>
             
             <!-- Iskolai esemény részletei -->
             <template v-else>
               <div class="summary-item">
                 <strong>Célcsoport:</strong> {{ getSchoolTargetLabel(selectedSchoolTargetGroup) }}
+              </div>
+              <div v-if="selectedSchoolTargetGroup !== 'teljes_iskola'" class="summary-item">
+                <strong>Kijelölés:</strong> {{ selectedTargetSummary || 'Nincs kiválasztva' }}
               </div>
               <div class="summary-item">
                 <strong>Intézmény:</strong> {{ userInstitution.name }}
@@ -185,9 +379,34 @@
             <div class="summary-item">
               <strong>Cím:</strong> {{ eventForm.title || '(nincs megadva)' }}
             </div>
-            <div class="summary-item">
-              <strong>Időpont:</strong> {{ formatDateTime(eventForm.startDateTime) }} - {{ formatDateTime(eventForm.endDateTime) }}
-            </div>
+            <template v-if="selectedEventScope === 'school' && eventForm.isRecurring">
+              <div class="summary-item">
+                <strong>Nap:</strong> {{ getWeekdayLabel(eventForm.recurrenceWeekday) }}
+              </div>
+              <div class="summary-item">
+                <strong>Kezdés:</strong> {{ eventForm.recurrenceStartTime || 'nincs megadva' }}
+              </div>
+              <div class="summary-item">
+                <strong>Első alkalom:</strong> {{ formatDateTime(buildRecurringStartDateTime()) }}
+              </div>
+              <div class="summary-item">
+                <strong>Alkalom vége:</strong> {{ formatDateTime(buildRecurringEndDateTime()) }}
+              </div>
+              <div class="summary-item">
+                <strong>Időtartam:</strong> {{ eventForm.recurrenceDurationMinutes }} perc
+              </div>
+              <div class="summary-item">
+                <strong>Ismétlődés:</strong> Hetente, {{ formatDateTime(eventForm.recurrenceUntil + 'T00:00') }} dátumig
+              </div>
+            </template>
+            <template v-else>
+              <div class="summary-item">
+                <strong>Kezdés:</strong> {{ formatDateTime(eventForm.startDateTime) }}
+              </div>
+              <div class="summary-item">
+                <strong>Befejezés:</strong> {{ formatDateTime(eventForm.endDateTime) }}
+              </div>
+            </template>
           </div>
         </div>
 
@@ -212,46 +431,60 @@
 </template>
 
 <script>
-import axios from 'axios';
+import axios from 'axios'
 import { toast } from '../../services/toast'
 
 export default {
   name: 'EsemenyKeszito',
-  
+
   data() {
     return {
-      // FELHASZNÁLÓ ADATAI
       userRole: 'student',
+      currentUserId: null,
       userInstitution: {
-        id: 1,
+        id: null,
         name: 'Kossuth Lajos Gimnázium',
-        countyId: 1
+        countyId: null
       },
       userCountyId: 1,
-      
-      // LÉPTETŐ ADATOK
+      institutionUserIds: [],
+      institutionClasses: [],
+      institutionGrades: [],
+      selectedClassIds: [],
+      selectedGradeIds: [],
+      isLoadingClasses: false,
+      isLoadingGrades: false,
       currentStep: 1,
       isSubmitting: false,
-      todayMin: new Date().toISOString().slice(0, 16),
-      
-      // ESEMÉNY SZINT
+      todayMin: new Date().toISOString().slice(0, 10),
       selectedEventScope: 'school',
-      
-      // GLOBÁLIS ESEMÉNY ADATOK
       selectedCountyIds: [],
+      globalCollabCount: 0,
+      globalCollabIds: [],
+      isCheckingGlobalCollab: false,
       countiesList: [],
-      
-      // ISKOLAI ESEMÉNY ADATOK
-      selectedSchoolTargetGroup: 'sajat_osztaly',
-      
-      // ESEMÉNY ADATOK
+      selectedSchoolTargetGroup: 'osztaly_szintu',
       eventForm: {
         title: '',
         description: '',
         content: '',
         startDateTime: '',
-        endDateTime: ''
+        endDateTime: '',
+        isRecurring: false,
+        recurrenceWeekday: '1',
+        recurrenceStartTime: '',
+        recurrenceStartDate: '',
+        recurrenceUntil: '',
+        recurrenceDurationMinutes: 90
       },
+
+      recurrenceWeekdayOptions: [
+        { value: '1', label: 'Hétfő' },
+        { value: '2', label: 'Kedd' },
+        { value: '3', label: 'Szerda' },
+        { value: '4', label: 'Csütörtök' },
+        { value: '5', label: 'Péntek' }
+      ],
       
       // KONFIGURÁCIÓK
       steps: [
@@ -260,35 +493,38 @@ export default {
         { number: 3, label: 'Adatok' },
         { number: 4, label: 'Létrehozás' }
       ],
-      
       schoolTargetOptions: [
-        { 
-          value: 'sajat_osztaly', 
-          label: 'Saját osztály', 
-          icon: 'bx bx-user', 
-          description: 'Csak a saját osztályod diákjai és tanárai látják' 
+        {
+          value: 'osztaly_szintu',
+          label: 'Osztály szintű',
+          icon: 'bx bx-user',
+          description: 'A kijelölt osztályok diákjai és osztályfőnökei látják'
         },
-        { 
-          value: 'evfolyam', 
-          label: 'Évfolyam szintű', 
-          icon: 'bx bx-group', 
-          description: 'A saját osztályod és az évfolyam többi osztálya' 
+        {
+          value: 'evfolyam_szintu',
+          label: 'Évfolyam szintű',
+          icon: 'bx bx-group',
+          description: 'A kijelölt évfolyamok összes osztálya megkapja'
         },
-        { 
-          value: 'teljes_iskola', 
-          label: 'Teljes iskola', 
-          icon: 'bx bx-building-house', 
-          description: 'Az iskolában lévő összes felhasználó látja' 
+        {
+          value: 'teljes_iskola',
+          label: 'Teljes iskola',
+          icon: 'bx bx-building-house',
+          description: 'Az iskolában lévő összes felhasználó látja'
         }
       ]
     }
   },
-  
+
   computed: {
     hasPermission() {
-      return ['admin', 'teacher', 'institution_manager'].includes(this.userRole)
+      return ['admin', 'teacher'].includes(this.userRole)
     },
-    
+
+    canCreateGlobalEvent() {
+      return this.userRole === 'admin'
+    },
+
     roleMessage() {
       if (this.userRole === 'teacher') {
         return 'Osztályfőnökként iskolai szintű eseményt hozhatsz létre'
@@ -296,96 +532,487 @@ export default {
       if (this.userRole === 'admin') {
         return 'Adminisztrátorként globális és iskolai eseményt is létrehozhatsz'
       }
-      if (this.userRole === 'institution_manager') {
-        return 'Intézményvezetőként iskolai szintű eseményt hozhatsz létre'
-      }
       return 'Nincs jogosultságod eseményt létrehozni'
     },
-    
+
     canProceed() {
       switch (this.currentStep) {
-        case 1: 
-          if (this.selectedEventScope === 'global' && this.userRole !== 'admin') {
+        case 1:
+          if (this.selectedEventScope === 'global' && !this.canCreateGlobalEvent) {
             return false
           }
           return this.selectedEventScope !== ''
-        
+
         case 2:
           if (this.selectedEventScope === 'global') {
-            return this.selectedCountyIds.length > 0
-          } else {
-            return this.selectedSchoolTargetGroup !== ''
+            if (this.selectedCountyIds.length === 0) {
+              return false
+            }
+
+            if (this.isCheckingGlobalCollab || this.globalCollabCount === 0) {
+              return false
+            }
+
+            if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
+              return true
+            }
+
+            if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+              return this.selectedClassIds.length > 0
+            }
+
+            if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+              return this.selectedGradeIds.length > 0
+            }
+
+            return false
           }
-        
+
+          if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
+            return true
+          }
+
+          if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+            return this.selectedClassIds.length > 0
+          }
+
+          if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+            return this.selectedGradeIds.length > 0
+          }
+
+          return false
+
         case 3:
           return this.validateEventForm()
-        
+
         default:
           return true
       }
     },
-    
+
     isFormValid() {
       return this.validateEventForm() && this.currentStep === 4
     },
-    
+
     counties() {
       return this.countiesList
+    },
+
+    availableClassIds() {
+      return this.institutionClasses
+        .map(classItem => Number(classItem?.id))
+        .filter(Number.isFinite)
+    },
+
+    availableGradeIds() {
+      return this.institutionGrades
+        .map(gradeItem => Number(gradeItem?.grade))
+        .filter(Number.isFinite)
+    },
+
+    selectedClassSummaries() {
+      return this.institutionClasses
+        .filter(classItem => this.selectedClassIds.includes(Number(classItem?.id)))
+        .map(classItem => this.formatClassLabel(classItem))
+    },
+
+    selectedGradeSummaries() {
+      return this.institutionGrades
+        .filter(gradeItem => this.selectedGradeIds.includes(Number(gradeItem?.grade)))
+        .map(gradeItem => this.getGradeLabel(gradeItem.grade))
+    },
+
+    selectedTargetSummary() {
+      if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
+        return 'Teljes intézmény'
+      }
+
+      if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+        return this.selectedClassSummaries.join(', ')
+      }
+
+      if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+        return this.selectedGradeSummaries.join(', ')
+      }
+
+      return ''
     }
   },
-  
+
   watch: {
-    // Ha az esemény szintje változik, reseteljük a megfelelő adatokat
     selectedEventScope(newValue) {
       if (newValue === 'global') {
+        this.selectedSchoolTargetGroup = 'teljes_iskola'
+        this.selectedClassIds = []
+        this.selectedGradeIds = []
+        this.eventForm.isRecurring = false
+        this.eventForm.recurrenceWeekday = '1'
+        this.eventForm.recurrenceStartTime = ''
+        this.eventForm.recurrenceStartDate = ''
+        this.eventForm.recurrenceUntil = ''
+
         if (!this.selectedCountyIds.includes(this.userCountyId)) {
           this.selectedCountyIds = [this.userCountyId]
+          // selectedCountyIds watcher will call refreshGlobalCollabCount()
+        } else {
+          this.refreshGlobalCollabCount()
         }
-      } else {
-        this.selectedSchoolTargetGroup = 'sajat_osztaly'
+
+        if (!this.institutionClasses.length) {
+          this.loadInstitutionClasses()
+        }
+        if (!this.institutionGrades.length) {
+          this.loadInstitutionGrades()
+        }
+        return
+      }
+
+      this.selectedSchoolTargetGroup = 'osztaly_szintu'
+      this.globalCollabCount = 0
+      this.globalCollabIds = []
+      this.isCheckingGlobalCollab = false
+      if (!this.institutionClasses.length) {
+        this.loadInstitutionClasses()
+      }
+      if (!this.institutionGrades.length) {
+        this.loadInstitutionGrades()
       }
     },
-    
-    // Saját megye mindig legyen kiválasztva globális eseménynél
+
     selectedCountyIds(newValue) {
-      if (this.selectedEventScope === 'global' && 
-          !newValue.includes(this.userCountyId)) {
+      if (this.selectedEventScope === 'global' && !newValue.includes(this.userCountyId)) {
         this.$nextTick(() => {
           this.selectedCountyIds = [this.userCountyId, ...newValue]
         })
+        return
+      }
+
+      if (this.selectedEventScope === 'global') {
+        this.refreshGlobalCollabCount()
+      }
+    },
+
+    selectedSchoolTargetGroup(newValue) {
+      if (newValue === 'osztaly_szintu' && !this.institutionClasses.length) {
+        this.loadInstitutionClasses()
+      }
+
+      if (newValue === 'evfolyam_szintu') {
+        if (!this.institutionClasses.length) {
+          this.loadInstitutionClasses()
+        }
+        if (!this.institutionGrades.length) {
+          this.loadInstitutionGrades()
+        }
+      }
+    },
+
+    institutionClasses(newValue) {
+      const validIds = new Set(
+        newValue.map(classItem => Number(classItem?.id)).filter(Number.isFinite)
+      )
+      this.selectedClassIds = this.selectedClassIds.filter(classId => validIds.has(classId))
+
+      if (!this.institutionGrades.length) {
+        this.institutionGrades = this.buildGradesFromClasses(newValue)
+      }
+    },
+
+    institutionGrades(newValue) {
+      const validIds = new Set(
+        newValue.map(gradeItem => Number(gradeItem?.grade)).filter(Number.isFinite)
+      )
+      this.selectedGradeIds = this.selectedGradeIds.filter(gradeId => validIds.has(gradeId))
+    },
+
+    'eventForm.isRecurring'(newValue) {
+      if (newValue) {
+        this.eventForm.endDateTime = ''
+        if (!this.eventForm.recurrenceStartDate) {
+          this.eventForm.recurrenceStartDate = this.todayMin.slice(0, 10)
+        }
+      } else {
+        this.eventForm.recurrenceStartTime = ''
+        this.eventForm.recurrenceStartDate = ''
+        this.eventForm.recurrenceUntil = ''
+      }
+    },
+
+    currentStep(newValue) {
+      if (newValue === 2 && (this.selectedEventScope === 'school' || this.selectedEventScope === 'global')) {
+        if (!this.institutionClasses.length) {
+          this.loadInstitutionClasses()
+        }
+        if (!this.institutionGrades.length) {
+          this.loadInstitutionGrades()
+        }
       }
     }
   },
-  
+
   created() {
     this.initialize()
   },
-  
+
   methods: {
-    initialize() {
+    async refreshGlobalCollabCount() {
+      if (this.selectedEventScope !== 'global') {
+        this.globalCollabCount = 0
+        this.globalCollabIds = []
+        this.isCheckingGlobalCollab = false
+        return
+      }
+
+      if (!this.selectedCountyIds.length) {
+        this.globalCollabCount = 0
+        this.globalCollabIds = []
+        this.isCheckingGlobalCollab = false
+        return
+      }
+
+      this.isCheckingGlobalCollab = true
+
+      try {
+        const collabEstablishmentIds = await this.resolveCollabEstablishmentIdsByCounties(this.selectedCountyIds)
+        this.globalCollabIds = collabEstablishmentIds
+        this.globalCollabCount = collabEstablishmentIds.length
+      } catch (error) {
+        console.error('Kollaboráló intézmények ellenőrzési hiba:', error)
+        this.globalCollabCount = 0
+        this.globalCollabIds = []
+      } finally {
+        this.isCheckingGlobalCollab = false
+      }
+    },
+
+    normalizeNumericList(values) {
+      return Array.from(
+        new Set((values || []).map(value => Number(value)).filter(Number.isFinite))
+      )
+    },
+
+    async initialize() {
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token')
+
       try {
         const savedUser =
           localStorage.getItem('esemenyter_user') ||
           sessionStorage.getItem('esemenyter_user')
 
+        const savedInstitutionId =
+          localStorage.getItem('CurrentInstitution') ||
+          sessionStorage.getItem('CurrentInstitution')
+
+        let mergedUser = null
+
         if (savedUser) {
           const user = JSON.parse(savedUser)
+          mergedUser = { ...user }
           this.userRole = String(user?.role || 'student').toLowerCase()
+          this.currentUserId = Number(user?.id || 0) || null
 
-          if (user?.institution_id) {
-            this.userInstitution.id = Number(user.institution_id)
+          const userInstitutionId = Number(user?.institution_id || user?.establishment_id || 0)
+          const storageInstitutionId = Number(savedInstitutionId || 0)
+
+          if (storageInstitutionId > 0) {
+            this.userInstitution.id = storageInstitutionId
+          } else if (userInstitutionId > 0) {
+            this.userInstitution.id = userInstitutionId
+          }
+        }
+
+        if (token) {
+          const headers = {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json'
+          }
+
+          const [userResponse, roleResponse] = await Promise.all([
+            axios.get('http://127.0.0.1:8000/api/user', { headers }).catch(() => null),
+            axios.get('http://127.0.0.1:8000/api/establishment/role', { headers }).catch(() => null)
+          ])
+
+          const backendUser = userResponse?.data || {}
+          const backendRole = String(roleResponse?.data?.role || '').toLowerCase()
+
+          if (backendRole) {
+            this.userRole = backendRole
+          }
+
+          if (Number(backendUser?.id) > 0) {
+            this.currentUserId = Number(backendUser.id)
+          }
+
+          const backendInstitutionId = Number(backendUser?.establishment_id || 0)
+          if (backendInstitutionId > 0 && !Number(savedInstitutionId || 0)) {
+            this.userInstitution.id = backendInstitutionId
+          }
+
+          if (mergedUser) {
+            mergedUser = {
+              ...mergedUser,
+              id: this.currentUserId || mergedUser.id,
+              role: this.userRole,
+              institution_id: Number(this.userInstitution.id) || null
+            }
+
+            if (localStorage.getItem('esemenyter_token')) {
+              localStorage.setItem('esemenyter_user', JSON.stringify(mergedUser))
+            } else {
+              sessionStorage.setItem('esemenyter_user', JSON.stringify(mergedUser))
+            }
           }
         }
       } catch (error) {
         console.error('Felhasználó inicializálási hiba:', error)
       }
 
-      if (this.userRole !== 'admin') {
+      if (!this.canCreateGlobalEvent) {
         this.selectedEventScope = 'school'
       }
 
-      this.loadCounties()
-      this.loadInstitutionData()
+      await this.loadInstitutionData()
+      await this.loadCounties()
+      await this.loadInstitutionUsers()
+    },
+
+    buildGradesFromClasses(classes) {
+      const gradeMap = new Map()
+
+      for (const classItem of classes || []) {
+        const grade = Number(classItem?.grade)
+        if (!Number.isFinite(grade)) {
+          continue
+        }
+
+        gradeMap.set(grade, (gradeMap.get(grade) || 0) + 1)
+      }
+
+      return Array.from(gradeMap.entries())
+        .map(([grade, classCount]) => ({
+          grade,
+          class_count: classCount
+        }))
+        .sort((left, right) => left.grade - right.grade)
+    },
+
+    async loadInstitutionClasses() {
+      try {
+        const institutionId = Number(this.userInstitution.id)
+        if (!institutionId) {
+          this.institutionClasses = []
+          return
+        }
+
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token')
+
+        if (!token) {
+          this.institutionClasses = []
+          return
+        }
+
+        this.isLoadingClasses = true
+
+        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/classes`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        })
+
+        this.institutionClasses = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : []
+      } catch (error) {
+        console.error('Osztályok betöltési hiba:', error)
+        this.institutionClasses = []
+      } finally {
+        this.isLoadingClasses = false
+      }
+    },
+
+    async loadInstitutionGrades() {
+      try {
+        const institutionId = Number(this.userInstitution.id)
+        if (!institutionId) {
+          this.institutionGrades = []
+          return
+        }
+
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token')
+
+        if (!token) {
+          this.institutionGrades = this.buildGradesFromClasses(this.institutionClasses)
+          return
+        }
+
+        this.isLoadingGrades = true
+
+        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/grades`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        })
+
+        const grades = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : []
+
+        this.institutionGrades = grades.length
+          ? grades
+          : this.buildGradesFromClasses(this.institutionClasses)
+      } catch (error) {
+        console.error('Évfolyamok betöltési hiba:', error)
+        this.institutionGrades = this.buildGradesFromClasses(this.institutionClasses)
+      } finally {
+        this.isLoadingGrades = false
+      }
+    },
+
+    async loadInstitutionUsers() {
+      try {
+        const institutionId = Number(this.userInstitution.id)
+        if (!institutionId) {
+          this.institutionUserIds = this.currentUserId ? [this.currentUserId] : []
+          return
+        }
+
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token')
+
+        if (!token) {
+          this.institutionUserIds = this.currentUserId ? [this.currentUserId] : []
+          return
+        }
+
+        const [studentsResponse, staffResponse] = await Promise.all([
+          axios.get(`http://127.0.0.1:8000/api/members/students/${institutionId}`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+          }).catch(() => ({ data: { data: [] } })),
+          axios.get(`http://127.0.0.1:8000/api/members/staff/${institutionId}`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+          }).catch(() => ({ data: { data: [] } }))
+        ])
+
+        const studentIds = Array.isArray(studentsResponse?.data?.data)
+          ? studentsResponse.data.data.map(item => Number(item?.id)).filter(Number.isFinite)
+          : []
+        const staffIds = Array.isArray(staffResponse?.data?.data)
+          ? staffResponse.data.data.map(item => Number(item?.id)).filter(Number.isFinite)
+          : []
+
+        const merged = new Set([...studentIds, ...staffIds])
+        if (this.currentUserId) {
+          merged.add(Number(this.currentUserId))
+        }
+
+        this.institutionUserIds = Array.from(merged)
+      } catch (error) {
+        console.error('Intézményi felhasználók betöltési hiba:', error)
+        this.institutionUserIds = this.currentUserId ? [this.currentUserId] : []
+      }
     },
 
     async loadInstitutionData() {
@@ -418,9 +1045,154 @@ export default {
           name: institution.title || institution.name || this.userInstitution.name,
           countyId: Number(institution.region_id || this.userInstitution.countyId || 1)
         }
+
+        this.userCountyId = Number(this.userInstitution.countyId) || this.userCountyId
       } catch (error) {
         console.error('Intézmény betöltési hiba:', error)
       }
+    },
+
+    selectSchoolTargetGroup(value) {
+      this.selectedSchoolTargetGroup = value
+    },
+
+    selectAllClasses() {
+      this.selectedClassIds = [...this.availableClassIds]
+    },
+
+    clearSelectedClasses() {
+      this.selectedClassIds = []
+    },
+
+    toggleClassSelection(classId) {
+      const normalizedClassId = Number(classId)
+      if (!Number.isFinite(normalizedClassId)) {
+        return
+      }
+
+      if (this.selectedClassIds.includes(normalizedClassId)) {
+        this.selectedClassIds = this.selectedClassIds.filter(item => item !== normalizedClassId)
+        return
+      }
+
+      this.selectedClassIds = [...this.selectedClassIds, normalizedClassId].sort((left, right) => left - right)
+    },
+
+    selectAllGrades() {
+      this.selectedGradeIds = [...this.availableGradeIds]
+    },
+
+    clearSelectedGrades() {
+      this.selectedGradeIds = []
+    },
+
+    toggleGradeSelection(grade) {
+      const normalizedGrade = Number(grade)
+      if (!Number.isFinite(normalizedGrade)) {
+        return
+      }
+
+      if (this.selectedGradeIds.includes(normalizedGrade)) {
+        this.selectedGradeIds = this.selectedGradeIds.filter(item => item !== normalizedGrade)
+        return
+      }
+
+      this.selectedGradeIds = [...this.selectedGradeIds, normalizedGrade].sort((left, right) => left - right)
+    },
+
+    formatClassLabel(classItem) {
+      const grade = Number(classItem?.grade)
+      const className = String(classItem?.name || '').trim()
+
+      if (Number.isFinite(grade) && className) {
+        return `${grade}.${className}`
+      }
+
+      return className || `Osztály #${classItem?.id ?? '?'}`
+    },
+
+    getGradeLabel(grade) {
+      return `${Number(grade)}. évfolyam`
+    },
+
+    async fetchClassMemberUserIdsInMass(classIds, token) {
+      const institutionId = Number(this.userInstitution.id)
+      const normalizedClassIds = this.normalizeNumericList(classIds)
+
+      if (!institutionId || !normalizedClassIds.length) {
+        return []
+      }
+
+      const response = await axios.get(
+        `http://127.0.0.1:8000/api/establishment/${institutionId}/classes/members`,
+        {
+          params: { class_ids: normalizedClassIds },
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        }
+      )
+
+      const payload = response?.data || {}
+      const mergedIds = Array.isArray(payload?.user_ids) && payload.user_ids.length
+        ? payload.user_ids
+        : [...(payload?.student_ids || []), ...(payload?.teacher_ids || [])]
+
+      return this.normalizeNumericList(mergedIds)
+    },
+
+    async fetchGradeMemberUserIdsInMass(gradeIds, token) {
+      const institutionId = Number(this.userInstitution.id)
+      const normalizedGradeIds = this.normalizeNumericList(gradeIds)
+
+      if (!institutionId || !normalizedGradeIds.length) {
+        return []
+      }
+
+      const response = await axios.get(
+        `http://127.0.0.1:8000/api/establishment/${institutionId}/grades/members`,
+        {
+          params: { grade_ids: normalizedGradeIds },
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        }
+      )
+
+      const payload = response?.data || {}
+      const mergedIds = Array.isArray(payload?.user_ids) && payload.user_ids.length
+        ? payload.user_ids
+        : [...(payload?.student_ids || []), ...(payload?.teacher_ids || [])]
+
+      return this.normalizeNumericList(mergedIds)
+    },
+
+    async resolveLocalTargetUserIds(token) {
+      if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
+        return this.normalizeNumericList(this.institutionUserIds)
+      }
+
+      if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+        if (!this.selectedClassIds.length) {
+          throw new Error('Legalább egy osztályt ki kell választani.')
+        }
+
+        const userIds = await this.fetchClassMemberUserIdsInMass(this.selectedClassIds, token)
+        return this.normalizeNumericList([
+          ...userIds,
+          ...(this.currentUserId ? [this.currentUserId] : [])
+        ])
+      }
+
+      if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+        if (!this.selectedGradeIds.length) {
+          throw new Error('Legalább egy évfolyamot ki kell választani.')
+        }
+
+        const userIds = await this.fetchGradeMemberUserIdsInMass(this.selectedGradeIds, token)
+        return this.normalizeNumericList([
+          ...userIds,
+          ...(this.currentUserId ? [this.currentUserId] : [])
+        ])
+      }
+
+      return this.normalizeNumericList(this.institutionUserIds)
     },
 
     async loadCounties() {
@@ -437,7 +1209,7 @@ export default {
           return
         }
 
-        this.countiesList = apiCounties.map((county) => ({
+        this.countiesList = apiCounties.map(county => ({
           id: Number(county.id),
           name: county.title || county.name || county.nev || `Vármegye #${county.id}`,
           schoolCount: Number(county.iskolakSzama || county.schools_count || 0)
@@ -446,39 +1218,175 @@ export default {
         console.error('Megyék betöltési hiba:', error)
       }
     },
-    
+
+    async resolveCollabEstablishmentIdsByCounties(countyIds) {
+      const normalizedCountyIds = Array.from(
+        new Set((countyIds || []).map(id => Number(id)).filter(Number.isFinite))
+      )
+
+      if (!normalizedCountyIds.length) {
+        return []
+      }
+
+      const sourceEstablishmentId = Number(this.userInstitution.id)
+
+      const responses = await Promise.all(
+        normalizedCountyIds.map(countyId =>
+          axios.get('http://127.0.0.1:8000/api/establishments', {
+            params: { region_id: countyId },
+            headers: { Accept: 'application/json' }
+          }).catch(() => ({ data: { data: [] } }))
+        )
+      )
+
+      return Array.from(new Set(
+        responses.flatMap(response =>
+          (Array.isArray(response?.data?.data) ? response.data.data : [])
+            .map(item => Number(item?.id))
+            .filter(Number.isFinite)
+        )
+      )).filter(id => id !== sourceEstablishmentId)
+    },
+
     getEventScopeLabel(scope) {
       const labels = {
-        'global': 'Globális esemény',
-        'school': 'Iskolai esemény'
+        global: 'Globális esemény',
+        school: 'Iskolai esemény'
       }
       return labels[scope] || scope
     },
-    
+
     getSchoolTargetLabel(targetGroup) {
       const target = this.schoolTargetOptions.find(option => option.value === targetGroup)
       return target ? target.label : targetGroup
     },
-    
+
     getSelectedCountyNames() {
-      return this.selectedCountyIds.map((id) => {
+      return this.selectedCountyIds.map(id => {
         const county = this.counties.find(item => item.id === id)
         return county ? county.name : id
       })
     },
-    
+
     validateEventForm() {
-      const { title, description, startDateTime, endDateTime } = this.eventForm
-      
-      return title && title.trim() !== '' && 
-             description && description.trim() !== '' && 
-             startDateTime && startDateTime !== '' && 
-             endDateTime && endDateTime !== '' &&
-             new Date(startDateTime) <= new Date(endDateTime)
+      const {
+        title,
+        description,
+        startDateTime,
+        endDateTime,
+        isRecurring,
+        recurrenceWeekday,
+        recurrenceStartTime,
+        recurrenceStartDate,
+        recurrenceUntil,
+        recurrenceDurationMinutes
+      } = this.eventForm
+
+      const hasCommonFields =
+        title && title.trim() !== '' &&
+        description && description.trim() !== ''
+
+      if (!hasCommonFields) {
+        return false
+      }
+
+      const isSchoolRecurring = this.selectedEventScope === 'school' && isRecurring
+
+      if (isSchoolRecurring) {
+        const weekday = Number(recurrenceWeekday)
+        const weekdayValid = Number.isFinite(weekday) && weekday >= 1 && weekday <= 5
+        const startTimeValid = Boolean(recurrenceStartTime)
+        const startDateValid = Boolean(recurrenceStartDate)
+        const duration = Number(recurrenceDurationMinutes)
+        const durationValid = Number.isFinite(duration) && duration >= 15
+        const recurrenceDateValid = recurrenceUntil && recurrenceUntil !== '' && recurrenceStartDate && new Date(`${recurrenceUntil}T23:59:59`) >= new Date(`${recurrenceStartDate}T00:00:00`)
+        return weekdayValid && startTimeValid && startDateValid && durationValid && recurrenceDateValid
+      }
+
+      if (!startDateTime || startDateTime === '') {
+        return false
+      }
+
+      return endDateTime && endDateTime !== '' && new Date(startDateTime) <= new Date(endDateTime)
     },
-    
+
+    getWeekdayLabel(weekdayValue) {
+      const found = this.recurrenceWeekdayOptions.find(option => Number(option.value) === Number(weekdayValue))
+      return found?.label || 'Ismeretlen nap'
+    },
+
+    buildRecurringStartDateTime() {
+      const { recurrenceStartDate, recurrenceStartTime, recurrenceWeekday } = this.eventForm
+
+      if (!recurrenceStartDate || !recurrenceStartTime) {
+        return ''
+      }
+
+      const [hours, minutes] = String(recurrenceStartTime).split(':').map(Number)
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+        return ''
+      }
+
+      const targetWeekday = Number(recurrenceWeekday)
+      if (!Number.isFinite(targetWeekday)) {
+        return ''
+      }
+
+      const firstDate = new Date(`${recurrenceStartDate}T00:00:00`)
+      if (Number.isNaN(firstDate.getTime())) {
+        return ''
+      }
+
+      const currentWeekday = ((firstDate.getDay() + 6) % 7) + 1
+      const dayOffset = (targetWeekday - currentWeekday + 7) % 7
+      firstDate.setDate(firstDate.getDate() + dayOffset)
+      firstDate.setHours(hours, minutes, 0, 0)
+
+      const year = firstDate.getFullYear()
+      const month = String(firstDate.getMonth() + 1).padStart(2, '0')
+      const day = String(firstDate.getDate()).padStart(2, '0')
+      const hh = String(firstDate.getHours()).padStart(2, '0')
+      const mm = String(firstDate.getMinutes()).padStart(2, '0')
+
+      return `${year}-${month}-${day}T${hh}:${mm}`
+    },
+
+    buildRecurringEndDateTime() {
+      const startDateTime = this.buildRecurringStartDateTime()
+      const duration = Number(this.eventForm.recurrenceDurationMinutes)
+
+      if (!startDateTime || !Number.isFinite(duration) || duration < 15) {
+        return ''
+      }
+
+      const startDate = new Date(startDateTime)
+      if (Number.isNaN(startDate.getTime())) {
+        return ''
+      }
+
+      const endDate = new Date(startDate.getTime() + (duration * 60 * 1000))
+      const year = endDate.getFullYear()
+      const month = String(endDate.getMonth() + 1).padStart(2, '0')
+      const day = String(endDate.getDate()).padStart(2, '0')
+      const hours = String(endDate.getHours()).padStart(2, '0')
+      const minutes = String(endDate.getMinutes()).padStart(2, '0')
+
+      return `${year}-${month}-${day}T${hours}:${minutes}`
+    },
+
     formatDateTime(dateTime) {
-      if (!dateTime) return 'nincs megadva'
+      if (!dateTime) {
+        return 'nincs megadva'
+      }
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateTime)) {
+        return new Date(`${dateTime}T00:00:00`).toLocaleDateString('hu-HU', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        })
+      }
+
       const date = new Date(dateTime)
       return date.toLocaleString('hu-HU', {
         year: 'numeric',
@@ -488,22 +1396,36 @@ export default {
         minute: '2-digit'
       })
     },
-    
-    nextStep() {
-      if (this.currentStep < 4 && this.canProceed) {
-        this.currentStep++
+
+    async nextStep() {
+      if (!(this.currentStep < 4 && this.canProceed)) {
+        return
       }
+
+      if (this.currentStep === 2 && this.selectedEventScope === 'global') {
+        if (!this.globalCollabIds.length) {
+          toast.warning('A kiválasztott vármegyékből nem találtunk más intézményt. Válassz további vármegyét.')
+          return
+        }
+      }
+
+      this.currentStep++
     },
-    
+
     previousStep() {
       if (this.currentStep > 1) {
         this.currentStep--
       }
     },
-  
+
     async createEvent() {
       if (!this.isFormValid) {
         toast.warning('Kérjük, töltsd ki az összes kötelező mezőt!')
+        return
+      }
+
+      if (this.selectedEventScope === 'global' && !this.canCreateGlobalEvent) {
+        toast.error('Nincs jogosultságod globális esemény létrehozására.')
         return
       }
 
@@ -520,25 +1442,103 @@ export default {
           return
         }
 
-        // Adatok összeállítása a backend elvárásai szerint
+        const establishmentId = Number(this.userInstitution.id)
+        if (!establishmentId) {
+          toast.error('Hiányzó intézmény azonosító. Frissítsd az oldalt és próbáld újra.')
+          return
+        }
+
+        if (!this.institutionUserIds.length) {
+          await this.loadInstitutionUsers()
+        }
+
+        if (!this.institutionUserIds.length) {
+          toast.error('Nem sikerült betölteni az intézmény felhasználóit.')
+          return
+        }
+
+        const resolvedStartDateTime =
+          this.selectedEventScope === 'school' && this.eventForm.isRecurring
+            ? this.buildRecurringStartDateTime()
+            : this.eventForm.startDateTime
+
+        const resolvedEndDateTime =
+          this.selectedEventScope === 'school' && this.eventForm.isRecurring
+            ? this.buildRecurringEndDateTime()
+            : this.eventForm.endDateTime
+
         const payload = {
           title: this.eventForm.title,
           description: this.eventForm.description,
           content: this.eventForm.content,
-          start_date: this.eventForm.startDateTime,
-          end_date: this.eventForm.endDateTime,
-          type: this.selectedEventScope === 'global' ? 'global' : 'local'
+          start_date: resolvedStartDateTime,
+          end_date: resolvedEndDateTime,
+          type: this.selectedEventScope === 'global' ? 'global' : 'local',
+          establishment_id: establishmentId
         }
 
         if (this.selectedEventScope === 'global') {
-          payload.counties = this.selectedCountyIds
-        } 
-        else {
+          const collabEstablishmentIds = this.globalCollabIds
+
+          if (!collabEstablishmentIds.length) {
+            toast.warning('A kiválasztott vármegyékből nem találtunk más intézményt. Válassz további vármegyét.')
+            return
+          }
+
+          payload.collab_establishment_ids = collabEstablishmentIds
+
           payload.target_group = this.selectedSchoolTargetGroup
-          payload.institution_id = this.userInstitution.id
+
+          if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+            payload.selected_class_ids = this.normalizeNumericList(this.selectedClassIds)
+          }
+
+          if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+            payload.selected_grade_ids = this.normalizeNumericList(this.selectedGradeIds)
+          }
+
+          if (this.eventForm.isRecurring) {
+            payload.is_recurring = true
+            payload.recurrence_frequency = 'weekly'
+            payload.recurrence_until = this.eventForm.recurrenceUntil
+          }
+
+          await this.loadInstitutionClasses()
+          await this.loadInstitutionGrades()
+
+          const localTargetUserIds = await this.resolveLocalTargetUserIds(token)
+
+          if (!localTargetUserIds.length) {
+            toast.warning('A kiválasztott célcsoporthoz nem találtunk címzett felhasználót.')
+            return
+          }
+
+          payload.users = localTargetUserIds
+        } else {
+          payload.target_group = this.selectedSchoolTargetGroup
+
+          if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+            payload.selected_class_ids = this.normalizeNumericList(this.selectedClassIds)
+          }
+
+          if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+            payload.selected_grade_ids = this.normalizeNumericList(this.selectedGradeIds)
+          }
+
+          await this.loadInstitutionClasses()
+          await this.loadInstitutionGrades()
+
+          const localTargetUserIds = await this.resolveLocalTargetUserIds(token)
+
+          if (!localTargetUserIds.length) {
+            toast.warning('A kiválasztott célcsoporthoz nem találtunk címzett felhasználót.')
+            return
+          }
+
+          payload.users = localTargetUserIds
         }
 
-        await axios.post('http://127.0.0.1:8000/api/events', payload, {
+        await axios.post('http://127.0.0.1:8000/api/establishment/events', payload, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',
@@ -548,7 +1548,6 @@ export default {
 
         toast.success('Esemény sikeresen létrehozva!')
         this.$router.push('/events-list')
-
       } catch (error) {
         console.error('Hiba az esemény létrehozásakor:', error)
 
@@ -557,6 +1556,8 @@ export default {
         } else if (error.response?.data?.errors) {
           const errors = Object.values(error.response.data.errors).flat()
           toast.error('Hiba: ' + errors.join(' '))
+        } else if (error.message) {
+          toast.error('Hiba: ' + error.message)
         } else {
           toast.error('Ismeretlen hiba történt')
         }
@@ -831,6 +1832,30 @@ export default {
   box-sizing: border-box;
 }
 
+.recurrence-guide {
+  margin-top: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #ecfeff;
+  border: 1px solid #a5f3fc;
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.recurrence-guide i {
+  color: #0891b2;
+  font-size: 18px;
+  margin-top: 1px;
+}
+
+.recurrence-guide.compact {
+  margin: 0 0 14px;
+}
+
 .type-option, .target-group-option {
   border: 1px solid #e2e8f0;
   border-radius: 20px;
@@ -852,6 +1877,12 @@ export default {
   border-color: #667eea;
   background: linear-gradient(135deg, #eef2ff 0%, #ede9fe 100%);
   box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.2);
+}
+
+.target-group-option {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .option-content {
@@ -1030,6 +2061,158 @@ export default {
   border-radius: 12px;
 }
 
+.target-selector-panel {
+  border-top: 1px solid rgba(99, 102, 241, 0.2);
+  padding-top: 18px;
+}
+
+.selector-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.selector-btn {
+  border: 1px solid #c7d2fe;
+  background: white;
+  color: #4338ca;
+  border-radius: 12px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.selector-btn:hover {
+  background: #eef2ff;
+  border-color: #818cf8;
+}
+
+.selector-btn.secondary {
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.selector-btn.secondary:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.class-target-dashboard {
+  margin-top: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 18px;
+  background: #f8fafc;
+}
+
+.class-target-dashboard h4 {
+  margin: 0 0 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+.class-target-state {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 14px;
+}
+
+.class-target-state.warning {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.class-target-help {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #dbeafe;
+  color: #1e3a8a;
+  font-size: 14px;
+}
+
+.class-target-help.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.class-target-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.class-target-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.class-target-card:hover {
+  border-color: #94a3b8;
+}
+
+.class-target-card.selected {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 1px #4f46e5;
+  background: #eef2ff;
+}
+
+.class-target-card input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #4f46e5;
+  cursor: pointer;
+}
+
+.class-target-copy {
+  flex: 1;
+}
+
+.class-target-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.class-target-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.selected-info.compact {
+  margin-top: 12px;
+  padding: 12px 14px;
+}
+
+.school-wide-info {
+  margin-top: 16px;
+}
+
 /* FORM ELEMEK */
 .event-form {
   margin-top: 24px;
@@ -1050,7 +2233,7 @@ export default {
   letter-spacing: 0.3px;
 }
 
-.form-group input, .form-group textarea {
+.form-group input, .form-group textarea, .form-group select {
   width: 100%;
   padding: 14px 16px;
   border: 1px solid #e2e8f0;
@@ -1062,7 +2245,7 @@ export default {
   background: #f8fafc;
 }
 
-.form-group input:focus, .form-group textarea:focus {
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
   outline: none;
   border-color: #667eea;
   background: white;
@@ -1078,6 +2261,64 @@ export default {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+  box-sizing: border-box;
+}
+
+.recurrence-toggle {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.field-help {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.recurrence-flow {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.recurrence-step {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.recurrence-step label {
+  display: block;
+  margin-bottom: 8px;
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.recurrence-step input,
+.recurrence-step select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 14px;
+  background: #ffffff;
   box-sizing: border-box;
 }
 
@@ -1440,6 +2681,19 @@ export default {
     flex-direction: column;
     gap: 10px;
   }
+
+  .selector-toolbar {
+    flex-direction: column;
+  }
+
+  .bulk-actions {
+    width: 100%;
+  }
+
+  .selector-btn {
+    flex: 1;
+    text-align: center;
+  }
   
   .btn {
     width: 100%;
@@ -1448,8 +2702,12 @@ export default {
 }
 
 @media (min-width: 769px) {
-  .type-selection, .target-group-options {
+  .type-selection {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .target-group-options {
+    grid-template-columns: 1fr;
   }
   
   .form-actions .btn {

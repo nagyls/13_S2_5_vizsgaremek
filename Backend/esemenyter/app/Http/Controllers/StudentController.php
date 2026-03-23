@@ -10,6 +10,9 @@ use App\Models\ClassStudent;
 use Illuminate\Http\Request;
 use App\Models\ClassModel;
 use App\Models\Student;
+use App\Models\Event;
+use App\Models\EventShown;
+use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
@@ -82,6 +85,10 @@ class StudentController extends Controller
                 'user_id' => $userId, 
                 'class_id' => $classId
             ]);
+        }
+
+        if (!empty($toInsert)) {
+            $this->retroactiveEventShow($establishmentId, $classId, $toInsert);
         }
 
         if (!empty($alreadyExists)) {
@@ -206,5 +213,121 @@ class StudentController extends Controller
         return response()->json([
             'message' => 'Diák(ok) eltávolítva az osztályból!'
         ]);
+    }
+
+    public function updateClassStudents(Request $request, int $establishmentId, int $classId)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'add' => 'array',
+            'add.*' => 'integer|exists:students,id',
+            'remove' => 'array',
+            'remove.*' => 'integer|exists:students,id',
+        ]);
+
+        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
+
+        $class = ClassModel::find($classId);
+        if (!$class || $class->establishment_id != $establishmentId) {
+            return response()->json(['errors' => 'Az osztály nem tartozik az intézményhez!'], 400);
+        }
+
+        $adds = $validated['add'] ?? [];
+        $removes = $validated['remove'] ?? [];
+
+        // validate adds belong to establishment
+        if (!empty($adds)) {
+            $validAddIds = Student::whereIn('id', $adds)->where('establishment_id', $establishmentId)->pluck('id')->toArray();
+            if (count($validAddIds) !== count($adds)) {
+                $invalid = array_diff($adds, $validAddIds);
+                return response()->json(['errors' => 'Hibás hozzáadott diák ID: ' . implode(', ', $invalid)], 400);
+            }
+        }
+
+        if (!empty($removes)) {
+            $validRemoveIds = Student::whereIn('id', $removes)->where('establishment_id', $establishmentId)->pluck('id')->toArray();
+            if (count($validRemoveIds) !== count($removes)) {
+                $invalid = array_diff($removes, $validRemoveIds);
+                return response()->json(['errors' => 'Hibás eltávolítandó diák ID: ' . implode(', ', $invalid)], 400);
+            }
+        }
+
+        DB::transaction(function () use ($adds, $removes, $classId) {
+            if (!empty($adds)) {
+                $userIds = Student::whereIn('id', $adds)->pluck('user_id')->toArray();
+
+                $already = ClassStudent::where('class_id', $classId)->whereIn('user_id', $userIds)->pluck('user_id')->toArray();
+                $toInsert = array_diff($userIds, $already);
+
+                foreach ($toInsert as $userId) {
+                    ClassStudent::create(['user_id' => $userId, 'class_id' => $classId]);
+                }
+
+                if (!empty($toInsert)) {
+                    $class = ClassModel::find($classId);
+                    if ($class) {
+                        $this->retroactiveEventShow((int) $class->establishment_id, (int) $classId, $toInsert);
+                    }
+                }
+            }
+
+            if (!empty($removes)) {
+                $userIdsToRemove = Student::whereIn('id', $removes)->pluck('user_id')->toArray();
+                ClassStudent::where('class_id', $classId)->whereIn('user_id', $userIdsToRemove)->delete();
+            }
+        });
+
+        return response()->json(['message' => 'Osztály tagság frissítve']);
+    }
+
+    private function retroactiveEventShow(int $establishmentId, int $classId, array $userIds): void
+    {
+        $class = ClassModel::find($classId);
+        if (!$class) {
+            return;
+        }
+
+        $normalizedUserIds = collect($userIds)
+            ->map(fn($id) => (int) $id)
+            ->filter(fn($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($normalizedUserIds->isEmpty()) {
+            return;
+        }
+
+        $targetedEventIds = Event::query()
+            ->where('type', 'local')
+            ->where('establishment_id', $establishmentId)
+            ->where(function ($query) use ($classId, $class) {
+                $query->where('target_group', 'teljes_iskola')
+                    ->orWhere(function ($subQuery) use ($classId) {
+                            $subQuery->whereIn('target_group', ['osztaly_szintu', 'sajat_osztaly'])
+                                ->whereJsonContains('target_class_ids', $classId);
+                    })
+                    ->orWhere(function ($subQuery) use ($class) {
+                        $subQuery->whereIn('target_group', ['evfolyam_szintu', 'evfolyam'])
+                            ->whereJsonContains('target_grade_ids', (int) $class->grade);
+                    });
+            })
+            ->pluck('id');
+
+        if ($targetedEventIds->isEmpty()) {
+            return;
+        }
+
+        foreach ($targetedEventIds as $eventId) {
+            foreach ($normalizedUserIds as $userId) {
+                EventShown::firstOrCreate([
+                    'event_id' => (int) $eventId,
+                    'user_id' => (int) $userId,
+                    'establishment_id' => (int) $establishmentId,
+                ]);
+            }
+        }
     }
 }

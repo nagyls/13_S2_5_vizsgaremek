@@ -1,155 +1,28 @@
-ALGORITMUS: Esemény létrehozás
+﻿ALGORITMUS: EsemenyLetrehozas
 
-TÍPUS: Intezmeny
-    Egész: id
-    Szöveg: title
-    Szöveg: settlementTitle   // település neve
-    Szöveg: innerRegionTitle  // járás
-    Szöveg: regionTitle       // megye
-TÍPUS VÉGE
+BEMENET (KOZOS):
+- type: local vagy global
+- establishment_id
+- title, description, content
+- start_date, end_date (end_date > start_date)
 
-VÁLTOZÓK:
-    Integer: currentUserId
-    Integer: establishmentId
-    Integer: ujEventId
-	 
-    List<Integer>: elerhetoOsztalyokIds := ÜRES_LISTA
-    List<Integer>: valasztottOsztalyokIds := ÜRES_LISTA
-	Lista<Intezmeny>: selectedEstablishments := ÜRES_LISTA
-	
-	StringArray: userRole[2] := ["sdmin","teacher"]
-	StringArray: status[2] := ["open","closed"]
-    StringArray: eventType[2] := ["local","global"]
-	
-    String: title := ""
-    String: description := ""
-    String: content := ""
+BEMENET (FELTETELES):
+- local: target_group, users[]
+- global: collab_establishment_ids[] (legalabb 1)
 
-    DateTime: startDate
-    DateTime: endDate
+LEPESEK:
+1. Auth user ellenorzese.
+2. Bemenet validalasa.
+3. Ha type=local:
+   - csak staff hozhat letre sajat intezmenyben.
+   - event letrehozas tranzakcioban.
+   - event_shown rekordok: keszito + ervenyesen kivalsztott users.
+4. Ha type=global:
+   - csak admin hozhat letre sajat intezmenyben.
+   - collab_establishment_ids kotelezo.
+   - event letrehozas tranzakcioban.
+   - sajat intezmeny tagjainak lathatosag beallitasa event_shown-ban.
+   - kollaboralo intezmenyekhez event_request rekordok letrehozasa.
+5. Valasz: 201, "Esemeny letrehozva" + event.
 
-    Adatbázis tábla: personnel, class, event, event_shown_to, establishment, settlement, inner_region, region
-    Adat: talalatPersonnel
-    Adat: talalatClassLista
-	
-	
-
-ciklus amíg (igaz)
-
-    currentUserId := LEKERDEZ(user_id)
-
-    talalatPersonnel := LEKERDEZ(
-        "SELECT role, establishment_id
-         FROM personnel
-         WHERE user_id = currentUserId"
-    )
-
-    HA talalatPersonnel = ÜRES:
-        KILÉP AZ ALGORITMUSBÓL
-    KÜLÖNBEN
-        userRole := talalatPersonnel.role
-        establishmentId := talalatPersonnel.establishment_id
-
-    HA userRole = "admin":
-        talalatClassLista := LEKERDEZ(
-            "SELECT id
-             FROM class
-             WHERE establishment_id = establishmentId"
-        )
-    KÜLÖNBEN HA userRole = "teacher":
-        talalatClassLista := LEKERDEZ(
-            "SELECT id
-             FROM class
-             WHERE establishment_id = establishmentId
-        )
-   
-
-    HA talalatClassLista = ÜRES:
-        KIÍR "Nincs egyetlen osztály sem."
-        KILÉP AZ ALGORITMUSBÓL
-
-    elerhetoOsztalyokIds := LISTA_KÉSZÍTÉSE(talalatClassLista.id)
-
-    ciklus, amíg NEM(
-        title <> ÜRES ÉS
-        description <> ÜRES ÉS
-        content <> ÜRES ÉS
-        eventType ∈ {"local","global"} ÉS
-        startDate ÉRVÉNYES ÉS
-        endDate ÉRVÉNYES ÉS
-        startDate <= endDate ÉS
-        (eventType = "global" VAGY (eventType = "local" ÉS valasztottOsztalyokIds NEM_ÜRES)) ÉS
-        MINDEN_ELEM(valasztottOsztalyokIds BENNE_VAN elerhetoOsztalyokIds)
-     )
-
-        BE: eventType [legördülő: "local" / "global"]
-        BE: title [cím Stringdoboz]
-        BE: description [rövid leírás Stringdoboz]
-        BE: content [részletes tartalom Stringdoboz]
-        BE: startDate [dátum-idő mező]
-        BE: endDate [dátum-idő mező]
-
-        HA eventType = "local":
-            BE: valasztottOsztalyokIds [jelölőnégyzet lista az elerhetoOsztalyokIds alapján]
-        KÜLÖNBEN HA eventType = "global":
-
-            valasztottOsztalyokIds := LISTA_MÁSOLÁSA(elerhetoOsztalyokIds)
-        ELÁG VÉGE
-
-        HA title = ÜRES VAGY description = ÜRES VAGY content = ÜRES:
-            KIÍR "Minden mező kitöltése kötelező!"
-
-        HA NEM(eventType = "local" VAGY eventType = "global"):
-            KIÍR "Az esemény típusának 'local' vagy 'global' értékűnek kell lennie!"
-
-        HA NEM(ÉRVÉNYES_DÁTUM(startDate) ÉS ÉRVÉNYES_DÁTUM(endDate)):
-            KIÍR "Érvénytelen dátumformátum!"
-
-        HA startDate > endDate:
-            KIÍR "A kezdő dátum nem lehet későbbi, mint a záró dátum!"
-
-        HA eventType = "local" ÉS valasztottOsztalyokIds = ÜRES_LISTA:
-            KIÍR "Helyi esemény esetén legalább egy osztályt ki kell választani!"
-
-        HA VAN_NEM_ENGEDÉLYEZETT_OSZTÁLY(valasztottOsztalyokIds, elerhetoOsztalyokIds):
-            KIÍR "Csak az Önhöz tartozó osztályok választhatók ki!"
-
-    ciklus vége
-
-    HA endDate < MOST():
-        status := "closed"
-    KÜLÖNBEN:
-        status := "open"
-
-    TRANZAKCIÓ_KEZD()
-
-    PRÓBÁLD
-        BESZÚR(
-            "INSERT INTO event
-             (type, title, description, content, user_id, start_date, end_date, status, created_at)
-             VALUES
-             (eventType, title, description, content, currentUserId, startDate, endDate, status, MOST())"
-        )
-
-        ujEventId := LEKERDEZ("SELECT LAST_INSERT_ID()")
-
-        Ciklus MINDEN classId ∈ valasztottOsztalyokIds
-            BESZÚR(
-                "INSERT INTO event_shown_to (event_id, user_id, class_id)
-                 VALUES (ujEventId, NULL, classId)"
-            )
-        Ciklus vége
-
-        TRANZAKCIÓ_ELKÖTELEZ()
-
-    ELKAP HIBA
-        TRANZAKCIÓ_VISSZAVON()
-        KIÍR "Hiba történt az esemény mentése közben. Kérjük, próbálja meg újra!"
-        FOLYTATÁS_KÖVETKEZŐ_KÖRRE
-    PRÓBA VÉGE
-
-    KIÍR "Az esemény sikeresen létrejött."
-    BREAK
-
-ciklus vége
-ALGORITMUS vége
+ALGORITMUS VEGE

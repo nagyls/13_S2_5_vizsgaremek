@@ -120,30 +120,12 @@
       </div>
     </div>
 
-    <!-- Hibaüzenet -->
-    <transition name="slide-up">
-      <div v-if="hibaUzenet" class="hiba-banner">
-        <div class="hiba-tartalom">
-          <i class='bx bx-error-circle'></i>
-          <span>{{ hibaUzenet }}</span>
-        </div>
-        <button @click="hibaUzenet = ''" class="hiba-bezaras">
-          <i class='bx bx-x'></i>
-        </button>
-      </div>
-    </transition>
-
-    <!-- Sikeres mentés jelzése -->
-    <transition name="fade">
-      <div v-if="sikeresMentes" class="siker-banner">
-        <i class='bx bx-check-circle'></i>
-        <span>Komment sikeresen elküldve!</span>
-      </div>
-    </transition>
   </div>
 </template>
 
 <script>
+import { toast } from '../../services/toast'
+
 export default {
   name: 'KommentBox',
 
@@ -162,16 +144,14 @@ export default {
     return {
       osszesKomment: [],
       kommentSzoveg: '',
-      betoltesKozben: false,
-      hibaUzenet: '',
-      sikeresMentes: false
+      betoltesKozben: false
     }
   },
 
   computed: {
     isFormal() {
       const user = this.$store?.state?.user || {};
-      return user.role === 'admin' || user.role === 'teacher' || user.role === 'institution_manager';
+      return user.role === 'admin' || user.role === 'teacher';
     },
     felhasznaloInitial() {
       if (!this.aktualisFelhasznalo) return '?'
@@ -205,11 +185,10 @@ export default {
     async kommentekBetoltese() {
       try {
         this.betoltesKozben = true
-        this.hibaUzenet = ''
         this.osszesKomment = await this.kommentekLekerese(this.esemenyId)
       } catch (hiba) {
         console.error('Hiba a kommentek betöltésekor:', hiba)
-        this.hibaUzenet = 'Nem sikerült betölteni a kommenteket.'
+        toast.error('Nem sikerült betölteni a kommenteket.')
       } finally {
         this.betoltesKozben = false
       }
@@ -231,18 +210,17 @@ export default {
       const tisztitottSzoveg = this.kommentSzoveg.trim()
 
       if (tisztitottSzoveg === '') {
-        this.hibaUzenet = 'A komment nem lehet üres!'
+        toast.warning('A komment nem lehet üres!')
         return
       }
 
       if (tisztitottSzoveg.length > 500) {
-        this.hibaUzenet = 'A komment maximum 500 karakter hosszú lehet!'
+        toast.warning('A komment maximum 500 karakter hosszú lehet!')
         return
       }
 
       try {
         this.betoltesKozben = true
-        this.hibaUzenet = ''
 
         const ujKomment = {
           event_id: this.esemenyId,
@@ -257,16 +235,12 @@ export default {
         if (mentettKomment) {
           this.osszesKomment.push(mentettKomment)
           this.kommentSzoveg = ''
-          this.sikeresMentes = true
           this.$emit('komment-sikeres', mentettKomment)
-
-          setTimeout(() => {
-            this.sikeresMentes = false
-          }, 3000)
+          toast.success('Komment sikeresen elküldve!')
         }
       } catch (hiba) {
         console.error('Hiba a komment mentésekor:', hiba)
-        this.hibaUzenet = 'Hiba történt a komment küldésekor. Próbáld újra!'
+        toast.error('Hiba történt a komment küldésekor. Próbáld újra!')
       } finally {
         this.betoltesKozben = false
       }
@@ -287,7 +261,12 @@ export default {
     },
 
     async kommentTorles(kommentId) {
-      if (!confirm('Biztosan törölni szeretnéd ezt a kommentet?')) {
+      const confirmed = await toast.confirm('Biztosan törölni szeretnéd ezt a kommentet?', {
+        cancelText: 'Mégse',
+        confirmText: 'Igen'
+      })
+
+      if (!confirmed) {
         return
       }
 
@@ -297,10 +276,11 @@ export default {
         const kommentek = JSON.parse(localStorage.getItem('esemeny_kommentek') || '[]')
         const frissitettKommentek = kommentek.filter(k => k.id !== kommentId)
         localStorage.setItem('esemeny_kommentek', JSON.stringify(frissitettKommentek))
+        toast.success('Komment törölve.')
 
       } catch (hiba) {
         console.error('Hiba a komment törlésekor:', hiba)
-        this.hibaUzenet = 'Nem sikerült törölni a kommentet.'
+        toast.error('Nem sikerült törölni a kommentet.')
       }
     },
 
@@ -746,108 +726,6 @@ export default {
   color: #718096;
 }
 
-/* Hiba és siker banner */
-.hiba-banner,
-.siker-banner {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  border-radius: 16px;
-  background: white;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  min-width: 300px;
-  animation: slideInRight 0.3s ease-out;
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.hiba-banner {
-  background: #fff5f5;
-  border-left: 4px solid #c53030;
-}
-
-.siker-banner {
-  background: #f0fff4;
-  border-left: 4px solid #2f855a;
-}
-
-.hiba-tartalom {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.hiba-banner i {
-  color: #c53030;
-  font-size: 1.25rem;
-}
-
-.siker-banner i {
-  color: #2f855a;
-  font-size: 1.25rem;
-}
-
-.hiba-banner span,
-.siker-banner span {
-  color: #2d3748;
-  font-size: 0.95rem;
-}
-
-.hiba-bezaras {
-  background: transparent;
-  border: none;
-  color: #718096;
-  cursor: pointer;
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  transition: all 0.3s;
-}
-
-.hiba-bezaras:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #2d3748;
-}
-
-/* Animációk */
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
 /* Responsive design */
 @media (max-width: 768px) {
   .komment-iras-tarolo {
@@ -886,13 +764,6 @@ export default {
     align-self: flex-end;
   }
   
-  .hiba-banner,
-  .siker-banner {
-    left: 1rem;
-    right: 1rem;
-    min-width: auto;
-    bottom: 1rem;
-  }
 }
 
 @media (max-width: 480px) {

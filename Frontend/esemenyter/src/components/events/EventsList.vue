@@ -4,7 +4,9 @@
       <div class="container">
         <div class="header-content">
           <div class="logo-title" @click="$router.push('/user-dashboard')">
-            <i class='bx bx-calendar-heart'></i>
+            <div class="logo-icon">
+              <img :src="logo2" alt="EseményTér logó" class="logo-image">
+            </div>
             <div class="logo-text">
               <h1 class="site-title">EseményTér</h1>
               <p class="site-subtitle">Ahol minden esemény helyet kap</p>
@@ -81,6 +83,12 @@
             </div>
             <h1 class="hero-title">Fedezd fel az eseményeket</h1>
             <p class="hero-description">Csatlakozz iskolád eseményeihez, vagy fedezz fel globális programokat.</p>
+            <div class="hero-actions">
+              <router-link to="/events-calendar" class="hero-calendar-btn">
+                <i class='bx bx-calendar-week'></i>
+                Naptár nézet
+              </router-link>
+            </div>
           </div>
         </div>
 
@@ -116,17 +124,18 @@
         </div>
 
         <!-- Szűrők és keresés -->
-        <div class="filters-section">
-          <div class="filter-header">
-            <h3><i class='bx bx-filter-alt'></i> Szűrők és rendezés</h3>
+        <div class="filters-section compact">
+          <div class="filter-header compact">
+            <h3><i class='bx bx-filter-alt'></i> <span class="filter-label">Szűrés:</span></h3>
             <button v-if="hasActiveFilters" class="clear-button" @click="clearFilters">
-              <i class='bx bx-reset'></i> Szűrők törlése
+              <i class='bx bx-reset'></i>
+              <span>Szűrők törlése</span>
             </button>
           </div>
           
-          <div class="filter-row">
-            <div class="filter-group">
-              <label><i class='bx bx-world'></i> Típus:</label>
+          <div class="filter-row compact">
+            <div class="filter-group inline">
+              <label class="inline-label"><i class='bx bx-world'></i></label>
               <div class="chip-container">
                 <button 
                   class="chip" 
@@ -152,8 +161,8 @@
               </div>
             </div>
             
-            <div class="filter-group">
-              <label><i class='bx bx-calendar'></i> Állapot:</label>
+            <div class="filter-group inline">
+              <label class="inline-label"><i class='bx bx-calendar'></i></label>
               <div class="chip-container">
                 <button 
                   class="chip" 
@@ -179,8 +188,8 @@
               </div>
             </div>
             
-            <div class="filter-group sorting">
-              <label><i class='bx bx-sort'></i> Rendezés:</label>
+            <div class="filter-group inline sorting">
+              <label class="inline-label"><i class='bx bx-sort'></i></label>
               <div class="sorting-buttons">
                 <button 
                   class="sorting-button" 
@@ -246,6 +255,10 @@
               <div class="card-content">
                 <h3>{{ event.title }}</h3>
                 <p class="description">{{ event.description }}</p>
+                <div v-if="event.is_recurring" class="recurring-note">
+                  <i class='bx bx-repeat'></i>
+                  <span>Heti ismétlődő alkalom</span>
+                </div>
                 
                 <div class="meta-info">
                   <div class="meta-row">
@@ -260,20 +273,15 @@
               </div>
               
               <div class="card-footer">
-                <div class="stats">
-                  <div class="stat-item" title="Résztvevők">
-                    <i class='bx bx-user-check'></i>
-                    <span>{{ event.participants || 0 }}</span>
-                  </div>
-                  <div class="stat-item" title="Kedvencek">
-                    <i class='bx bx-star'></i>
-                    <span>{{ event.favorites || 0 }}</span>
-                  </div>
-                  <div class="stat-item" title="Hozzászólások">
-                    <i class='bx bx-message-square-detail'></i>
-                    <span>{{ event.comment_count || 0 }}</span>
-                  </div>
-                </div>
+                <button
+                  class="favourite-toggle"
+                  :class="{ active: event.is_favourite, loading: isFavouriteLoading(event.id) }"
+                  :disabled="isFavouriteLoading(event.id)"
+                  :title="event.is_favourite ? 'Eltávolítás a kedvencekből' : 'Hozzáadás a kedvencekhez'"
+                  @click="toggleFavourite(event)"
+                >
+                  <i class='bx' :class="event.is_favourite ? 'bxs-star' : 'bx-star'"></i>
+                </button>
                 
                 <router-link 
                   :to="`/esemenyek/${event.id}`" 
@@ -300,16 +308,19 @@
 
 <script>
 import axios from 'axios';
+import logo2 from '../../assets/logo2.svg';
 
 export default {
   name: 'EsemenyekLista',
   
   data() {
     return {
+      logo2,
       events: [],
       isLoading: true,
       currentUser: null,
       showUserMenu: false,
+      favouriteLoadingById: {},
       filters: {
         type: '',
         status: '',
@@ -346,8 +357,7 @@ export default {
       const roles = {
         'student': 'Diák',
         'teacher': 'Tanár',
-        'admin': 'Admin',
-        'institution_manager': 'Intézményvezető'
+        'admin': 'Admin'
       };
       return roles[this.normalizedRole] || 'Vendég';
     },
@@ -357,11 +367,11 @@ export default {
     },
     
     totalParticipants() {
-      return this.events.reduce((accumulator, event) => accumulator + (event.participants || 0), 0);
+      return this.events.reduce((accumulator, event) => accumulator + (event.attending_count ?? event.participants ?? 0), 0);
     },
     
     canCreateEvent() {
-      return ['teacher', 'admin', 'institution_manager'].includes(this.normalizedRole);
+      return ['teacher', 'admin'].includes(this.normalizedRole);
     },
     
     hasActiveFilters() {
@@ -487,12 +497,119 @@ export default {
 
       return {
         ...event,
+        id: Number(event?.id),
+        is_recurring: Boolean(event?.is_recurring),
+        recurrence_parent_event_id: event?.recurrence_parent_event_id ? Number(event?.recurrence_parent_event_id) : null,
         status: normalizedStatus,
         creator_name: creatorName,
         participants: Number(event?.participants || event?.participant_count || 0),
+        attending_count: Number(event?.attending_count || event?.participants || event?.participant_count || 0),
+        not_attending_count: Number(event?.not_attending_count || 0),
         favorites: Number(event?.favorites || event?.favorite_count || 0),
-        comment_count: Number(event?.comment_count || event?.comments_count || 0)
+        comment_count: Number(event?.comment_count || event?.comments_count || 0),
+        is_favourite: Boolean(event?.is_favourite)
       };
+    },
+
+    isFavouriteLoading(eventId) {
+      return Boolean(this.favouriteLoadingById[eventId]);
+    },
+
+    async toggleFavourite(event) {
+      if (!event?.id || this.isFavouriteLoading(event.id)) {
+        return;
+      }
+
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      this.favouriteLoadingById = {
+        ...this.favouriteLoadingById,
+        [event.id]: true
+      };
+
+      try {
+        const response = await axios.patch(
+          `http://127.0.0.1:8000/api/events/${event.id}/favourite`,
+          {},
+          {
+            headers: {
+              Accept: 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            }
+          }
+        );
+
+        if (response.status >= 200 && response.status < 300) {
+          event.is_favourite = !event.is_favourite;
+        }
+      } catch (error) {
+        console.error('Hiba a kedvenc jelölés mentésekor:', error);
+      } finally {
+        const { [event.id]: _ignored, ...rest } = this.favouriteLoadingById;
+        this.favouriteLoadingById = rest;
+      }
+    },
+
+    collapseRecurringSeries(events) {
+      const now = Date.now();
+      const groupedRecurring = new Map();
+      const standalone = [];
+
+      const buildRecurringFallbackKey = (event) => {
+        const startValue = String(event?.start_date || '');
+        const timeMatch = startValue.match(/(\d{2}:\d{2})/);
+        const startTime = timeMatch ? timeMatch[1] : '00:00';
+
+        return [
+          Number(event?.user_id || 0),
+          Number(event?.establishment_id || 0),
+          String(event?.title || '').trim().toLowerCase(),
+          String(event?.recurrence_frequency || ''),
+          String(event?.recurrence_until || ''),
+          startTime
+        ].join('|');
+      };
+
+      events.forEach((event) => {
+        if (!event?.is_recurring) {
+          standalone.push(event);
+          return;
+        }
+
+        const seriesKey = event?.recurrence_parent_event_id
+          ? `parent:${Number(event.recurrence_parent_event_id)}`
+          : `fallback:${buildRecurringFallbackKey(event)}`;
+
+        if (!groupedRecurring.has(seriesKey)) {
+          groupedRecurring.set(seriesKey, []);
+        }
+
+        groupedRecurring.get(seriesKey).push(event);
+      });
+
+      const recurringRepresentatives = Array.from(groupedRecurring.values()).map((seriesEvents) => {
+        const validEvents = seriesEvents.filter(item => !Number.isNaN(new Date(item?.start_date).getTime()));
+        if (!validEvents.length) {
+          return seriesEvents[0];
+        }
+
+        const upcoming = validEvents
+          .filter(item => new Date(item.start_date).getTime() >= now)
+          .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+
+        if (upcoming.length) {
+          return upcoming[0];
+        }
+
+        const latestPast = validEvents
+          .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+
+        return latestPast[0];
+      });
+
+      return [...standalone, ...recurringRepresentatives];
     },
 
     async fetchEventsFromApi() {
@@ -501,14 +618,13 @@ export default {
         sessionStorage.getItem('esemenyter_token');
 
       const institutionId = this.getCurrentInstitutionId();
-      const shouldUseInstitutionEndpoint =
-        ['student', 'teacher'].includes(this.normalizedRole) &&
-        Number.isFinite(Number(institutionId)) &&
-        Number(institutionId) > 0;
+      const normalizedInstitutionId = Number(institutionId);
 
-      const endpoint = shouldUseInstitutionEndpoint
-        ? `http://127.0.0.1:8000/api/establishment/${institutionId}/events`
-        : 'http://127.0.0.1:8000/api/events';
+      if (!Number.isFinite(normalizedInstitutionId) || normalizedInstitutionId <= 0) {
+        return [];
+      }
+
+      const endpoint = `http://127.0.0.1:8000/api/establishment/${normalizedInstitutionId}/events`;
 
       const response = await axios.get(endpoint, {
         headers: {
@@ -529,8 +645,12 @@ export default {
           ? data.events
           : [];
 
-      return incomingEvents
-        .map((event) => this.normalizeEventForList(event))
+      const normalizedEvents = incomingEvents
+        .map((event) => this.normalizeEventForList(event));
+
+      const collapsedEvents = this.collapseRecurringSeries(normalizedEvents);
+
+      return collapsedEvents
         .filter(event => {
           if (this.filters.type && event.type !== this.filters.type) return false;
           if (this.filters.status && event.status !== this.filters.status) return false;
@@ -614,13 +734,23 @@ export default {
   opacity: 0.8;
 }
 
-.logo-title i {
-  font-size: 32px;
-  color: #667eea;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.logo-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .site-title {
@@ -719,8 +849,7 @@ export default {
   color: #f97316;
 }
 
-.role-badge.admin,
-.role-badge.institution_manager {
+.role-badge.admin {
   background: rgba(139, 92, 246, 0.2);
   color: #8b5cf6;
 }
@@ -889,6 +1018,29 @@ export default {
   max-width: 600px;
 }
 
+.hero-actions {
+  margin-top: 1.25rem;
+}
+
+.hero-calendar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 0.85rem 1.2rem;
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(34, 197, 94, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-calendar-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(34, 197, 94, 0.45);
+}
+
 /* Statisztika kártyák (EventDetails-ből) */
 .stats-cards {
   display: grid;
@@ -949,131 +1101,201 @@ export default {
 .filters-section {
   background: white;
   border-radius: 24px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.filters-section.compact {
+  padding: 1rem;
 }
 
 .filter-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid #f0f0f0;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.filter-header.compact {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
 }
 
 .filter-header h3 {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1a202c;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
   margin: 0;
+}
+
+.filter-label {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .filter-label {
+    display: inline;
+  }
 }
 
 .filter-header h3 i {
   color: #667eea;
+  font-size: 1.1rem;
 }
 
 .clear-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: #ffebee;
+  padding: 0.6rem 1.2rem;
+  background: #fee2e2;
   border: none;
   border-radius: 50px;
-  color: #ef4444;
-  font-size: 0.875rem;
-  font-weight: 500;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .clear-button:hover {
-  background: #ef4444;
+  background: #dc2626;
   color: white;
 }
 
 .filter-row {
   display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.filter-row.compact {
+  gap: 2rem;
+}
+
+.filter-group {
+  display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.5rem;
+  min-width: fit-content;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+}
+
+.filter-group.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
 }
 
 .filter-group label {
-  display: block;
-  margin-bottom: 0.75rem;
   color: #4a5568;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
+}
+
+.inline-label {
+  margin-bottom: 0 !important;
+  display: inline-flex;
+  padding: 0.35rem 0.5rem;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #667eea;
+  font-size: 0.9rem;
 }
 
 .chip-container {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 
 .chip {
-  padding: 0.625rem 1.25rem;
-  background: #f7fafc;
-  border: 2px solid transparent;
+  padding: 0.475rem 0.95rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
   border-radius: 50px;
-  color: #4a5568;
-  font-size: 0.875rem;
+  color: #4b5563;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s;
+  justify-content: center;
+  gap: 0.3rem;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .chip:hover {
-  background: #edf2f7;
-  transform: translateY(-2px);
+  background: #e5e7eb;
+  border-color: #d1d5db;
 }
 
 .chip.active {
   background: linear-gradient(135deg, #667eea, #764ba2);
+  border-color: #667eea;
   color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.chip i {
+  font-size: 0.9rem;
 }
 
 .sorting-buttons {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 
 .sorting-button {
-  padding: 0.625rem 1.25rem;
-  background: #f7fafc;
-  border: 2px solid transparent;
+  padding: 0.475rem 0.95rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
   border-radius: 50px;
-  color: #4a5568;
-  font-size: 0.875rem;
+  color: #4b5563;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s;
+  justify-content: center;
+  gap: 0.3rem;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .sorting-button:hover {
-  background: #edf2f7;
-  transform: translateY(-2px);
+  background: #e5e7eb;
+  border-color: #d1d5db;
 }
 
 .sorting-button.active {
   background: linear-gradient(135deg, #667eea, #764ba2);
+  border-color: #667eea;
   color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.sorting-button i {
+  font-size: 0.9rem;
 }
 
 /* Események grid */
@@ -1190,6 +1412,20 @@ export default {
   overflow: hidden;
 }
 
+.recurring-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  padding: 0.25rem 0.5rem;
+  background: #ecfdf3;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  color: #166534;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .meta-info {
   display: flex;
   flex-direction: column;
@@ -1220,22 +1456,41 @@ export default {
   align-items: center;
 }
 
-.stats {
-  display: flex;
-  gap: 1rem;
-}
-
-.stat-item {
+.favourite-toggle {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  color: #718096;
-  font-size: 0.75rem;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: #667eea;
+  background: #eef2ff;
+  border: 1px solid #dbe4ff;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.stat-item i {
-  font-size: 1rem;
-  color: #667eea;
+.favourite-toggle i {
+  font-size: 1.2rem;
+}
+
+.favourite-toggle:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.25);
+}
+
+.favourite-toggle.active {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #f59e0b;
+}
+
+.favourite-toggle.loading {
+  opacity: 0.6;
+}
+
+.favourite-toggle:disabled {
+  cursor: not-allowed;
 }
 
 .details-button {
@@ -1399,32 +1654,35 @@ export default {
   }
   
   .card-footer {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .stats {
-    justify-content: center;
+    gap: 0.75rem;
   }
   
   .details-button {
-    width: 100%;
-    justify-content: center;
+    margin-left: auto;
   }
   
-  .filter-header {
+  .filter-row {
     flex-direction: column;
-    gap: 1rem;
     align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .filter-group {
+    width: 100%;
+  }
+  
+  .filter-group.inline {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  .chip-container {
+    width: 100%;
   }
   
   .sorting-buttons {
-    flex-direction: column;
-  }
-  
-  .sorting-button {
     width: 100%;
-    justify-content: center;
   }
 }
 
@@ -1437,13 +1695,31 @@ export default {
     font-size: 1.75rem;
   }
   
+  .filters-section {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .filter-header h3 {
+    font-size: 0.85rem;
+  }
+  
+  .filter-label {
+    display: none !important;
+  }
+  
   .chip-container {
-    flex-direction: column;
+    gap: 0.35rem;
   }
   
   .chip {
-    width: 100%;
-    justify-content: center;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  .sorting-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
   }
 }
 </style>

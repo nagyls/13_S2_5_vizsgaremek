@@ -7,7 +7,7 @@
           <!-- Logo -->
           <div class="logo-section" @click="$router.push('/user-dashboard')">
             <div class="logo-icon">
-              <i class='bx bx-calendar-heart'></i>
+              <img :src="logo2" alt="EseményTér logó" class="logo-image">
             </div>
             <div class="logo-text">
               <h1 class="site-title">EseményTér</h1>
@@ -47,7 +47,7 @@
                     <span>Események</span>
                   </router-link>
                   <router-link
-                    v-if="user.role === 'admin' || user.role === 'institution_manager'"
+                    v-if="user.role === 'admin'"
                     to="/institution-dashboard"
                     class="menu-item"
                   >
@@ -123,9 +123,9 @@
               </div>
             </div>
 
-            <!-- Intézményvezetői felület (admin/institution_manager) -->
+            <!-- Intézményvezetői felület (admin) -->
             <div
-              v-if="user.role === 'admin' || user.role === 'institution_manager'"
+              v-if="user.role === 'admin'"
               class="nav-card"
               @click="goToInstitutionDashboard"
             >
@@ -177,12 +177,14 @@
 
 <script>
 import axios from 'axios';
+import logo2 from '../../assets/logo2.svg';
 
 export default {
   name: 'UserDashboard',
 
   data() {
     return {
+      logo2,
       user: {
         id: null,
         name: '',
@@ -217,14 +219,13 @@ export default {
       const roles = {
         'student': 'Diák',
         'teacher': 'Tanár',
-        'admin': 'Adminisztrátor',
-        'institution_manager': 'Intézményvezető'
+        'admin': 'Adminisztrátor'
       };
       return roles[this.user.role] || this.user.role;
     },
 
     isFormal() {
-      return this.user.role === 'admin' || this.user.role === 'teacher' || this.user.role === 'institution_manager';
+      return this.user.role === 'admin' || this.user.role === 'teacher';
     },
 
     welcomeText() {
@@ -411,12 +412,22 @@ export default {
 }
 
 .logo-icon {
-  font-size: 32px;
-  color: #4f46e5;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .logo-text {
@@ -542,8 +553,7 @@ export default {
   color: #f97316;
 }
 
-.role-badge.admin,
-.role-badge.institution_manager {
+.role-badge.admin {
   background: rgba(139, 92, 246, 0.2);
   color: #8b5cf6;
 }
@@ -711,8 +721,7 @@ export default {
   color: #f97316;
 }
 
-.role-value.admin,
-.role-value.institution_manager {
+.role-value.admin {
   background: #8b5cf620;
   color: #8b5cf6;
 }

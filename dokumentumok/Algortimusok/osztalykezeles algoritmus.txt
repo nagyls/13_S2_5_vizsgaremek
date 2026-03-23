@@ -1,0 +1,15 @@
+﻿ALGORITMUS: OsztalyKezeles
+
+RESZFOLYAMATOK:
+1. Osztaly letrehozas.
+2. Osztalyok listazasa.
+3. Osztalytagok listazasa.
+4. Osztalyfonok modositasa.
+5. Diakok hozzaadasa es eltavolitasa.
+
+FO SZABALYOK:
+- letrehozas/listazas/tanar modositas admin vagy staff szerepkor szerint vedett,
+- diak mozgas csak admin jogosultsaggal,
+- intezmeny es osztaly osszerendeles ellenorzese kotelezo.
+
+ALGORITMUS VEGE

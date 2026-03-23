@@ -3,9 +3,9 @@
     <div class="container">
       <!-- Navigáció -->
       <div class="navigation">
-        <button class="btn-back" @click="backToEvents">
+        <button class="btn-back" @click="$router.back()">
           <i class='bx bx-arrow-back'></i>
-          <span>Vissza az eseményekhez</span>
+          <span><-- Vissza</span>
         </button>
       </div>
 
@@ -52,7 +52,7 @@
               </span>
             </div>
             <h1 class="hero-title">{{ eventData.title }}</h1>
-            <div class="hero-actions">
+            <div v-if="!isReadOnlyMode" class="hero-actions">
               <button v-if="currentUser" class="icon-button" @click="toggleFavorite">
                 <i class='bx bx-star' :class="{ 'active': eventData.isFavorite }"></i>
                 <span class="btn-text">Kedvenc</span>
@@ -96,7 +96,7 @@
             </div>
 
             <!-- Részletes tartalom -->
-            <div v-if="eventData.content" class="info-block">
+            <div v-if="eventData.content" class="info-block details-block">
               <div class="block-header">
                 <i class='bx bx-file'></i>
                 <h2>Részletek</h2>
@@ -114,6 +114,27 @@
                 <img :src="eventData.image_url" :alt="eventData.title">
               </div>
             </div>
+
+            <!-- Komment szekció -->
+            <div v-if="!isReadOnlyMode" class="comment-section">
+              <div class="comment-header">
+                <div class="header-left">
+                  <i class='bx bx-message-dots'></i>
+                  <h2>Hozzászólások</h2>
+                </div>
+                <div class="comment-counter">
+                  <span>{{ commentCount }}</span>
+                  <span>komment</span>
+                </div>
+              </div>
+              
+              <CommentBox 
+                :esemenyId="parseInt(eventId)"
+                :aktualisFelhasznalo="currentUser"
+                @komment-sikeres="onCommentAdded"
+              />
+            </div>
+
           </div>
 
           <!-- Jobb oldali oszlop -->
@@ -124,15 +145,11 @@
               <div class="date-list">
                 <div class="date-item">
                   <span class="date-label">Kezdés</span>
-                  <span class="date-value">{{ formatDate(eventData.start_date) }}</span>
+                  <span class="date-value">{{ formatDateLikeCreation(eventData.start_date) }}</span>
                 </div>
                 <div class="date-item">
                   <span class="date-label">Befejezés</span>
-                  <span class="date-value">{{ formatDate(eventData.end_date) }}</span>
-                </div>
-                <div class="date-item">
-                  <span class="date-label">Létrehozva</span>
-                  <span class="date-value">{{ formatDate(eventData.created_at) }}</span>
+                  <span class="date-value">{{ formatDateLikeCreation(eventData.end_date) }}</span>
                 </div>
               </div>
             </div>
@@ -141,15 +158,6 @@
             <div class="info-card">
               <h3><i class='bx bx-stats'></i> Statisztika</h3>
               <div class="stats-grid">
-                <div class="stat-item stat-elem">
-                  <div class="stat-ikon">
-                    <i class='bx bx-message-detail'></i>
-                  </div>
-                  <div class="stat-data">
-                    <span class="stat-number">{{ commentCount }}</span>
-                    <span class="stat-label">Komment</span>
-                  </div>
-                </div>
                 <div class="stat-item stat-elem">
                   <div class="stat-ikon">
                     <i class='bx bx-check-circle'></i>
@@ -168,20 +176,11 @@
                     <span class="stat-label">Nem vesz részt</span>
                   </div>
                 </div>
-                <div class="stat-item stat-elem">
-                  <div class="stat-ikon">
-                    <i class='bx bx-star'></i>
-                  </div>
-                  <div class="stat-data">
-                    <span class="stat-number">{{ favoriteCount }}</span>
-                    <span class="stat-label">Kedvenc</span>
-                  </div>
-                </div>
               </div>
             </div>
 
             <!-- Részvétel -->
-            <div v-if="eventData.status === 'open' && currentUser" class="info-card participation">
+            <div v-if="!isReadOnlyMode && eventData.status === 'open' && currentUser" class="info-card participation">
               <h3><i class='bx bx-check-shield'></i> Részvétel</h3>
               <p class="participation-description">{{ isFormal ? 'Hogyan szeretne részt venni az eseményen?' : 'Hogyan szeretnél részt venni az eseményen?' }}</p>
               <div class="participation-options">
@@ -205,35 +204,60 @@
                 </button>
               </div>
             </div>
+
+            <div v-if="canManageOccurrence" class="info-card occurrence-manager">
+              <h3><i class='bx bx-wrench'></i> Alkalom kezelése</h3>
+              <p class="participation-description">Létrehozóként módosíthatod az adott alkalom időpontját, vagy elmaradtként törölheted.</p>
+
+              <div class="occurrence-form-grid">
+                <label>
+                  Kezdés
+                  <input type="datetime-local" v-model="occurrenceForm.startDateTime">
+                </label>
+                <label>
+                  Befejezés
+                  <input type="datetime-local" v-model="occurrenceForm.endDateTime">
+                </label>
+              </div>
+
+              <div class="occurrence-actions">
+                <button
+                  class="answer-button attending"
+                  :disabled="isUpdatingOccurrence"
+                  @click="rescheduleOccurrence"
+                >
+                  <i class='bx bx-time-five'></i>
+                  <div class="answer-content">
+                    <span class="answer-title">Időpont módosítása</span>
+                    <span class="answer-description">Az adott alkalom átütemezése</span>
+                  </div>
+                </button>
+
+                <button
+                  class="answer-button not-attending"
+                  :disabled="isUpdatingOccurrence"
+                  @click="cancelOccurrence"
+                >
+                  <i class='bx bx-calendar-x'></i>
+                  <div class="answer-content">
+                    <span class="answer-title">Alkalom elmarad</span>
+                    <span class="answer-description">Az adott alkalom törlése</span>
+                  </div>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Komment szekció -->
-        <div class="comment-section">
-          <div class="comment-header">
-            <div class="header-left">
-              <i class='bx bx-message-dots'></i>
-              <h2>Hozzászólások</h2>
-            </div>
-            <div class="comment-counter">
-              <span>{{ commentCount }}</span>
-              <span>komment</span>
-            </div>
-          </div>
-          
-          <CommentBox 
-            :esemenyId="parseInt(eventId)"
-            :currentUser="currentUser"
-            @komment-sikeres="onCommentAdded"
-          />
-        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
 import CommentBox from './CommentBox.vue';
+import { toast } from '../../services/toast'
 
 export default {
   name: 'EventDetails',
@@ -254,18 +278,31 @@ export default {
       notAttendingCount: 0,
       favoriteCount: 0,
       userParticipation: null,
-      studentHasClass: null
+      studentHasClass: null,
+      isUpdatingOccurrence: false,
+      occurrenceForm: {
+        startDateTime: '',
+        endDateTime: ''
+      }
     }
   },
   
-  created() {
-    this.loadEvent()
-    this.loadCurrentUser()
+  async created() {
+    await this.loadCurrentUser()
+    await this.loadEvent()
   },
   
   computed: {
     isFormal() {
-      return this.currentUser?.role === 'admin' || this.currentUser?.role === 'teacher' || this.currentUser?.role === 'institution_manager';
+      return this.currentUser?.role === 'admin' || this.currentUser?.role === 'teacher';
+    },
+
+    isReadOnlyMode() {
+      return String(this.$route?.query?.readonly || '') === '1'
+    },
+
+    canManageOccurrence() {
+      return !this.isReadOnlyMode && Number(this.currentUser?.id) > 0 && Number(this.eventData?.user_id) === Number(this.currentUser?.id)
     }
   },
   
@@ -274,9 +311,54 @@ export default {
       this.$router.push('/events-list')
     },
 
+    getToken() {
+      return (
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token')
+      )
+    },
+
+    getCurrentInstitutionId() {
+      const storedInstitutionId =
+        localStorage.getItem('CurrentInstitution') ||
+        sessionStorage.getItem('CurrentInstitution') ||
+        this.currentUser?.institution_id ||
+        this.currentUser?.establishment_id
+
+      const institutionId = Number(storedInstitutionId)
+      return Number.isFinite(institutionId) && institutionId > 0 ? institutionId : null
+    },
+
+    normalizeEventStatus(status) {
+      const normalized = String(status || '').toLowerCase()
+
+      if (normalized === 'ongoing' || normalized === 'open' || normalized === 'upcoming') {
+        return 'open'
+      }
+
+      if (normalized === 'ended' || normalized === 'closed') {
+        return 'closed'
+      }
+
+      return 'open'
+    },
+
+    normalizeEvent(event) {
+      return {
+        ...event,
+        status: this.normalizeEventStatus(event?.status),
+        creator_name: event?.creator_name || event?.creator?.name || event?.user?.name || 'Ismeretlen szervező',
+        participants: Number(event?.participants || event?.participant_count || 0),
+        favorites: Number(event?.favorites || event?.favorite_count || 0),
+        comment_count: Number(event?.comment_count || event?.comments_count || 0),
+        isFavorite: Boolean(event?.isFavorite || event?.is_favorite)
+      }
+    },
+
     async loadEvent() {
       try {
         this.isLoading = true
+        this.errorMessage = ''
         const foundEvent = await this.fetchEvent(this.eventId)
         
         if (!foundEvent) {
@@ -285,6 +367,8 @@ export default {
         }
         
         this.eventData = foundEvent
+        this.occurrenceForm.startDateTime = this.toDateTimeLocalValue(foundEvent.start_date)
+        this.occurrenceForm.endDateTime = this.toDateTimeLocalValue(foundEvent.end_date)
         await Promise.all([
           this.loadStats(),
           this.loadParticipationStatus()
@@ -298,66 +382,117 @@ export default {
     },
     
     async fetchEvent(eventId) {
-      const allEvents = JSON.parse(localStorage.getItem('esemenyek') || '[]')
-      let event = allEvents.find(item => item.id == eventId)
-      
-      if (!event) {
-        event = {
-          id: eventId,
-          title: 'Tavaszi kirándulás a Budai-hegyekben',
-          description: 'Csatlakozz hozzánk egy felejthetetlen tavaszi kirándulásra! Fedezzük fel együtt a Budai-hegyek legszebb túraútvonalait, miközben új barátságokat köthetünk.',
-          content: 'Találkozó: Déli pályaudvar főbejárat\nIdőtartam: 4-5 óra\nNe felejtsd el: kényelmes cipő, víz, uzsonna, jókedv!\n\nTervezett program:\n- 9:00 Találkozó\n- 9:30 Indulás\n- 12:00 Ebéd a Normafánál\n- 14:00 Visszaindulás\n- 16:00 Érkezés',
-          type: 'local',
-          status: 'open',
-          creator_name: 'Kovács Anna',
-          start_date: new Date().toISOString(),
-          end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-        }
+      const token = this.getToken()
+      const institutionId = this.getCurrentInstitutionId()
+
+      if (!token || !institutionId) {
+        return null
       }
-      
-      return event
+
+      const endpoint = `http://127.0.0.1:8000/api/establishment/${institutionId}/events`
+      const response = await axios.get(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json'
+        },
+        validateStatus: (status) => status >= 200 && status < 600
+      })
+
+      if (response.status >= 400) {
+        return null
+      }
+
+      const payload = response.data
+      const events = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.events)
+          ? payload.events
+          : []
+
+      const foundEvent = events.find(item => Number(item?.id) === Number(eventId))
+      if (foundEvent) {
+        return this.normalizeEvent(foundEvent)
+      }
+
+      // Fallback: admin meghívott globális események az event-access végpontról.
+      const collabResponse = await axios.get(
+        `http://127.0.0.1:8000/api/establishment/${institutionId}/event-access`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json'
+          },
+          validateStatus: (status) => status >= 200 && status < 600
+        }
+      )
+
+      if (collabResponse.status >= 400) {
+        return null
+      }
+
+      const collabPayload = collabResponse.data
+      const collabEvents = Array.isArray(collabPayload)
+        ? collabPayload
+        : Array.isArray(collabPayload?.events)
+          ? collabPayload.events
+          : []
+
+      const foundCollabEvent = collabEvents.find(item => Number(item?.id) === Number(eventId))
+      return foundCollabEvent ? this.normalizeEvent(foundCollabEvent) : null
     },
     
     async loadCurrentUser() {
-      const savedUser = JSON.parse(localStorage.getItem('esemenyter_user') || 'null')
-      
-      if (savedUser?.isLoggedIn) {
-        this.currentUser = {
-          id: savedUser.id || 1,
-          username: savedUser.name || 'Felhasználó',
-          name: savedUser.name || 'Felhasználó',
-          email: savedUser.email || '',
-          role: savedUser.role || 'student'
-        }
+      const savedUserRaw =
+        localStorage.getItem('esemenyter_user') ||
+        sessionStorage.getItem('esemenyter_user')
+
+      if (!savedUserRaw) {
+        this.currentUser = null
+        return
+      }
+
+      const savedUser = JSON.parse(savedUserRaw)
+      this.currentUser = {
+        ...savedUser,
+        id: Number(savedUser?.id) || null,
+        username: savedUser?.nev || savedUser?.name || 'Felhasználó',
+        name: savedUser?.nev || savedUser?.name || 'Felhasználó',
+        email: savedUser?.email || '',
+        role: savedUser?.role || 'student'
       }
     },
     
     async loadStats() {
       try {
-        const comments = JSON.parse(localStorage.getItem('esemeny_kommentek') || '[]')
-        this.commentCount = comments.filter(item => item.event_id == this.eventId).length
-        
-        this.attendingCount = 45
-        this.notAttendingCount = 12
-        this.favoriteCount = 28
+        const event = this.eventData || {}
+        this.commentCount = Number(event.comment_count || event.comments_count || 0)
+        this.attendingCount = Number(event.attending_count || event.participant_count || event.participants || 0)
+        this.notAttendingCount = Number(event.not_attending_count || 0)
+        this.favoriteCount = Number(event.favorite_count || event.favorites || 0)
       } catch (error) {
         console.error('Hiba a statisztikák betöltésekor:', error)
+        this.commentCount = 0
+        this.attendingCount = 0
+        this.notAttendingCount = 0
+        this.favoriteCount = 0
       }
     },
     
     async loadParticipationStatus() {
-      if (!this.currentUser) return
-      
-      const participationData = JSON.parse(localStorage.getItem('esemeny_resztvetel') || '[]')
-      const currentUserParticipation = participationData.find(
-        item => item.event_id == this.eventId && item.user_id == this.currentUser.id
-      )
-      
-      this.userParticipation = currentUserParticipation?.valasz || null
+      if (!this.currentUser) {
+        this.userParticipation = null
+        return
+      }
+
+      this.userParticipation = this.eventData?.user_participation || null
     },
     
     async submitParticipation(answer) {
+      if (this.isReadOnlyMode) {
+        this.showMessage('Csak megtekintés módban a részvétel nem módosítható.', 'info')
+        return
+      }
+
       if (!this.currentUser) {
         this.showMessage('A részvételhez be kell jelentkezned!', 'info')
         this.$router.push('/login')
@@ -368,36 +503,53 @@ export default {
       if (!canParticipate) {
         return
       }
-      
+
       try {
-        const participationData = JSON.parse(localStorage.getItem('esemeny_resztvetel') || '[]')
-        const updatedData = participationData.filter(
-          item => !(item.event_id == this.eventId && item.user_id == this.currentUser.id)
+        const token = this.getToken()
+        if (!token) {
+          this.showMessage('A részvételhez be kell jelentkezned!', 'info')
+          return
+        }
+
+        const response = await axios.patch(
+          `http://127.0.0.1:8000/api/events/${this.eventId}/participation`,
+          { answer },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+              'Content-Type': 'application/json'
+            },
+            validateStatus: (status) => status >= 200 && status < 600
+          }
         )
-        
-        updatedData.push({
-          event_id: this.eventId,
-          user_id: this.currentUser.id,
-          valasz: answer,
-          frissitve: new Date().toISOString()
-        })
-        
-        localStorage.setItem('esemeny_resztvetel', JSON.stringify(updatedData))
-        const previousParticipation = this.userParticipation
-        this.userParticipation = answer
-        
-        if (answer === 'y') {
-          this.attendingCount++
-          if (previousParticipation === 'n') this.notAttendingCount--
-          this.showMessage('Köszönjük a részvételi szándékod!', 'success')
+
+        if (response.status >= 400) {
+          const message = response?.data?.message || 'Nem sikerült menteni a részvételi választ.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        this.userParticipation = response?.data?.answer || answer
+        this.attendingCount = Number(response?.data?.attending_count || 0)
+        this.notAttendingCount = Number(response?.data?.not_attending_count || 0)
+
+        if (this.eventData) {
+          this.eventData.user_participation = this.userParticipation
+          this.eventData.attending_count = this.attendingCount
+          this.eventData.not_attending_count = this.notAttendingCount
+          this.eventData.participant_count = this.attendingCount
+          this.eventData.participants = this.attendingCount
+        }
+
+        if (this.userParticipation === 'y') {
+          this.showMessage('Részvétel sikeresen rögzítve.', 'success')
         } else {
-          this.notAttendingCount++
-          if (previousParticipation === 'y') this.attendingCount--
-          this.showMessage('Válaszod rögzítettük.', 'success')
+          this.showMessage('A nem részvétel sikeresen rögzítve.', 'success')
         }
       } catch (error) {
-        console.error('Hiba a részvétel küldésekor:', error)
-        this.showMessage('Hiba történt a válasz küldése közben.', 'error')
+        console.error('Hiba a részvétel mentésekor:', error)
+        this.showMessage('Hiba történt a részvétel mentésekor.', 'error')
       }
     },
 
@@ -492,44 +644,28 @@ export default {
     
     onCommentAdded() {
       this.commentCount++
-      this.showMessage('Hozzászólásod sikeresen elküldtük!', 'success')
     },
     
     async toggleFavorite() {
+      if (this.isReadOnlyMode) {
+        this.showMessage('Csak megtekintés módban a kedvencek módosítása nem elérhető.', 'info')
+        return
+      }
+
       if (!this.currentUser) {
         this.showMessage('A kedvencekhez adáshoz jelentkezz be!', 'info')
         return
       }
-      
-      try {
-        const favorites = JSON.parse(localStorage.getItem('esemeny_kedvencek') || '[]')
-        const index = favorites.findIndex(
-          item => item.event_id == this.eventId && item.user_id == this.currentUser.id
-        )
-        
-        if (index === -1) {
-          favorites.push({
-            event_id: this.eventId,
-            user_id: this.currentUser.id,
-            letrehozva: new Date().toISOString()
-          })
-          this.favoriteCount++
-          this.showMessage('Esemény hozzáadva a kedvencekhez!', 'success')
-        } else {
-          favorites.splice(index, 1)
-          this.favoriteCount--
-          this.showMessage('Esemény eltávolítva a kedvencekből!', 'success')
-        }
-        
-        localStorage.setItem('esemeny_kedvencek', JSON.stringify(favorites))
-        this.eventData.isFavorite = index === -1
-      } catch (error) {
-        console.error('Hiba a kedvenc beállításakor:', error)
-        this.showMessage('Hiba történt a művelet során.', 'error')
-      }
+
+      this.showMessage('A kedvencek mentése még nincs backend API-ra kötve ezen az oldalon.', 'info')
     },
     
     shareEvent() {
+      if (this.isReadOnlyMode) {
+        this.showMessage('Csak megtekintés módban a megosztás nem elérhető.', 'info')
+        return
+      }
+
       if (navigator.share) {
         navigator.share({
           title: this.eventData.title,
@@ -547,10 +683,166 @@ export default {
       navigator.clipboard.writeText(window.location.href)
       this.showMessage('Link másolva a vágólapra!', 'success')
     },
+
+    toDateTimeLocalValue(dateString) {
+      if (!dateString) {
+        return ''
+      }
+
+      const normalized = String(dateString).trim().replace(' ', 'T')
+      const match = normalized.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/)
+
+      if (!match) {
+        return ''
+      }
+
+      return `${match[1]}T${match[2]}`
+    },
+
+    async rescheduleOccurrence() {
+      if (this.isReadOnlyMode) {
+        this.showMessage('Csak megtekintés módban az alkalom nem módosítható.', 'warning')
+        return
+      }
+
+      if (!this.canManageOccurrence) {
+        this.showMessage('Csak a létrehozó módosíthatja ezt az alkalmat.', 'warning')
+        return
+      }
+
+      if (!this.occurrenceForm.startDateTime || !this.occurrenceForm.endDateTime) {
+        this.showMessage('Add meg az új kezdési és befejezési időpontot.', 'warning')
+        return
+      }
+
+      if (new Date(this.occurrenceForm.startDateTime) >= new Date(this.occurrenceForm.endDateTime)) {
+        this.showMessage('A befejezés legyen későbbi, mint a kezdés.', 'warning')
+        return
+      }
+
+      const token = this.getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      this.isUpdatingOccurrence = true
+
+      try {
+        const response = await axios.patch(
+          `http://127.0.0.1:8000/api/events/${this.eventId}/occurrence`,
+          {
+            action: 'reschedule',
+            start_date: this.occurrenceForm.startDateTime,
+            end_date: this.occurrenceForm.endDateTime
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+              'Content-Type': 'application/json'
+            },
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          const message = response?.data?.message || 'Nem sikerült átütemezni az alkalmat.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        this.showMessage(response?.data?.message || 'Alkalom időpontja módosítva.', 'success')
+        await this.loadEvent()
+      } catch (error) {
+        console.error('Átütemezési hiba:', error)
+        this.showMessage('Hiba történt az alkalom módosításakor.', 'error')
+      } finally {
+        this.isUpdatingOccurrence = false
+      }
+    },
+
+    async cancelOccurrence() {
+      if (this.isReadOnlyMode) {
+        this.showMessage('Csak megtekintés módban az alkalom nem törölhető.', 'warning')
+        return
+      }
+
+      if (!this.canManageOccurrence) {
+        this.showMessage('Csak a létrehozó törölheti ezt az alkalmat.', 'warning')
+        return
+      }
+
+      const confirmCancel = await toast.confirm('Biztosan elmaradtként jelölöd ezt az alkalmat?', {
+        confirmText: 'Igen, elmarad',
+        cancelText: 'Mégse'
+      })
+      if (!confirmCancel) {
+        return
+      }
+
+      const token = this.getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      this.isUpdatingOccurrence = true
+
+      try {
+        const response = await axios.patch(
+          `http://127.0.0.1:8000/api/events/${this.eventId}/occurrence`,
+          { action: 'cancel' },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+              'Content-Type': 'application/json'
+            },
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          const message = response?.data?.message || 'Nem sikerült elmaradtként jelölni az alkalmat.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        this.showMessage(response?.data?.message || 'Az alkalom elmaradtként jelölve.', 'success')
+        setTimeout(() => {
+          this.$router.push('/events-list')
+        }, 900)
+      } catch (error) {
+        console.error('Alkalom törlési hiba:', error)
+        this.showMessage('Hiba történt az alkalom törlésekor.', 'error')
+      } finally {
+        this.isUpdatingOccurrence = false
+      }
+    },
     
     formatDate(dateString) {
       if (!dateString) return 'Nincs megadva'
-      const date = new Date(dateString)
+
+      // Keep server-provided date/time as wall time to avoid timezone shifts in UI.
+      const datetimeMatch = String(dateString).match(
+        /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})/
+      )
+
+      let date
+      if (datetimeMatch) {
+        const [, year, month, day, hour, minute] = datetimeMatch
+        date = new Date(
+          Number(year),
+          Number(month) - 1,
+          Number(day),
+          Number(hour),
+          Number(minute)
+        )
+      } else {
+        date = new Date(dateString)
+      }
+
       return date.toLocaleDateString('hu-HU', {
         year: 'numeric',
         month: 'long',
@@ -559,11 +851,39 @@ export default {
         minute: '2-digit'
       })
     },
+
+    formatDateLikeCreation(dateString) {
+      if (!dateString) return 'Nincs megadva'
+
+      const normalized = String(dateString).trim().replace(' ', 'T')
+      const match = normalized.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/)
+
+      if (match) {
+        return `${match[1]} ${match[2]}`
+      }
+
+      return this.formatDate(dateString)
+    },
     
     showMessage(message, type = 'success') {
-      // Itt lehetne egy szép toast értesítő
-      console.log(`[${type}]`, message)
-      alert(message)
+      const normalizedType = String(type || '').toLowerCase()
+
+      if (normalizedType === 'error') {
+        toast.error(message)
+        return
+      }
+
+      if (normalizedType === 'warning' || normalizedType === 'warn') {
+        toast.warning(message)
+        return
+      }
+
+      if (normalizedType === 'info') {
+        toast.info(message)
+        return
+      }
+
+      toast.success(message)
     }
   }
 }
@@ -788,6 +1108,7 @@ export default {
   grid-template-columns: 2fr 1fr;
   gap: 2rem;
   margin-bottom: 2rem;
+  align-items: stretch;
 }
 
 /* Bal oszlop */
@@ -795,6 +1116,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  height: 100%;
 }
 
 .info-block {
@@ -884,6 +1206,17 @@ export default {
   white-space: pre-line;
 }
 
+.details-block {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.details-block .detailed-content {
+  flex: 1;
+  min-height: 220px;
+}
+
 /* Kép */
 .image-container {
   border-radius: 16px;
@@ -959,7 +1292,7 @@ export default {
 /* Statisztika */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 1rem;
 }
 
@@ -1022,6 +1355,33 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.occurrence-manager .occurrence-form-grid {
+  display: grid;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.occurrence-manager .occurrence-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  color: #475569;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.occurrence-manager .occurrence-form-grid input {
+  border: 1px solid #dbe3f0;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.92rem;
+}
+
+.occurrence-manager .occurrence-actions {
+  display: grid;
+  gap: 0.7rem;
 }
 
 .answer-button {
@@ -1090,7 +1450,6 @@ export default {
   background: white;
   border-radius: 24px;
   padding: 2rem;
-  margin-top: 2rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
@@ -1180,6 +1539,10 @@ export default {
     padding: 1rem;
   }
 
+  .details-block .detailed-content {
+    min-height: 140px;
+  }
+
   .btn-back {
     width: 100%;
     justify-content: center;
@@ -1233,6 +1596,10 @@ export default {
 @media (max-width: 480px) {
   .container {
     padding: 0.75rem;
+  }
+
+  .details-block .detailed-content {
+    min-height: 100px;
   }
 
   .hero-title {

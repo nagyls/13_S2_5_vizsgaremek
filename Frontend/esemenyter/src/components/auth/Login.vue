@@ -54,7 +54,6 @@ export default {
         getRedirectPath(userData) {
             const role = userData?.role || '';
 
-            if (role === 'institution_manager') return '/institution-dashboard';
             if (role === 'admin' || role === 'teacher' || role === 'student') return '/user-dashboard';
             return '/dashboard';
         },

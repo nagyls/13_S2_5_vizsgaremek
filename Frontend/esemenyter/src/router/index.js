@@ -8,6 +8,7 @@ import EventCreator from '@/components/events/EventCreator.vue'
 import CommentBox from '@/components/events/CommentBox.vue'
 import EventDetails from '@/components/events/EventDetails.vue'
 import EventsList from '@/components/events/EventsList.vue'
+import EventCalendar from '@/components/events/EventCalendar.vue'
 import Dashboard from '@/components/dashboard/Dashboard.vue'
 import UserDashboard from '@/components/dashboard/UserDashboard.vue'
 import InstitutionManagerDashboard from '@/components/dashboard/InstitutionManagerDashboard.vue'
@@ -70,6 +71,12 @@ const routes = [
     name: 'events-list',
     component: EventsList,
     meta: { title: 'Eventek listázása' }
+  },
+  {
+    path: '/events-calendar',
+    name: 'events-calendar',
+    component: EventCalendar,
+    meta: { title: 'Eseménynaptár' }
   },
   {
     path: '/dashboard',

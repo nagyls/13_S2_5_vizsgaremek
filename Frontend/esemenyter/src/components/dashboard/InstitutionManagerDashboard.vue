@@ -5,7 +5,7 @@
         <div class="header-content">
           <div class="logo-section" @click="$router.push('/user-dashboard')">
             <div class="logo-icon">
-              <i class='bx bx-calendar-heart'></i>
+              <img :src="logo2" alt="EseményTér logó" class="logo-image">
             </div>
             <div class="logo-text">
               <h1 class="site-title">EseményTér</h1>
@@ -90,7 +90,85 @@
                 <span class="stat-value">{{ totalPendingRequests }}</span>
                 <span class="stat-label">Függő kérelem</span>
               </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ pendingGlobalEventRequests }}</span>
+                <span class="stat-label">Globális meghívás</span>
+              </div>
             </div>
+          </div>
+        </div>
+
+        <div class="requests-section">
+          <div class="section-header">
+            <h3>
+              <i class='bx bx-world'></i>
+              Globális esemény meghívások
+            </h3>
+          </div>
+
+          <div v-if="isLoadingCollabEvents" class="empty-state">
+            <i class='bx bx-loader-circle bx-spin'></i>
+            <h4>Betöltés...</h4>
+            <p>Globális esemény meghívások lekérése folyamatban.</p>
+          </div>
+
+          <div v-else-if="collabEvents.length" class="requests-grid">
+            <div
+              v-for="eventItem in collabEvents"
+              :key="eventItem.id"
+              class="request-card pending"
+            >
+              <div class="request-header">
+                <div class="user-avatar-medium">
+                  <span>{{ (eventItem.title || 'E')[0]?.toUpperCase() }}</span>
+                </div>
+                <div class="user-info">
+                  <h4>{{ eventItem.title || 'Névtelen esemény' }}</h4>
+                  <p class="user-email">{{ formatDate(eventItem.start_date) }} - {{ formatDate(eventItem.end_date) }}</p>
+                </div>
+              </div>
+
+              <div class="request-body">
+                <div class="info-row">
+                  <i class='bx bx-detail'></i>
+                  <span>{{ eventItem.description || 'Nincs leírás megadva.' }}</span>
+                </div>
+              </div>
+
+              <div class="request-actions request-actions-stacked">
+                <router-link
+                  :to="{ path: `/esemenyek/${eventItem.id}`, query: { readonly: '1', source: 'collab-request' } }"
+                  class="btn-details btn-details-full"
+                >
+                  <i class='bx bx-show'></i>
+                  <span>Részletek</span>
+                </router-link>
+                <div class="request-actions-inline">
+                  <button
+                    class="btn-approve"
+                    @click="openCollabTargetModal(eventItem)"
+                    :disabled="processingCollabEventId === Number(eventItem.id)"
+                  >
+                    <i class='bx bx-check'></i>
+                    <span>{{ processingCollabEventId === Number(eventItem.id) ? 'Feldolgozás...' : 'Elfogadás' }}</span>
+                  </button>
+                  <button
+                    class="btn-reject"
+                    @click="handleCollabEventRequest(eventItem.id, 'reject')"
+                    :disabled="processingCollabEventId === Number(eventItem.id)"
+                  >
+                    <i class='bx bx-x'></i>
+                    <span>{{ processingCollabEventId === Number(eventItem.id) ? 'Feldolgozás...' : 'Elutasítás' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="empty-state">
+            <i class='bx bx-inbox'></i>
+            <h4>Nincs globális esemény meghívás</h4>
+            <p>Ha egy másik intézmény globális eseményre meghív, itt fog megjelenni.</p>
           </div>
         </div>
 
@@ -402,7 +480,12 @@
                   <button class="btn-icon" @click="editClass(classItem)" title="Szerkesztés">
                     <i class='bx bx-edit'></i>
                   </button>
-                  <button class="btn-icon" @click="deleteClass(classItem)" title="Törlés">
+                  <button
+                    class="btn-icon"
+                    @click="deleteClass(classItem)"
+                    title="Törlés"
+                    :disabled="isDeletingClassId === Number(classItem.id)"
+                  >
                     <i class='bx bx-trash'></i>
                   </button>
                 </div>
@@ -582,6 +665,125 @@
       </div>
     </transition>
 
+    <transition name="modal">
+      <div v-if="showCollabTargetModal" class="modal-overlay" @click.self="closeCollabTargetModal">
+        <div class="modal-container collab-target-modal">
+          <div class="modal-header">
+            <h3>
+              <i class='bx bx-target-lock'></i>
+              Globális esemény célcsoport
+            </h3>
+            <button class="modal-close" @click="closeCollabTargetModal">
+              <i class='bx bx-x'></i>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div class="target-event-summary">
+              <strong>{{ selectedCollabEvent?.title || 'Névtelen esemény' }}</strong>
+              <span>{{ formatDate(selectedCollabEvent?.start_date) }}</span>
+            </div>
+
+            <div class="target-group-options">
+              <div
+                class="target-group-option"
+                :class="{ selected: collabTargetGroup === 'teljes_iskola' }"
+                @click="collabTargetGroup = 'teljes_iskola'"
+              >
+                <div class="option-content">
+                  <i class='bx bx-building-house'></i>
+                  <h4>Teljes iskola</h4>
+                  <p>Az intézmény minden felhasználója megkapja az eseményt.</p>
+                </div>
+              </div>
+
+              <div
+                class="target-group-option"
+                :class="{ selected: collabTargetGroup === 'osztaly_szintu' }"
+                @click="collabTargetGroup = 'osztaly_szintu'"
+              >
+                <div class="option-content">
+                  <i class='bx bx-user'></i>
+                  <h4>Osztály szintű</h4>
+                  <p>Csak a kijelölt osztályok látják az eseményt.</p>
+                </div>
+
+                <div v-if="collabTargetGroup === 'osztaly_szintu'" class="target-selector-panel" @click.stop>
+                  <div v-if="!classes.length" class="class-target-state warning">
+                    Nincsenek osztályok az intézményben.
+                  </div>
+                  <div v-else class="class-target-grid">
+                    <label
+                      v-for="classItem in classes"
+                      :key="classItem.id"
+                      class="class-target-card"
+                      :class="{ selected: collabSelectedClassIds.includes(Number(classItem.id)) }"
+                    >
+                      <input type="checkbox" :value="Number(classItem.id)" v-model="collabSelectedClassIds">
+                      <div class="class-target-copy">
+                        <div class="class-target-title">{{ formatCompactClassDisplayName(classItem) }}</div>
+                        <div class="class-target-meta">{{ classItem.student_count || 0 }} tanuló</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="target-group-option"
+                :class="{ selected: collabTargetGroup === 'evfolyam_szintu' }"
+                @click="collabTargetGroup = 'evfolyam_szintu'"
+              >
+                <div class="option-content">
+                  <i class='bx bx-group'></i>
+                  <h4>Évfolyam szintű</h4>
+                  <p>Csak a kijelölt évfolyamok látják az eseményt.</p>
+                </div>
+
+                <div v-if="collabTargetGroup === 'evfolyam_szintu'" class="target-selector-panel" @click.stop>
+                  <div v-if="!collabAvailableGrades.length" class="class-target-state warning">
+                    Nincsenek elérhető évfolyamok.
+                  </div>
+                  <div v-else class="class-target-grid">
+                    <label
+                      v-for="grade in collabAvailableGrades"
+                      :key="grade"
+                      class="class-target-card"
+                      :class="{ selected: collabSelectedGradeIds.includes(Number(grade)) }"
+                    >
+                      <input type="checkbox" :value="Number(grade)" v-model="collabSelectedGradeIds">
+                      <div class="class-target-copy">
+                        <div class="class-target-title">{{ Number(grade) }}. évfolyam</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="collabTargetModalError" class="error-message">
+              <i class='bx bx-error-circle'></i>
+              <span>{{ collabTargetModalError }}</span>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-outline" @click="closeCollabTargetModal" :disabled="processingCollabEventId === Number(selectedCollabEvent?.id)">
+              Mégse
+            </button>
+            <button
+              class="btn-primary"
+              @click="approveCollabEventWithTargeting"
+              :disabled="processingCollabEventId === Number(selectedCollabEvent?.id)"
+            >
+              <i class='bx bx-check'></i>
+              {{ processingCollabEventId === Number(selectedCollabEvent?.id) ? 'Feldolgozás...' : 'Elfogadás' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- Diák osztálymódosító modal -->
     <transition name="modal">
       <div v-if="showEditStudentClassModal" class="modal-overlay" @click.self="closeEditUserClassModal">
@@ -661,18 +863,20 @@
 <script>
 import axios from 'axios';
 import { toast } from '../../services/toast';
+import logo2 from '../../assets/logo2.svg';
 
 export default {
   name: 'InstitutionManagerDashboard',
   
   data() {
     return {
+      logo2,
       user: {
         id: null,
         name: '',
         email: '',
         institution_id: null,
-        role: 'institution_manager'
+        role: 'admin'
       },
       institution: {
         id: null,
@@ -685,6 +889,15 @@ export default {
         totalTeachers: 0,
         totalClasses: 0
       },
+      collabEvents: [],
+      isLoadingCollabEvents: false,
+      processingCollabEventId: null,
+      showCollabTargetModal: false,
+      selectedCollabEvent: null,
+      collabTargetGroup: 'teljes_iskola',
+      collabSelectedClassIds: [],
+      collabSelectedGradeIds: [],
+      collabTargetModalError: '',
       establishmentRequests: [], // Összes kérelem a táblából
       allUsers: [], // Összes felhasználó
       students: [], // Diákok
@@ -728,6 +941,7 @@ export default {
       },
       classErrors: {},
       isCreatingClass: false,
+      isDeletingClassId: null,
       availableGrades: [9, 10, 11, 12, 13]
     };
   },
@@ -745,6 +959,18 @@ export default {
     // Összes függőben lévő kérelem
     totalPendingRequests() {
       return this.establishmentRequests.length;
+    },
+
+    pendingGlobalEventRequests() {
+      return this.collabEvents.length;
+    },
+
+    collabAvailableGrades() {
+      return Array.from(new Set(
+        this.classes
+          .map(classItem => Number(classItem?.grade))
+          .filter(Number.isFinite)
+      )).sort((left, right) => left - right);
     },
     
     // Diák kérelmek
@@ -983,7 +1209,7 @@ export default {
         return { success: false, processedCount: 0 };
       }
 
-      await axios.post('http://127.0.0.1:8000/api/establishment/requests/handle', {
+      await axios.patch('http://127.0.0.1:8000/api/establishment/requests/handle', {
         establishment_id: this.user.institution_id,
         action,
         request_id: requestIds
@@ -1076,6 +1302,8 @@ export default {
         });
         this.syncRequestSelectionWithPendingList();
 
+        await this.loadCollabEvents(institutionId);
+
         // Diákok és tanárok betöltése (akik már csatlakoztak)
         await this.loadInstitutionUsers(institutionId);
 
@@ -1092,6 +1320,257 @@ export default {
         console.error('Hiba az adatok betöltésekor:', error);
         this.showNotification('Hiba történt az adatok betöltésekor', 'error');
       }
+    },
+
+    async loadCollabEvents(institutionId) {
+      try {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+
+        if (!token || !institutionId) {
+          this.collabEvents = [];
+          return;
+        }
+
+        this.isLoadingCollabEvents = true;
+
+        const response = await axios.get(
+          `http://127.0.0.1:8000/api/establishment/${institutionId}/event-access`,
+          {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+          }
+        );
+
+        this.collabEvents = Array.isArray(response?.data?.events) ? response.data.events : [];
+      } catch (error) {
+        console.error('Hiba a globális esemény kérelmek betöltésekor:', error);
+        this.collabEvents = [];
+      } finally {
+        this.isLoadingCollabEvents = false;
+      }
+    },
+
+    async openCollabTargetModal(eventItem) {
+      const establishmentId = Number(this.user?.institution_id);
+
+      if (!establishmentId) {
+        this.showNotification('Hiányzó intézmény azonosító.', 'error');
+        return;
+      }
+
+      this.selectedCollabEvent = eventItem;
+      this.collabTargetGroup = 'teljes_iskola';
+      this.collabSelectedClassIds = [];
+      this.collabSelectedGradeIds = [];
+      this.collabTargetModalError = '';
+
+      if (!this.classes.length) {
+        await this.loadClasses(establishmentId);
+      }
+
+      if (!this.students.length && !this.teachers.length) {
+        await this.loadInstitutionUsers(establishmentId);
+      }
+
+      await this.loadStudentClassAssignments(establishmentId);
+
+      this.showCollabTargetModal = true;
+    },
+
+    closeCollabTargetModal() {
+      this.showCollabTargetModal = false;
+      this.selectedCollabEvent = null;
+      this.collabTargetGroup = 'teljes_iskola';
+      this.collabSelectedClassIds = [];
+      this.collabSelectedGradeIds = [];
+      this.collabTargetModalError = '';
+    },
+
+    resolveCollabAcceptanceUserIds() {
+      const classesById = new Map(
+        this.classes.map(classItem => [Number(classItem.id), classItem])
+      );
+
+      if (this.collabTargetGroup === 'teljes_iskola') {
+        return this.resolveInstitutionUserIdsForCollabAcceptance();
+      }
+
+      if (this.collabTargetGroup === 'osztaly_szintu') {
+        const selectedClassIds = this.collabSelectedClassIds
+          .map(classId => Number(classId))
+          .filter(Number.isFinite);
+
+        if (!selectedClassIds.length) {
+          return [];
+        }
+
+        const selectedClassLabels = new Set(
+          selectedClassIds
+            .map(classId => classesById.get(classId))
+            .filter(Boolean)
+            .map(classItem => this.formatCompactClassDisplayName(classItem))
+        );
+
+        const studentIds = this.students
+          .filter(student => selectedClassLabels.has((student.class_name || '').toString().trim()))
+          .map(student => Number(student?.id))
+          .filter(Number.isFinite);
+
+        const teacherIds = selectedClassIds
+          .map(classId => Number(classesById.get(classId)?.user_id))
+          .filter(Number.isFinite);
+
+        return this.normalizeUserIdsForCollabAcceptance([...studentIds, ...teacherIds]);
+      }
+
+      if (this.collabTargetGroup === 'evfolyam_szintu') {
+        const selectedGrades = this.collabSelectedGradeIds
+          .map(grade => Number(grade))
+          .filter(Number.isFinite);
+
+        if (!selectedGrades.length) {
+          return [];
+        }
+
+        const classIdsInSelectedGrades = this.classes
+          .filter(classItem => selectedGrades.includes(Number(classItem?.grade)))
+          .map(classItem => Number(classItem.id))
+          .filter(Number.isFinite);
+
+        const classLabelsInSelectedGrades = new Set(
+          classIdsInSelectedGrades
+            .map(classId => classesById.get(classId))
+            .filter(Boolean)
+            .map(classItem => this.formatCompactClassDisplayName(classItem))
+        );
+
+        const studentIds = this.students
+          .filter(student => classLabelsInSelectedGrades.has((student.class_name || '').toString().trim()))
+          .map(student => Number(student?.id))
+          .filter(Number.isFinite);
+
+        const teacherIds = classIdsInSelectedGrades
+          .map(classId => Number(classesById.get(classId)?.user_id))
+          .filter(Number.isFinite);
+
+        return this.normalizeUserIdsForCollabAcceptance([...studentIds, ...teacherIds]);
+      }
+
+      return this.resolveInstitutionUserIdsForCollabAcceptance();
+    },
+
+    normalizeUserIdsForCollabAcceptance(userIds) {
+      const normalizedUserIds = (userIds || []).map(userId => Number(userId)).filter(Number.isFinite);
+      const currentUserId = Number(this.user?.id);
+
+      if (Number.isFinite(currentUserId)) {
+        normalizedUserIds.push(currentUserId);
+      }
+
+      return Array.from(new Set(normalizedUserIds));
+    },
+
+    async approveCollabEventWithTargeting() {
+      const eventId = Number(this.selectedCollabEvent?.id);
+      if (!eventId) {
+        this.collabTargetModalError = 'Hiányzó esemény azonosító.';
+        return;
+      }
+
+      const selectedUserIds = this.resolveCollabAcceptanceUserIds();
+      if (!selectedUserIds.length) {
+        this.collabTargetModalError = 'A kiválasztott célcsoporthoz nem találtunk címzetteket.';
+        return;
+      }
+
+      this.collabTargetModalError = '';
+      const success = await this.handleCollabEventRequest(eventId, 'accept', selectedUserIds);
+
+      if (success) {
+        this.closeCollabTargetModal();
+      }
+    },
+
+    async handleCollabEventRequest(eventId, action, usersOverride = null) {
+      try {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+        const establishmentId = this.user.institution_id;
+
+        if (!token || !establishmentId) {
+          this.showNotification('Hiányzó hitelesítés vagy intézmény azonosító.', 'error');
+          return;
+        }
+
+        const eventIdNumber = Number(eventId);
+        if (!eventIdNumber) {
+          this.showNotification('Hiányzó esemény azonosító.', 'error');
+          return;
+        }
+
+        if (action === 'accept' && (!this.students.length && !this.teachers.length)) {
+          await this.loadInstitutionUsers(establishmentId);
+        }
+
+        const acceptanceUserIds = action === 'accept'
+          ? this.normalizeUserIdsForCollabAcceptance(
+            Array.isArray(usersOverride) && usersOverride.length
+              ? usersOverride
+              : this.resolveInstitutionUserIdsForCollabAcceptance()
+          )
+          : undefined;
+
+        if (action === 'accept' && !acceptanceUserIds.length) {
+          this.showNotification('Nincs elfogadható intézményi felhasználó az eseményhez.', 'warning');
+          return;
+        }
+
+        this.processingCollabEventId = eventIdNumber;
+
+        await axios.patch(
+          `http://127.0.0.1:8000/api/establishment/${establishmentId}/event-access`,
+          {
+            event_id: eventIdNumber,
+            action,
+            ...(action === 'accept' ? { users: acceptanceUserIds } : {})
+          },
+          {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+          }
+        );
+
+        this.collabEvents = this.collabEvents.filter(event => Number(event.id) !== eventIdNumber);
+
+        if (action === 'accept') {
+          this.showNotification('Globális esemény elfogadva.', 'success');
+        } else {
+          this.showNotification('Globális esemény kérés elutasítva.', 'warning');
+        }
+
+        return true;
+      } catch (error) {
+        console.error('Hiba a globális esemény kérés feldolgozásakor:', error);
+        this.showNotification(error.response?.data?.message || 'Hiba történt a kérés feldolgozásakor.', 'error');
+        return false;
+      } finally {
+        this.processingCollabEventId = null;
+      }
+    },
+
+    resolveInstitutionUserIdsForCollabAcceptance() {
+      const userIds = [
+        ...this.students.map(user => Number(user?.id)).filter(Number.isFinite),
+        ...this.teachers.map(user => Number(user?.id)).filter(Number.isFinite),
+      ];
+
+      const currentUserId = Number(this.user?.id);
+      if (Number.isFinite(currentUserId)) {
+        userIds.push(currentUserId);
+      }
+
+      return Array.from(new Set(userIds));
     },
     
     async loadInstitutionUsers(institutionId) {
@@ -1265,12 +1744,47 @@ export default {
     
     // Osztály törlése
     async deleteClass(classItem) {
-      const isConfirmed = await this.askForConfirmation(`Biztosan törölni szeretnéd a(z) ${classItem.name} osztályt?`);
+      const classId = Number(classItem?.id);
+      const establishmentId = Number(this.user?.institution_id);
+      const classLabel = this.formatClassDisplayName(classItem);
+
+      if (!Number.isFinite(classId) || classId <= 0) {
+        this.showNotification('Hiányzó osztály azonosító.', 'error');
+        return;
+      }
+
+      if (!Number.isFinite(establishmentId) || establishmentId <= 0) {
+        this.showNotification('Hiányzó intézmény azonosító.', 'error');
+        return;
+      }
+
+      const isConfirmed = await this.askForConfirmation(`Biztosan törölni szeretnéd a(z) ${classLabel} osztályt?`);
       if (!isConfirmed) {
         return;
       }
 
-      this.showNotification('Az osztály törléséhez jelenleg nincs backend API végpont.', 'warning');
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      this.isDeletingClassId = classId;
+
+      try {
+        await axios.delete(`http://127.0.0.1:8000/api/establishment/${establishmentId}/classes/${classId}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        });
+
+        await this.loadClasses(establishmentId);
+        await this.loadStudentClassAssignments(establishmentId);
+        this.updateStats();
+
+        this.showNotification('Osztály sikeresen törölve.', 'success');
+      } catch (error) {
+        console.error('Hiba az osztály törlésekor:', error);
+        this.showNotification(error?.response?.data?.message || 'Hiba történt az osztály törlésekor.', 'error');
+      } finally {
+        this.isDeletingClassId = null;
+      }
     },
     
     // Kérelem kezelés
@@ -1364,7 +1878,7 @@ export default {
           return;
         }
 
-        await axios.post('http://127.0.0.1:8000/api/establishment/requests/handle', {
+        await axios.patch('http://127.0.0.1:8000/api/establishment/requests/handle', {
           establishment_id: establishmentId,
           action: 'accept',
           request_id: [Number(requestId)]
@@ -1379,7 +1893,7 @@ export default {
             const acceptedStudent = this.students.find(student => Number(student.id) === Number(userId));
 
             if (acceptedStudent?.student_id) {
-              await axios.post('http://127.0.0.1:8000/api/establishment/classes/add-students', {
+              await axios.patch('http://127.0.0.1:8000/api/establishment/classes/add-students', {
                 establishment_id: establishmentId,
                 class_id: this.selectedClassId,
                 student_id: [acceptedStudent.student_id]
@@ -1543,7 +2057,7 @@ export default {
         }
 
         if (currentClassId && currentClassId !== targetClassId) {
-          await axios.post('http://127.0.0.1:8000/api/establishment/classes/remove-students', {
+          await axios.patch('http://127.0.0.1:8000/api/establishment/classes/remove-students', {
             establishment_id: establishmentId,
             class_id: currentClassId,
             student_id: [student.student_id]
@@ -1553,7 +2067,7 @@ export default {
         }
 
         if (targetClassId) {
-          await axios.post('http://127.0.0.1:8000/api/establishment/classes/add-students', {
+          await axios.patch('http://127.0.0.1:8000/api/establishment/classes/add-students', {
             establishment_id: establishmentId,
             class_id: targetClassId,
             student_id: [student.student_id]
@@ -1676,8 +2190,8 @@ export default {
             this.user.institution_id = Number(storedInstitutionId);
           }
           
-          // Ellenőrizzük, hogy intézményvezető-e
-          if (this.user.role !== 'institution_manager' && this.user.role !== 'admin') {
+          // Ellenőrizzük, hogy admin-e
+          if (this.user.role !== 'admin') {
             this.$router.push('/dashboard');
             return;
           }
@@ -1763,14 +2277,20 @@ export default {
 .logo-icon {
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 28px;
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+  background: #ffffff;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);
+  overflow: hidden;
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .logo-text {
@@ -2293,6 +2813,16 @@ export default {
   gap: 10px;
 }
 
+.request-actions-stacked {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.request-actions-inline {
+  display: flex;
+  gap: 10px;
+}
+
 .btn-approve, .btn-reject {
   flex: 1;
   display: flex;
@@ -2306,6 +2836,33 @@ export default {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.btn-details {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.btn-details-full {
+  width: 100%;
+}
+
+.btn-details:hover {
+  background: #e0e7ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
 }
 
 .btn-approve {
@@ -2838,6 +3395,142 @@ export default {
 
 .assignment-form .form-group {
   margin-bottom: 20px;
+}
+
+.collab-target-modal {
+  max-width: 760px;
+}
+
+.target-event-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+.target-event-summary strong {
+  color: #1f2937;
+  font-size: 16px;
+}
+
+.target-event-summary span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.target-group-options {
+  display: grid;
+  gap: 14px;
+}
+
+.target-group-option {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.target-group-option:hover {
+  border-color: #a5b4fc;
+}
+
+.target-group-option.selected {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+
+.option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.option-content i {
+  font-size: 24px;
+  color: #4f46e5;
+}
+
+.option-content h4 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 16px;
+}
+
+.option-content p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.target-selector-panel {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.class-target-state {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 13px;
+}
+
+.class-target-state.warning {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.class-target-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.class-target-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.class-target-card.selected {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 1px #4f46e5;
+  background: #eef2ff;
+}
+
+.class-target-card input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #4f46e5;
+  margin-top: 2px;
+}
+
+.class-target-copy {
+  flex: 1;
+}
+
+.class-target-title {
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.class-target-meta {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
 }
 
 .modal-footer {

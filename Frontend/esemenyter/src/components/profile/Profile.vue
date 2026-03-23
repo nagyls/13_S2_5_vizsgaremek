@@ -5,7 +5,7 @@
         <div class="header-content">
           <div class="logo-section" @click="goToDashboard">
             <div class="logo-icon">
-              <i class='bx bx-calendar-heart'></i>
+              <img :src="logo2" alt="EseményTér logó" class="logo-image">
             </div>
             <div class="logo-text">
               <h1 class="site-title">EseményTér</h1>
@@ -328,7 +328,7 @@
               </div>
 
               <!-- Intézményvezetői adatok -->
-              <div v-if="user.role === 'institution_manager'" class="form-section">
+              <div v-if="user.role === 'admin'" class="form-section">
                 <h2><i class='bx bx-building-house'></i> Intézmény adatok</h2>
                 
                 <div class="form-grid">
@@ -560,7 +560,7 @@
               </div>
 
               <!-- Intézményvezetői adatok -->
-              <div v-if="user.role === 'institution_manager'" class="info-card">
+              <div v-if="user.role === 'admin'" class="info-card">
                 <h3><i class='bx bx-building-house'></i> Intézmény adatok</h3>
                 <div class="info-list">
                   <div class="info-item">
@@ -641,12 +641,14 @@
 
 <script>
 import axios from 'axios';
+import logo2 from '../../assets/logo2.svg';
 
 export default {
   name: 'Profile',
   
   data() {
     return {
+      logo2,
       user: {
         id: null,
         name: '',
@@ -726,8 +728,7 @@ export default {
       const roles = {
         'student': 'Diák',
         'teacher': 'Tanár',
-        'admin': 'Adminisztrátor',
-        'institution_manager': 'Intézményvezető'
+        'admin': 'Adminisztrátor'
       };
       return roles[this.user.role] || this.user.role;
     },
@@ -736,8 +737,7 @@ export default {
       const icons = {
         'student': 'bx bx-graduation',
         'teacher': 'bx bx-chalkboard',
-        'admin': 'bx bx-cog',
-        'institution_manager': 'bx bx-building-house'
+        'admin': 'bx bx-cog'
       };
       return icons[this.user.role] || 'bx bx-user';
     },
@@ -913,7 +913,7 @@ export default {
         };
         
         // Ha intézményvezető, iskola adatok mentése
-        if (this.user.role === 'institution_manager') {
+        if (this.user.role === 'admin') {
           updateData.school_name = this.editForm.school;
           updateData.school_address = this.editForm.schoolAddress;
           updateData.school_phone = this.editForm.schoolPhone;
@@ -996,7 +996,7 @@ export default {
     },
     
     goToDashboard() {
-      if (this.user.role === 'institution_manager' || this.user.role === 'admin') {
+      if (this.user.role === 'admin') {
         this.$router.push('/user-dashboard');
       } else if (this.user.role) {
         this.$router.push('/user-dashboard');
@@ -1105,11 +1105,22 @@ export default {
 }
 
 .logo-icon {
-  font-size: 32px;
-  color: #4f46e5;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .logo-text h1 {
@@ -1330,8 +1341,7 @@ export default {
   color: #f97316;
 }
 
-.profile-role.admin,
-.profile-role.institution_manager {
+.profile-role.admin {
   background: rgba(139, 92, 246, 0.1);
   color: #8b5cf6;
 }
