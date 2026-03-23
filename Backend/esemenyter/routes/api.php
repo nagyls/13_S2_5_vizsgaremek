@@ -16,8 +16,8 @@ use App\Http\Controllers\EstablishmentController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StudentController;
-
 use App\Http\Controllers\RequestController;
+use App\Http\Controllers\CommentController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -94,10 +94,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/establishment/{establishmentId}/requests/teachers', [RequestController::class, 'getTeacherRequests']);
     
     Route::post('/establishment/requests/create', [RequestController::class, 'submitRequest']);
-    // handle request state changes -> PATCH
     Route::patch('/establishment/requests/handle', [RequestController::class, 'handleRequest']);
 
     Route::delete('/establishment/{establishmentId}/requests/revoke', [RequestController::class, 'revokeRequest']);
+
+    // kommentek
+    Route::get('/events/{eventId}/comments', [CommentController::class, 'getComments']);
+    Route::post('/events/comments', [CommentController::class, 'makeComment']);
+    Route::delete('/events/comments/{commentId}', [CommentController::class, 'deleteComment']);
 });
 
 Route::prefix('members')->group(function () {

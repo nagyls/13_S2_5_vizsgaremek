@@ -124,6 +124,7 @@
 </template>
 
 <script>
+import axios from 'axios'
 import { toast } from '../../services/toast'
 
 export default {
@@ -195,9 +196,15 @@ export default {
     },
 
     async kommentekLekerese(esemenyId) {
-      // Valós API hívás helyett localStorage-ból olvasunk
-      const kommentek = JSON.parse(localStorage.getItem('esemeny_kommentek') || '[]')
-      return kommentek.filter(k => k.event_id == esemenyId)
+      const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token')
+      const response = await axios.get(`http://127.0.0.1:8000/api/events/${esemenyId}/comments`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+      })
+      const kommentek = response.data.data || []
+      return kommentek.map(k => ({
+        ...k,
+        username: k.user?.name || 'Ismeretlen'
+      }))
     },
 
     enterGombLeutes(esemeny) {
@@ -247,17 +254,17 @@ export default {
     },
 
     async kommentMentese(komment) {
-      const kommentId = Date.now()
-      const ujKomment = {
-        id: kommentId,
-        ...komment
+      const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token')
+      const response = await axios.post('http://127.0.0.1:8000/api/events/comments', {
+        event_id: komment.event_id,
+        content: komment.content
+      }, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+      })
+      return {
+        ...response.data,
+        username: this.aktualisFelhasznalo?.name || this.aktualisFelhasznalo?.username || 'Felhasználó'
       }
-
-      const kommentek = JSON.parse(localStorage.getItem('esemeny_kommentek') || '[]')
-      kommentek.push(ujKomment)
-      localStorage.setItem('esemeny_kommentek', JSON.stringify(kommentek))
-
-      return ujKomment
     },
 
     async kommentTorles(kommentId) {
@@ -271,13 +278,12 @@ export default {
       }
 
       try {
+        const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token')
+        await axios.delete(`http://127.0.0.1:8000/api/events/comments/${kommentId}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        })
         this.osszesKomment = this.osszesKomment.filter(k => k.id !== kommentId)
-
-        const kommentek = JSON.parse(localStorage.getItem('esemeny_kommentek') || '[]')
-        const frissitettKommentek = kommentek.filter(k => k.id !== kommentId)
-        localStorage.setItem('esemeny_kommentek', JSON.stringify(frissitettKommentek))
         toast.success('Komment törölve.')
-
       } catch (hiba) {
         console.error('Hiba a komment törlésekor:', hiba)
         toast.error('Nem sikerült törölni a kommentet.')
