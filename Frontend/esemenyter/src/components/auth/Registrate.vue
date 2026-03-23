@@ -2,7 +2,10 @@
     <div class="register-page">
         <div class="register-wrapper">
             <form @submit.prevent="register">
-                <h1>Regisztráció</h1>
+                                <div class="logo-icon">
+                                    <img :src="logo2" alt="EseményTér logó" class="logo-image">
+                                </div>
+                                <h1>Regisztráció</h1>
                 
                 <div class="input-box">
                     <input id="username" type="text" v-model="username" placeholder="Teljes név" required>
@@ -56,8 +59,10 @@
 </template>
 
 <script>
+
 import axios from "axios";
 import { toast } from '../../services/toast'
+import logo2 from '../../assets/logo2.svg';
 
 export default {
     name: 'Register',
@@ -71,7 +76,8 @@ export default {
             showPass1: false,
             showPass2: false,
             acceptTerms: false,
-            loading: false
+            loading: false,
+            logo2
         };
     },
     
@@ -519,5 +525,20 @@ export default {
     .terms-text {
         font-size: 13px;
     }
+}
+
+/* Logo */
+.logo-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 18px;
+}
+.logo-image {
+    max-width: 120px;
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
 }
 </style>

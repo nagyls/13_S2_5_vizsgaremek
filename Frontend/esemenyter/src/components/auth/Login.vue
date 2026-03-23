@@ -2,6 +2,9 @@
     <div class="login-page">
         <div class="login-wrapper">
             <form @submit.prevent="login">
+                <div class="logo-icon">
+                    <img :src="logo2" alt="EseményTér logó" class="logo-image">
+                </div>
                 <h1>Bejelentkezés</h1>
                 <div class="input-box">
                     <input id="email" type="text" placeholder="Email cím" v-model="email" required >
@@ -30,8 +33,10 @@
 </template>
 
 <script>
+
 import axios from "axios";
 import { toast } from '../../services/toast'
+import logo2 from '../../assets/logo2.svg';
 
 export default {
   name: 'Login',
@@ -42,7 +47,8 @@ export default {
       password: "",
       showPassword: false,
       loading: false,
-      rememberMe: false
+      rememberMe: false,
+      logo2
     };
   },
   
@@ -413,4 +419,20 @@ export default {
         font-size: 28px;
     }
 }
+
+/* logo */
+.logo-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 18px;
+}
+.logo-image {
+    max-width: 120px;
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
 </style>
