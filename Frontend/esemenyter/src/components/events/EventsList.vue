@@ -52,6 +52,10 @@
                     <i class='bx bx-user'></i>
                     <span>Profilom</span>
                   </router-link>
+                  <router-link to="/events-calendar" class="menu-item">
+                    <i class='bx bx-calendar-week'></i>
+                    <span>Naptár</span>
+                  </router-link>
                   <div class="menu-divider"></div>
                   <button class="menu-item logout-btn" @click="logout">
                     <i class='bx bx-log-out'></i>
@@ -184,6 +188,19 @@
                   @click="filters.status = 'closed'; loadEvents()"
                 >
                   <i class='bx bx-x-circle'></i> Lezárt
+                </button>
+              </div>
+            </div>
+
+            <div v-if="hasFavouriteEventsInInstitution || filters.favouriteOnly" class="filter-group inline">
+              <label class="inline-label"><i class='bx bx-star'></i></label>
+              <div class="chip-container">
+                <button
+                  class="chip"
+                  :class="{ 'active': filters.favouriteOnly }"
+                  @click="filters.favouriteOnly = !filters.favouriteOnly; loadEvents()"
+                >
+                  Kedvencek
                 </button>
               </div>
             </div>
@@ -321,10 +338,12 @@ export default {
       currentUser: null,
       showUserMenu: false,
       favouriteLoadingById: {},
+      hasFavouriteEventsInInstitution: false,
       filters: {
         type: '',
         status: '',
-        sorting: 'newest'
+        sorting: 'newest',
+        favouriteOnly: false
       }
     }
   },
@@ -375,7 +394,7 @@ export default {
     },
     
     hasActiveFilters() {
-      return this.filters.type !== '' || this.filters.status !== '';
+      return this.filters.type !== '' || this.filters.status !== '' || this.filters.favouriteOnly;
     }
   },
   
@@ -445,6 +464,7 @@ export default {
         
         if (!this.currentUser) {
           this.events = [];
+          this.hasFavouriteEventsInInstitution = false;
           return;
         }
 
@@ -542,7 +562,7 @@ export default {
         );
 
         if (response.status >= 200 && response.status < 300) {
-          event.is_favourite = !event.is_favourite;
+          await this.loadEvents();
         }
       } catch (error) {
         console.error('Hiba a kedvenc jelölés mentésekor:', error);
@@ -556,6 +576,19 @@ export default {
       const now = Date.now();
       const groupedRecurring = new Map();
       const standalone = [];
+
+      const parentIds = new Set(
+        events
+          .map(item => Number(item?.recurrence_parent_event_id || 0))
+          .filter(id => id > 0)
+      );
+
+      const toTimestamp = (value) => {
+        if (!value) return Number.NaN;
+        const normalized = String(value).trim().replace(' ', 'T');
+        const parsed = new Date(normalized).getTime();
+        return Number.isNaN(parsed) ? Number.NaN : parsed;
+      };
 
       const buildRecurringFallbackKey = (event) => {
         const startValue = String(event?.start_date || '');
@@ -578,9 +611,19 @@ export default {
           return;
         }
 
-        const seriesKey = event?.recurrence_parent_event_id
-          ? `parent:${Number(event.recurrence_parent_event_id)}`
-          : `fallback:${buildRecurringFallbackKey(event)}`;
+        const currentEventId = Number(event?.id || 0);
+        const parentEventId = Number(event?.recurrence_parent_event_id || 0);
+
+        let seriesKey = '';
+        if (parentEventId > 0) {
+          seriesKey = `parent:${parentEventId}`;
+        } else if (currentEventId > 0 && parentIds.has(currentEventId)) {
+          // Root occurrence of a known series: group with its children.
+          seriesKey = `parent:${currentEventId}`;
+        } else {
+          // Fallback for legacy/orphan records without parent links.
+          seriesKey = `fallback:${buildRecurringFallbackKey(event)}`;
+        }
 
         if (!groupedRecurring.has(seriesKey)) {
           groupedRecurring.set(seriesKey, []);
@@ -590,21 +633,37 @@ export default {
       });
 
       const recurringRepresentatives = Array.from(groupedRecurring.values()).map((seriesEvents) => {
-        const validEvents = seriesEvents.filter(item => !Number.isNaN(new Date(item?.start_date).getTime()));
+        const validEvents = seriesEvents.filter((item) => {
+          return !Number.isNaN(toTimestamp(item?.start_date));
+        });
+
         if (!validEvents.length) {
           return seriesEvents[0];
         }
 
+        const ongoing = validEvents
+          .filter((item) => {
+            const startAt = toTimestamp(item?.start_date);
+            const endAt = toTimestamp(item?.end_date);
+            if (Number.isNaN(startAt) || Number.isNaN(endAt)) return false;
+            return startAt <= now && endAt > now;
+          })
+          .sort((a, b) => toTimestamp(a.start_date) - toTimestamp(b.start_date));
+
+        if (ongoing.length) {
+          return ongoing[0];
+        }
+
         const upcoming = validEvents
-          .filter(item => new Date(item.start_date).getTime() >= now)
-          .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+          .filter(item => toTimestamp(item.start_date) >= now)
+          .sort((a, b) => toTimestamp(a.start_date) - toTimestamp(b.start_date));
 
         if (upcoming.length) {
           return upcoming[0];
         }
 
         const latestPast = validEvents
-          .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+          .sort((a, b) => toTimestamp(b.start_date) - toTimestamp(a.start_date));
 
         return latestPast[0];
       });
@@ -648,15 +707,23 @@ export default {
       const normalizedEvents = incomingEvents
         .map((event) => this.normalizeEventForList(event));
 
+      this.hasFavouriteEventsInInstitution = normalizedEvents.some(event => Boolean(event?.is_favourite));
+
       const collapsedEvents = this.collapseRecurringSeries(normalizedEvents);
 
       return collapsedEvents
         .filter(event => {
           if (this.filters.type && event.type !== this.filters.type) return false;
           if (this.filters.status && event.status !== this.filters.status) return false;
+          if (this.filters.favouriteOnly && !event.is_favourite) return false;
           return true;
         })
         .sort((a, b) => {
+          const favouriteDiff = Number(Boolean(b.is_favourite)) - Number(Boolean(a.is_favourite));
+          if (favouriteDiff !== 0) {
+            return favouriteDiff;
+          }
+
           switch (this.filters.sorting) {
             case 'oldest':
               return new Date(a.start_date) - new Date(b.start_date);
@@ -682,6 +749,7 @@ export default {
     clearFilters() {
       this.filters.type = '';
       this.filters.status = '';
+      this.filters.favouriteOnly = false;
       this.loadEvents();
     }
   }

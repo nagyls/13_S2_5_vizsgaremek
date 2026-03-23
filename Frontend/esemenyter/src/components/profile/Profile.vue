@@ -43,6 +43,10 @@
                     <i class='bx bx-calendar'></i>
                     <span>Események</span>
                   </router-link>
+                  <router-link to="/events-calendar" class="menu-item">
+                    <i class='bx bx-calendar-week'></i>
+                    <span>Naptár</span>
+                  </router-link>
                   <div class="menu-divider"></div>
                   <button class="menu-item logout-btn" @click="logout">
                     <i class='bx bx-log-out'></i>

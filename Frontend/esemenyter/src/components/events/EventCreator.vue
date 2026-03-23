@@ -1517,6 +1517,12 @@ export default {
         } else {
           payload.target_group = this.selectedSchoolTargetGroup
 
+          if (this.eventForm.isRecurring) {
+            payload.is_recurring = true
+            payload.recurrence_frequency = 'weekly'
+            payload.recurrence_until = this.eventForm.recurrenceUntil
+          }
+
           if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
             payload.selected_class_ids = this.normalizeNumericList(this.selectedClassIds)
           }
