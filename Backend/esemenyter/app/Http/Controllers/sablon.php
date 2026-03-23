@@ -8,7 +8,7 @@ use App\Models\EventShown;
 use App\Models\EventRequest;
 use Illuminate\Support\Facades\DB;
 
-class EventController extends Controller
+class sablon extends Controller
 {
 
 

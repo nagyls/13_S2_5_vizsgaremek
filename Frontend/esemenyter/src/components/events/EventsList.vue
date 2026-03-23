@@ -273,25 +273,15 @@
               </div>
               
               <div class="card-footer">
-                <div class="stats">
-                  <div class="stat-item" title="Részt vesz">
-                    <i class='bx bx-user-check'></i>
-                    <span>{{ event.attending_count ?? event.participants ?? 0 }}</span>
-                  </div>
-                  <div class="stat-item" title="Nem vesz részt">
-                    <i class='bx bx-user-x'></i>
-                    <span>{{ event.not_attending_count ?? 0 }}</span>
-                  </div>
-                  <div class="stat-item" title="Kedvencek">
-                    <i class='bx bx-star'></i>
-                    <span>{{ event.favorites || 0 }}</span>
-                  </div>
-                  <div class="stat-item" title="Hozzászólások">
-                    <i class='bx bx-message-square-detail'></i>
-                    <span>{{ event.comment_count || 0 }}</span>
-                    <small>Komment</small>
-                  </div>
-                </div>
+                <button
+                  class="favourite-toggle"
+                  :class="{ active: event.is_favourite, loading: isFavouriteLoading(event.id) }"
+                  :disabled="isFavouriteLoading(event.id)"
+                  :title="event.is_favourite ? 'Eltávolítás a kedvencekből' : 'Hozzáadás a kedvencekhez'"
+                  @click="toggleFavourite(event)"
+                >
+                  <i class='bx' :class="event.is_favourite ? 'bxs-star' : 'bx-star'"></i>
+                </button>
                 
                 <router-link 
                   :to="`/esemenyek/${event.id}`" 
@@ -330,6 +320,7 @@ export default {
       isLoading: true,
       currentUser: null,
       showUserMenu: false,
+      favouriteLoadingById: {},
       filters: {
         type: '',
         status: '',
@@ -515,8 +506,50 @@ export default {
         attending_count: Number(event?.attending_count || event?.participants || event?.participant_count || 0),
         not_attending_count: Number(event?.not_attending_count || 0),
         favorites: Number(event?.favorites || event?.favorite_count || 0),
-        comment_count: Number(event?.comment_count || event?.comments_count || 0)
+        comment_count: Number(event?.comment_count || event?.comments_count || 0),
+        is_favourite: Boolean(event?.is_favourite)
       };
+    },
+
+    isFavouriteLoading(eventId) {
+      return Boolean(this.favouriteLoadingById[eventId]);
+    },
+
+    async toggleFavourite(event) {
+      if (!event?.id || this.isFavouriteLoading(event.id)) {
+        return;
+      }
+
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      this.favouriteLoadingById = {
+        ...this.favouriteLoadingById,
+        [event.id]: true
+      };
+
+      try {
+        const response = await axios.patch(
+          `http://127.0.0.1:8000/api/events/${event.id}/favourite`,
+          {},
+          {
+            headers: {
+              Accept: 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            }
+          }
+        );
+
+        if (response.status >= 200 && response.status < 300) {
+          event.is_favourite = !event.is_favourite;
+        }
+      } catch (error) {
+        console.error('Hiba a kedvenc jelölés mentésekor:', error);
+      } finally {
+        const { [event.id]: _ignored, ...rest } = this.favouriteLoadingById;
+        this.favouriteLoadingById = rest;
+      }
     },
 
     collapseRecurringSeries(events) {
@@ -1423,39 +1456,41 @@ export default {
   align-items: center;
 }
 
-.stats {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-
-.stat-item {
+.favourite-toggle {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  color: #718096;
-  font-size: 0.75rem;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: #667eea;
   background: #eef2ff;
   border: 1px solid #dbe4ff;
   border-radius: 999px;
-  padding: 0.25rem 0.55rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.stat-item i {
-  font-size: 1rem;
-  color: #667eea;
+.favourite-toggle i {
+  font-size: 1.2rem;
 }
 
-.stat-item span {
-  color: #334155;
-  font-weight: 700;
+.favourite-toggle:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.25);
 }
 
-.stat-item small {
-  color: #64748b;
-  font-size: 0.68rem;
-  font-weight: 600;
+.favourite-toggle.active {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #f59e0b;
+}
+
+.favourite-toggle.loading {
+  opacity: 0.6;
+}
+
+.favourite-toggle:disabled {
+  cursor: not-allowed;
 }
 
 .details-button {
@@ -1619,17 +1654,11 @@ export default {
   }
   
   .card-footer {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .stats {
-    justify-content: center;
+    gap: 0.75rem;
   }
   
   .details-button {
-    width: 100%;
-    justify-content: center;
+    margin-left: auto;
   }
   
   .filter-row {

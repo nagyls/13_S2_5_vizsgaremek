@@ -385,11 +385,23 @@ class EventController extends Controller
                 $users = $validated['users'] ?? [];
                 foreach ($users as $userId) {
                     if ($this->isMemberEstablishment($userId, $establishmentId)) {
-                        EventShown::firstOrCreate([
+                        $hasFavouriteInAnyEstablishment = EventShown::where('event_id', $eventId)
+                            ->where('user_id', $userId)
+                            ->where('is_favourite', true)
+                            ->exists();
+
+                        $eventShown = EventShown::firstOrCreate([
                             'event_id' => $eventId,
                             'user_id' => $userId,
                             'establishment_id' => $establishmentId,
+                        ], [
+                            'is_favourite' => $hasFavouriteInAnyEstablishment,
                         ]);
+
+                        if ($hasFavouriteInAnyEstablishment && !$eventShown->is_favourite) {
+                            $eventShown->is_favourite = true;
+                            $eventShown->save();
+                        }
                     }
                 }
             }
@@ -479,6 +491,24 @@ class EventController extends Controller
             });
         }
 
+        $eventIds = $events
+            ->pluck('id')
+            ->map(fn($id) => (int) $id)
+            ->values()
+            ->all();
+
+        $favouriteEventIdSet = collect();
+
+        if (!empty($eventIds)) {
+            $favouriteEventIdSet = EventShown::where('user_id', $user->id)
+                ->whereIn('event_id', $eventIds)
+                ->where('is_favourite', true)
+                ->pluck('event_id')
+                ->map(fn($id) => (int) $id)
+                ->unique()
+                ->flip();
+        }
+
         $feedbackStatsByEvent = collect();
         $userFeedbackByEvent = collect();
         $commentCountsByEvent = collect();
@@ -508,7 +538,7 @@ class EventController extends Controller
                 ->keyBy('event_id');
         }
 
-        $events = $events->map(function ($event) use ($feedbackStatsByEvent, $userFeedbackByEvent, $commentCountsByEvent) {
+        $events = $events->map(function ($event) use ($feedbackStatsByEvent, $userFeedbackByEvent, $commentCountsByEvent, $favouriteEventIdSet) {
             $stats = $feedbackStatsByEvent->get($event->id);
             $commentStats = $commentCountsByEvent->get($event->id);
 
@@ -518,6 +548,7 @@ class EventController extends Controller
             $event->participants = (int) ($stats->attending_count ?? 0);
             $event->comment_count = (int) ($commentStats->comment_count ?? 0);
             $event->user_participation = $userFeedbackByEvent->get($event->id);
+            $event->is_favourite = $favouriteEventIdSet->has((int) $event->id);
 
             return $event;
         });
@@ -638,5 +669,44 @@ class EventController extends Controller
             'event' => $event,
         ]);
     }
+
+    public function makeFavourite(Request $request, int $eventId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'nem jogosult'], 401);
+        }
+
+        $event = Event::find($eventId);
+        if (!$event) {
+            return response()->json(['message' => 'Az esemény nem található.'], 404);
+        }
+        $eventShows = EventShown::where('event_id', $eventId)
+            ->where('user_id', $user->id);
+
+        if (!$eventShows->exists()) {
+            return response()->json(['message' => 'nem jogosult'], 403);
+        }
+
+        $hasFavourite = EventShown::where('event_id', $eventId)
+            ->where('user_id', $user->id)
+            ->where('is_favourite', true)
+            ->exists();
+
+        $newValue = !$hasFavourite;
+
+        $eventShows->update([
+            'is_favourite' => $newValue,
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => $newValue
+                ? 'Esemény hozzáadva a kedvencekhez.'
+                : 'Esemény eltávolítva a kedvencek közül.',
+        ]);
+    }
+
 }
 //

@@ -160,15 +160,6 @@
               <div class="stats-grid">
                 <div class="stat-item stat-elem">
                   <div class="stat-ikon">
-                    <i class='bx bx-message-detail'></i>
-                  </div>
-                  <div class="stat-data">
-                    <span class="stat-number">{{ commentCount }}</span>
-                    <span class="stat-label">Komment</span>
-                  </div>
-                </div>
-                <div class="stat-item stat-elem">
-                  <div class="stat-ikon">
                     <i class='bx bx-check-circle'></i>
                   </div>
                   <div class="stat-data">
@@ -183,15 +174,6 @@
                   <div class="stat-data">
                     <span class="stat-number">{{ notAttendingCount }}</span>
                     <span class="stat-label">Nem vesz részt</span>
-                  </div>
-                </div>
-                <div class="stat-item stat-elem">
-                  <div class="stat-ikon">
-                    <i class='bx bx-star'></i>
-                  </div>
-                  <div class="stat-data">
-                    <span class="stat-number">{{ favoriteCount }}</span>
-                    <span class="stat-label">Kedvenc</span>
                   </div>
                 </div>
               </div>
@@ -1310,7 +1292,7 @@ export default {
 /* Statisztika */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 1rem;
 }
 

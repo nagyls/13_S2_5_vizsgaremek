@@ -480,7 +480,12 @@
                   <button class="btn-icon" @click="editClass(classItem)" title="Szerkesztés">
                     <i class='bx bx-edit'></i>
                   </button>
-                  <button class="btn-icon" @click="deleteClass(classItem)" title="Törlés">
+                  <button
+                    class="btn-icon"
+                    @click="deleteClass(classItem)"
+                    title="Törlés"
+                    :disabled="isDeletingClassId === Number(classItem.id)"
+                  >
                     <i class='bx bx-trash'></i>
                   </button>
                 </div>
@@ -936,6 +941,7 @@ export default {
       },
       classErrors: {},
       isCreatingClass: false,
+      isDeletingClassId: null,
       availableGrades: [9, 10, 11, 12, 13]
     };
   },
@@ -1738,12 +1744,47 @@ export default {
     
     // Osztály törlése
     async deleteClass(classItem) {
-      const isConfirmed = await this.askForConfirmation(`Biztosan törölni szeretnéd a(z) ${classItem.name} osztályt?`);
+      const classId = Number(classItem?.id);
+      const establishmentId = Number(this.user?.institution_id);
+      const classLabel = this.formatClassDisplayName(classItem);
+
+      if (!Number.isFinite(classId) || classId <= 0) {
+        this.showNotification('Hiányzó osztály azonosító.', 'error');
+        return;
+      }
+
+      if (!Number.isFinite(establishmentId) || establishmentId <= 0) {
+        this.showNotification('Hiányzó intézmény azonosító.', 'error');
+        return;
+      }
+
+      const isConfirmed = await this.askForConfirmation(`Biztosan törölni szeretnéd a(z) ${classLabel} osztályt?`);
       if (!isConfirmed) {
         return;
       }
 
-      this.showNotification('Az osztály törléséhez jelenleg nincs backend API végpont.', 'warning');
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      this.isDeletingClassId = classId;
+
+      try {
+        await axios.delete(`http://127.0.0.1:8000/api/establishment/${establishmentId}/classes/${classId}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        });
+
+        await this.loadClasses(establishmentId);
+        await this.loadStudentClassAssignments(establishmentId);
+        this.updateStats();
+
+        this.showNotification('Osztály sikeresen törölve.', 'success');
+      } catch (error) {
+        console.error('Hiba az osztály törlésekor:', error);
+        this.showNotification(error?.response?.data?.message || 'Hiba történt az osztály törlésekor.', 'error');
+      } finally {
+        this.isDeletingClassId = null;
+      }
     },
     
     // Kérelem kezelés
