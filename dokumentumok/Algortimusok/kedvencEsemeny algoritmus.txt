@@ -1,8 +1,20 @@
 ﻿ALGORITMUS: KedvencEsemeny
 
-MEGJEGYZES (JELENLEGI ALLAPOT):
-- Van EventFavourite model a backendben.
-- Kulon kedvenc API endpoint jelenleg nincs a route-okban.
-- Emiatt a regi kedvenc hozzaadas folyamat jelenleg nem aktiv vegpont.
+BEMENET:
+- eventId (path)
+
+LEPESEK:
+1. Auth user ellenorzese.
+2. Event letezes ellenorzese.
+3. Jogosultsag ellenorzese:
+	- csak olyan event jelolheto kedvencnek, amelyre a usernek van EventShown sora.
+4. Aktualis kedvenc allapot ellenorzese (is_favourite).
+5. Toggle muvelet:
+	- ha jelenleg false, akkor true-ra allitas,
+	- ha jelenleg true, akkor false-ra allitas.
+6. Mentes EventShown tablaban (event_id + user_id kombinacio(k) frissitese).
+7. Valasz:
+	- "Esemeny hozzaadva a kedvencekhez" vagy
+	- "Esemeny eltavolitva a kedvencek kozul".
 
 ALGORITMUS VEGE

@@ -853,6 +853,145 @@
       </div>
     </transition>
 
+    <!-- Osztály szerkesztő modul -->
+    <transition name="modal">
+      <div v-if="showClassEditModal" class="modal-overlay" @click.self="closeClassEditModal">
+        <div class="modal-container class-edit-modal">
+          <div class="modal-header">
+            <h3>
+              <i class='bx bx-cog'></i>
+              {{ formatClassDisplayName(editingClass) }} – Szerkesztés
+            </h3>
+            <button class="modal-close" @click="closeClassEditModal">
+              <i class='bx bx-x'></i>
+            </button>
+          </div>
+
+          <div class="modal-body" v-if="editingClass">
+            <!-- Osztályfőnök szekció -->
+            <div class="class-edit-section">
+              <h4 class="class-edit-section-title">
+                <i class='bx bx-chalkboard'></i>
+                Osztályfőnök
+              </h4>
+              <div class="current-teacher-display">
+                <div v-if="editingClass.user" class="teacher-chip">
+                  <div class="teacher-chip-avatar">{{ (editingClass.user).charAt(0).toUpperCase() }}</div>
+                  <span>{{ editingClass.user }}</span>
+                </div>
+                <span v-else class="no-teacher-label">Nincs kijelölt osztályfőnök</span>
+              </div>
+              <div class="teacher-change-row">
+                <select v-model="classEditNewTeacherId" class="form-select" :disabled="classEditIsUpdatingTeacher">
+                  <option value="">-- Válassz tanárt --</option>
+                  <option v-for="t in teachers" :key="t.id" :value="String(t.id)">
+                    {{ t.name }}
+                  </option>
+                </select>
+                <button
+                  class="btn-primary btn-sm"
+                  @click="saveClassTeacher"
+                  :disabled="classEditIsUpdatingTeacher || !classEditNewTeacherId"
+                >
+                  <i class='bx' :class="classEditIsUpdatingTeacher ? 'bx-loader-circle bx-spin' : 'bx-save'"></i>
+                  {{ classEditIsUpdatingTeacher ? 'Mentés...' : 'Mentés' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="class-edit-divider"></div>
+
+            <!-- Diákok szekció -->
+            <div class="class-edit-section">
+              <h4 class="class-edit-section-title">
+                <i class='bx bx-group'></i>
+                Osztály tagjai ({{ classEditMembers.length }})
+              </h4>
+
+              <div v-if="classEditLoading" class="class-edit-loading">
+                <i class='bx bx-loader-circle bx-spin'></i> Betöltés...
+              </div>
+
+              <div v-else-if="classEditMembers.length === 0" class="class-edit-empty">
+                <i class='bx bx-user-x'></i>
+                <span>Még nincsenek diákok ebben az osztályban.</span>
+              </div>
+
+              <div v-else class="class-members-list">
+                <div v-for="member in classEditMembers" :key="member.id" class="class-member-row">
+                  <div class="member-info">
+                    <div class="member-avatar">{{ (member.name || '?').charAt(0).toUpperCase() }}</div>
+                    <div class="member-text">
+                      <span class="member-name">{{ member.name }}</span>
+                      <span v-if="member.alias" class="member-alias">{{ member.alias }}</span>
+                    </div>
+                  </div>
+                  <button
+                    class="btn-icon btn-remove-student"
+                    @click="removeStudentFromClass(member)"
+                    :disabled="classEditRemovingStudentId === Number(member.id)"
+                    title="Eltávolítás az osztályból"
+                  >
+                    <i class='bx' :class="classEditRemovingStudentId === Number(member.id) ? 'bx-loader-circle bx-spin' : 'bx-user-minus'"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Diák hozzáadás -->
+              <div v-if="!classEditLoading && classEditStudentsNotInClass.length > 0" class="add-students-section">
+                <label class="add-students-label">
+                  <i class='bx bx-user-plus'></i>
+                  Diák hozzáadása az osztályhoz:
+                </label>
+                <div class="teacher-change-row">
+                  <select
+                    v-model="classEditAddStudentIds"
+                    class="form-select"
+                    multiple
+                    :disabled="classEditIsAddingStudents"
+                    size="4"
+                  >
+                    <option
+                      v-for="s in classEditStudentsNotInClass"
+                      :key="s.student_id"
+                      :value="s.student_id"
+                    >
+                      {{ s.name }}{{ s.alias ? ` (${s.alias})` : '' }}
+                    </option>
+                  </select>
+                  <button
+                    class="btn-primary btn-sm"
+                    @click="addStudentsToClass"
+                    :disabled="classEditIsAddingStudents || !classEditAddStudentIds.length"
+                  >
+                    <i class='bx' :class="classEditIsAddingStudents ? 'bx-loader-circle bx-spin' : 'bx-user-plus'"></i>
+                    {{ classEditIsAddingStudents ? 'Hozzáadás...' : 'Hozzáadás' }}
+                  </button>
+                </div>
+                <p class="form-hint">
+                  <i class='bx bx-info-circle'></i>
+                  Ctrl+klikkel több diákot is kijelölhetsz.
+                </p>
+              </div>
+              <div v-else-if="!classEditLoading && classEditStudentsNotInClass.length === 0 && students.length > 0" class="form-hint">
+                <i class='bx bx-check-circle'></i>
+                Minden intézményi diák már tagja ennek az osztálynak.
+              </div>
+            </div>
+
+            <div v-if="classEditError" class="error-message">
+              <i class='bx bx-error-circle'></i>
+              <span>{{ classEditError }}</span>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-outline" @click="closeClassEditModal">Bezárás</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- Floating Action Button -->
     <button v-if="showScrollTop" class="fab" @click="scrollToTop">
       <i class='bx bx-chevron-up'></i>
@@ -942,7 +1081,19 @@ export default {
       classErrors: {},
       isCreatingClass: false,
       isDeletingClassId: null,
-      availableGrades: [9, 10, 11, 12, 13]
+      availableGrades: [9, 10, 11, 12, 13],
+
+      // Osztály szerkesztő modal
+      showClassEditModal: false,
+      classEditLoading: false,
+      editingClass: null,
+      classEditMembers: [],
+      classEditNewTeacherId: '',
+      classEditIsUpdatingTeacher: false,
+      classEditAddStudentIds: [],
+      classEditIsAddingStudents: false,
+      classEditRemovingStudentId: null,
+      classEditError: ''
     };
   },
   
@@ -971,6 +1122,13 @@ export default {
           .map(classItem => Number(classItem?.grade))
           .filter(Number.isFinite)
       )).sort((left, right) => left - right);
+    },
+
+    // Az osztályban még nem szereplő diákok (szerkesztő modalhoz)
+    classEditStudentsNotInClass() {
+      if (!this.editingClass) return [];
+      const memberUserIds = new Set(this.classEditMembers.map(m => Number(m.id)));
+      return this.students.filter(s => !memberUserIds.has(Number(s.id)));
     },
     
     // Diák kérelmek
@@ -1737,9 +1895,139 @@ export default {
     
     // Osztály szerkesztése
     async editClass(classItem) {
-      // TODO: Szerkesztő modal megnyitása
-      console.log('Edit class:', classItem);
-      this.showNotification('Szerkesztés funkció fejlesztés alatt', 'info');
+      this.editingClass = { ...classItem };
+      this.classEditNewTeacherId = String(classItem.user_id || '');
+      this.classEditMembers = [];
+      this.classEditAddStudentIds = [];
+      this.classEditError = '';
+      this.showClassEditModal = true;
+      await this.loadClassEditMembers();
+    },
+
+    closeClassEditModal() {
+      this.showClassEditModal = false;
+      this.editingClass = null;
+      this.classEditMembers = [];
+      this.classEditNewTeacherId = '';
+      this.classEditAddStudentIds = [];
+      this.classEditError = '';
+    },
+
+    async loadClassEditMembers() {
+      const establishmentId = Number(this.user?.institution_id);
+      const classId = Number(this.editingClass?.id);
+      try {
+        this.classEditLoading = true;
+        this.classEditError = '';
+        const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token');
+        const response = await axios.get(
+          `http://127.0.0.1:8000/api/establishment/${establishmentId}/classes/${classId}`,
+          { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
+        );
+        this.classEditMembers = response.data.data || [];
+      } catch (error) {
+        this.classEditError = 'Nem sikerült betölteni az osztály tagjait.';
+      } finally {
+        this.classEditLoading = false;
+      }
+    },
+
+    async saveClassTeacher() {
+      const teacherId = Number(this.classEditNewTeacherId);
+      if (!teacherId) {
+        this.classEditError = 'Válassz osztályfőnököt!';
+        return;
+      }
+      const establishmentId = Number(this.user?.institution_id);
+      const classId = Number(this.editingClass?.id);
+      try {
+        this.classEditIsUpdatingTeacher = true;
+        this.classEditError = '';
+        const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token');
+        await axios.patch(
+          `http://127.0.0.1:8000/api/establishment/${establishmentId}/classes/${classId}`,
+          { teacher_id: teacherId },
+          { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
+        );
+        const teacher = this.teachers.find(t => Number(t.id) === teacherId);
+        this.editingClass.user_id = teacherId;
+        this.editingClass.user = teacher?.name || null;
+        const localClass = this.classes.find(c => Number(c.id) === classId);
+        if (localClass) {
+          localClass.user_id = teacherId;
+          localClass.user = teacher?.name || null;
+        }
+        this.showNotification('Osztályfőnök sikeresen frissítve!', 'success');
+      } catch (error) {
+        this.classEditError = error?.response?.data?.message || 'Nem sikerült frissíteni az osztályfőnököt.';
+      } finally {
+        this.classEditIsUpdatingTeacher = false;
+      }
+    },
+
+    async addStudentsToClass() {
+      if (!this.classEditAddStudentIds.length) {
+        this.classEditError = 'Válassz legalább egy diákot!';
+        return;
+      }
+      const establishmentId = Number(this.user?.institution_id);
+      const classId = Number(this.editingClass?.id);
+      try {
+        this.classEditIsAddingStudents = true;
+        this.classEditError = '';
+        const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token');
+        await axios.patch(
+          'http://127.0.0.1:8000/api/establishment/classes/add-students',
+          {
+            establishment_id: establishmentId,
+            class_id: classId,
+            student_id: this.classEditAddStudentIds.map(Number)
+          },
+          { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
+        );
+        this.classEditAddStudentIds = [];
+        await this.loadClassEditMembers();
+        await this.loadStudentClassAssignments(establishmentId);
+        this.updateStats();
+        this.showNotification('Diák(ok) sikeresen hozzáadva!', 'success');
+      } catch (error) {
+        const msg = error?.response?.data?.message || error?.response?.data?.errors;
+        this.classEditError = typeof msg === 'string' ? msg : 'Nem sikerült hozzáadni a diákokat.';
+      } finally {
+        this.classEditIsAddingStudents = false;
+      }
+    },
+
+    async removeStudentFromClass(member) {
+      const establishmentId = Number(this.user?.institution_id);
+      const classId = Number(this.editingClass?.id);
+      const found = this.students.find(s => Number(s.id) === Number(member.id));
+      if (!found?.student_id) {
+        this.classEditError = 'A diák azonosítója nem található.';
+        return;
+      }
+      try {
+        this.classEditRemovingStudentId = Number(member.id);
+        this.classEditError = '';
+        const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token');
+        await axios.patch(
+          'http://127.0.0.1:8000/api/establishment/classes/remove-students',
+          {
+            establishment_id: establishmentId,
+            class_id: classId,
+            student_id: [found.student_id]
+          },
+          { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
+        );
+        this.classEditMembers = this.classEditMembers.filter(m => Number(m.id) !== Number(member.id));
+        await this.loadStudentClassAssignments(establishmentId);
+        this.updateStats();
+        this.showNotification('Diák eltávolítva az osztályból.', 'success');
+      } catch (error) {
+        this.classEditError = error?.response?.data?.message || 'Nem sikerült eltávolítani a diákot.';
+      } finally {
+        this.classEditRemovingStudentId = null;
+      }
     },
     
     // Osztály törlése
@@ -3833,5 +4121,214 @@ export default {
     width: 100%;
     justify-content: center;
   }
+}
+
+/* Osztály szerkesztő modal */
+.class-edit-modal {
+  max-width: 560px;
+}
+
+.class-edit-section {
+  margin-bottom: 8px;
+}
+
+.class-edit-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 14px 0;
+}
+
+.class-edit-section-title i {
+  color: #4f46e5;
+  font-size: 18px;
+}
+
+.class-edit-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 20px 0;
+}
+
+.current-teacher-display {
+  margin-bottom: 12px;
+}
+
+.teacher-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0f4ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 50px;
+  padding: 6px 14px 6px 6px;
+}
+
+.teacher-chip-avatar {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.no-teacher-label {
+  font-size: 13px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.teacher-change-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.teacher-change-row .form-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 13px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.class-edit-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+.class-edit-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #9ca3af;
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+.class-members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.class-member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.class-member-row:hover {
+  background: #f0f4ff;
+}
+
+.member-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.member-avatar {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.member-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.member-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.member-alias {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.btn-remove-student {
+  color: #ef4444;
+  border: 1px solid #fecaca;
+  background: #fff5f5;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-remove-student:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+.btn-remove-student:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.add-students-section {
+  margin-top: 14px;
+  border-top: 1px dashed #e5e7eb;
+  padding-top: 14px;
+}
+
+.add-students-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 10px;
+}
+
+.add-students-label i {
+  color: #4f46e5;
+}
+
+select[multiple].form-select {
+  min-height: 90px;
+  padding: 6px;
 }
 </style>

@@ -477,7 +477,10 @@ class EventController extends Controller
             ->distinct()
             ->pluck('event_id');
 
-        $events = Event::whereIn('id', $visibleEventIds)
+        $events = Event::where(function ($query) use ($visibleEventIds) {
+                $query->whereIn('id', $visibleEventIds)
+                    ->orWhereIn('recurrence_parent_event_id', $visibleEventIds);
+            })
             ->orderBy('start_date', 'asc')
             ->get();
 

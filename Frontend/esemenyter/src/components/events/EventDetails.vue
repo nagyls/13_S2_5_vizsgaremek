@@ -53,8 +53,13 @@
             </div>
             <h1 class="hero-title">{{ eventData.title }}</h1>
             <div v-if="!isReadOnlyMode" class="hero-actions">
-              <button v-if="currentUser" class="icon-button" @click="toggleFavorite">
-                <i class='bx bx-star' :class="{ 'active': eventData.isFavorite }"></i>
+              <button
+                v-if="currentUser"
+                class="icon-button"
+                :class="{ 'active': eventData?.isFavorite }"
+                @click="toggleFavorite"
+              >
+                <i class='bx' :class="eventData?.isFavorite ? 'bxs-star active' : 'bx-star'"></i>
                 <span class="btn-text">Kedvenc</span>
               </button>
               <button class="icon-button" @click="shareEvent">
@@ -351,7 +356,7 @@ export default {
         participants: Number(event?.participants || event?.participant_count || 0),
         favorites: Number(event?.favorites || event?.favorite_count || 0),
         comment_count: Number(event?.comment_count || event?.comments_count || 0),
-        isFavorite: Boolean(event?.isFavorite || event?.is_favorite)
+        isFavorite: Boolean(event?.isFavorite || event?.is_favorite || event?.is_favourite)
       }
     },
 
@@ -657,7 +662,56 @@ export default {
         return
       }
 
-      this.showMessage('A kedvencek mentése még nincs backend API-ra kötve ezen az oldalon.', 'info')
+      const token = this.getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      const eventId = Number(this.eventData?.id || this.eventId)
+      if (!eventId) {
+        this.showMessage('Nem található esemény azonosító.', 'error')
+        return
+      }
+
+      try {
+        const response = await axios.patch(
+          `http://127.0.0.1:8000/api/events/${eventId}/favourite`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json'
+            },
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          const message = response?.data?.message || 'Nem sikerült módosítani a kedvenc jelölést.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        const wasFavorite = Boolean(this.eventData?.isFavorite)
+        const nowFavorite = !wasFavorite
+
+        if (this.eventData) {
+          this.eventData.isFavorite = nowFavorite
+          this.eventData.is_favorite = nowFavorite
+          this.eventData.is_favourite = nowFavorite
+        }
+
+        this.favoriteCount = Math.max(0, Number(this.favoriteCount || 0) + (nowFavorite ? 1 : -1))
+
+        this.showMessage(
+          response?.data?.message || (nowFavorite ? 'Esemény hozzáadva a kedvencekhez.' : 'Esemény eltávolítva a kedvencek közül.'),
+          'success'
+        )
+      } catch (error) {
+        console.error('Kedvenc jelölési hiba:', error)
+        this.showMessage('Hiba történt a kedvenc jelölés mentésekor.', 'error')
+      }
     },
     
     shareEvent() {
@@ -1098,8 +1152,18 @@ export default {
 }
 
 .icon-button i.active {
-  color: #ffd700;
-  fill: #ffd700;
+  color: #f59e0b;
+  fill: #f59e0b;
+}
+
+.icon-button.active {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #f59e0b;
+}
+
+.icon-button.active .btn-text {
+  color: #f59e0b;
 }
 
 /* Tartalom rács */

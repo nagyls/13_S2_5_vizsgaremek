@@ -4,13 +4,16 @@ BEMENET:
 - establishmentId
 - event_id
 - action: accept vagy reject
+- users[] (action=accept eseten kotelezo)
 
 LEPESEK:
 1. Auth + admin jogosultsag ellenorzese.
 2. event_id es action validalasa.
-3. Tranzakcio:
+3. Ha action=accept, users[] lista validalasa (letezo, egyedi user azonositok).
+4. Tranzakcio:
    - EventRequest torles az adott intezmenyre,
-   - ha accept: intezmeny tagok event_shown lathatosaganak letrehozasa.
-4. Valasz: "Muvelet vegrehajtva".
+   - ha accept: intezmenyhez tartozo users elemeknek EventShown letrehozas.
+   - ha a usernek mas intezmenyi EventShown sorban mar kedvenc az esemeny, az uj sor is_favourite=true erteket kap.
+5. Valasz: "Muvelet vegrehajtva".
 
 ALGORITMUS VEGE

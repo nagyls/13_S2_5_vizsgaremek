@@ -6,17 +6,18 @@ BEMENET:
 LEPESEK:
 1. Auth user ellenorzese.
 2. Intezmenyi tagsag ellenorzese.
-3. Ellenorzes, hogy van-e osztalytagsag az intezmenyben.
-4. Ha van osztalytagsag:
-   - minden event_shown-bol lathato event listazasa.
-5. Ha nincs osztalytagsag:
-   - kozvetlenul kiosztott eventek + teljes_iskola local eventek.
-6. Rendezes start_date szerint.
-7. Kiegeszites:
+3. Lathato esemeny id-k kigyujtese EventShown-bol, user_id + establishment_id alapjan.
+4. Esemenyek lekerdezese:
+   - azonnal lathato esemenyek (id IN visible ids),
+   - + olyan esemenyek, amelyek recurrence_parent_event_id mezoben egy lathato szuloesemenyre mutatnak.
+5. Rendezes start_date szerint novekvo sorrendben.
+6. Kiegeszites:
    - creator_name
    - attending_count, not_attending_count
+   - participant_count
    - user_participation
    - comment_count
-8. Valasz: events tomb.
+   - is_favourite
+7. Valasz: events tomb.
 
 ALGORITMUS VEGE

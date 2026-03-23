@@ -1,0 +1,26 @@
+ALGORITMUS: IsmetlodoEsemenyAlkalomKezelese
+
+BEMENET:
+- eventId (path)
+- action: reschedule vagy cancel
+- start_date (action=reschedule eseten kotelezo)
+- end_date (action=reschedule eseten kotelezo, end_date > start_date)
+
+LEPESEK:
+1. Auth user ellenorzese.
+2. Event letezes ellenorzese.
+3. Jogosultsag ellenorzese:
+   - csak az esemeny letrehozoja kezelheti az alkalmat.
+4. Bemenet validalasa action alapjan.
+5. Ha action=cancel:
+   - event.status <- ended
+   - event.cancelled_at <- now
+   - valasz: "Az alkalom elmaradtkent jelolve".
+6. Ha action=reschedule:
+   - event.start_date <- uj start_date
+   - event.end_date <- uj end_date
+   - event.status <- upcoming
+   - event.cancelled_at <- null
+   - valasz: "Az alkalom idopontja sikeresen modositva" + event.
+
+ALGORITMUS VEGE

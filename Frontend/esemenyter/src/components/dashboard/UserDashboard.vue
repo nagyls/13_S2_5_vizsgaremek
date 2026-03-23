@@ -46,6 +46,10 @@
                     <i class='bx bx-calendar-event'></i>
                     <span>Események</span>
                   </router-link>
+                  <router-link to="/events-calendar" class="menu-item">
+                    <i class='bx bx-calendar-week'></i>
+                    <span>Naptár</span>
+                  </router-link>
                   <router-link
                     v-if="user.role === 'admin'"
                     to="/institution-dashboard"
@@ -105,6 +109,19 @@
               <div class="card-footer">
                 <span class="btn-text">
                   Megtekintés <i class='bx bx-right-arrow-alt'></i>
+                </span>
+              </div>
+            </div>
+
+            <div class="nav-card" @click="goToCalendar">
+              <div class="card-icon calendar">
+                <i class='bx bx-calendar-week'></i>
+              </div>
+              <h4>Naptár</h4>
+              <p>Tekintsd át havi nézetben az eseményeket és az ismétlődő alkalmakat</p>
+              <div class="card-footer">
+                <span class="btn-text">
+                  Megnyitás <i class='bx bx-right-arrow-alt'></i>
                 </span>
               </div>
             </div>
@@ -307,6 +324,10 @@ export default {
 
     goToEvents() {
       this.$router.push('/events-list');
+    },
+
+    goToCalendar() {
+      this.$router.push('/events-calendar');
     },
 
     goToProfile() {
@@ -804,6 +825,11 @@ export default {
 .card-icon.profile {
   background: linear-gradient(135deg, #10b981, #059669);
   box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+}
+
+.card-icon.calendar {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  box-shadow: 0 8px 20px rgba(8, 145, 178, 0.3);
 }
 
 .card-icon.institution {
