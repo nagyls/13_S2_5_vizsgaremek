@@ -16,6 +16,7 @@ return new class extends Migration
             $table->boolean('is_favourite')->default(false);
             $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->enum('answer', ['y', 'n', 'NA'])->default('NA');
             $table->foreignId('establishment_id')->constrained('establishments')->cascadeOnDelete();
             $table->timestamps();
         });

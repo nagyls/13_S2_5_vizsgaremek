@@ -16,10 +16,9 @@ class CommentController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
         $eventview = EventShown::where('event_id', $eventId)->where('user_id', $user->id)->first();
-        if(!$eventview) {
+        if (!$eventview || $eventview->answer !== 'y') {
             return response()->json(['error' => 'Forbidden'], 403);
         }
-
         $perPage = (int) $request->query('per_page', 50);
         if ($perPage <= 0) {
             $perPage = 50;
@@ -36,7 +35,6 @@ class CommentController extends Controller
     //komment hozzáadása
     public function makeComment(Request $request)
     {
-
         $user = $request->user();
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -51,19 +49,17 @@ class CommentController extends Controller
             'content.string' => 'A content mezőnek szöveges értéknek kell lennie.',
             'content.max' => 'A content mező nem lehet hosszabb 1000 karakternél.',
         ]);
+
         $eventview = EventShown::where('event_id', $request->event_id)->where('user_id', $user->id)->first();
-        if(!$eventview) {
+        if (!$eventview || $eventview->answer !== 'y') {
             return response()->json(['error' => 'Forbidden'], 403);
         }
-
-       
 
         $comment = EventMessage::create([
             'event_id' => $request->event_id,
             'user_id' => $user->id,
             'content' => $request->input('content'),
         ]);
-
         return response()->json($comment, 201);
     }
 
