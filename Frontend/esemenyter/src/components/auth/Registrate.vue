@@ -63,6 +63,7 @@
 import axios from "axios";
 import { toast } from '../../services/toast'
 import logo2 from '../../assets/logo2.svg';
+import { API_BASE } from '../../services/api'
 
 export default {
     name: 'Register',
@@ -129,7 +130,7 @@ export default {
             this.loading = true;
 
             try {
-                const res = await axios.post("http://127.0.0.1:8000/api/register", {
+                const res = await axios.post(`${API_BASE}/register`, {
                     username: this.username,
                     email: this.email,
                     password: this.jelszo,

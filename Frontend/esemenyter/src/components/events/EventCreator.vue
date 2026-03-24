@@ -268,12 +268,12 @@
             </div>
             <div class="form-row">
               <div v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)" class="form-group">
-                <label>Kezdés *</label>
-                <input type="date" v-model="eventForm.startDateTime" :min="todayMin" required>
+                <label>Kezdés (dátum és idő) *</label>
+                <input type="datetime-local" v-model="eventForm.startDateTime" :min="nowMin" required>
               </div>
               <div v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)" class="form-group">
-                <label>Befejezés *</label>
-                <input type="date" v-model="eventForm.endDateTime" :min="eventForm.startDateTime || todayMin" required>
+                <label>Befejezés (dátum és idő) *</label>
+                <input type="datetime-local" v-model="eventForm.endDateTime" :min="eventForm.startDateTime || nowMin" required>
               </div>
             </div>
 
@@ -433,6 +433,7 @@
 <script>
 import axios from 'axios'
 import { toast } from '../../services/toast'
+import { API_BASE, getToken, hasLocalToken } from '../../services/api'
 
 export default {
   name: 'EsemenyKeszito',
@@ -457,6 +458,7 @@ export default {
       currentStep: 1,
       isSubmitting: false,
       todayMin: new Date().toISOString().slice(0, 10),
+      nowMin: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16),
       selectedEventScope: 'school',
       selectedCountyIds: [],
       globalCollabCount: 0,
@@ -792,9 +794,7 @@ export default {
     },
 
     async initialize() {
-      const token =
-        localStorage.getItem('esemenyter_token') ||
-        sessionStorage.getItem('esemenyter_token')
+      const token = getToken()
 
       try {
         const savedUser =
@@ -830,8 +830,8 @@ export default {
           }
 
           const [userResponse, roleResponse] = await Promise.all([
-            axios.get('http://127.0.0.1:8000/api/user', { headers }).catch(() => null),
-            axios.get('http://127.0.0.1:8000/api/establishment/role', { headers }).catch(() => null)
+            axios.get(`${API_BASE}/user`, { headers }).catch(() => null),
+            axios.get(`${API_BASE}/establishment/role`, { headers }).catch(() => null)
           ])
 
           const backendUser = userResponse?.data || {}
@@ -858,7 +858,7 @@ export default {
               institution_id: Number(this.userInstitution.id) || null
             }
 
-            if (localStorage.getItem('esemenyter_token')) {
+            if (hasLocalToken()) {
               localStorage.setItem('esemenyter_user', JSON.stringify(mergedUser))
             } else {
               sessionStorage.setItem('esemenyter_user', JSON.stringify(mergedUser))
@@ -906,9 +906,7 @@ export default {
           return
         }
 
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
 
         if (!token) {
           this.institutionClasses = []
@@ -917,7 +915,7 @@ export default {
 
         this.isLoadingClasses = true
 
-        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/classes`, {
+        const response = await axios.get(`${API_BASE}/establishment/${institutionId}/classes`, {
           headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
         })
 
@@ -940,9 +938,7 @@ export default {
           return
         }
 
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
 
         if (!token) {
           this.institutionGrades = this.buildGradesFromClasses(this.institutionClasses)
@@ -951,7 +947,7 @@ export default {
 
         this.isLoadingGrades = true
 
-        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/grades`, {
+        const response = await axios.get(`${API_BASE}/establishment/${institutionId}/grades`, {
           headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
         })
 
@@ -978,9 +974,7 @@ export default {
           return
         }
 
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
 
         if (!token) {
           this.institutionUserIds = this.currentUserId ? [this.currentUserId] : []
@@ -988,10 +982,10 @@ export default {
         }
 
         const [studentsResponse, staffResponse] = await Promise.all([
-          axios.get(`http://127.0.0.1:8000/api/members/students/${institutionId}`, {
+          axios.get(`${API_BASE}/members/students/${institutionId}`, {
             headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
           }).catch(() => ({ data: { data: [] } })),
-          axios.get(`http://127.0.0.1:8000/api/members/staff/${institutionId}`, {
+          axios.get(`${API_BASE}/members/staff/${institutionId}`, {
             headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
           }).catch(() => ({ data: { data: [] } }))
         ])
@@ -1022,15 +1016,13 @@ export default {
           return
         }
 
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
 
         if (!token) {
           return
         }
 
-        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}`, {
+        const response = await axios.get(`${API_BASE}/establishment/${institutionId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json'
@@ -1124,7 +1116,7 @@ export default {
       }
 
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/establishment/${institutionId}/classes/members`,
+        `${API_BASE}/establishment/${institutionId}/classes/members`,
         {
           params: { class_ids: normalizedClassIds },
           headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
@@ -1148,7 +1140,7 @@ export default {
       }
 
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/establishment/${institutionId}/grades/members`,
+        `${API_BASE}/establishment/${institutionId}/grades/members`,
         {
           params: { grade_ids: normalizedGradeIds },
           headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
@@ -1197,7 +1189,7 @@ export default {
 
     async loadCounties() {
       try {
-        const response = await axios.get('http://127.0.0.1:8000/api/regions/all', {
+        const response = await axios.get(`${API_BASE}/regions/all`, {
           headers: {
             Accept: 'application/json'
           }
@@ -1232,7 +1224,7 @@ export default {
 
       const responses = await Promise.all(
         normalizedCountyIds.map(countyId =>
-          axios.get('http://127.0.0.1:8000/api/establishments', {
+          axios.get(`${API_BASE}/establishments`, {
             params: { region_id: countyId },
             headers: { Accept: 'application/json' }
           }).catch(() => ({ data: { data: [] } }))
@@ -1432,9 +1424,7 @@ export default {
       this.isSubmitting = true
 
       try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
 
         if (!token) {
           toast.error('Lejárt munkamenet. Kérlek jelentkezz be újra!')
@@ -1544,7 +1534,7 @@ export default {
           payload.users = localTargetUserIds
         }
 
-        await axios.post('http://127.0.0.1:8000/api/establishment/events', payload, {
+        await axios.post(`${API_BASE}/establishment/events`, payload, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',

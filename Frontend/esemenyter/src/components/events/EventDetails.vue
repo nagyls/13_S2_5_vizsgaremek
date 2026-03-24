@@ -263,6 +263,7 @@
 import axios from 'axios';
 import CommentBox from './CommentBox.vue';
 import { toast } from '../../services/toast'
+import { API_BASE, getToken, getAuthHeaders } from '../../services/api'
 
 export default {
   name: 'EventDetails',
@@ -314,13 +315,6 @@ export default {
   methods: {
     backToEvents() {
       this.$router.push('/events-list')
-    },
-
-    getToken() {
-      return (
-        localStorage.getItem('esemenyter_token') ||
-        sessionStorage.getItem('esemenyter_token')
-      )
     },
 
     getCurrentInstitutionId() {
@@ -387,19 +381,16 @@ export default {
     },
     
     async fetchEvent(eventId) {
-      const token = this.getToken()
+      const token = getToken()
       const institutionId = this.getCurrentInstitutionId()
 
       if (!token || !institutionId) {
         return null
       }
 
-      const endpoint = `http://127.0.0.1:8000/api/establishment/${institutionId}/events`
+      const endpoint = `${API_BASE}/establishment/${institutionId}/events`
       const response = await axios.get(endpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json'
-        },
+        headers: getAuthHeaders(token),
         validateStatus: (status) => status >= 200 && status < 600
       })
 
@@ -421,12 +412,9 @@ export default {
 
       // Fallback: admin meghívott globális események az event-access végpontról.
       const collabResponse = await axios.get(
-        `http://127.0.0.1:8000/api/establishment/${institutionId}/event-access`,
+        `${API_BASE}/establishment/${institutionId}/event-access`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json'
-          },
+          headers: getAuthHeaders(token),
           validateStatus: (status) => status >= 200 && status < 600
         }
       )
@@ -510,21 +498,17 @@ export default {
       }
 
       try {
-        const token = this.getToken()
+        const token = getToken()
         if (!token) {
           this.showMessage('A részvételhez be kell jelentkezned!', 'info')
           return
         }
 
         const response = await axios.patch(
-          `http://127.0.0.1:8000/api/events/${this.eventId}/participation`,
+          `${API_BASE}/events/${this.eventId}/participation`,
           { answer },
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/json',
-              'Content-Type': 'application/json'
-            },
+            headers: getAuthHeaders(token, true),
             validateStatus: (status) => status >= 200 && status < 600
           }
         )
@@ -583,9 +567,7 @@ export default {
 
     async checkStudentClassMembership() {
       try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
 
         if (!token) {
           return false
@@ -602,7 +584,7 @@ export default {
           return false
         }
 
-        const classesResponse = await fetch(`http://127.0.0.1:8000/api/establishment/${institutionId}/classes`, {
+        const classesResponse = await fetch(`${API_BASE}/establishment/${institutionId}/classes`, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json'
@@ -618,7 +600,7 @@ export default {
 
         for (const classItem of classes) {
           const membersResponse = await fetch(
-            `http://127.0.0.1:8000/api/establishment/${institutionId}/classes/${classItem.id}`,
+            `${API_BASE}/establishment/${institutionId}/classes/${classItem.id}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -662,7 +644,7 @@ export default {
         return
       }
 
-      const token = this.getToken()
+      const token = getToken()
       if (!token) {
         this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
         return
@@ -676,13 +658,10 @@ export default {
 
       try {
         const response = await axios.patch(
-          `http://127.0.0.1:8000/api/events/${eventId}/favourite`,
+          `${API_BASE}/events/${eventId}/favourite`,
           {},
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/json'
-            },
+            headers: getAuthHeaders(token),
             validateStatus: (status) => status >= 200 && status < 600
           }
         )
@@ -774,7 +753,7 @@ export default {
         return
       }
 
-      const token = this.getToken()
+      const token = getToken()
       if (!token) {
         this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
         return
@@ -784,18 +763,14 @@ export default {
 
       try {
         const response = await axios.patch(
-          `http://127.0.0.1:8000/api/events/${this.eventId}/occurrence`,
+          `${API_BASE}/events/${this.eventId}/occurrence`,
           {
             action: 'reschedule',
             start_date: this.occurrenceForm.startDateTime,
             end_date: this.occurrenceForm.endDateTime
           },
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/json',
-              'Content-Type': 'application/json'
-            },
+            headers: getAuthHeaders(token, true),
             validateStatus: (status) => status >= 200 && status < 600
           }
         )
@@ -835,7 +810,7 @@ export default {
         return
       }
 
-      const token = this.getToken()
+      const token = getToken()
       if (!token) {
         this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
         return
@@ -845,14 +820,10 @@ export default {
 
       try {
         const response = await axios.patch(
-          `http://127.0.0.1:8000/api/events/${this.eventId}/occurrence`,
+          `${API_BASE}/events/${this.eventId}/occurrence`,
           { action: 'cancel' },
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/json',
-              'Content-Type': 'application/json'
-            },
+            headers: getAuthHeaders(token, true),
             validateStatus: (status) => status >= 200 && status < 600
           }
         )

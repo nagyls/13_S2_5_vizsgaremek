@@ -646,6 +646,7 @@
 <script>
 import axios from 'axios';
 import logo2 from '../../assets/logo2.svg';
+import { API_BASE, getToken, getAuthHeaders, hasLocalToken, clearAuthStorage } from '../../services/api'
 
 export default {
   name: 'Profile',
@@ -776,17 +777,15 @@ export default {
     
     async loadUserFromBackend() {
       try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token');
+        const token = getToken();
 
         if (!token) {
           this.$router.push('/');
           return;
         }
 
-        const response = await axios.get('http://127.0.0.1:8000/api/user', {
-          headers: { Authorization: `Bearer ${token}` }
+        const response = await axios.get(`${API_BASE}/user`, {
+          headers: getAuthHeaders(token)
         });
         
         const userData = response.data.data || response.data;
@@ -809,16 +808,14 @@ export default {
     
     async loadAvailableClasses() {
       try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token');
+        const token = getToken();
 
         if (!token) {
           return;
         }
 
-        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${this.user.schoolId}/classes`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const response = await axios.get(`${API_BASE}/establishment/${this.user.schoolId}/classes`, {
+          headers: getAuthHeaders(token)
         });
         
         this.availableClasses = response.data.data || [];
@@ -899,9 +896,7 @@ export default {
       this.isSaving = true;
       
       try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token');
+        const token = getToken();
 
         if (!token) {
           this.$router.push('/');
@@ -937,18 +932,18 @@ export default {
           updateData.extra_curricular = this.editForm.extraCurricular;
         }
         
-        const response = await axios.put(`http://127.0.0.1:8000/api/users/${this.user.id}`, updateData, {
-          headers: { Authorization: `Bearer ${token}` }
+        const response = await axios.put(`${API_BASE}/users/${this.user.id}`, updateData, {
+          headers: getAuthHeaders(token)
         });
         
         // Jelszó módosítás, ha szükséges
         if (this.editForm.newPassword && this.editForm.currentPassword) {
-          await axios.post(`http://127.0.0.1:8000/api/users/${this.user.id}/change-password`, {
+          await axios.post(`${API_BASE}/users/${this.user.id}/change-password`, {
             current_password: this.editForm.currentPassword,
             new_password: this.editForm.newPassword,
             new_password_confirmation: this.editForm.confirmPassword
           }, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: getAuthHeaders(token)
           });
         }
         
@@ -964,7 +959,7 @@ export default {
         const savedUser = JSON.parse(savedUserRaw);
         const updatedSavedUser = { ...savedUser, ...updatedUser };
 
-        if (localStorage.getItem('esemenyter_token')) {
+        if (hasLocalToken()) {
           localStorage.setItem('esemenyter_user', JSON.stringify(updatedSavedUser));
         } else {
           sessionStorage.setItem('esemenyter_user', JSON.stringify(updatedSavedUser));
@@ -1000,9 +995,7 @@ export default {
     },
     
     goToDashboard() {
-      if (this.user.role === 'admin') {
-        this.$router.push('/user-dashboard');
-      } else if (this.user.role) {
+      if (this.user.role) {
         this.$router.push('/user-dashboard');
       } else {
         this.$router.push('/dashboard');
@@ -1030,17 +1023,19 @@ export default {
     handleScroll() {
       this.showScrollTop = window.scrollY > 300;
     },
+
+    handleDocumentClick(e) {
+      if (!e.target.closest('.user-profile')) {
+        this.showUserMenu = false;
+      }
+    },
     
     logout() {
-      axios.delete('http://127.0.0.1:8000/api/logout')
+      axios.delete(`${API_BASE}/logout`, {
+        headers: getAuthHeaders(getToken())
+      })
         .finally(() => {
-          localStorage.removeItem('esemenyter_user');
-          localStorage.removeItem('esemenyter_token');
-          localStorage.removeItem('CurrentInstitution');
-          localStorage.removeItem('remember_me');
-          sessionStorage.removeItem('esemenyter_user');
-          sessionStorage.removeItem('esemenyter_token');
-          sessionStorage.removeItem('CurrentInstitution');
+          clearAuthStorage();
           delete axios.defaults.headers.common['Authorization'];
           this.$router.push('/');
         });
@@ -1050,16 +1045,13 @@ export default {
   mounted() {
     this.loadUserData();
     window.addEventListener('scroll', this.handleScroll);
-    
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.user-profile')) {
-        this.showUserMenu = false;
-      }
-    });
+
+    document.addEventListener('click', this.handleDocumentClick);
   },
   
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
+    document.removeEventListener('click', this.handleDocumentClick);
   }
 }
 </script>
@@ -1132,6 +1124,7 @@ export default {
   font-size: 24px;
   font-weight: 700;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -1198,7 +1191,7 @@ export default {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   width: 300px;
   overflow: hidden;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .menu-header {
@@ -1701,19 +1694,20 @@ export default {
 
 /* Reszponzív */
 @media (max-width: 768px) {
+  .main-header {
+    padding: 12px 0;
+  }
+
   .header-content {
-    flex-direction: column;
-    gap: 16px;
+    flex-direction: row;
+    justify-content: space-between;
     align-items: center;
-    text-align: center;
+    gap: 0;
   }
 
-  .logo-section {
-    justify-content: center;
-  }
-
-  .user-profile {
-    align-self: center;
+  .logo-text h1,
+  .site-subtitle {
+    display: none;
   }
 
   .profile-header {
@@ -1741,8 +1735,27 @@ export default {
   }
   
   .user-menu {
-    width: 280px;
-    right: -20px;
+    width: 220px;
+    right: 0;
+    left: auto;
+    transform: none;
+  }
+
+  .menu-header {
+    padding: 12px 16px;
+  }
+
+  .menu-items {
+    padding: 6px 0;
+  }
+
+  .menu-item {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .menu-item i {
+    font-size: 16px;
   }
   
   .form-actions {
@@ -1763,6 +1776,10 @@ export default {
 }
 
 @media (max-width: 480px) {
+  .main-header {
+    padding: 8px 0;
+  }
+
   .profile-header {
     padding: 20px;
   }

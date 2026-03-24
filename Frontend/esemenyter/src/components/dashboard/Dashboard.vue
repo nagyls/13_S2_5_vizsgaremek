@@ -1296,7 +1296,6 @@ export default {
         })
 
         const userData = response.data
-        console.log('Backend válasz:', userData)
 
         this.user = {
           id: userData.id,
@@ -1324,7 +1323,6 @@ export default {
 
         this.profileConfigured = !!this.user.role
         this.saveUserData()
-        console.log('Felhasználói adatok betöltve:', this.user)
 
         if (this.user.role === 'admin') {
           this.$router.replace('/user-dashboard');
@@ -1661,7 +1659,6 @@ export default {
       .then(res => {
         this.districts = res.data.data || [];
         this.jarasSearchQuery = '';
-        console.log('Járások betöltve:', this.districts);
       })
       .catch(err => {
         console.error('Járások lekérésének hibája:', err);
@@ -1676,7 +1673,6 @@ export default {
       .then(res => {
         this.cities = res.data.data || res.data || [];
         this.citySearchQuery = '';
-        console.log('Települések betöltve:', this.cities);
       })
       .catch(err => {
         console.error('Települések lekérésének hibája:', err);
@@ -1708,7 +1704,6 @@ export default {
       .then(res => {
         this.teacherDistricts = res.data.data || [];
         this.teacherjarasSearchQuery = '';
-        console.log('Járások betöltve:', this.teacherDistricts);
       })
       .catch(err => {
         console.error('Járások lekérésének hibája:', err);
@@ -1754,7 +1749,6 @@ export default {
       .then(res => {
         this.adminDistricts = res.data.data || [];
         this.adminjarasSearchQuery = '';
-        console.log('Admin járások betöltve:', this.adminDistricts);
       })
       .catch(err => {
         console.error('Admin járások lekérésének hibája:', err);
@@ -1769,7 +1763,6 @@ export default {
       .then(res => {
         this.adminCities = res.data.data || [];
         this.adminCitySearchQuery = '';
-        console.log('Admin települések betöltve:', this.adminCities);
       })
       .catch(err => {
         console.error('Admin települések lekérésének hibája:', err);
@@ -1905,7 +1898,6 @@ export default {
     },
     
     completeAdminProfileSetup() {
-      console.log('completeAdminProfileSetup kezdődik');
 
       // Token ellenőrzése
       let token = localStorage.getItem('esemenyter_token');
@@ -1918,10 +1910,6 @@ export default {
         this.$router.push('/');
         return;
       }
-    
-      console.log('Token a kéréshez:', token.substring(0, 20) + '...');
-      console.log('adminSelectedCityId:', this.adminSelectedCityId);
-      console.log('schoolForm:', this.schoolForm);
     
       // Ellenőrizzük, hogy van-e kiválasztott város
       if (!this.adminSelectedCityId) {
@@ -1939,8 +1927,6 @@ export default {
         address: this.schoolForm.address
       };
     
-      console.log('Küldendő adatok:', establishmentData);
-    
       // Külön axios kérés a biztonság kedvéért
       axios({
         method: 'post',
@@ -1953,7 +1939,6 @@ export default {
         }
       })
       .then(response => {
-        console.log('Intézmény sikeresen létrehozva:', response.data);
         toast.success('Iskola sikeresen regisztrálva!');
         
         const institutionId = response.data.data?.id || response.data?.id;
@@ -2008,10 +1993,8 @@ export default {
             toast.error('Hiba történt az intézmény létrehozásakor.');
           }
         } else if (err.request) {
-          console.error('Nem érkezett válasz:', err.request);
           toast.error('Nem sikerült kapcsolódni a szerverhez.');
         } else {
-          console.error('Hiba:', err.message);
           toast.error('Hiba történt: ' + err.message);
         }
       });
@@ -2059,7 +2042,6 @@ export default {
     },
     
     logout() {
-      console.log('Logout metódus hívva');
 
       // 🔥 TELJES TAKARÍTÁS
       localStorage.removeItem('esemenyter_user');
@@ -2077,14 +2059,11 @@ export default {
 
       // Backend logout - token NÉLKÜL küldjük (így nem lesz 401)
       axios.delete('http://127.0.0.1:8000/api/logout')
-      .then(() => {
-        console.log('Backend-en törölve a token');
-      })
+      .then(() => {})
       .catch(err => {
-        console.log('Backend logout válasz:', err.message);
+        console.error('Backend logout válasz:', err.message);
       })
       .finally(() => {
-        console.log('Átirányítás a főoldalra');
         this.$router.push('/');
       });
     },
@@ -2096,12 +2075,17 @@ export default {
     handleScroll() {
       this.showScrollTop = window.scrollY > 300;
     },
+
+    handleDocumentClick(event) {
+      if (!event.target.closest('.user-profile')) {
+        this.showUserMenu = false;
+      }
+    },
     
     loadRegions() {
       axios.get('http://127.0.0.1:8000/api/regions/all')
         .then(res => {
           this.regions = res.data.data || [];
-          console.log('Régiók betöltve:', this.regions);
         })
         .catch(err => {
           console.error('Régiók lekérésének hibája:', err);
@@ -2111,12 +2095,9 @@ export default {
   },
   
   mounted() {
-    console.log('Dashboard mounted');
-    
     // Ellenőrizzük, hogy van-e token
     const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token');
     if (!token) {
-      console.log('Nincs token, átirányítás a főoldalra');
       this.$router.push('/');
       return;
     }
@@ -2124,16 +2105,12 @@ export default {
     this.checkLoginStatus();
     this.loadRegions();
     window.addEventListener('scroll', this.handleScroll);
-
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.user-profile')) {
-        this.showUserMenu = false;
-      }
-    });
+    document.addEventListener('click', this.handleDocumentClick);
   },
   
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
+    document.removeEventListener('click', this.handleDocumentClick);
   }
 }
 </script>
@@ -2273,7 +2250,7 @@ export default {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   width: 300px;
   overflow: hidden;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .menu-header {
@@ -3184,19 +3161,20 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .main-header {
+    padding: 12px 0;
+  }
+
   .header-content {
-    flex-direction: column;
-    gap: 16px;
+    flex-direction: row;
+    justify-content: space-between;
     align-items: center;
-    text-align: center;
+    gap: 0;
   }
 
-  .logo-section {
-    justify-content: center;
-  }
-
-  .user-profile {
-    align-self: center;
+  .logo-text h1,
+  .site-subtitle {
+    display: none;
   }
 
   .role-cards-grid {
@@ -3204,8 +3182,27 @@ export default {
   }
   
   .user-menu {
-    width: 280px;
-    right: -20px;
+    width: 220px;
+    right: 0;
+    left: auto;
+    transform: none;
+  }
+
+  .menu-header {
+    padding: 12px 16px;
+  }
+
+  .menu-items {
+    padding: 6px 0;
+  }
+
+  .menu-item {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .menu-item i {
+    font-size: 16px;
   }
   
   .wizard-content {
@@ -3240,6 +3237,10 @@ export default {
 }
 
 @media (max-width: 480px) {
+  .main-header {
+    padding: 8px 0;
+  }
+
   .success-card {
     padding: 30px 20px;
   }
