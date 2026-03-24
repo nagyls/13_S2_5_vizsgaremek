@@ -153,7 +153,7 @@
                   class="event-chip"
                   :class="[event.type, { cancelled: isCancelled(event) }]"
                 >
-                  <span class="event-time">{{ formatTime(event.start_date) }}</span>
+                  <span class="event-time">{{ formatTimeRange(event) }}</span>
                   <span class="event-title">
                     {{ isCancelled(event) ? `TÖRÖLVE - ${event.title}` : event.title }}
                   </span>
@@ -191,6 +191,7 @@
 <script>
 import axios from 'axios'
 import logo2 from '../../assets/logo2.svg'
+import { API_BASE, getToken } from '../../services/api'
 
 export default {
   name: 'EventCalendar',
@@ -365,6 +366,17 @@ export default {
       return date.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
     },
 
+    formatTimeRange(event) {
+      const start = this.formatTime(event?.start_date)
+      const end = this.formatTime(event?.end_date)
+
+      if (!end || end === '--:--') {
+        return start
+      }
+
+      return `${start} - ${end}`
+    },
+
     isCancelled(event) {
       return Boolean(event?.cancelled_at)
     },
@@ -399,7 +411,7 @@ export default {
       this.isLoading = true
 
       try {
-        const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
         const institutionId = this.getCurrentInstitutionId()
 
         if (!institutionId) {
@@ -408,7 +420,7 @@ export default {
         }
 
         const response = await axios.get(
-          `http://127.0.0.1:8000/api/establishment/${institutionId}/events`,
+          `${API_BASE}/establishment/${institutionId}/events`,
           {
             headers: {
               Accept: 'application/json',
@@ -456,8 +468,8 @@ export default {
 
     async logout() {
       try {
-        const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token')
-        await axios.delete('http://127.0.0.1:8000/api/logout', {
+        const token = getToken()
+        await axios.delete(`${API_BASE}/logout`, {
           headers: { Authorization: `Bearer ${token}` }
         })
       } catch (error) {
@@ -615,7 +627,7 @@ export default {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   width: 280px;
   overflow: hidden;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .menu-header {
@@ -1099,9 +1111,20 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .main-header {
+    padding: 12px 0;
+  }
+
   .header-content {
-    flex-direction: column;
-    gap: 16px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0;
+  }
+
+  .logo-text h1,
+  .site-subtitle {
+    display: none;
   }
 
   .calendar-header {
@@ -1145,12 +1168,35 @@ export default {
   }
 
   .user-menu {
-    width: 260px;
-    right: -20px;
+    width: 220px;
+    right: 0;
+    left: auto;
+    transform: none;
+  }
+
+  .menu-header {
+    padding: 12px 16px;
+  }
+
+  .menu-items {
+    padding: 6px 0;
+  }
+
+  .menu-item {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .menu-item i {
+    font-size: 16px;
   }
 }
 
 @media (max-width: 480px) {
+  .main-header {
+    padding: 8px 0;
+  }
+
   .container {
     padding: 0 16px;
   }

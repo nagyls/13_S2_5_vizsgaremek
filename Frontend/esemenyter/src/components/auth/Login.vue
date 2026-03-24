@@ -37,6 +37,7 @@
 import axios from "axios";
 import { toast } from '../../services/toast'
 import logo2 from '../../assets/logo2.svg';
+import { API_BASE, getToken, hasLocalToken, getAuthHeaders } from '../../services/api'
 
 export default {
   name: 'Login',
@@ -66,8 +67,8 @@ export default {
 
         async fetchRole(token) {
             try {
-                const roleResponse = await axios.get('http://127.0.0.1:8000/api/establishment/role', {
-                    headers: { Authorization: `Bearer ${token}` }
+                const roleResponse = await axios.get(`${API_BASE}/establishment/role`, {
+                    headers: getAuthHeaders(token)
                 });
 
                 return roleResponse.data?.role || '';
@@ -90,8 +91,7 @@ export default {
         saveCurrentInstitution(institutionId) {
             if (!institutionId) return;
 
-            const hasLocalToken = !!localStorage.getItem('esemenyter_token');
-            if (hasLocalToken || this.rememberMe) {
+            if (hasLocalToken() || this.rememberMe) {
                 localStorage.setItem('CurrentInstitution', String(institutionId));
                 sessionStorage.removeItem('CurrentInstitution');
             } else {
@@ -114,20 +114,18 @@ export default {
         sessionStorage.removeItem('esemenyter_token');
         sessionStorage.removeItem('CurrentInstitution');
 
-        const res = await axios.post("http://127.0.0.1:8000/api/login", {
+                const res = await axios.post(`${API_BASE}/login`, {
           email: this.email,
           password: this.password
         });
-
-        console.log("Backend válasz:", res.data);
 
         const token = res.data.token;
 
         // 🔥 2️⃣ Axios header beállítás
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-                const userResponse = await axios.get('http://127.0.0.1:8000/api/user', {
-                    headers: { Authorization: `Bearer ${token}` }
+                const userResponse = await axios.get(`${API_BASE}/user`, {
+                    headers: getAuthHeaders(token)
                 });
 
                 const role = await this.fetchRole(token);
@@ -168,14 +166,12 @@ export default {
   },
   
   mounted() {
-    const token =
-      localStorage.getItem('esemenyter_token') ||
-      sessionStorage.getItem('esemenyter_token');
+        const token = getToken();
 
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-      axios.get('http://127.0.0.1:8000/api/user')
+    axios.get(`${API_BASE}/user`)
                 .then(async (response) => {
                     const userData = JSON.parse(
                         localStorage.getItem('esemenyter_user') ||
@@ -195,8 +191,7 @@ export default {
                         isLoggedIn: true,
                     };
 
-                    const hasLocalToken = !!localStorage.getItem('esemenyter_token');
-                    if (hasLocalToken) {
+                    if (hasLocalToken()) {
                         localStorage.setItem('esemenyter_user', JSON.stringify(mergedUserData));
                     } else {
                         sessionStorage.setItem('esemenyter_user', JSON.stringify(mergedUserData));

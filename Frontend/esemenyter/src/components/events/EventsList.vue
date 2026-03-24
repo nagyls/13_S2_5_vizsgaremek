@@ -326,6 +326,7 @@
 <script>
 import axios from 'axios';
 import logo2 from '../../assets/logo2.svg';
+import { API_BASE, getToken, getAuthHeaders, clearAuthStorage } from '../../services/api';
 
 export default {
   name: 'EsemenyekLista',
@@ -422,23 +423,15 @@ export default {
 
     async logout() {
       try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token');
+        const token = getToken();
 
-        await axios.delete('http://127.0.0.1:8000/api/logout', {
+        await axios.delete(`${API_BASE}/logout`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
       } catch (error) {
         console.error('Logout hiba:', error);
       } finally {
-        localStorage.removeItem('esemenyter_user');
-        localStorage.removeItem('esemenyter_token');
-        localStorage.removeItem('CurrentInstitution');
-        localStorage.removeItem('remember_me');
-        sessionStorage.removeItem('esemenyter_user');
-        sessionStorage.removeItem('esemenyter_token');
-        sessionStorage.removeItem('CurrentInstitution');
+        clearAuthStorage();
         delete axios.defaults.headers.common['Authorization'];
         this.showUserMenu = false;
         this.$router.push('/');
@@ -540,9 +533,7 @@ export default {
         return;
       }
 
-      const token =
-        localStorage.getItem('esemenyter_token') ||
-        sessionStorage.getItem('esemenyter_token');
+      const token = getToken();
 
       this.favouriteLoadingById = {
         ...this.favouriteLoadingById,
@@ -551,13 +542,10 @@ export default {
 
       try {
         const response = await axios.patch(
-          `http://127.0.0.1:8000/api/events/${event.id}/favourite`,
+          `${API_BASE}/events/${event.id}/favourite`,
           {},
           {
-            headers: {
-              Accept: 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
-            }
+            headers: getAuthHeaders(token)
           }
         );
 
@@ -672,9 +660,7 @@ export default {
     },
 
     async fetchEventsFromApi() {
-      const token =
-        localStorage.getItem('esemenyter_token') ||
-        sessionStorage.getItem('esemenyter_token');
+      const token = getToken();
 
       const institutionId = this.getCurrentInstitutionId();
       const normalizedInstitutionId = Number(institutionId);
@@ -683,13 +669,10 @@ export default {
         return [];
       }
 
-      const endpoint = `http://127.0.0.1:8000/api/establishment/${normalizedInstitutionId}/events`;
+      const endpoint = `${API_BASE}/establishment/${normalizedInstitutionId}/events`;
 
       const response = await axios.get(endpoint, {
-        headers: {
-          Accept: 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
+        headers: getAuthHeaders(token),
         // Itt helyben kezeljuk a hibakat, hogy ne triggerelodjon globalis kijelentkeztetes.
         validateStatus: (status) => status >= 200 && status < 600
       });
@@ -872,7 +855,7 @@ export default {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   width: 300px;
   overflow: hidden;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .menu-header {
@@ -1681,20 +1664,49 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .main-header {
+    padding: 12px 0;
+  }
+
   .container {
     padding: 1rem;
   }
   
   .header-content {
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     text-align: center;
+    gap: 0;
+  }
+
+  .logo-text h1,
+  .site-subtitle {
+    display: none;
   }
 
   .user-menu {
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(300px, calc(100vw - 2rem));
+    width: 220px;
+    right: 0;
+    left: auto;
+    transform: none;
+  }
+
+  .menu-header {
+    padding: 12px 16px;
+  }
+
+  .menu-items {
+    padding: 6px 0;
+  }
+
+  .menu-item {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .menu-item i {
+    font-size: 16px;
   }
   
   .hero-content {
@@ -1755,6 +1767,10 @@ export default {
 }
 
 @media (max-width: 480px) {
+  .main-header {
+    padding: 8px 0;
+  }
+
   .container {
     padding: 0.75rem;
   }

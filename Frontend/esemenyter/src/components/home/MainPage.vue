@@ -174,7 +174,6 @@
         
         <div class="footer-bottom">
           <p>&copy; 2024 EseményTér. Minden jog fenntartva.</p>
-          <p>Készítve <i class='bx bx-heart'></i> a magyar oktatásért</p>
         </div>
       </div>
     </footer>
@@ -187,6 +186,7 @@
 
 <script>
 import logo2 from '../../assets/logo2.svg'
+import { getToken } from '../../services/api'
 
 export default {
   name: 'MainPage',
@@ -223,9 +223,7 @@ export default {
   mounted() {
     window.addEventListener('scroll', this.handleScroll)
 
-    const token =
-      localStorage.getItem('esemenyter_token') ||
-      sessionStorage.getItem('esemenyter_token')
+    const token = getToken()
 
     if (token && this.$route.path !== '/dashboard') {
       this.$router.push('/dashboard')
@@ -777,18 +775,24 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .main-header {
+    padding: 12px 0;
+  }
+
   .floating-cards {
     grid-template-columns: repeat(2, minmax(130px, 1fr));
   }
 
   .header-content {
-    flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0;
   }
 
-  .logo-section {
-    justify-content: center;
+  .logo-text h1,
+  .site-subtitle {
+    display: none;
   }
 
   .nav-buttons {
@@ -814,6 +818,10 @@ export default {
 }
 
 @media (max-width: 480px) {
+  .main-header {
+    padding: 8px 0;
+  }
+
   .floating-cards {
     grid-template-columns: 1fr;
   }
