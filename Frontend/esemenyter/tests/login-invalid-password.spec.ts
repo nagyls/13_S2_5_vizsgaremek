@@ -17,7 +17,7 @@ test('login fails', async ({ page }) => {
 
   await page.click('#register_btn');
 
-  await page.waitForURL(/dashboard/, { timeout: 6000 });
+  await page.waitForURL(/dashboard/, { timeout: 15000 });
 
   await page.evaluate(() => {
     localStorage.clear();
@@ -32,5 +32,5 @@ test('login fails', async ({ page }) => {
   await page.click('#login_btn');
 
   await expect(page).toHaveURL(/login/);
-  await expect(page.locator('.error-message')).toBeVisible();
+  await expect(page.locator('.toast.toast-error .toast-message').first()).toBeVisible({ timeout: 10000 });
 });

@@ -12,7 +12,7 @@ test('registration weak password fails', async ({ page }) => {
   await page.locator('.checkbox-container').click();
   await page.click('#register_btn');
 
-  // 🔥 Direkt rossz elvárás, hogy FAIL legyen
-  await expect(page).toHaveURL(/dashboard/);
+  await expect(page).toHaveURL(/register/);
+  await expect(page.locator('.toast.toast-error .toast-message').first()).toContainText('legalább 6 karakter', { timeout: 10000 });
 
 });

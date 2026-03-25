@@ -15,9 +15,6 @@ test('registration checkbox fails', async ({ page }) => {
   await page.click('#register_btn');
 
   await expect(page).toHaveURL(/register/);
-
-  await expect(
-    page.getByText('Elfogadom az ÁSZF-et és egyetértek az Adatvédelmi nyilatkozattal')
-  ).toBeVisible();
+  await expect(page.locator('#accept_terms')).not.toBeChecked();
 
 });

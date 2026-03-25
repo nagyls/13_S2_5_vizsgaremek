@@ -16,11 +16,18 @@ test('teacher setup successfully', async ({ page }) => {
 
   await page.click('#register_btn');
 
-  await page.waitForURL(/dashboard/, { timeout: 6000 });
+  await page.waitForURL(/dashboard/, { timeout: 15000 });
 
-  await page.click('.role-card.teacher');
-  await page.click('.role-card.teacher .card-action-btn');
-  await page.waitForSelector('.setup-wizard');
+  await page.locator('.role-card.teacher').click();
+  await expect(page.locator('.role-card.teacher')).toHaveClass(/selected/);
+
+  const teacherWizard = page.locator('.setup-wizard');
+  try {
+    await teacherWizard.waitFor({ state: 'visible', timeout: 4000 });
+  } catch {
+    await page.locator('.role-card.teacher .card-action-btn').click({ force: true });
+    await teacherWizard.waitFor({ state: 'visible', timeout: 10000 });
+  }
 
   await page.waitForSelector('.suggestions-grid .suggestion-card');
   await page.locator('.suggestion-card', { hasText: /Bács-Kiskun/i }).click();

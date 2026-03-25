@@ -13,6 +13,7 @@ test('registration passwords do not match fails', async ({ page }) => {
   await page.locator('.checkbox-container').click();
   await page.click('#register_btn');
 
-  await expect(page).toHaveURL(/dashboard/);
+  await expect(page).toHaveURL(/register/);
+  await expect(page.locator('.toast.toast-error .toast-message').first()).toContainText('A jelszavak nem egyeznek', { timeout: 10000 });
 
 });
