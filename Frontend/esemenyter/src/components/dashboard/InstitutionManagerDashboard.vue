@@ -696,38 +696,6 @@
 
               <div
                 class="target-group-option"
-                :class="{ selected: collabTargetGroup === 'osztaly_szintu' }"
-                @click="collabTargetGroup = 'osztaly_szintu'"
-              >
-                <div class="option-content">
-                  <i class='bx bx-user'></i>
-                  <h4>Osztály szintű</h4>
-                  <p>Csak a kijelölt osztályok látják az eseményt.</p>
-                </div>
-
-                <div v-if="collabTargetGroup === 'osztaly_szintu'" class="target-selector-panel" @click.stop>
-                  <div v-if="!classes.length" class="class-target-state warning">
-                    Nincsenek osztályok az intézményben.
-                  </div>
-                  <div v-else class="class-target-grid">
-                    <label
-                      v-for="classItem in classes"
-                      :key="classItem.id"
-                      class="class-target-card"
-                      :class="{ selected: collabSelectedClassIds.includes(Number(classItem.id)) }"
-                    >
-                      <input type="checkbox" :value="Number(classItem.id)" v-model="collabSelectedClassIds">
-                      <div class="class-target-copy">
-                        <div class="class-target-title">{{ formatCompactClassDisplayName(classItem) }}</div>
-                        <div class="class-target-meta">{{ classItem.student_count || 0 }} tanuló</div>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                class="target-group-option"
                 :class="{ selected: collabTargetGroup === 'evfolyam_szintu' }"
                 @click="collabTargetGroup = 'evfolyam_szintu'"
               >
@@ -1100,7 +1068,6 @@ export default {
       showCollabTargetModal: false,
       selectedCollabEvent: null,
       collabTargetGroup: 'teljes_iskola',
-      collabSelectedClassIds: [],
       collabSelectedGradeIds: [],
       collabTargetModalError: '',
       establishmentRequests: [], // Összes kérelem a táblából
@@ -1592,7 +1559,6 @@ export default {
 
       this.selectedCollabEvent = eventItem;
       this.collabTargetGroup = 'teljes_iskola';
-      this.collabSelectedClassIds = [];
       this.collabSelectedGradeIds = [];
       this.collabTargetModalError = '';
 
@@ -1613,7 +1579,6 @@ export default {
       this.showCollabTargetModal = false;
       this.selectedCollabEvent = null;
       this.collabTargetGroup = 'teljes_iskola';
-      this.collabSelectedClassIds = [];
       this.collabSelectedGradeIds = [];
       this.collabTargetModalError = '';
     },
@@ -1625,34 +1590,6 @@ export default {
 
       if (this.collabTargetGroup === 'teljes_iskola') {
         return this.resolveInstitutionUserIdsForCollabAcceptance();
-      }
-
-      if (this.collabTargetGroup === 'osztaly_szintu') {
-        const selectedClassIds = this.collabSelectedClassIds
-          .map(classId => Number(classId))
-          .filter(Number.isFinite);
-
-        if (!selectedClassIds.length) {
-          return [];
-        }
-
-        const selectedClassLabels = new Set(
-          selectedClassIds
-            .map(classId => classesById.get(classId))
-            .filter(Boolean)
-            .map(classItem => this.formatCompactClassDisplayName(classItem))
-        );
-
-        const studentIds = this.students
-          .filter(student => selectedClassLabels.has((student.class_name || '').toString().trim()))
-          .map(student => Number(student?.id))
-          .filter(Number.isFinite);
-
-        const teacherIds = selectedClassIds
-          .map(classId => Number(classesById.get(classId)?.user_id))
-          .filter(Number.isFinite);
-
-        return this.normalizeUserIdsForCollabAcceptance([...studentIds, ...teacherIds]);
       }
 
       if (this.collabTargetGroup === 'evfolyam_szintu') {
