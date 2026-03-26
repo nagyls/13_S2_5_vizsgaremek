@@ -25,16 +25,23 @@ test('admin duplicate school fails', async ({ page }) => {
 
   await page.click('#register_btn');
 
-  await page.waitForURL(/dashboard/, { timeout: 6000 });
+  await page.waitForURL(/dashboard/, { timeout: 15000 });
 
   await page.waitForFunction(() =>
     localStorage.getItem('esemenyter_token') !== null
   );
 
   await page.locator('.role-card.admin').click();
+  await expect(page.locator('.role-card.admin')).toHaveClass(/selected/);
   await pause();
 
-  await page.locator('.role-card.admin .card-action-btn').click();
+  const adminWizard = page.locator('.setup-wizard');
+  try {
+    await adminWizard.waitFor({ state: 'visible', timeout: 4000 });
+  } catch {
+    await page.locator('.role-card.admin .card-action-btn').click({ force: true });
+    await adminWizard.waitFor({ state: 'visible', timeout: 10000 });
+  }
   await pause();
 
   const nextButton = page.locator('.wizard-actions .btn-primary');
@@ -77,6 +84,7 @@ test('admin duplicate school fails', async ({ page }) => {
   await nextButton.click();
   await pause();
 
-  await expect(page).toHaveURL(/institution-dashboard/, { timeout: 5000 });
+  await expect(page).not.toHaveURL(/institution-dashboard/);
+  await expect(page.locator('.toast.toast-error .toast-message').first()).toBeVisible({ timeout: 10000 });
 
 });

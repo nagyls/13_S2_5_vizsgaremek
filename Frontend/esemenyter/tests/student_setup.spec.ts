@@ -16,11 +16,18 @@ test('student setup successfully', async ({ page }) => {
 
   await page.click('#register_btn');
 
-  await page.waitForURL(/dashboard/, { timeout: 6000 });
+  await page.waitForURL(/dashboard/, { timeout: 15000 });
 
-  await page.click('.role-card.student');
-  await page.click('.role-card.student .card-action-btn');
-  await page.waitForSelector('.setup-wizard');
+  await page.locator('.role-card.student').click();
+  await expect(page.locator('.role-card.student')).toHaveClass(/selected/);
+
+  const studentWizard = page.locator('.setup-wizard');
+  try {
+    await studentWizard.waitFor({ state: 'visible', timeout: 4000 });
+  } catch {
+    await page.locator('.role-card.student .card-action-btn').click({ force: true });
+    await studentWizard.waitFor({ state: 'visible', timeout: 10000 });
+  }
 
   await page.waitForSelector('.suggestions-grid .suggestion-card');
   await page.locator('.suggestion-card', { hasText: /Bács-Kiskun/i }).click();

@@ -12,5 +12,6 @@ test('registration email fails', async ({ page }) => {
   await page.locator('.checkbox-container').click();
   await page.click('#register_btn');
 
-  await expect(page).toHaveURL(/dashboard/);
+  await expect(page).toHaveURL(/register/);
+  await expect(page.locator('#email')).toHaveValue('rosszemail');
 });

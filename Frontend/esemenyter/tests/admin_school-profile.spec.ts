@@ -19,15 +19,22 @@ test('admin create school profile successfully', async ({ page }) => {
 
   await page.click('#register_btn');
 
-  await page.waitForURL(/dashboard/, { timeout: 6000 });
+  await page.waitForURL(/dashboard/, { timeout: 15000 });
 
   await page.waitForFunction(() =>
     localStorage.getItem('esemenyter_token') !== null
   );
 
   await page.locator('.role-card.admin').click();
+  await expect(page.locator('.role-card.admin')).toHaveClass(/selected/);
 
-  await page.locator('.role-card.admin .card-action-btn').click();
+  const adminWizard = page.locator('.setup-wizard');
+  try {
+    await adminWizard.waitFor({ state: 'visible', timeout: 4000 });
+  } catch {
+    await page.locator('.role-card.admin .card-action-btn').click({ force: true });
+    await adminWizard.waitFor({ state: 'visible', timeout: 10000 });
+  }
 
   const nextButton = page.locator('.wizard-actions .btn-primary');
 

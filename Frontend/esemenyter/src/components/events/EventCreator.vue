@@ -74,8 +74,8 @@
         </div>
 
         <!-- 2. GLOBÁLIS ESEMÉNY - MEGYÉK KIVÁLASZTÁSA -->
-        <div v-if="currentStep === 2 && selectedEventScope === 'global'" class="form-section">
-          <h3><i class='bx bx-map'></i> 2. Vármegyék kiválasztása</h3>
+        <div v-if="currentStep === 2 && selectedEventScope === 'global'" class="form-section global-county-section">
+          <h3><i class='bx bx-map'></i> 2/A. Vármegyék kiválasztása</h3>
           <p class="selection-description">Válaszd ki, mely vármegyék iskolái kapják meg az eseményt</p>
           
           <div class="county-list">
@@ -118,9 +118,22 @@
           </div>
         </div>
 
+        <div v-if="currentStep === 2 && selectedEventScope === 'global'" class="step-split-hint">
+          <i class='bx bx-separate'></i>
+          <span>Következő: célcsoport beállítása a saját intézményeden belül</span>
+        </div>
+
         <!-- 2. CÉLCSOPORT KIVÁLASZTÁSA -->
-        <div v-if="currentStep === 2" class="form-section">
-          <h3><i class='bx bx-target-lock'></i> 2. Célcsoport kiválasztása</h3>
+        <div v-if="currentStep === 3" class="form-section" :class="{ 'global-target-section': selectedEventScope === 'global' }">
+          <h3><i class='bx bx-target-lock'></i> 3. Célcsoport kiválasztása</h3>
+
+          <div v-if="selectedEventScope === 'global'" class="scope-notice">
+            <i class='bx bx-info-circle'></i>
+            <span>
+              Ez a célcsoport kiválasztás csak a saját iskoládra vonatkozik. A globális esemény miatt a saját intézményed
+              automatikusan érintett, itt azt állítod be, hogy a saját iskoládon belül kik lássák az eseményt.
+            </span>
+          </div>
           
           <div class="target-group-selection">
             <div class="target-group-options">
@@ -247,8 +260,8 @@
         </div>
 
         <!-- 3. ESEMÉNY ADATAI (közös rész) -->
-        <div v-if="currentStep === 3" class="form-section">
-          <h3><i class='bx bx-edit'></i> 3. Esemény adatai</h3>
+        <div v-if="currentStep === 4" class="form-section">
+          <h3><i class='bx bx-edit'></i> 4. Esemény adatai</h3>
           <div v-if="selectedEventScope === 'school'" class="recurrence-guide compact">
             <i class='bx bx-repeat'></i>
             <span>Itt kapcsolhatod be az ismétlődést a "Heti ismétlődő esemény" opcióval.</span>
@@ -337,8 +350,8 @@
         </div>
 
         <!-- 4. ÁTTEKINTÉS -->
-        <div v-if="currentStep === 4" class="form-section">
-          <h3><i class='bx bx-check-circle'></i> 4. Áttekintés</h3>
+        <div v-if="currentStep === 5" class="form-section">
+          <h3><i class='bx bx-check-circle'></i> 5. Áttekintés</h3>
           <div class="summary">
             <div class="summary-item">
               <strong>Esemény szintje:</strong> {{ getEventScopeLabel(selectedEventScope) }}
@@ -415,7 +428,7 @@
             <i class='bx bx-chevron-left'></i> Előző
           </button>
           
-          <button v-if="currentStep < 4" @click="nextStep" :disabled="!canProceed" class="btn btn-primary">
+          <button v-if="currentStep < 5" @click="nextStep" :disabled="!canProceed" class="btn btn-primary">
             Következő <i class='bx bx-chevron-right'></i>
           </button>
           
@@ -491,9 +504,10 @@ export default {
       // KONFIGURÁCIÓK
       steps: [
         { number: 1, label: 'Szint' },
-        { number: 2, label: 'Célcsoport' },
-        { number: 3, label: 'Adatok' },
-        { number: 4, label: 'Létrehozás' }
+        { number: 2, label: 'Vármegye' },
+        { number: 3, label: 'Célcsoport' },
+        { number: 4, label: 'Adatok' },
+        { number: 5, label: 'Létrehozás' }
       ],
       schoolTargetOptions: [
         {
@@ -546,15 +560,22 @@ export default {
           return this.selectedEventScope !== ''
 
         case 2:
+          if (this.selectedEventScope !== 'global') {
+            return true
+          }
+
+          if (this.selectedCountyIds.length === 0) {
+            return false
+          }
+
+          if (this.isCheckingGlobalCollab || this.globalCollabCount === 0) {
+            return false
+          }
+
+          return true
+
+        case 3:
           if (this.selectedEventScope === 'global') {
-            if (this.selectedCountyIds.length === 0) {
-              return false
-            }
-
-            if (this.isCheckingGlobalCollab || this.globalCollabCount === 0) {
-              return false
-            }
-
             if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
               return true
             }
@@ -584,7 +605,7 @@ export default {
 
           return false
 
-        case 3:
+        case 4:
           return this.validateEventForm()
 
         default:
@@ -593,7 +614,7 @@ export default {
     },
 
     isFormValid() {
-      return this.validateEventForm() && this.currentStep === 4
+      return this.validateEventForm() && this.currentStep === 5
     },
 
     counties() {
@@ -741,7 +762,7 @@ export default {
     },
 
     currentStep(newValue) {
-      if (newValue === 2 && (this.selectedEventScope === 'school' || this.selectedEventScope === 'global')) {
+      if (newValue === 3 && (this.selectedEventScope === 'school' || this.selectedEventScope === 'global')) {
         if (!this.institutionClasses.length) {
           this.loadInstitutionClasses()
         }
@@ -1390,7 +1411,7 @@ export default {
     },
 
     async nextStep() {
-      if (!(this.currentStep < 4 && this.canProceed)) {
+      if (!(this.currentStep < 5 && this.canProceed)) {
         return
       }
 
@@ -1401,13 +1422,25 @@ export default {
         }
       }
 
+      if (this.currentStep === 1 && this.selectedEventScope !== 'global') {
+        this.currentStep = 3
+        return
+      }
+
       this.currentStep++
     },
 
     previousStep() {
-      if (this.currentStep > 1) {
-        this.currentStep--
+      if (this.currentStep <= 1) {
+        return
       }
+
+      if (this.currentStep === 3 && this.selectedEventScope !== 'global') {
+        this.currentStep = 1
+        return
+      }
+
+      this.currentStep--
     },
 
     async createEvent() {
@@ -2029,6 +2062,53 @@ export default {
   font-size: 15px;
   margin-bottom: 16px;
   font-weight: 400;
+}
+
+.global-county-section {
+  margin-bottom: 18px;
+}
+
+.step-split-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding: 10px 14px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 14px;
+}
+
+.step-split-hint i {
+  color: #6366f1;
+  font-size: 18px;
+}
+
+.global-target-section {
+  padding-top: 24px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.scope-notice {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a8a;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.scope-notice i {
+  font-size: 18px;
+  margin-top: 1px;
+  color: #2563eb;
 }
 
 .permission-badge {

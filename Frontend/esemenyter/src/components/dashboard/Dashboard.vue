@@ -1319,7 +1319,9 @@ export default {
           this.user.role = userData.role;
         }
 
-        this.selectedRole = this.user.role;
+        if (this.user.role) {
+          this.selectedRole = this.user.role;
+        }
 
         this.profileConfigured = !!this.user.role
         this.saveUserData()
