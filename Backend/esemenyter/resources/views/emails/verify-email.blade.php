@@ -156,8 +156,8 @@
     <div class="email-container">
 
         <div class="header">
-            <img src="{{ $logoUrl }}" alt="EseményTér logó" class="brand-logo">
-            <h1>Üdvözlégy az EseményTérben!</h1>
+            <img src="cid:logo" alt="EseményTér logó" class="brand-logo">
+            <h1>Üdvözöljük az EseményTérben!</h1>
             <p>Email cím megerősítése</p>
         </div>
 

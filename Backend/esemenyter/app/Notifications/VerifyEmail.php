@@ -6,6 +6,7 @@ use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
+use Symfony\Component\Mime\Email;
 
 class VerifyEmail extends Notification
 {
@@ -18,16 +19,20 @@ class VerifyEmail extends Notification
     public function toMail($notifiable)
     {
         $verificationUrl = $this->verificationUrl($notifiable);
-        $backendBaseUrl = rtrim((string) env('BACKEND_URL', 'http://127.0.0.1:8000'), '/');
-        $logoUrl = $backendBaseUrl . '/images/logo2.svg';
 
         return (new MailMessage)
             ->subject('Email cím megerősítése - EseményTér')
             ->view('emails.verify-email', [
                 'notifiable' => $notifiable,
                 'actionUrl' => $verificationUrl,
-                'logoUrl' => $logoUrl,
-            ]);
+            ])
+            ->withSymfonyMessage(function (Email $message) {
+                $message->embedFromPath(
+                    public_path('images/logo2.png'),
+                    'logo',
+                    'image/png'
+                );
+            });
     }
 
   

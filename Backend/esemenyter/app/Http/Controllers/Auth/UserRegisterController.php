@@ -28,7 +28,7 @@ class UserRegisterController extends Controller
             'password' => Hash::make($request->string('password')),
         ]);
 
-        // Send email verification notification
+        // verification küldés
         $user->sendEmailVerificationNotification();
 
         return response()->json([

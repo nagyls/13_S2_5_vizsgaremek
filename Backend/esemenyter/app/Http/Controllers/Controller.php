@@ -31,4 +31,10 @@ abstract class Controller
             ->where('establishment_id', $establishmentId)
             ->exists();
     }
+    protected function deleteUnverifiedUser($user)
+    {
+        if ($user && !$user->hasVerifiedEmail()) {
+            $user->delete();
+        }
+    }
 }
