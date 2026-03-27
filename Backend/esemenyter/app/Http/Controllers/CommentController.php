@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\EventMessage;
 use App\Models\EventShown;
+use App\Models\Event;
 
 class CommentController extends Controller
 {
@@ -15,8 +16,13 @@ class CommentController extends Controller
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
+        $event = Event::find($eventId);
+        if (!$event) {
+            return response()->json(['error' => 'Not found'], 404);
+        }
+
         $eventview = EventShown::where('event_id', $eventId)->where('user_id', $user->id)->first();
-        if (!$eventview || $eventview->answer !== 'y') {
+        if (!$eventview || $eventview->answer !== 'y' || $event->chat_enabled !== true) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
         $perPage = (int) $request->query('per_page', 50);
@@ -49,10 +55,13 @@ class CommentController extends Controller
             'content.string' => 'A content mezőnek szöveges értéknek kell lennie.',
             'content.max' => 'A content mező nem lehet hosszabb 1000 karakternél.',
         ]);
-
+        $event = Event::find($request->event_id);
+        if (!$event) {
+            return response()->json(['error' => 'Not found'], 404);
+        }
         $eventview = EventShown::where('event_id', $request->event_id)->where('user_id', $user->id)->first();
-        if (!$eventview || $eventview->answer !== 'y') {
-            return response()->json(['error' => 'Forbidden'], 403);
+        if (!$eventview || $eventview->answer !== 'y' || $event->chat_enabled !== true) {
+            return response()->json(['error' => 'Hozzáférés megtagadva'], 403);
         }
 
         $comment = EventMessage::create([

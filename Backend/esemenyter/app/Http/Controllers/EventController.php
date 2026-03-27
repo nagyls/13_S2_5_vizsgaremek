@@ -618,6 +618,36 @@ class EventController extends Controller
             'participant_count' => $attendingCount,
         ]);
     }
+    public function handleChat(Request $request, int $eventId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'nem jogosult'], 401);
+        }
+        $validated = $request->validate([
+            'chat_enabled' => 'required|boolean',
+        ], [
+            'chat_enabled.required' => 'A chat engedélyezése kötelező.',
+            'chat_enabled.boolean' => 'A chat engedélyezése mező értéke csak igaz vagy hamis lehet.',
+        ]);
+
+        $event = Event::find($eventId);
+        if (!$event) {
+            return response()->json(['message' => 'Az esemény nem található.'], 404);
+        }
+        if ($event->user_id !== $user->id) {
+            return response()->json(['message' => 'Csak a létrehozó kezelheti a chat beállításait.'], 403);
+        }
+        $event->chat_enabled = $validated['chat_enabled'];
+        $event->save();
+
+        return response()->json([
+            'message' => 'Chat beállítások frissítve.',
+            'chat_enabled' => $event->chat_enabled,
+            'event' => $event->id,
+        ]);
+    }
 
     //SZAKKÖR MÓDOSÍTÁS
     public function manageOccurrence(Request $request, int $eventId)

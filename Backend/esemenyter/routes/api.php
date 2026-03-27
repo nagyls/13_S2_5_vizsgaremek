@@ -47,7 +47,7 @@ Route::prefix('regions')->group(function () {
 });
 Route::prefix('innerregions')->group(function () {
     Route::get('/all', [RegionController::class, 'getallinnerregions']);
-    Route::get('/', [RegionController::class, 'innerregions']);  
+    Route::get('/', [RegionController::class, 'innerregions']);
 });
 Route::prefix('settlements')->group(function () {
     Route::get('/all', [RegionController::class, 'getallsettlements']);
@@ -66,7 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/events/{eventId}/participation', [EventController::class, 'setParticipation']);
     Route::patch('/events/{eventId}/favourite', [EventController::class, 'makeFavourite']);
     Route::patch('/events/{eventId}/occurrence', [EventController::class, 'manageOccurrence']);  //SZAKKÖR MÓDOSÍTÁS
-
+    Route::patch('/events/{eventId}/chat', [EventController::class, 'handleChat']);  //CHAT MÓDOSÍTÁS
 
     //intézmény kezelés
     Route::prefix('establishment')->group(function () {
