@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../components/auth/Login.vue'
 import Registrate from '../components/auth/Registrate.vue'
+import EmailVerification from '../components/auth/EmailVerification.vue'
 import Aszf from '../components/legal/Aszf.vue'
 import Privacy from '../components/legal/Privacy.vue'
 import MainPage from '../components/home/MainPage.vue'
@@ -27,6 +28,12 @@ const routes = [
     name: 'register',
     component: Registrate,
     meta: { title: 'Regisztráció' }
+  },
+  {
+    path: '/verify-email/:id/:hash',
+    name: 'verify-email',
+    component: EmailVerification,
+    meta: { title: 'Email megerősítés' }
   },
   {
     path: '/aszf',

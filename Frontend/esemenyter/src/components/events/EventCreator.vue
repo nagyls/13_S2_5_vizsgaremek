@@ -279,14 +279,47 @@
               <label>Tartalom (opcionális)</label>
               <textarea v-model="eventForm.content" placeholder="Bővebb tartalom, instrukciók"></textarea>
             </div>
-            <div class="form-row">
-              <div v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)" class="form-group">
-                <label>Kezdés (dátum és idő) *</label>
-                <input type="datetime-local" v-model="eventForm.startDateTime" :min="nowMin" required>
+            <div class="form-row" v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)">
+              <div class="form-group">
+                <label>Kezdés dátuma *</label>
+                <input
+                  type="date"
+                  v-model="eventForm.startDate"
+                  :min="todayMin"
+                  @input="updateStartDateTimeFromParts"
+                  required
+                >
               </div>
-              <div v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)" class="form-group">
-                <label>Befejezés (dátum és idő) *</label>
-                <input type="datetime-local" v-model="eventForm.endDateTime" :min="eventForm.startDateTime || nowMin" required>
+              <div class="form-group">
+                <label>Kezdés időpontja *</label>
+                <input
+                  type="time"
+                  v-model="eventForm.startTime"
+                  step="60"
+                  @input="updateStartDateTimeFromParts"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label>Befejezés dátuma *</label>
+                <input
+                  type="date"
+                  v-model="eventForm.endDate"
+                  :min="eventForm.startDate || todayMin"
+                  @input="updateEndDateTimeFromParts"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label>Befejezés időpontja *</label>
+                <input
+                  type="time"
+                  v-model="eventForm.endTime"
+                  step="60"
+                  :min="eventForm.endDate === eventForm.startDate ? eventForm.startTime : ''"
+                  @input="updateEndDateTimeFromParts"
+                  required
+                >
               </div>
             </div>
 
@@ -452,6 +485,10 @@ export default {
   name: 'EsemenyKeszito',
 
   data() {
+    const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    const nowMin = now.toISOString().slice(0, 16)
+    const [defaultDate, defaultTime] = nowMin.split('T')
+
     return {
       userRole: 'student',
       currentUserId: null,
@@ -471,7 +508,7 @@ export default {
       currentStep: 1,
       isSubmitting: false,
       todayMin: new Date().toISOString().slice(0, 10),
-      nowMin: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16),
+      nowMin,
       selectedEventScope: 'school',
       selectedCountyIds: [],
       globalCollabCount: 0,
@@ -485,6 +522,10 @@ export default {
         content: '',
         startDateTime: '',
         endDateTime: '',
+        startDate: defaultDate,
+        startTime: defaultTime,
+        endDate: defaultDate,
+        endTime: defaultTime,
         isRecurring: false,
         recurrenceWeekday: '1',
         recurrenceStartTime: '',
@@ -751,6 +792,8 @@ export default {
     'eventForm.isRecurring'(newValue) {
       if (newValue) {
         this.eventForm.endDateTime = ''
+        this.eventForm.endDate = ''
+        this.eventForm.endTime = ''
         if (!this.eventForm.recurrenceStartDate) {
           this.eventForm.recurrenceStartDate = this.todayMin.slice(0, 10)
         }
@@ -814,7 +857,48 @@ export default {
       )
     },
 
+    combineDateAndTime(date, time) {
+      if (!date || !time) {
+        return ''
+      }
+
+      return `${date}T${time}`
+    },
+
+    splitDateTimeParts(dateTime) {
+      if (!dateTime || !String(dateTime).includes('T')) {
+        return { date: '', time: '' }
+      }
+
+      const [date, timeRaw] = String(dateTime).split('T')
+      const time = (timeRaw || '').slice(0, 5)
+
+      return { date, time }
+    },
+
+    updateStartDateTimeFromParts() {
+      this.eventForm.startDateTime = this.combineDateAndTime(this.eventForm.startDate, this.eventForm.startTime)
+
+      if (
+        this.eventForm.endDate && this.eventForm.endTime &&
+        this.eventForm.startDateTime &&
+        new Date(this.combineDateAndTime(this.eventForm.endDate, this.eventForm.endTime)) < new Date(this.eventForm.startDateTime)
+      ) {
+        this.eventForm.endDate = this.eventForm.startDate
+        this.eventForm.endTime = this.eventForm.startTime
+      }
+
+      this.updateEndDateTimeFromParts()
+    },
+
+    updateEndDateTimeFromParts() {
+      this.eventForm.endDateTime = this.combineDateAndTime(this.eventForm.endDate, this.eventForm.endTime)
+    },
+
     async initialize() {
+      this.updateStartDateTimeFromParts()
+      this.updateEndDateTimeFromParts()
+
       const token = getToken()
 
       try {
@@ -850,12 +934,13 @@ export default {
             Accept: 'application/json'
           }
 
-          const [userResponse, roleResponse] = await Promise.all([
-            axios.get(`${API_BASE}/user`, { headers }).catch(() => null),
-            axios.get(`${API_BASE}/establishment/role`, { headers }).catch(() => null)
-          ])
+          const userResponse = await axios.get(`${API_BASE}/user`, { headers }).catch(() => null)
 
           const backendUser = userResponse?.data || {}
+          const roleInstitutionId = Number(savedInstitutionId || backendUser?.establishment_id || this.userInstitution.id || 0)
+          const roleResponse = roleInstitutionId > 0
+            ? await axios.get(`${API_BASE}/establishment/${roleInstitutionId}/role`, { headers }).catch(() => null)
+            : null
           const backendRole = String(roleResponse?.data?.role || '').toLowerCase()
 
           if (backendRole) {
@@ -888,6 +973,19 @@ export default {
         }
       } catch (error) {
         console.error('Felhasználó inicializálási hiba:', error)
+      }
+
+      const startParts = this.splitDateTimeParts(this.eventForm.startDateTime)
+      const endParts = this.splitDateTimeParts(this.eventForm.endDateTime)
+
+      if (startParts.date && startParts.time) {
+        this.eventForm.startDate = startParts.date
+        this.eventForm.startTime = startParts.time
+      }
+
+      if (endParts.date && endParts.time) {
+        this.eventForm.endDate = endParts.date
+        this.eventForm.endTime = endParts.time
       }
 
       if (!this.canCreateGlobalEvent) {
@@ -1003,10 +1101,10 @@ export default {
         }
 
         const [studentsResponse, staffResponse] = await Promise.all([
-          axios.get(`${API_BASE}/members/students/${institutionId}`, {
+          axios.get(`${API_BASE}/establishment/${institutionId}/members/students`, {
             headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
           }).catch(() => ({ data: { data: [] } })),
-          axios.get(`${API_BASE}/members/staff/${institutionId}`, {
+          axios.get(`${API_BASE}/establishment/${institutionId}/members/staff`, {
             headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
           }).catch(() => ({ data: { data: [] } }))
         ])

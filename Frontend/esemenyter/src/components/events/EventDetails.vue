@@ -216,12 +216,20 @@
 
               <div class="occurrence-form-grid">
                 <label>
-                  Kezdés
-                  <input type="datetime-local" v-model="occurrenceForm.startDateTime">
+                  Kezdés dátuma
+                  <input type="date" v-model="occurrenceForm.startDate" @input="updateOccurrenceStartDateTime">
                 </label>
                 <label>
-                  Befejezés
-                  <input type="datetime-local" v-model="occurrenceForm.endDateTime">
+                  Kezdés időpontja
+                  <input type="time" v-model="occurrenceForm.startTime" @input="updateOccurrenceStartDateTime">
+                </label>
+                <label>
+                  Befejezés dátuma
+                  <input type="date" v-model="occurrenceForm.endDate" @input="updateOccurrenceEndDateTime">
+                </label>
+                <label>
+                  Befejezés időpontja
+                  <input type="time" v-model="occurrenceForm.endTime" @input="updateOccurrenceEndDateTime">
                 </label>
               </div>
 
@@ -287,6 +295,10 @@ export default {
       studentHasClass: null,
       isUpdatingOccurrence: false,
       occurrenceForm: {
+        startDate: '',
+        startTime: '',
+        endDate: '',
+        endTime: '',
         startDateTime: '',
         endDateTime: ''
       }
@@ -366,8 +378,8 @@ export default {
         }
         
         this.eventData = foundEvent
-        this.occurrenceForm.startDateTime = this.toDateTimeLocalValue(foundEvent.start_date)
-        this.occurrenceForm.endDateTime = this.toDateTimeLocalValue(foundEvent.end_date)
+        this.splitDateTimeParts(foundEvent.start_date, 'start')
+        this.splitDateTimeParts(foundEvent.end_date, 'end')
         await Promise.all([
           this.loadStats(),
           this.loadParticipationStatus()
@@ -732,6 +744,64 @@ export default {
       return `${match[1]}T${match[2]}`
     },
 
+    splitDateTimeParts(dateTimeString, type) {
+      if (!dateTimeString) {
+        if (type === 'start') {
+          this.occurrenceForm.startDate = ''
+          this.occurrenceForm.startTime = ''
+        } else {
+          this.occurrenceForm.endDate = ''
+          this.occurrenceForm.endTime = ''
+        }
+        return
+      }
+
+      const normalized = String(dateTimeString).trim().replace(' ', 'T')
+      const match = normalized.match(/^(\d{4}-\d{2}-\d{2})T?(\d{2}:\d{2})/)
+
+      if (!match) {
+        return
+      }
+
+      const date = match[1]
+      const time = match[2]
+
+      if (type === 'start') {
+        this.occurrenceForm.startDate = date
+        this.occurrenceForm.startTime = time
+      } else {
+        this.occurrenceForm.endDate = date
+        this.occurrenceForm.endTime = time
+      }
+    },
+
+    combineDateAndTime(date, time) {
+      if (!date || !time) {
+        return ''
+      }
+      return `${date}T${time}`
+    },
+
+    updateOccurrenceStartDateTime() {
+      this.occurrenceForm.startDateTime = this.combineDateAndTime(
+        this.occurrenceForm.startDate,
+        this.occurrenceForm.startTime
+      )
+    },
+
+    updateOccurrenceEndDateTime() {
+      let endDate = this.occurrenceForm.endDate
+      const startDate = this.occurrenceForm.startDate
+      const endTime = this.occurrenceForm.endTime
+
+      if (endDate && startDate && new Date(`${endDate}T${endTime || '00:00'}`) < new Date(`${startDate}T${this.occurrenceForm.startTime || '00:00'}`)) {
+        endDate = startDate
+        this.occurrenceForm.endDate = endDate
+      }
+
+      this.occurrenceForm.endDateTime = this.combineDateAndTime(endDate, endTime)
+    },
+
     async rescheduleOccurrence() {
       if (this.isReadOnlyMode) {
         this.showMessage('Csak megtekintés módban az alkalom nem módosítható.', 'warning')
@@ -743,12 +813,15 @@ export default {
         return
       }
 
-      if (!this.occurrenceForm.startDateTime || !this.occurrenceForm.endDateTime) {
+      if (!this.occurrenceForm.startDate || !this.occurrenceForm.startTime || !this.occurrenceForm.endDate || !this.occurrenceForm.endTime) {
         this.showMessage('Add meg az új kezdési és befejezési időpontot.', 'warning')
         return
       }
 
-      if (new Date(this.occurrenceForm.startDateTime) >= new Date(this.occurrenceForm.endDateTime)) {
+      const startDateTime = this.combineDateAndTime(this.occurrenceForm.startDate, this.occurrenceForm.startTime)
+      const endDateTime = this.combineDateAndTime(this.occurrenceForm.endDate, this.occurrenceForm.endTime)
+
+      if (new Date(startDateTime) >= new Date(endDateTime)) {
         this.showMessage('A befejezés legyen későbbi, mint a kezdés.', 'warning')
         return
       }
@@ -766,8 +839,8 @@ export default {
           `${API_BASE}/events/${this.eventId}/occurrence`,
           {
             action: 'reschedule',
-            start_date: this.occurrenceForm.startDateTime,
-            end_date: this.occurrenceForm.endDateTime
+            start_date: startDateTime,
+            end_date: endDateTime
           },
           {
             headers: getAuthHeaders(token, true),

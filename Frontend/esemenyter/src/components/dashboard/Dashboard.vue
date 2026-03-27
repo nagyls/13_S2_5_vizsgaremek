@@ -1302,6 +1302,12 @@ export default {
           name: userData.name || '',
           email: userData.email || '',
           role: userData.role || '',
+          institution_id: Number(
+            userData.establishment_id ||
+            localStorage.getItem('CurrentInstitution') ||
+            sessionStorage.getItem('CurrentInstitution') ||
+            0
+          ) || null,
           region: this.user.region || '',
           district: this.user.district || '',
           city: this.user.city || '',
@@ -1356,7 +1362,18 @@ export default {
 
     async fetchAndSaveRole(token) {
       try {
-        const roleResponse = await axios.get('http://127.0.0.1:8000/api/establishment/role', {
+        const institutionId = Number(
+          this.user?.institution_id ||
+          localStorage.getItem('CurrentInstitution') ||
+          sessionStorage.getItem('CurrentInstitution') ||
+          0
+        );
+
+        if (!Number.isFinite(institutionId) || institutionId <= 0) {
+          return;
+        }
+
+        const roleResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/role`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

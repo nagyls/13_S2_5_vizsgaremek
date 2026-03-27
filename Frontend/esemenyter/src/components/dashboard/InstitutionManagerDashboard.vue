@@ -1747,12 +1747,12 @@ export default {
           localStorage.getItem('esemenyter_token') ||
           sessionStorage.getItem('esemenyter_token');
         
-        const studentsResponse = await axios.get(`http://127.0.0.1:8000/api/members/students/${institutionId}`, {
+        const studentsResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/members/students`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         this.students = studentsResponse.data.data || [];
       
-        const teachersResponse = await axios.get(`http://127.0.0.1:8000/api/members/staff/${institutionId}`, {
+        const teachersResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/members/staff`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         this.teachers = teachersResponse.data.data || [];
@@ -2568,7 +2568,12 @@ export default {
                 localStorage.getItem('esemenyter_token') ||
                 sessionStorage.getItem('esemenyter_token');
               if (token) {
-                const roleResponse = await axios.get('http://127.0.0.1:8000/api/establishment/role', {
+                const numericInstitutionId = Number(storedInstitutionId || this.user.institution_id || 0);
+                if (!Number.isFinite(numericInstitutionId) || numericInstitutionId <= 0) {
+                  return;
+                }
+
+                const roleResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${numericInstitutionId}/role`, {
                   headers: { Authorization: `Bearer ${token}` }
                 });
 

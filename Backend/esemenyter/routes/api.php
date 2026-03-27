@@ -27,12 +27,11 @@ Route::post('/register', [UserRegisterController::class, 'register']);
 
 Route::post('/login', [UserAuthController::class, 'login']);
 Route::delete('/logout', [UserLogoutController::class, 'logout'])->middleware('auth:sanctum');
+Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
+    ->name('verification.verify');
 
 // Email verifikáció
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
-        ->middleware(['signed'])
-        ->name('verification.verify');
     Route::post('/email/resend', [VerificationController::class, 'resend'])
         ->middleware(['throttle:6,1'])
         ->name('verification.resend');
@@ -45,17 +44,15 @@ Route::prefix('regions')->group(function () {
     Route::get('/all', [RegionController::class, 'getallregions']); // összes régió
     Route::get('/{id}', [RegionController::class, 'showregion']); // id alapu keresés
     Route::get('/', [RegionController::class, 'regions']); // keresés
-    Route::prefix('innerregions')->group(function () {
-        Route::get('/all', [RegionController::class, 'getallinnerregions']);
-        Route::get('/', [RegionController::class, 'innerregions']);
-        Route::prefix('settlements')->group(function () {
-            Route::get('/all', [RegionController::class, 'getallsettlements']);
-            Route::get('/', [RegionController::class, 'settlements']);
-        });
-    });
 });
-
-
+Route::prefix('innerregions')->group(function () {
+    Route::get('/all', [RegionController::class, 'getallinnerregions']);
+    Route::get('/', [RegionController::class, 'innerregions']);  
+});
+Route::prefix('settlements')->group(function () {
+    Route::get('/all', [RegionController::class, 'getallsettlements']);
+    Route::get('/', [RegionController::class, 'settlements']);
+});
 Route::prefix('establishments')->group(function () {
     Route::get('/', [EstablishmentController::class, 'getEstablishments']); // keresés
 });

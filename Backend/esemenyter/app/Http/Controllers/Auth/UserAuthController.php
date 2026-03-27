@@ -25,6 +25,14 @@ class UserAuthController extends Controller
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Hibás jelszó vagy email!'], 401);
         }
+
+        if (!$user->hasVerifiedEmail()) {
+            return response()->json([
+                'message' => 'Az email cím még nincs megerősítve. Ellenőrizd a leveleidet, majd a megerősítés után jelentkezz be.',
+                'email_verified' => false,
+            ], 403);
+        }
+
         $token = $user->createToken(self::AUTH_TOKEN_NAME)->plainTextToken;
         return response()->json([
             'message' => 'Sikeres bejelentkezés!',
@@ -33,6 +41,7 @@ class UserAuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'establishment_id' => $user->establishment_id,
+                'email_verified' => true,
             ],
             'token' => $token,
         ]);

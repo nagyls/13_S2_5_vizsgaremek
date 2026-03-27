@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Notifications\VerifyEmail;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -59,5 +60,13 @@ class User extends Authenticatable implements MustVerifyEmail
     public function staffAt()
     {
         return $this->belongsTo(Staff::class, 'establishment_id');
+    }
+
+    /**
+     * Küld egy email verifikációs értesítést a felhasználónak
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new VerifyEmail());
     }
 }

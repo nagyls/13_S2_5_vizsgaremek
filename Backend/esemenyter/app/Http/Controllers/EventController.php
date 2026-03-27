@@ -588,7 +588,7 @@ class EventController extends Controller
             return response()->json(['message' => 'nem jogosult'], 403);
         }
 
-        DB::table('event_feedbacks')->updateOrInsert(
+        DB::table('event_shows')->updateOrInsert(
             [
                 'event_id' => $eventId,
                 'user_id' => $user->id,
@@ -600,12 +600,12 @@ class EventController extends Controller
             ]
         );
 
-        $attendingCount = DB::table('event_feedbacks')
+        $attendingCount = DB::table('event_shows')
             ->where('event_id', $eventId)
             ->where('answer', 'y')
             ->count();
 
-        $notAttendingCount = DB::table('event_feedbacks')
+        $notAttendingCount = DB::table('event_shows')
             ->where('event_id', $eventId)
             ->where('answer', 'n')
             ->count();

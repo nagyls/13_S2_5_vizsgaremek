@@ -63,7 +63,7 @@
 import axios from "axios";
 import { toast } from '../../services/toast'
 import logo2 from '../../assets/logo2.svg';
-import { API_BASE } from '../../services/api'
+import { API_BASE, clearAuthStorage } from '../../services/api'
 
 export default {
     name: 'Register',
@@ -137,23 +137,14 @@ export default {
                     password_confirmation: this.jelszo_meg
                 });
 
-                const userData = {
-                    id: res.data.user.id,
-                    name: res.data.user.name,
-                    email: res.data.user.email,
-                    token: res.data.token,
-                    isLoggedIn: true,
-                    registeredAt: new Date().toISOString()
-                };
+                clearAuthStorage();
+                localStorage.setItem('pending_verification_email', res.data.user.email);
                 
-                localStorage.setItem('esemenyter_user', JSON.stringify(userData));
-                localStorage.setItem('esemenyter_token', res.data.token);
-                
-                toast.success("Sikeres regisztráció! Átirányítás...");
+                toast.success("Sikeres regisztráció! Kérjük, ellenőrizd az email címedet.");
                 
                 setTimeout(() => {
-                    this.$router.push('/dashboard');
-                }, 1500);
+                    this.$router.push('/login');
+                }, 2000);
                 
             } catch (err) {
                 const errorMsg = err.response?.data?.message || 
@@ -171,7 +162,7 @@ export default {
         if (savedUser) {
             try {
                 const userData = JSON.parse(savedUser);
-                if (userData.isLoggedIn) {
+                if (userData.isLoggedIn && userData.email_verified) {
                     this.$router.push('/dashboard');
                 }
             } catch (error) {

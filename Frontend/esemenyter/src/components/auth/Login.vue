@@ -37,7 +37,7 @@
 import axios from "axios";
 import { toast } from '../../services/toast'
 import logo2 from '../../assets/logo2.svg';
-import { API_BASE, getToken, hasLocalToken, getAuthHeaders } from '../../services/api'
+import { API_BASE, getToken, hasLocalToken, getAuthHeaders, clearAuthStorage } from '../../services/api'
 
 export default {
   name: 'Login',
@@ -65,9 +65,14 @@ export default {
             return '/dashboard';
         },
 
-        async fetchRole(token) {
+        async fetchRole(token, establishmentId) {
+            const numericEstablishmentId = Number(establishmentId);
+            if (!Number.isFinite(numericEstablishmentId) || numericEstablishmentId <= 0) {
+                return '';
+            }
+
             try {
-                const roleResponse = await axios.get(`${API_BASE}/establishment/role`, {
+                const roleResponse = await axios.get(`${API_BASE}/establishment/${numericEstablishmentId}/role`, {
                     headers: getAuthHeaders(token)
                 });
 
@@ -106,13 +111,7 @@ export default {
       try {
 
         // 🔥 1️⃣ Storage takarítás
-        localStorage.removeItem('esemenyter_user');
-        localStorage.removeItem('esemenyter_token');
-        localStorage.removeItem('CurrentInstitution');
-
-        sessionStorage.removeItem('esemenyter_user');
-        sessionStorage.removeItem('esemenyter_token');
-        sessionStorage.removeItem('CurrentInstitution');
+                clearAuthStorage();
 
                 const res = await axios.post(`${API_BASE}/login`, {
           email: this.email,
@@ -128,8 +127,8 @@ export default {
                     headers: getAuthHeaders(token)
                 });
 
-                const role = await this.fetchRole(token);
                 const backendUser = userResponse.data || {};
+                const role = await this.fetchRole(token, backendUser.establishment_id);
 
         const userData = {
                     id: backendUser.id || res.data.user.id,
@@ -137,6 +136,7 @@ export default {
                     email: backendUser.email || res.data.user.email,
                     role: role || backendUser.role || '',
                     institution_id: backendUser.establishment_id || null,
+                    email_verified: true,
                     is_teacher: res.data.is_teacher || false,
                     is_student: res.data.is_student || false,
                     establishment_ids: res.data.establishment_ids || [],
@@ -152,6 +152,12 @@ export default {
 
       } catch (err) {
         console.error("Bejelentkezési hiba:", err);
+
+                if (err.response?.status === 403 && err.response?.data?.email_verified === false) {
+                    clearAuthStorage();
+                    toast.error(err.response?.data?.message || 'Az email címed még nincs megerősítve.');
+                    return;
+                }
 
         const errorMsg =
           err.response?.data?.message ||
@@ -179,8 +185,11 @@ export default {
                         '{}'
                     );
 
-                    const role = await this.fetchRole(token);
                     const backendUser = response.data || {};
+                    const role = await this.fetchRole(
+                        token,
+                        backendUser.establishment_id || userData.institution_id
+                    );
                     const mergedUserData = {
                         ...userData,
                         id: backendUser.id || userData.id,
@@ -188,8 +197,14 @@ export default {
                         email: backendUser.email || userData.email,
                         role: role || backendUser.role || userData.role || '',
                         institution_id: backendUser.establishment_id || userData.institution_id || null,
+                        email_verified: Boolean(backendUser.email_verified_at),
                         isLoggedIn: true,
                     };
+
+                    if (!mergedUserData.email_verified) {
+                        clearAuthStorage();
+                        return;
+                    }
 
                     if (hasLocalToken()) {
                         localStorage.setItem('esemenyter_user', JSON.stringify(mergedUserData));
@@ -202,8 +217,7 @@ export default {
                     this.$router.push(this.getRedirectPath(mergedUserData));
         })
         .catch(() => {
-          localStorage.clear();
-          sessionStorage.clear();
+                    clearAuthStorage();
         });
     }
   }
