@@ -22,7 +22,7 @@ class CommentController extends Controller
         }
 
         $eventview = EventShown::where('event_id', $eventId)->where('user_id', $user->id)->first();
-        if (!$eventview || $eventview->answer !== 'y' || $event->chat_enabled !== true) {
+        if (!$eventview || $eventview->answer !== 'y' || !$event->chat_enabled) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
         $perPage = (int) $request->query('per_page', 50);
@@ -60,7 +60,7 @@ class CommentController extends Controller
             return response()->json(['error' => 'Not found'], 404);
         }
         $eventview = EventShown::where('event_id', $request->event_id)->where('user_id', $user->id)->first();
-        if (!$eventview || $eventview->answer !== 'y' || $event->chat_enabled !== true) {
+        if (!$eventview || $eventview->answer !== 'y' || !$event->chat_enabled) {
             return response()->json(['error' => 'Hozzáférés megtagadva'], 403);
         }
 
