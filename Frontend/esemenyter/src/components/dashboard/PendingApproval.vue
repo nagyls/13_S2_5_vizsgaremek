@@ -202,6 +202,12 @@ export default {
     handleScroll() {
       this.showScrollTop = window.scrollY > 300;
     },
+
+    handleDocumentClick(event) {
+      if (!event.target.closest('.user-profile')) {
+        this.showUserMenu = false;
+      }
+    },
     
     logout() {
       axios.delete('http://127.0.0.1:8000/api/logout')
@@ -222,16 +228,13 @@ export default {
   mounted() {
     this.loadUserData();
     window.addEventListener('scroll', this.handleScroll);
-    
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.user-profile')) {
-        this.showUserMenu = false;
-      }
-    });
+
+    document.addEventListener('click', this.handleDocumentClick);
   },
   
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
+    document.removeEventListener('click', this.handleDocumentClick);
   }
 }
 </script>
@@ -383,7 +386,7 @@ export default {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   width: 300px;
   overflow: hidden;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .menu-header {
@@ -767,19 +770,20 @@ export default {
 
 /* ===== RESPONZÍV ===== */
 @media (max-width: 768px) {
+  .main-header {
+    padding: 12px 0;
+  }
+
   .header-content {
-    flex-direction: column;
-    gap: 16px;
+    flex-direction: row;
+    justify-content: space-between;
     align-items: center;
-    text-align: center;
+    gap: 0;
   }
 
-  .logo-section {
-    justify-content: center;
-  }
-
-  .user-profile {
-    align-self: center;
+  .logo-text h1,
+  .site-subtitle {
+    display: none;
   }
 
   .main-content {
@@ -840,12 +844,35 @@ export default {
   }
 
   .user-menu {
-    width: 280px;
-    right: -20px;
+    width: 220px;
+    right: 0;
+    left: auto;
+    transform: none;
+  }
+
+  .menu-header {
+    padding: 12px 16px;
+  }
+
+  .menu-items {
+    padding: 6px 0;
+  }
+
+  .menu-item {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .menu-item i {
+    font-size: 16px;
   }
 }
 
 @media (max-width: 480px) {
+  .main-header {
+    padding: 8px 0;
+  }
+
   .fab {
     width: 48px;
     height: 48px;

@@ -142,13 +142,13 @@ class EstablishmentController extends Controller
         ]);
     }
 
-    public function getRole(Request $request)
+    public function getRole(Request $request, $establishmentId)
     {
         $user = $request->user();
 
-        if ($this->isMemberEstablishment($user->id, $user->establishment_id)) {
-            if ($this->isStaffEstablishment($user->id, $user->establishment_id)) {
-                if ($this->isAdminEstablishment($user->id, $user->establishment_id)) {
+        if ($this->isMemberEstablishment($user->id, $establishmentId)) {
+            if ($this->isStaffEstablishment($user->id, $establishmentId)) {
+                if ($this->isAdminEstablishment($user->id, $establishmentId)) {
                     return response()->json([
                         'role' => 'admin',
                     ]);

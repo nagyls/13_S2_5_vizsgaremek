@@ -74,409 +74,11 @@
               {{ roleDisplayName }}
             </p>
           </div>
-<!--           
-          <div class="profile-actions">
-            <button v-if="!isEditing" class="btn-primary" @click="startEditing">
-              <i class='bx bx-edit'></i>
-              Profil szerkesztése
-            </button>
-            <button v-if="isEditing" class="btn-outline" @click="cancelEditing">
-              <i class='bx bx-x'></i>
-              Mégse
-            </button>
-          </div> -->
         </div>
 
         <!-- Profil tartalom -->
         <div class="profile-content">
-          <!-- Szerkesztési mód -->
-          <div v-if="isEditing" class="edit-section">
-            <form @submit.prevent="saveProfile" class="edit-form">
-              <!-- Alapadatok -->
-              <div class="form-section">
-                <h2><i class='bx bx-user-circle'></i> Alapadatok</h2>
-                
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="name">Teljes név *</label>
-                    <input 
-                      type="text" 
-                      id="name"
-                      v-model="editForm.name"
-                      class="form-control"
-                      :class="{ 'error': errors.name }"
-                      required
-                    />
-                    <span v-if="errors.name" class="error-message">{{ errors.name }}</span>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="email">Email cím *</label>
-                    <input 
-                      type="email" 
-                      id="email"
-                      v-model="editForm.email"
-                      class="form-control"
-                      :class="{ 'error': errors.email }"
-                      required
-                    />
-                    <span v-if="errors.email" class="error-message">{{ errors.email }}</span>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="phone">Telefonszám</label>
-                    <input 
-                      type="tel" 
-                      id="phone"
-                      v-model="editForm.phone"
-                      class="form-control"
-                      placeholder="+36 30 123 4567"
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="birthdate">Születési dátum</label>
-                    <input 
-                      type="date" 
-                      id="birthdate"
-                      v-model="editForm.birthdate"
-                      class="form-control"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Iskolai adatok (diákoknak) -->
-              <div v-if="user.role === 'student'" class="form-section">
-                <h2><i class='bx bx-school'></i> Iskolai adatok</h2>
-                
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="region">Régió</label>
-                    <input 
-                      type="text" 
-                      id="region"
-                      v-model="editForm.region"
-                      class="form-control"
-                      readonly
-                      disabled
-                    />
-                    <small class="form-text">A régió nem módosítható</small>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="district">Járás</label>
-                    <input 
-                      type="text" 
-                      id="district"
-                      v-model="editForm.district"
-                      class="form-control"
-                      readonly
-                      disabled
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="city">Város</label>
-                    <input 
-                      type="text" 
-                      id="city"
-                      v-model="editForm.city"
-                      class="form-control"
-                      readonly
-                      disabled
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="school">Iskola</label>
-                    <input 
-                      type="text" 
-                      id="school"
-                      v-model="editForm.school"
-                      class="form-control"
-                      readonly
-                      disabled
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="class">Osztály</label>
-                    <select 
-                      id="class"
-                      v-model="editForm.classId"
-                      class="form-control"
-                    >
-                      <option value="">Válassz osztályt...</option>
-                      <option 
-                        v-for="classItem in availableClasses" 
-                        :key="classItem.id" 
-                        :value="classItem.id"
-                      >
-                        {{ classItem.name }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Tanári adatok -->
-              <div v-if="user.role === 'teacher'" class="form-section">
-                <h2><i class='bx bx-chalkboard'></i> Tanári adatok</h2>
-                
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="teacher-region">Régió</label>
-                    <input 
-                      type="text" 
-                      id="teacher-region"
-                      v-model="editForm.region"
-                      class="form-control"
-                      readonly
-                      disabled
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="teacher-district">Járás</label>
-                    <input 
-                      type="text" 
-                      id="teacher-district"
-                      v-model="editForm.district"
-                      class="form-control"
-                      readonly
-                      disabled
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="teacher-city">Város</label>
-                    <input 
-                      type="text" 
-                      id="teacher-city"
-                      v-model="editForm.city"
-                      class="form-control"
-                      readonly
-                      disabled
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="teacher-school">Iskola</label>
-                    <input 
-                      type="text" 
-                      id="teacher-school"
-                      v-model="editForm.school"
-                      class="form-control"
-                      readonly
-                      disabled
-                    />
-                  </div>
-
-                  <div class="form-group" v-if="user.isClassTeacher">
-                    <label for="main-class">Osztályfőnöki osztály</label>
-                    <input 
-                      type="text" 
-                      id="main-class"
-                      v-model="editForm.mainClass"
-                      class="form-control"
-                      readonly
-                      disabled
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label>Tanított osztályok</label>
-                    <div class="classes-tags">
-                      <span 
-                        v-for="classItem in editForm.teachingClasses" 
-                        :key="classItem.id"
-                        class="class-tag"
-                      >
-                        {{ classItem.name }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Speciális tanítási formák -->
-                <div class="form-group">
-                  <label class="checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      v-model="editForm.specialNeeds"
-                    />
-                    <span>Speciális nevelési igényű tanulók oktatása</span>
-                  </label>
-                </div>
-
-                <div class="form-group">
-                  <label class="checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      v-model="editForm.talentManagement"
-                    />
-                    <span>Tehetséggondozás, versenyfelkészítés</span>
-                  </label>
-                </div>
-
-                <div class="form-group">
-                  <label class="checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      v-model="editForm.extraCurricular"
-                    />
-                    <span>Szakkörök, fakultációk vezetése</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- Intézményvezetői adatok -->
-              <div v-if="user.role === 'admin'" class="form-section">
-                <h2><i class='bx bx-building-house'></i> Intézmény adatok</h2>
-                
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="inst-region">Régió</label>
-                    <input 
-                      type="text" 
-                      id="inst-region"
-                      v-model="editForm.region"
-                      class="form-control"
-                      readonly
-                      disabled
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="inst-district">Járás</label>
-                    <input 
-                      type="text" 
-                      id="inst-district"
-                      v-model="editForm.district"
-                      class="form-control"
-                      readonly
-                      disabled
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="inst-city">Város</label>
-                    <input 
-                      type="text" 
-                      id="inst-city"
-                      v-model="editForm.city"
-                      class="form-control"
-                      readonly
-                      disabled
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="inst-name">Intézmény neve</label>
-                    <input 
-                      type="text" 
-                      id="inst-name"
-                      v-model="editForm.school"
-                      class="form-control"
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="inst-address">Cím</label>
-                    <input 
-                      type="text" 
-                      id="inst-address"
-                      v-model="editForm.schoolAddress"
-                      class="form-control"
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="inst-phone">Telefonszám</label>
-                    <input 
-                      type="tel" 
-                      id="inst-phone"
-                      v-model="editForm.schoolPhone"
-                      class="form-control"
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="inst-email">Email</label>
-                    <input 
-                      type="email" 
-                      id="inst-email"
-                      v-model="editForm.schoolEmail"
-                      class="form-control"
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="inst-website">Weboldal</label>
-                    <input 
-                      type="url" 
-                      id="inst-website"
-                      v-model="editForm.schoolWebsite"
-                      class="form-control"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Jelszó módosítás -->
-              <div class="form-section">
-                <h2><i class='bx bx-lock-alt'></i> Jelszó módosítása</h2>
-                
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label for="current-password">Jelenlegi jelszó</label>
-                    <input 
-                      type="password" 
-                      id="current-password"
-                      v-model="editForm.currentPassword"
-                      class="form-control"
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="new-password">Új jelszó</label>
-                    <input 
-                      type="password" 
-                      id="new-password"
-                      v-model="editForm.newPassword"
-                      class="form-control"
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="confirm-password">Új jelszó megerősítése</label>
-                    <input 
-                      type="password" 
-                      id="confirm-password"
-                      v-model="editForm.confirmPassword"
-                      class="form-control"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Mentés gombok -->
-              <div class="form-actions">
-                <button type="button" class="btn-outline" @click="cancelEditing">
-                  <i class='bx bx-x'></i>
-                  Mégse
-                </button>
-                <button type="submit" class="btn-primary" :disabled="isSaving">
-                  <i class='bx bx-save'></i>
-                  {{ isSaving ? 'Mentés...' : 'Változtatások mentése' }}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <!-- Megtekintési mód -->
-          <div v-else class="view-section">
+          <div class="view-section">
             <div class="info-grid">
               <!-- Alapadatok -->
               <div class="info-card">
@@ -646,6 +248,7 @@
 <script>
 import axios from 'axios';
 import logo2 from '../../assets/logo2.svg';
+import { API_BASE, getToken, getAuthHeaders, clearAuthStorage } from '../../services/api'
 
 export default {
   name: 'Profile',
@@ -684,36 +287,7 @@ export default {
       showScrollTop: false,
       showToast: false,
       toastMessage: '',
-      toastType: 'success',
-      
-      isEditing: false,
-      isSaving: false,
-      editForm: {
-        name: '',
-        email: '',
-        phone: '',
-        birthdate: '',
-        region: '',
-        district: '',
-        city: '',
-        school: '',
-        schoolId: null,
-        schoolAddress: '',
-        schoolPhone: '',
-        schoolEmail: '',
-        schoolWebsite: '',
-        classId: null,
-        mainClass: '',
-        teachingClasses: [],
-        specialNeeds: false,
-        talentManagement: false,
-        extraCurricular: false,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      },
-      errors: {},
-      availableClasses: []
+      toastType: 'success'
     }
   },
   
@@ -776,17 +350,15 @@ export default {
     
     async loadUserFromBackend() {
       try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token');
+        const token = getToken();
 
         if (!token) {
           this.$router.push('/');
           return;
         }
 
-        const response = await axios.get('http://127.0.0.1:8000/api/user', {
-          headers: { Authorization: `Bearer ${token}` }
+        const response = await axios.get(`${API_BASE}/user`, {
+          headers: getAuthHeaders(token)
         });
         
         const userData = response.data.data || response.data;
@@ -796,198 +368,10 @@ export default {
           schoolId: userData.establishment_id || this.user.schoolId || null
         };
         
-        // Ha diák, töltsük be az elérhető osztályokat
-        if (this.user.role === 'student' && this.user.schoolId) {
-          await this.loadAvailableClasses();
-        }
-        
       } catch (error) {
         console.error('Hiba a felhasználói adatok betöltésekor:', error);
         this.showNotification('Hiba történt az adatok betöltésekor', 'error');
       }
-    },
-    
-    async loadAvailableClasses() {
-      try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token');
-
-        if (!token) {
-          return;
-        }
-
-        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${this.user.schoolId}/classes`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        this.availableClasses = response.data.data || [];
-        
-      } catch (error) {
-        console.error('Hiba az osztályok betöltésekor:', error);
-      }
-    },
-    
-    startEditing() {
-      this.editForm = {
-        name: this.user.name || '',
-        email: this.user.email || '',
-        phone: this.user.phone || '',
-        birthdate: this.user.birthdate || '',
-        region: this.user.region || '',
-        district: this.user.district ? this.user.district + "i" : '',
-        city: this.user.city || '',
-        school: this.user.school || '',
-        schoolId: this.user.schoolId,
-        schoolAddress: this.user.schoolAddress || '',
-        schoolPhone: this.user.schoolPhone || '',
-        schoolEmail: this.user.schoolEmail || '',
-        schoolWebsite: this.user.schoolWebsite || '',
-        classId: this.user.classId || null,
-        mainClass: this.user.mainClass || '',
-        teachingClasses: this.user.teachingClasses ? [...this.user.teachingClasses] : [],
-        specialNeeds: this.user.specialNeeds || false,
-        talentManagement: this.user.talentManagement || false,
-        extraCurricular: this.user.extraCurricular || false,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      };
-      this.errors = {};
-      this.isEditing = true;
-    },
-    
-    cancelEditing() {
-      this.isEditing = false;
-      this.editForm = {};
-      this.errors = {};
-    },
-    
-    async saveProfile() {
-      this.errors = {};
-      
-      // Validáció
-      if (!this.editForm.name?.trim()) {
-        this.errors.name = 'A név megadása kötelező';
-      }
-      
-      if (!this.editForm.email?.trim()) {
-        this.errors.email = 'Az email cím megadása kötelező';
-      } else if (!this.isValidEmail(this.editForm.email)) {
-        this.errors.email = 'Érvénytelen email cím';
-      }
-      
-      // Jelszó validáció
-      if (this.editForm.newPassword || this.editForm.currentPassword || this.editForm.confirmPassword) {
-        if (!this.editForm.currentPassword) {
-          this.errors.currentPassword = 'A jelenlegi jelszó megadása kötelező';
-        }
-        if (!this.editForm.newPassword) {
-          this.errors.newPassword = 'Az új jelszó megadása kötelező';
-        } else if (this.editForm.newPassword.length < 6) {
-          this.errors.newPassword = 'A jelszónak legalább 6 karakter hosszúnak kell lennie';
-        }
-        if (this.editForm.newPassword !== this.editForm.confirmPassword) {
-          this.errors.confirmPassword = 'A jelszavak nem egyeznek';
-        }
-      }
-      
-      if (Object.keys(this.errors).length > 0) {
-        return;
-      }
-      
-      this.isSaving = true;
-      
-      try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token');
-
-        if (!token) {
-          this.$router.push('/');
-          return;
-        }
-        
-        // Alapadatok mentése
-        const updateData = {
-          name: this.editForm.name,
-          email: this.editForm.email,
-          phone: this.editForm.phone || null,
-          birthdate: this.editForm.birthdate || null
-        };
-        
-        // Ha intézményvezető, iskola adatok mentése
-        if (this.user.role === 'admin') {
-          updateData.school_name = this.editForm.school;
-          updateData.school_address = this.editForm.schoolAddress;
-          updateData.school_phone = this.editForm.schoolPhone;
-          updateData.school_email = this.editForm.schoolEmail;
-          updateData.school_website = this.editForm.schoolWebsite;
-        }
-        
-        // Ha diák, osztály mentése
-        if (this.user.role === 'student' && this.editForm.classId) {
-          updateData.class_id = this.editForm.classId;
-        }
-        
-        // Ha tanár, speciális beállítások mentése
-        if (this.user.role === 'teacher') {
-          updateData.special_needs = this.editForm.specialNeeds;
-          updateData.talent_management = this.editForm.talentManagement;
-          updateData.extra_curricular = this.editForm.extraCurricular;
-        }
-        
-        const response = await axios.put(`http://127.0.0.1:8000/api/users/${this.user.id}`, updateData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        // Jelszó módosítás, ha szükséges
-        if (this.editForm.newPassword && this.editForm.currentPassword) {
-          await axios.post(`http://127.0.0.1:8000/api/users/${this.user.id}/change-password`, {
-            current_password: this.editForm.currentPassword,
-            new_password: this.editForm.newPassword,
-            new_password_confirmation: this.editForm.confirmPassword
-          }, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-        
-        // Frissítsük a felhasználó adatokat
-        const updatedUser = response.data.data || response.data;
-        this.user = { ...this.user, ...updatedUser };
-        
-        // Frissítsük a mentett felhasználót a megfelelő tárhelyen
-        const savedUserRaw =
-          localStorage.getItem('esemenyter_user') ||
-          sessionStorage.getItem('esemenyter_user') ||
-          '{}';
-        const savedUser = JSON.parse(savedUserRaw);
-        const updatedSavedUser = { ...savedUser, ...updatedUser };
-
-        if (localStorage.getItem('esemenyter_token')) {
-          localStorage.setItem('esemenyter_user', JSON.stringify(updatedSavedUser));
-        } else {
-          sessionStorage.setItem('esemenyter_user', JSON.stringify(updatedSavedUser));
-        }
-        
-        this.isEditing = false;
-        this.showNotification('Profil sikeresen frissítve!', 'success');
-        
-      } catch (error) {
-        console.error('Hiba a profil mentésekor:', error);
-        
-        if (error.response?.data?.errors) {
-          this.errors = error.response.data.errors;
-        } else {
-          this.showNotification('Hiba történt a profil mentésekor', 'error');
-        }
-      } finally {
-        this.isSaving = false;
-      }
-    },
-    
-    isValidEmail(email) {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     },
     
     formatDate(date) {
@@ -1000,9 +384,7 @@ export default {
     },
     
     goToDashboard() {
-      if (this.user.role === 'admin') {
-        this.$router.push('/user-dashboard');
-      } else if (this.user.role) {
+      if (this.user.role) {
         this.$router.push('/user-dashboard');
       } else {
         this.$router.push('/dashboard');
@@ -1030,17 +412,19 @@ export default {
     handleScroll() {
       this.showScrollTop = window.scrollY > 300;
     },
+
+    handleDocumentClick(e) {
+      if (!e.target.closest('.user-profile')) {
+        this.showUserMenu = false;
+      }
+    },
     
     logout() {
-      axios.delete('http://127.0.0.1:8000/api/logout')
+      axios.delete(`${API_BASE}/logout`, {
+        headers: getAuthHeaders(getToken())
+      })
         .finally(() => {
-          localStorage.removeItem('esemenyter_user');
-          localStorage.removeItem('esemenyter_token');
-          localStorage.removeItem('CurrentInstitution');
-          localStorage.removeItem('remember_me');
-          sessionStorage.removeItem('esemenyter_user');
-          sessionStorage.removeItem('esemenyter_token');
-          sessionStorage.removeItem('CurrentInstitution');
+          clearAuthStorage();
           delete axios.defaults.headers.common['Authorization'];
           this.$router.push('/');
         });
@@ -1050,16 +434,13 @@ export default {
   mounted() {
     this.loadUserData();
     window.addEventListener('scroll', this.handleScroll);
-    
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.user-profile')) {
-        this.showUserMenu = false;
-      }
-    });
+
+    document.addEventListener('click', this.handleDocumentClick);
   },
   
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
+    document.removeEventListener('click', this.handleDocumentClick);
   }
 }
 </script>
@@ -1132,6 +513,7 @@ export default {
   font-size: 24px;
   font-weight: 700;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -1198,7 +580,7 @@ export default {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   width: 300px;
   overflow: hidden;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .menu-header {
@@ -1701,19 +1083,20 @@ export default {
 
 /* Reszponzív */
 @media (max-width: 768px) {
+  .main-header {
+    padding: 12px 0;
+  }
+
   .header-content {
-    flex-direction: column;
-    gap: 16px;
+    flex-direction: row;
+    justify-content: space-between;
     align-items: center;
-    text-align: center;
+    gap: 0;
   }
 
-  .logo-section {
-    justify-content: center;
-  }
-
-  .user-profile {
-    align-self: center;
+  .logo-text h1,
+  .site-subtitle {
+    display: none;
   }
 
   .profile-header {
@@ -1741,8 +1124,27 @@ export default {
   }
   
   .user-menu {
-    width: 280px;
-    right: -20px;
+    width: 220px;
+    right: 0;
+    left: auto;
+    transform: none;
+  }
+
+  .menu-header {
+    padding: 12px 16px;
+  }
+
+  .menu-items {
+    padding: 6px 0;
+  }
+
+  .menu-item {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .menu-item i {
+    font-size: 16px;
   }
   
   .form-actions {
@@ -1763,6 +1165,10 @@ export default {
 }
 
 @media (max-width: 480px) {
+  .main-header {
+    padding: 8px 0;
+  }
+
   .profile-header {
     padding: 20px;
   }

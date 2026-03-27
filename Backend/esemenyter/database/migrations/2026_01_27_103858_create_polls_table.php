@@ -16,6 +16,9 @@ return new class extends Migration
             $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->string('title')->nullable();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->date('start_date')->nullable();
+            $table->date('deadline')->nullable();
+            $table->boolean('is_timed')->default(false);
             $table->timestamps();
         });
     }

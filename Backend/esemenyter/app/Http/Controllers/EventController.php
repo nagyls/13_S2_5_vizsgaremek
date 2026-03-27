@@ -147,7 +147,7 @@ class EventController extends Controller
             }
 
             //eredeti: 
-        //  $event = DB::transaction(function () use ($user, $validated, $users) {
+            //  $event = DB::transaction(function () use ($user, $validated, $users) {
             $event = DB::transaction(function () use ($user, $validated, $users, $isRecurring) { //SZAKKÖR MÓDOSÍTÁS
                 $event = Event::create([
                     'user_id' => $user->id,
@@ -471,16 +471,16 @@ class EventController extends Controller
 
         $visibleEventIds = EventShown::where('establishment_id', $establishmentId)
 
-                //SZAKKÖR MÓDOSÍTÁS
-                ->where('user_id', $user->id)
-                //
+            //SZAKKÖR MÓDOSÍTÁS
+            ->where('user_id', $user->id)
+            //
             ->distinct()
             ->pluck('event_id');
 
         $events = Event::where(function ($query) use ($visibleEventIds) {
-                $query->whereIn('id', $visibleEventIds)
-                    ->orWhereIn('recurrence_parent_event_id', $visibleEventIds);
-            })
+            $query->whereIn('id', $visibleEventIds)
+                ->orWhereIn('recurrence_parent_event_id', $visibleEventIds);
+        })
             ->orderBy('start_date', 'asc')
             ->get();
 
@@ -517,7 +517,7 @@ class EventController extends Controller
         $commentCountsByEvent = collect();
 
         if (!empty($eventIds)) {
-            $feedbackStatsByEvent = DB::table('event_feedbacks')
+            $feedbackStatsByEvent = DB::table('event_shows')
                 ->select(
                     'event_id',
                     DB::raw("SUM(CASE WHEN answer = 'y' THEN 1 ELSE 0 END) as attending_count"),
@@ -528,7 +528,7 @@ class EventController extends Controller
                 ->get()
                 ->keyBy('event_id');
 
-            $userFeedbackByEvent = DB::table('event_feedbacks')
+            $userFeedbackByEvent = DB::table('event_shows')
                 ->whereIn('event_id', $eventIds)
                 ->where('user_id', $user->id)
                 ->pluck('answer', 'event_id');
@@ -559,7 +559,7 @@ class EventController extends Controller
             'events' => $events
         ]);
     }
-
+    //részvétel
     public function setParticipation(Request $request, int $eventId)
     {
         $user = $request->user();
@@ -588,7 +588,7 @@ class EventController extends Controller
             return response()->json(['message' => 'nem jogosult'], 403);
         }
 
-        DB::table('event_feedbacks')->updateOrInsert(
+        DB::table('event_shows')->updateOrInsert(
             [
                 'event_id' => $eventId,
                 'user_id' => $user->id,
@@ -600,12 +600,12 @@ class EventController extends Controller
             ]
         );
 
-        $attendingCount = DB::table('event_feedbacks')
+        $attendingCount = DB::table('event_shows')
             ->where('event_id', $eventId)
             ->where('answer', 'y')
             ->count();
 
-        $notAttendingCount = DB::table('event_feedbacks')
+        $notAttendingCount = DB::table('event_shows')
             ->where('event_id', $eventId)
             ->where('answer', 'n')
             ->count();
@@ -710,6 +710,5 @@ class EventController extends Controller
                 : 'Esemény eltávolítva a kedvencek közül.',
         ]);
     }
-
 }
 //

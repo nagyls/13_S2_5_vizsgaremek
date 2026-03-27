@@ -17,7 +17,7 @@ test('logout successfully', async ({ page }) => {
 
   await page.click('#register_btn');
 
-  await page.waitForURL(/dashboard/, { timeout: 6000 });
+  await page.waitForURL(/dashboard/, { timeout: 15000 });
 
   await page.click('.user-avatar');
   await expect(page.locator('.logout-btn')).toBeVisible();

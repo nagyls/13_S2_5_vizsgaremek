@@ -12,6 +12,7 @@ class EventShown extends Model
         'is_favourite',
         'event_id',
         'user_id',
+        'answer',
         'establishment_id',
     ];
     const UPDATED_AT = null;

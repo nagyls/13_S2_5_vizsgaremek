@@ -74,8 +74,8 @@
         </div>
 
         <!-- 2. GLOBÁLIS ESEMÉNY - MEGYÉK KIVÁLASZTÁSA -->
-        <div v-if="currentStep === 2 && selectedEventScope === 'global'" class="form-section">
-          <h3><i class='bx bx-map'></i> 2. Vármegyék kiválasztása</h3>
+        <div v-if="currentStep === 2 && selectedEventScope === 'global'" class="form-section global-county-section">
+          <h3><i class='bx bx-map'></i> 2/A. Vármegyék kiválasztása</h3>
           <p class="selection-description">Válaszd ki, mely vármegyék iskolái kapják meg az eseményt</p>
           
           <div class="county-list">
@@ -118,9 +118,22 @@
           </div>
         </div>
 
+        <div v-if="currentStep === 2 && selectedEventScope === 'global'" class="step-split-hint">
+          <i class='bx bx-separate'></i>
+          <span>Következő: célcsoport beállítása a saját intézményeden belül</span>
+        </div>
+
         <!-- 2. CÉLCSOPORT KIVÁLASZTÁSA -->
-        <div v-if="currentStep === 2" class="form-section">
-          <h3><i class='bx bx-target-lock'></i> 2. Célcsoport kiválasztása</h3>
+        <div v-if="currentStep === 3" class="form-section" :class="{ 'global-target-section': selectedEventScope === 'global' }">
+          <h3><i class='bx bx-target-lock'></i> 3. Célcsoport kiválasztása</h3>
+
+          <div v-if="selectedEventScope === 'global'" class="scope-notice">
+            <i class='bx bx-info-circle'></i>
+            <span>
+              Ez a célcsoport kiválasztás csak a saját iskoládra vonatkozik. A globális esemény miatt a saját intézményed
+              automatikusan érintett, itt azt állítod be, hogy a saját iskoládon belül kik lássák az eseményt.
+            </span>
+          </div>
           
           <div class="target-group-selection">
             <div class="target-group-options">
@@ -247,8 +260,8 @@
         </div>
 
         <!-- 3. ESEMÉNY ADATAI (közös rész) -->
-        <div v-if="currentStep === 3" class="form-section">
-          <h3><i class='bx bx-edit'></i> 3. Esemény adatai</h3>
+        <div v-if="currentStep === 4" class="form-section">
+          <h3><i class='bx bx-edit'></i> 4. Esemény adatai</h3>
           <div v-if="selectedEventScope === 'school'" class="recurrence-guide compact">
             <i class='bx bx-repeat'></i>
             <span>Itt kapcsolhatod be az ismétlődést a "Heti ismétlődő esemény" opcióval.</span>
@@ -266,14 +279,47 @@
               <label>Tartalom (opcionális)</label>
               <textarea v-model="eventForm.content" placeholder="Bővebb tartalom, instrukciók"></textarea>
             </div>
-            <div class="form-row">
-              <div v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)" class="form-group">
-                <label>Kezdés *</label>
-                <input type="date" v-model="eventForm.startDateTime" :min="todayMin" required>
+            <div class="form-row" v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)">
+              <div class="form-group">
+                <label>Kezdés dátuma *</label>
+                <input
+                  type="date"
+                  v-model="eventForm.startDate"
+                  :min="todayMin"
+                  @input="updateStartDateTimeFromParts"
+                  required
+                >
               </div>
-              <div v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)" class="form-group">
-                <label>Befejezés *</label>
-                <input type="date" v-model="eventForm.endDateTime" :min="eventForm.startDateTime || todayMin" required>
+              <div class="form-group">
+                <label>Kezdés időpontja *</label>
+                <input
+                  type="time"
+                  v-model="eventForm.startTime"
+                  step="60"
+                  @input="updateStartDateTimeFromParts"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label>Befejezés dátuma *</label>
+                <input
+                  type="date"
+                  v-model="eventForm.endDate"
+                  :min="eventForm.startDate || todayMin"
+                  @input="updateEndDateTimeFromParts"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label>Befejezés időpontja *</label>
+                <input
+                  type="time"
+                  v-model="eventForm.endTime"
+                  step="60"
+                  :min="eventForm.endDate === eventForm.startDate ? eventForm.startTime : ''"
+                  @input="updateEndDateTimeFromParts"
+                  required
+                >
               </div>
             </div>
 
@@ -337,8 +383,8 @@
         </div>
 
         <!-- 4. ÁTTEKINTÉS -->
-        <div v-if="currentStep === 4" class="form-section">
-          <h3><i class='bx bx-check-circle'></i> 4. Áttekintés</h3>
+        <div v-if="currentStep === 5" class="form-section">
+          <h3><i class='bx bx-check-circle'></i> 5. Áttekintés</h3>
           <div class="summary">
             <div class="summary-item">
               <strong>Esemény szintje:</strong> {{ getEventScopeLabel(selectedEventScope) }}
@@ -415,7 +461,7 @@
             <i class='bx bx-chevron-left'></i> Előző
           </button>
           
-          <button v-if="currentStep < 4" @click="nextStep" :disabled="!canProceed" class="btn btn-primary">
+          <button v-if="currentStep < 5" @click="nextStep" :disabled="!canProceed" class="btn btn-primary">
             Következő <i class='bx bx-chevron-right'></i>
           </button>
           
@@ -433,11 +479,16 @@
 <script>
 import axios from 'axios'
 import { toast } from '../../services/toast'
+import { API_BASE, getToken, hasLocalToken } from '../../services/api'
 
 export default {
   name: 'EsemenyKeszito',
 
   data() {
+    const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    const nowMin = now.toISOString().slice(0, 16)
+    const [defaultDate, defaultTime] = nowMin.split('T')
+
     return {
       userRole: 'student',
       currentUserId: null,
@@ -457,6 +508,7 @@ export default {
       currentStep: 1,
       isSubmitting: false,
       todayMin: new Date().toISOString().slice(0, 10),
+      nowMin,
       selectedEventScope: 'school',
       selectedCountyIds: [],
       globalCollabCount: 0,
@@ -470,6 +522,10 @@ export default {
         content: '',
         startDateTime: '',
         endDateTime: '',
+        startDate: defaultDate,
+        startTime: defaultTime,
+        endDate: defaultDate,
+        endTime: defaultTime,
         isRecurring: false,
         recurrenceWeekday: '1',
         recurrenceStartTime: '',
@@ -489,9 +545,10 @@ export default {
       // KONFIGURÁCIÓK
       steps: [
         { number: 1, label: 'Szint' },
-        { number: 2, label: 'Célcsoport' },
-        { number: 3, label: 'Adatok' },
-        { number: 4, label: 'Létrehozás' }
+        { number: 2, label: 'Vármegye' },
+        { number: 3, label: 'Célcsoport' },
+        { number: 4, label: 'Adatok' },
+        { number: 5, label: 'Létrehozás' }
       ],
       schoolTargetOptions: [
         {
@@ -544,15 +601,22 @@ export default {
           return this.selectedEventScope !== ''
 
         case 2:
+          if (this.selectedEventScope !== 'global') {
+            return true
+          }
+
+          if (this.selectedCountyIds.length === 0) {
+            return false
+          }
+
+          if (this.isCheckingGlobalCollab || this.globalCollabCount === 0) {
+            return false
+          }
+
+          return true
+
+        case 3:
           if (this.selectedEventScope === 'global') {
-            if (this.selectedCountyIds.length === 0) {
-              return false
-            }
-
-            if (this.isCheckingGlobalCollab || this.globalCollabCount === 0) {
-              return false
-            }
-
             if (this.selectedSchoolTargetGroup === 'teljes_iskola') {
               return true
             }
@@ -582,7 +646,7 @@ export default {
 
           return false
 
-        case 3:
+        case 4:
           return this.validateEventForm()
 
         default:
@@ -591,7 +655,7 @@ export default {
     },
 
     isFormValid() {
-      return this.validateEventForm() && this.currentStep === 4
+      return this.validateEventForm() && this.currentStep === 5
     },
 
     counties() {
@@ -728,6 +792,8 @@ export default {
     'eventForm.isRecurring'(newValue) {
       if (newValue) {
         this.eventForm.endDateTime = ''
+        this.eventForm.endDate = ''
+        this.eventForm.endTime = ''
         if (!this.eventForm.recurrenceStartDate) {
           this.eventForm.recurrenceStartDate = this.todayMin.slice(0, 10)
         }
@@ -739,7 +805,7 @@ export default {
     },
 
     currentStep(newValue) {
-      if (newValue === 2 && (this.selectedEventScope === 'school' || this.selectedEventScope === 'global')) {
+      if (newValue === 3 && (this.selectedEventScope === 'school' || this.selectedEventScope === 'global')) {
         if (!this.institutionClasses.length) {
           this.loadInstitutionClasses()
         }
@@ -791,10 +857,49 @@ export default {
       )
     },
 
+    combineDateAndTime(date, time) {
+      if (!date || !time) {
+        return ''
+      }
+
+      return `${date}T${time}`
+    },
+
+    splitDateTimeParts(dateTime) {
+      if (!dateTime || !String(dateTime).includes('T')) {
+        return { date: '', time: '' }
+      }
+
+      const [date, timeRaw] = String(dateTime).split('T')
+      const time = (timeRaw || '').slice(0, 5)
+
+      return { date, time }
+    },
+
+    updateStartDateTimeFromParts() {
+      this.eventForm.startDateTime = this.combineDateAndTime(this.eventForm.startDate, this.eventForm.startTime)
+
+      if (
+        this.eventForm.endDate && this.eventForm.endTime &&
+        this.eventForm.startDateTime &&
+        new Date(this.combineDateAndTime(this.eventForm.endDate, this.eventForm.endTime)) < new Date(this.eventForm.startDateTime)
+      ) {
+        this.eventForm.endDate = this.eventForm.startDate
+        this.eventForm.endTime = this.eventForm.startTime
+      }
+
+      this.updateEndDateTimeFromParts()
+    },
+
+    updateEndDateTimeFromParts() {
+      this.eventForm.endDateTime = this.combineDateAndTime(this.eventForm.endDate, this.eventForm.endTime)
+    },
+
     async initialize() {
-      const token =
-        localStorage.getItem('esemenyter_token') ||
-        sessionStorage.getItem('esemenyter_token')
+      this.updateStartDateTimeFromParts()
+      this.updateEndDateTimeFromParts()
+
+      const token = getToken()
 
       try {
         const savedUser =
@@ -829,12 +934,13 @@ export default {
             Accept: 'application/json'
           }
 
-          const [userResponse, roleResponse] = await Promise.all([
-            axios.get('http://127.0.0.1:8000/api/user', { headers }).catch(() => null),
-            axios.get('http://127.0.0.1:8000/api/establishment/role', { headers }).catch(() => null)
-          ])
+          const userResponse = await axios.get(`${API_BASE}/user`, { headers }).catch(() => null)
 
           const backendUser = userResponse?.data || {}
+          const roleInstitutionId = Number(savedInstitutionId || backendUser?.establishment_id || this.userInstitution.id || 0)
+          const roleResponse = roleInstitutionId > 0
+            ? await axios.get(`${API_BASE}/establishment/${roleInstitutionId}/role`, { headers }).catch(() => null)
+            : null
           const backendRole = String(roleResponse?.data?.role || '').toLowerCase()
 
           if (backendRole) {
@@ -858,7 +964,7 @@ export default {
               institution_id: Number(this.userInstitution.id) || null
             }
 
-            if (localStorage.getItem('esemenyter_token')) {
+            if (hasLocalToken()) {
               localStorage.setItem('esemenyter_user', JSON.stringify(mergedUser))
             } else {
               sessionStorage.setItem('esemenyter_user', JSON.stringify(mergedUser))
@@ -867,6 +973,19 @@ export default {
         }
       } catch (error) {
         console.error('Felhasználó inicializálási hiba:', error)
+      }
+
+      const startParts = this.splitDateTimeParts(this.eventForm.startDateTime)
+      const endParts = this.splitDateTimeParts(this.eventForm.endDateTime)
+
+      if (startParts.date && startParts.time) {
+        this.eventForm.startDate = startParts.date
+        this.eventForm.startTime = startParts.time
+      }
+
+      if (endParts.date && endParts.time) {
+        this.eventForm.endDate = endParts.date
+        this.eventForm.endTime = endParts.time
       }
 
       if (!this.canCreateGlobalEvent) {
@@ -906,9 +1025,7 @@ export default {
           return
         }
 
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
 
         if (!token) {
           this.institutionClasses = []
@@ -917,7 +1034,7 @@ export default {
 
         this.isLoadingClasses = true
 
-        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/classes`, {
+        const response = await axios.get(`${API_BASE}/establishment/${institutionId}/classes`, {
           headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
         })
 
@@ -940,9 +1057,7 @@ export default {
           return
         }
 
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
 
         if (!token) {
           this.institutionGrades = this.buildGradesFromClasses(this.institutionClasses)
@@ -951,7 +1066,7 @@ export default {
 
         this.isLoadingGrades = true
 
-        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/grades`, {
+        const response = await axios.get(`${API_BASE}/establishment/${institutionId}/grades`, {
           headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
         })
 
@@ -978,9 +1093,7 @@ export default {
           return
         }
 
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
 
         if (!token) {
           this.institutionUserIds = this.currentUserId ? [this.currentUserId] : []
@@ -988,10 +1101,10 @@ export default {
         }
 
         const [studentsResponse, staffResponse] = await Promise.all([
-          axios.get(`http://127.0.0.1:8000/api/members/students/${institutionId}`, {
+          axios.get(`${API_BASE}/establishment/${institutionId}/members/students`, {
             headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
           }).catch(() => ({ data: { data: [] } })),
-          axios.get(`http://127.0.0.1:8000/api/members/staff/${institutionId}`, {
+          axios.get(`${API_BASE}/establishment/${institutionId}/members/staff`, {
             headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
           }).catch(() => ({ data: { data: [] } }))
         ])
@@ -1022,15 +1135,13 @@ export default {
           return
         }
 
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
 
         if (!token) {
           return
         }
 
-        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}`, {
+        const response = await axios.get(`${API_BASE}/establishment/${institutionId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json'
@@ -1124,7 +1235,7 @@ export default {
       }
 
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/establishment/${institutionId}/classes/members`,
+        `${API_BASE}/establishment/${institutionId}/classes/members`,
         {
           params: { class_ids: normalizedClassIds },
           headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
@@ -1148,7 +1259,7 @@ export default {
       }
 
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/establishment/${institutionId}/grades/members`,
+        `${API_BASE}/establishment/${institutionId}/grades/members`,
         {
           params: { grade_ids: normalizedGradeIds },
           headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
@@ -1197,7 +1308,7 @@ export default {
 
     async loadCounties() {
       try {
-        const response = await axios.get('http://127.0.0.1:8000/api/regions/all', {
+        const response = await axios.get(`${API_BASE}/regions/all`, {
           headers: {
             Accept: 'application/json'
           }
@@ -1232,7 +1343,7 @@ export default {
 
       const responses = await Promise.all(
         normalizedCountyIds.map(countyId =>
-          axios.get('http://127.0.0.1:8000/api/establishments', {
+          axios.get(`${API_BASE}/establishments`, {
             params: { region_id: countyId },
             headers: { Accept: 'application/json' }
           }).catch(() => ({ data: { data: [] } }))
@@ -1398,7 +1509,7 @@ export default {
     },
 
     async nextStep() {
-      if (!(this.currentStep < 4 && this.canProceed)) {
+      if (!(this.currentStep < 5 && this.canProceed)) {
         return
       }
 
@@ -1409,13 +1520,25 @@ export default {
         }
       }
 
+      if (this.currentStep === 1 && this.selectedEventScope !== 'global') {
+        this.currentStep = 3
+        return
+      }
+
       this.currentStep++
     },
 
     previousStep() {
-      if (this.currentStep > 1) {
-        this.currentStep--
+      if (this.currentStep <= 1) {
+        return
       }
+
+      if (this.currentStep === 3 && this.selectedEventScope !== 'global') {
+        this.currentStep = 1
+        return
+      }
+
+      this.currentStep--
     },
 
     async createEvent() {
@@ -1432,9 +1555,7 @@ export default {
       this.isSubmitting = true
 
       try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
 
         if (!token) {
           toast.error('Lejárt munkamenet. Kérlek jelentkezz be újra!')
@@ -1544,7 +1665,7 @@ export default {
           payload.users = localTargetUserIds
         }
 
-        await axios.post('http://127.0.0.1:8000/api/establishment/events', payload, {
+        await axios.post(`${API_BASE}/establishment/events`, payload, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',
@@ -2039,6 +2160,53 @@ export default {
   font-size: 15px;
   margin-bottom: 16px;
   font-weight: 400;
+}
+
+.global-county-section {
+  margin-bottom: 18px;
+}
+
+.step-split-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding: 10px 14px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 14px;
+}
+
+.step-split-hint i {
+  color: #6366f1;
+  font-size: 18px;
+}
+
+.global-target-section {
+  padding-top: 24px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.scope-notice {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a8a;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.scope-notice i {
+  font-size: 18px;
+  margin-top: 1px;
+  color: #2563eb;
 }
 
 .permission-badge {

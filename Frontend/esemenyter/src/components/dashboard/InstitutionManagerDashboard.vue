@@ -579,9 +579,6 @@
                 <button class="btn-icon" @click="editTeacherClasses(teacher)" title="Osztályok módosítása">
                   <i class='bx bx-edit'></i>
                 </button>
-                <button class="btn-icon" @click="viewUserDetails(teacher)" title="Részletek">
-                  <i class='bx bx-show'></i>
-                </button>
               </div>
             </div>
           </div>
@@ -694,38 +691,6 @@
                   <i class='bx bx-building-house'></i>
                   <h4>Teljes iskola</h4>
                   <p>Az intézmény minden felhasználója megkapja az eseményt.</p>
-                </div>
-              </div>
-
-              <div
-                class="target-group-option"
-                :class="{ selected: collabTargetGroup === 'osztaly_szintu' }"
-                @click="collabTargetGroup = 'osztaly_szintu'"
-              >
-                <div class="option-content">
-                  <i class='bx bx-user'></i>
-                  <h4>Osztály szintű</h4>
-                  <p>Csak a kijelölt osztályok látják az eseményt.</p>
-                </div>
-
-                <div v-if="collabTargetGroup === 'osztaly_szintu'" class="target-selector-panel" @click.stop>
-                  <div v-if="!classes.length" class="class-target-state warning">
-                    Nincsenek osztályok az intézményben.
-                  </div>
-                  <div v-else class="class-target-grid">
-                    <label
-                      v-for="classItem in classes"
-                      :key="classItem.id"
-                      class="class-target-card"
-                      :class="{ selected: collabSelectedClassIds.includes(Number(classItem.id)) }"
-                    >
-                      <input type="checkbox" :value="Number(classItem.id)" v-model="collabSelectedClassIds">
-                      <div class="class-target-copy">
-                        <div class="class-target-title">{{ formatCompactClassDisplayName(classItem) }}</div>
-                        <div class="class-target-meta">{{ classItem.student_count || 0 }} tanuló</div>
-                      </div>
-                    </label>
-                  </div>
                 </div>
               </div>
 
@@ -847,6 +812,75 @@
             <button class="btn-primary" @click="saveUserClassChange" :disabled="isUpdatingStudentClass">
               <i class='bx bx-save'></i>
               {{ isUpdatingStudentClass ? 'Mentés...' : 'Mentés' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Tanár osztálymódosító modal -->
+    <transition name="modal">
+      <div v-if="showEditTeacherClassModal" class="modal-overlay" @click.self="closeEditTeacherClassModal">
+        <div class="modal-container">
+          <div class="modal-header">
+            <h3>
+              <i class='bx bx-edit'></i>
+              Tanár osztály módosítása
+            </h3>
+            <button class="modal-close" @click="closeEditTeacherClassModal">
+              <i class='bx bx-x'></i>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div class="user-summary">
+              <div class="user-avatar-large">
+                <span>{{ getUserInitials(selectedTeacherForClassEdit) }}</span>
+              </div>
+              <div class="user-summary-info">
+                <h4>{{ selectedTeacherForClassEdit?.name }}</h4>
+                <p>{{ selectedTeacherForClassEdit?.email }}</p>
+                <div class="role-badge-small">Tanár</div>
+              </div>
+            </div>
+
+            <div class="assignment-form">
+              <div class="form-group">
+                <label for="edit-teacher-class-select">Új osztály</label>
+                <select
+                  id="edit-teacher-class-select"
+                  v-model="editTeacherClassId"
+                  class="form-select"
+                  :disabled="isUpdatingTeacherClass"
+                >
+                  <option value="">-- Nincs osztály --</option>
+                  <option
+                    v-for="classItem in classes"
+                    :key="classItem.id"
+                    :value="String(classItem.id)"
+                  >
+                    {{ formatClassDisplayName(classItem) }}
+                    ({{ classItem.student_count || 0 }}/{{ getClassCapacity(classItem) }} diák)
+                  </option>
+                </select>
+                <p class="form-hint">
+                  <i class='bx bx-info-circle'></i>
+                  Jelenlegi osztály: {{ editTeacherCurrentClassId ? formatCompactClassDisplayName(classes.find(classItem => Number(classItem.id) === Number(editTeacherCurrentClassId))) : 'Nincs beállítva' }}
+                </p>
+              </div>
+            </div>
+
+            <div v-if="editTeacherClassError" class="error-message">
+              <i class='bx bx-error-circle'></i>
+              <span>{{ editTeacherClassError }}</span>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-outline" @click="closeEditTeacherClassModal" :disabled="isUpdatingTeacherClass">Mégse</button>
+            <button class="btn-primary" @click="saveTeacherClassChange" :disabled="isUpdatingTeacherClass">
+              <i class='bx bx-save'></i>
+              {{ isUpdatingTeacherClass ? 'Mentés...' : 'Mentés' }}
             </button>
           </div>
         </div>
@@ -1034,7 +1068,6 @@ export default {
       showCollabTargetModal: false,
       selectedCollabEvent: null,
       collabTargetGroup: 'teljes_iskola',
-      collabSelectedClassIds: [],
       collabSelectedGradeIds: [],
       collabTargetModalError: '',
       establishmentRequests: [], // Összes kérelem a táblából
@@ -1068,6 +1101,13 @@ export default {
       editStudentCurrentClassId: '',
       editStudentClassError: '',
       isUpdatingStudentClass: false,
+
+      showEditTeacherClassModal: false,
+      selectedTeacherForClassEdit: null,
+      editTeacherClassId: '',
+      editTeacherCurrentClassId: '',
+      editTeacherClassError: '',
+      isUpdatingTeacherClass: false,
       
       // Toast értesítések
       
@@ -1519,7 +1559,6 @@ export default {
 
       this.selectedCollabEvent = eventItem;
       this.collabTargetGroup = 'teljes_iskola';
-      this.collabSelectedClassIds = [];
       this.collabSelectedGradeIds = [];
       this.collabTargetModalError = '';
 
@@ -1540,7 +1579,6 @@ export default {
       this.showCollabTargetModal = false;
       this.selectedCollabEvent = null;
       this.collabTargetGroup = 'teljes_iskola';
-      this.collabSelectedClassIds = [];
       this.collabSelectedGradeIds = [];
       this.collabTargetModalError = '';
     },
@@ -1552,34 +1590,6 @@ export default {
 
       if (this.collabTargetGroup === 'teljes_iskola') {
         return this.resolveInstitutionUserIdsForCollabAcceptance();
-      }
-
-      if (this.collabTargetGroup === 'osztaly_szintu') {
-        const selectedClassIds = this.collabSelectedClassIds
-          .map(classId => Number(classId))
-          .filter(Number.isFinite);
-
-        if (!selectedClassIds.length) {
-          return [];
-        }
-
-        const selectedClassLabels = new Set(
-          selectedClassIds
-            .map(classId => classesById.get(classId))
-            .filter(Boolean)
-            .map(classItem => this.formatCompactClassDisplayName(classItem))
-        );
-
-        const studentIds = this.students
-          .filter(student => selectedClassLabels.has((student.class_name || '').toString().trim()))
-          .map(student => Number(student?.id))
-          .filter(Number.isFinite);
-
-        const teacherIds = selectedClassIds
-          .map(classId => Number(classesById.get(classId)?.user_id))
-          .filter(Number.isFinite);
-
-        return this.normalizeUserIdsForCollabAcceptance([...studentIds, ...teacherIds]);
       }
 
       if (this.collabTargetGroup === 'evfolyam_szintu') {
@@ -1737,12 +1747,12 @@ export default {
           localStorage.getItem('esemenyter_token') ||
           sessionStorage.getItem('esemenyter_token');
         
-        const studentsResponse = await axios.get(`http://127.0.0.1:8000/api/members/students/${institutionId}`, {
+        const studentsResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/members/students`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         this.students = studentsResponse.data.data || [];
       
-        const teachersResponse = await axios.get(`http://127.0.0.1:8000/api/members/staff/${institutionId}`, {
+        const teachersResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/members/staff`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         this.teachers = teachersResponse.data.data || [];
@@ -2135,6 +2145,15 @@ export default {
       return '';
     },
 
+    async findTeacherCurrentClassId(teacherUserId) {
+      if (!teacherUserId || !this.classes.length) {
+        return '';
+      }
+
+      const foundClass = this.classes.find(classItem => Number(classItem.user_id) === Number(teacherUserId));
+      return foundClass ? String(foundClass.id) : '';
+    },
+
     async closeEditUserClassModal() {
       this.showEditStudentClassModal = false;
       this.selectedStudentForClassEdit = null;
@@ -2142,6 +2161,15 @@ export default {
       this.editStudentCurrentClassId = '';
       this.editStudentClassError = '';
       this.isUpdatingStudentClass = false;
+    },
+
+    async closeEditTeacherClassModal() {
+      this.showEditTeacherClassModal = false;
+      this.selectedTeacherForClassEdit = null;
+      this.editTeacherClassId = '';
+      this.editTeacherCurrentClassId = '';
+      this.editTeacherClassError = '';
+      this.isUpdatingTeacherClass = false;
     },
     
     async approveRequest() {
@@ -2387,9 +2415,93 @@ export default {
       }
     },
     
-    editTeacherClasses(teacher) {
-      console.log('Edit teacher classes:', teacher);
-      this.showNotification('Tanított osztályok módosítása fejlesztés alatt', 'info');
+    async editTeacherClasses(teacher) {
+      try {
+        this.selectedTeacherForClassEdit = teacher;
+        this.editTeacherClassError = '';
+        this.editTeacherClassId = '';
+        this.editTeacherCurrentClassId = '';
+        this.showEditTeacherClassModal = true;
+
+        const currentClassId = await this.findTeacherCurrentClassId(teacher.id);
+        this.editTeacherCurrentClassId = currentClassId;
+        this.editTeacherClassId = currentClassId;
+      } catch (error) {
+        console.error('Hiba a tanár osztálymódosító modal megnyitásakor:', error);
+        this.showNotification('Nem sikerült betölteni a tanár jelenlegi osztályát.', 'error');
+      }
+    },
+
+    async saveTeacherClassChange() {
+      try {
+        if (this.isUpdatingTeacherClass) {
+          return;
+        }
+
+        const teacher = this.selectedTeacherForClassEdit;
+        if (!teacher?.id) {
+          this.editTeacherClassError = 'A tanár azonosítója hiányzik, frissítsd az oldalt és próbáld újra.';
+          return;
+        }
+
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+        const establishmentId = Number(this.user.institution_id);
+
+        if (!token || !establishmentId) {
+          this.editTeacherClassError = 'Hiányzó hitelesítés vagy intézmény azonosító.';
+          return;
+        }
+
+        this.isUpdatingTeacherClass = true;
+        this.editTeacherClassError = '';
+
+        const currentClassId = this.editTeacherCurrentClassId ? Number(this.editTeacherCurrentClassId) : null;
+        const targetClassId = this.editTeacherClassId ? Number(this.editTeacherClassId) : null;
+
+        if (currentClassId === targetClassId) {
+          this.showNotification('Nem történt változás az osztálynál.', 'info');
+          await this.closeEditTeacherClassModal();
+          return;
+        }
+
+        if (currentClassId && currentClassId !== targetClassId) {
+          await axios.patch(`http://127.0.0.1:8000/api/establishment/${establishmentId}/classes/${currentClassId}`, {
+            teacher_id: null
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+
+        if (targetClassId) {
+          await axios.patch(`http://127.0.0.1:8000/api/establishment/${establishmentId}/classes/${targetClassId}`, {
+            teacher_id: Number(teacher.id)
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+
+        await this.loadClasses(establishmentId);
+        await this.loadInstitutionUsers(establishmentId);
+        this.updateStats();
+
+        await this.closeEditTeacherClassModal();
+        this.showNotification('Tanár osztálya sikeresen módosítva.', 'success');
+      } catch (error) {
+        console.error('Hiba a tanár osztályának módosításakor:', error);
+        const apiErrors = error.response?.data?.errors;
+        const apiErrorText = typeof apiErrors === 'string'
+          ? apiErrors
+          : Array.isArray(apiErrors)
+            ? apiErrors.join(' ')
+            : null;
+
+        this.editTeacherClassError = error.response?.data?.message || apiErrorText || 'Nem sikerült menteni az osztály módosítását.';
+        this.showNotification('Nem sikerült menteni a tanár osztályát.', 'error');
+      } finally {
+        this.isUpdatingTeacherClass = false;
+      }
     },
     
     // Értesítés megjelenítése
@@ -2405,6 +2517,12 @@ export default {
     
     handleScroll() {
       this.showScrollTop = window.scrollY > 300;
+    },
+
+    handleDocumentClick(e) {
+      if (!e.target.closest('.user-profile')) {
+        this.showUserMenu = false;
+      }
     },
     
     async logout() {
@@ -2450,7 +2568,12 @@ export default {
                 localStorage.getItem('esemenyter_token') ||
                 sessionStorage.getItem('esemenyter_token');
               if (token) {
-                const roleResponse = await axios.get('http://127.0.0.1:8000/api/establishment/role', {
+                const numericInstitutionId = Number(storedInstitutionId || this.user.institution_id || 0);
+                if (!Number.isFinite(numericInstitutionId) || numericInstitutionId <= 0) {
+                  return;
+                }
+
+                const roleResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${numericInstitutionId}/role`, {
                   headers: { Authorization: `Bearer ${token}` }
                 });
 
@@ -2497,16 +2620,13 @@ export default {
   mounted() {
     this.checkLoginStatus();
     window.addEventListener('scroll', this.handleScroll);
-    
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.user-profile')) {
-        this.showUserMenu = false;
-      }
-    });
+
+    document.addEventListener('click', this.handleDocumentClick);
   },
   
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
+    document.removeEventListener('click', this.handleDocumentClick);
   }
 };
 </script>
@@ -2666,7 +2786,7 @@ export default {
   border-radius: 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .menu-header {
@@ -3996,13 +4116,24 @@ export default {
 
 /* Reszponzív design */
 @media (max-width: 768px) {
+  .main-header {
+    padding: 12px 0;
+  }
+
   .container {
     padding: 0 20px;
   }
 
   .header-content {
-    flex-direction: column;
-    gap: 15px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0;
+  }
+
+  .logo-text h1,
+  .site-subtitle {
+    display: none;
   }
 
   .institution-info-card {
@@ -4026,12 +4157,56 @@ export default {
 
   .bulk-actions-right {
     width: 100%;
-    justify-content: flex-start;
+    justify-content: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   .bulk-btn {
     min-width: 0;
     width: 100%;
+  }
+
+  .bulk-selected-count {
+    width: 100%;
+  }
+
+  .user-menu {
+    width: 220px;
+    right: 0;
+    left: auto;
+    transform: none;
+  }
+
+  .menu-header {
+    padding: 12px 16px;
+  }
+
+  .menu-items {
+    padding: 6px 0;
+  }
+
+  .menu-item {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .menu-item i {
+    font-size: 16px;
+  }
+
+  .requests-section {
+    padding: 20px;
+  }
+
+  .requests-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .request-actions-inline {
+    flex-direction: column;
   }
   
   .request-tab {
@@ -4079,6 +4254,10 @@ export default {
 }
 
 @media (max-width: 480px) {
+  .main-header {
+    padding: 8px 0;
+  }
+
   .institution-stats {
     gap: 15px;
   }
@@ -4093,6 +4272,23 @@ export default {
 
   .request-card {
     padding: 15px;
+  }
+
+  .requests-section {
+    padding: 14px;
+  }
+
+  .bulk-actions-bar {
+    padding: 10px;
+  }
+
+  .bulk-select-all {
+    font-size: 14px;
+  }
+
+  .bulk-select-all input {
+    width: 20px;
+    height: 20px;
   }
 
   .section-header {

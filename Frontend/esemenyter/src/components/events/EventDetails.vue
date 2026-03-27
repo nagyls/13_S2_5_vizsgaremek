@@ -216,12 +216,20 @@
 
               <div class="occurrence-form-grid">
                 <label>
-                  Kezdés
-                  <input type="datetime-local" v-model="occurrenceForm.startDateTime">
+                  Kezdés dátuma
+                  <input type="date" v-model="occurrenceForm.startDate" @input="updateOccurrenceStartDateTime">
                 </label>
                 <label>
-                  Befejezés
-                  <input type="datetime-local" v-model="occurrenceForm.endDateTime">
+                  Kezdés időpontja
+                  <input type="time" v-model="occurrenceForm.startTime" @input="updateOccurrenceStartDateTime">
+                </label>
+                <label>
+                  Befejezés dátuma
+                  <input type="date" v-model="occurrenceForm.endDate" @input="updateOccurrenceEndDateTime">
+                </label>
+                <label>
+                  Befejezés időpontja
+                  <input type="time" v-model="occurrenceForm.endTime" @input="updateOccurrenceEndDateTime">
                 </label>
               </div>
 
@@ -263,6 +271,7 @@
 import axios from 'axios';
 import CommentBox from './CommentBox.vue';
 import { toast } from '../../services/toast'
+import { API_BASE, getToken, getAuthHeaders } from '../../services/api'
 
 export default {
   name: 'EventDetails',
@@ -286,6 +295,10 @@ export default {
       studentHasClass: null,
       isUpdatingOccurrence: false,
       occurrenceForm: {
+        startDate: '',
+        startTime: '',
+        endDate: '',
+        endTime: '',
         startDateTime: '',
         endDateTime: ''
       }
@@ -314,13 +327,6 @@ export default {
   methods: {
     backToEvents() {
       this.$router.push('/events-list')
-    },
-
-    getToken() {
-      return (
-        localStorage.getItem('esemenyter_token') ||
-        sessionStorage.getItem('esemenyter_token')
-      )
     },
 
     getCurrentInstitutionId() {
@@ -372,8 +378,8 @@ export default {
         }
         
         this.eventData = foundEvent
-        this.occurrenceForm.startDateTime = this.toDateTimeLocalValue(foundEvent.start_date)
-        this.occurrenceForm.endDateTime = this.toDateTimeLocalValue(foundEvent.end_date)
+        this.splitDateTimeParts(foundEvent.start_date, 'start')
+        this.splitDateTimeParts(foundEvent.end_date, 'end')
         await Promise.all([
           this.loadStats(),
           this.loadParticipationStatus()
@@ -387,19 +393,16 @@ export default {
     },
     
     async fetchEvent(eventId) {
-      const token = this.getToken()
+      const token = getToken()
       const institutionId = this.getCurrentInstitutionId()
 
       if (!token || !institutionId) {
         return null
       }
 
-      const endpoint = `http://127.0.0.1:8000/api/establishment/${institutionId}/events`
+      const endpoint = `${API_BASE}/establishment/${institutionId}/events`
       const response = await axios.get(endpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json'
-        },
+        headers: getAuthHeaders(token),
         validateStatus: (status) => status >= 200 && status < 600
       })
 
@@ -421,12 +424,9 @@ export default {
 
       // Fallback: admin meghívott globális események az event-access végpontról.
       const collabResponse = await axios.get(
-        `http://127.0.0.1:8000/api/establishment/${institutionId}/event-access`,
+        `${API_BASE}/establishment/${institutionId}/event-access`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json'
-          },
+          headers: getAuthHeaders(token),
           validateStatus: (status) => status >= 200 && status < 600
         }
       )
@@ -510,21 +510,17 @@ export default {
       }
 
       try {
-        const token = this.getToken()
+        const token = getToken()
         if (!token) {
           this.showMessage('A részvételhez be kell jelentkezned!', 'info')
           return
         }
 
         const response = await axios.patch(
-          `http://127.0.0.1:8000/api/events/${this.eventId}/participation`,
+          `${API_BASE}/events/${this.eventId}/participation`,
           { answer },
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/json',
-              'Content-Type': 'application/json'
-            },
+            headers: getAuthHeaders(token, true),
             validateStatus: (status) => status >= 200 && status < 600
           }
         )
@@ -583,9 +579,7 @@ export default {
 
     async checkStudentClassMembership() {
       try {
-        const token =
-          localStorage.getItem('esemenyter_token') ||
-          sessionStorage.getItem('esemenyter_token')
+        const token = getToken()
 
         if (!token) {
           return false
@@ -602,7 +596,7 @@ export default {
           return false
         }
 
-        const classesResponse = await fetch(`http://127.0.0.1:8000/api/establishment/${institutionId}/classes`, {
+        const classesResponse = await fetch(`${API_BASE}/establishment/${institutionId}/classes`, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json'
@@ -618,7 +612,7 @@ export default {
 
         for (const classItem of classes) {
           const membersResponse = await fetch(
-            `http://127.0.0.1:8000/api/establishment/${institutionId}/classes/${classItem.id}`,
+            `${API_BASE}/establishment/${institutionId}/classes/${classItem.id}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -662,7 +656,7 @@ export default {
         return
       }
 
-      const token = this.getToken()
+      const token = getToken()
       if (!token) {
         this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
         return
@@ -676,13 +670,10 @@ export default {
 
       try {
         const response = await axios.patch(
-          `http://127.0.0.1:8000/api/events/${eventId}/favourite`,
+          `${API_BASE}/events/${eventId}/favourite`,
           {},
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/json'
-            },
+            headers: getAuthHeaders(token),
             validateStatus: (status) => status >= 200 && status < 600
           }
         )
@@ -753,6 +744,64 @@ export default {
       return `${match[1]}T${match[2]}`
     },
 
+    splitDateTimeParts(dateTimeString, type) {
+      if (!dateTimeString) {
+        if (type === 'start') {
+          this.occurrenceForm.startDate = ''
+          this.occurrenceForm.startTime = ''
+        } else {
+          this.occurrenceForm.endDate = ''
+          this.occurrenceForm.endTime = ''
+        }
+        return
+      }
+
+      const normalized = String(dateTimeString).trim().replace(' ', 'T')
+      const match = normalized.match(/^(\d{4}-\d{2}-\d{2})T?(\d{2}:\d{2})/)
+
+      if (!match) {
+        return
+      }
+
+      const date = match[1]
+      const time = match[2]
+
+      if (type === 'start') {
+        this.occurrenceForm.startDate = date
+        this.occurrenceForm.startTime = time
+      } else {
+        this.occurrenceForm.endDate = date
+        this.occurrenceForm.endTime = time
+      }
+    },
+
+    combineDateAndTime(date, time) {
+      if (!date || !time) {
+        return ''
+      }
+      return `${date}T${time}`
+    },
+
+    updateOccurrenceStartDateTime() {
+      this.occurrenceForm.startDateTime = this.combineDateAndTime(
+        this.occurrenceForm.startDate,
+        this.occurrenceForm.startTime
+      )
+    },
+
+    updateOccurrenceEndDateTime() {
+      let endDate = this.occurrenceForm.endDate
+      const startDate = this.occurrenceForm.startDate
+      const endTime = this.occurrenceForm.endTime
+
+      if (endDate && startDate && new Date(`${endDate}T${endTime || '00:00'}`) < new Date(`${startDate}T${this.occurrenceForm.startTime || '00:00'}`)) {
+        endDate = startDate
+        this.occurrenceForm.endDate = endDate
+      }
+
+      this.occurrenceForm.endDateTime = this.combineDateAndTime(endDate, endTime)
+    },
+
     async rescheduleOccurrence() {
       if (this.isReadOnlyMode) {
         this.showMessage('Csak megtekintés módban az alkalom nem módosítható.', 'warning')
@@ -764,17 +813,20 @@ export default {
         return
       }
 
-      if (!this.occurrenceForm.startDateTime || !this.occurrenceForm.endDateTime) {
+      if (!this.occurrenceForm.startDate || !this.occurrenceForm.startTime || !this.occurrenceForm.endDate || !this.occurrenceForm.endTime) {
         this.showMessage('Add meg az új kezdési és befejezési időpontot.', 'warning')
         return
       }
 
-      if (new Date(this.occurrenceForm.startDateTime) >= new Date(this.occurrenceForm.endDateTime)) {
+      const startDateTime = this.combineDateAndTime(this.occurrenceForm.startDate, this.occurrenceForm.startTime)
+      const endDateTime = this.combineDateAndTime(this.occurrenceForm.endDate, this.occurrenceForm.endTime)
+
+      if (new Date(startDateTime) >= new Date(endDateTime)) {
         this.showMessage('A befejezés legyen későbbi, mint a kezdés.', 'warning')
         return
       }
 
-      const token = this.getToken()
+      const token = getToken()
       if (!token) {
         this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
         return
@@ -784,18 +836,14 @@ export default {
 
       try {
         const response = await axios.patch(
-          `http://127.0.0.1:8000/api/events/${this.eventId}/occurrence`,
+          `${API_BASE}/events/${this.eventId}/occurrence`,
           {
             action: 'reschedule',
-            start_date: this.occurrenceForm.startDateTime,
-            end_date: this.occurrenceForm.endDateTime
+            start_date: startDateTime,
+            end_date: endDateTime
           },
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/json',
-              'Content-Type': 'application/json'
-            },
+            headers: getAuthHeaders(token, true),
             validateStatus: (status) => status >= 200 && status < 600
           }
         )
@@ -835,7 +883,7 @@ export default {
         return
       }
 
-      const token = this.getToken()
+      const token = getToken()
       if (!token) {
         this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
         return
@@ -845,14 +893,10 @@ export default {
 
       try {
         const response = await axios.patch(
-          `http://127.0.0.1:8000/api/events/${this.eventId}/occurrence`,
+          `${API_BASE}/events/${this.eventId}/occurrence`,
           { action: 'cancel' },
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/json',
-              'Content-Type': 'application/json'
-            },
+            headers: getAuthHeaders(token, true),
             validateStatus: (status) => status >= 200 && status < 600
           }
         )

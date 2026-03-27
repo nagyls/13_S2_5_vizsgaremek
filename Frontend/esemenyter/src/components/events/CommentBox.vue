@@ -126,6 +126,7 @@
 <script>
 import axios from 'axios'
 import { toast } from '../../services/toast'
+import { API_BASE, getToken, getAuthHeaders } from '../../services/api'
 
 export default {
   name: 'KommentBox',
@@ -196,9 +197,9 @@ export default {
     },
 
     async kommentekLekerese(esemenyId) {
-      const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token')
-      const response = await axios.get(`http://127.0.0.1:8000/api/events/${esemenyId}/comments`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+      const token = getToken()
+      const response = await axios.get(`${API_BASE}/events/${esemenyId}/comments`, {
+        headers: getAuthHeaders(token)
       })
       const kommentek = response.data.data || []
       return kommentek.map(k => ({
@@ -254,12 +255,12 @@ export default {
     },
 
     async kommentMentese(komment) {
-      const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token')
-      const response = await axios.post('http://127.0.0.1:8000/api/events/comments', {
+      const token = getToken()
+      const response = await axios.post(`${API_BASE}/events/comments`, {
         event_id: komment.event_id,
         content: komment.content
       }, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        headers: getAuthHeaders(token)
       })
       return {
         ...response.data,
@@ -278,9 +279,9 @@ export default {
       }
 
       try {
-        const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token')
-        await axios.delete(`http://127.0.0.1:8000/api/events/comments/${kommentId}`, {
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        const token = getToken()
+        await axios.delete(`${API_BASE}/events/comments/${kommentId}`, {
+          headers: getAuthHeaders(token)
         })
         this.osszesKomment = this.osszesKomment.filter(k => k.id !== kommentId)
         toast.success('Komment törölve.')

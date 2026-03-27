@@ -97,6 +97,7 @@ class DatabaseSeeder extends Seeder
         DB::table('event_shows')->insert([
             'event_id' => $event->id,
             'user_id' => $user->id,
+            'answer' => 'y',
             'establishment_id' => $est->id,
             'created_at' => now(),
         ]);
@@ -109,25 +110,15 @@ class DatabaseSeeder extends Seeder
         ]);
 
 
-        EventFeedback::create([
-            'event_id' => $event->id,
-            'user_id' => $user->id,
-            'answer' => 'y',
-        ]);
-
-
-        // Temporary: event_favourites schema currently does not have event_id,
-        // so this seed is disabled until the migration/model naming is aligned.
-        // EventFavourite::create([
-        //     'event_id' => $event->id,
-        //     'user_id' => $user->id,
-        // ]);
 
 
         $pollId = DB::table('polls')->insertGetId([
             'event_id' => $event->id,
             'title' => 'Első szavazás',
             'user_id' => $user->id,
+            'start_date' => now(),
+            'deadline' => now()->addDays(7),
+            'is_timed' => true,
             'created_at' => now(),
         ]);
 

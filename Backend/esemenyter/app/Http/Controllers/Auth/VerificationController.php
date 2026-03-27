@@ -4,27 +4,48 @@ namespace App\Http\Controllers\Auth;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use App\Models\User;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Support\Facades\URL;
 
 class VerificationController extends Controller
 {
-    // Email cím megerősítése
-    public function verify(EmailVerificationRequest $request)
+    private function verificationResponse(string $status, $id, $hash)
     {
-        if ($request->user()->hasVerifiedEmail()) {
-            return response()->json([
-                'message' => 'Az email cím már meg lett erősítve.'
-            ], 200);
+        $frontendUrl = trim((string) env('FRONTEND_URL', ''));
+
+        if ($frontendUrl !== '') {
+            $frontendBaseUrl = rtrim($frontendUrl, '/');
+            return redirect()->away("{$frontendBaseUrl}/verify-email/{$id}/{$hash}?status={$status}");
         }
 
-        if ($request->user()->markEmailAsVerified()) {
-            event(new Verified($request->user()));
+        return response()->view('verification-result', [
+            'status' => $status,
+        ]);
+    }
+
+    // Email cím megerősítése
+    public function verify(Request $request, $id, $hash)
+    {
+        if (!URL::hasValidSignature($request, false)) {
+            return $this->verificationResponse('expired', $id, $hash);
         }
 
-        return response()->json([
-            'message' => 'Az email cím sikeresen megerősítve!'
-        ], 200);
+        $user = User::find($id);
+
+        if (!$user || !hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            return $this->verificationResponse('invalid', $id, $hash);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return $this->verificationResponse('already-verified', $id, $hash);
+        }
+
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
+        }
+
+        return $this->verificationResponse('success', $id, $hash);
     }
 
     //ujraküldés

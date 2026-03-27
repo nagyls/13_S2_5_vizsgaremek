@@ -360,22 +360,24 @@ export default {
 
     handleScroll() {
       this.showScrollTop = window.scrollY > 300;
+    },
+
+    handleDocumentClick(event) {
+      if (!event.target.closest('.user-profile')) {
+        this.showUserMenu = false;
+      }
     }
   },
 
   mounted() {
     this.loadUserData();
     window.addEventListener('scroll', this.handleScroll);
-
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.user-profile')) {
-        this.showUserMenu = false;
-      }
-    });
+    document.addEventListener('click', this.handleDocumentClick);
   },
 
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
+    document.removeEventListener('click', this.handleDocumentClick);
   }
 }
 </script>
@@ -533,7 +535,7 @@ export default {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   width: 300px;
   overflow: hidden;
-  z-index: 1000;
+  z-index: 9999;
 }
 
 .menu-header {
@@ -947,25 +949,45 @@ export default {
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
+@media (max-width: 700px) {
+  .main-header {
+    padding: 12px 0;
+  }
+
   .header-content {
-    flex-direction: column;
-    gap: 16px;
+    flex-direction: row;
+    justify-content: space-between;
     align-items: center;
-    text-align: center;
+    gap: 0;
   }
 
-  .logo-section {
-    justify-content: center;
-  }
-
-  .user-profile {
-    align-self: center;
+  .logo-text h1,
+  .site-subtitle {
+    display: none;
   }
 
   .user-menu {
-    width: 280px;
-    right: -20px;
+    width: 220px;
+    right: 0;
+    left: auto;
+    transform: none;
+  }
+
+  .menu-header {
+    padding: 12px 16px;
+  }
+
+  .menu-items {
+    padding: 6px 0;
+  }
+
+  .menu-item {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .menu-item i {
+    font-size: 16px;
   }
 
   .welcome-card {
@@ -1008,6 +1030,10 @@ export default {
 }
 
 @media (max-width: 480px) {
+  .main-header {
+    padding: 8px 0;
+  }
+
   .main-content {
     padding: 40px 0;
   }
