@@ -164,7 +164,7 @@
 
         <div class="content">
             <div class="greeting">
-                Szia {{ $notifiable->name }}!
+                Hello {{ $notifiable->name }}!
             </div>
 
             <div class="message">

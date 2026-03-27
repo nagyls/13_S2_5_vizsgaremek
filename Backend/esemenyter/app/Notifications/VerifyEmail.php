@@ -9,17 +9,12 @@ use Illuminate\Support\Facades\URL;
 
 class VerifyEmail extends Notification
 {
-    /**
-     * Get the notification's delivery channels.
-     */
+
     public function via($notifiable)
     {
         return ['mail'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
     public function toMail($notifiable)
     {
         $verificationUrl = $this->verificationUrl($notifiable);
@@ -35,9 +30,7 @@ class VerifyEmail extends Notification
             ]);
     }
 
-    /**
-     * Generate the verification URL for the user.
-     */
+  
     protected function verificationUrl($notifiable)
     {
         $relativePath = URL::temporarySignedRoute(
