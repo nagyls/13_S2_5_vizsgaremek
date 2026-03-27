@@ -121,15 +121,28 @@
             </div>
 
             <!-- Komment szekció -->
-            <div v-if="!isReadOnlyMode" class="comment-section">
+            <div v-if="canShowCommentSection" class="comment-section">
               <div class="comment-header">
                 <div class="header-left">
                   <i class='bx bx-message-dots'></i>
                   <h2>Hozzászólások</h2>
                 </div>
-                <div class="comment-counter">
-                  <span>{{ commentCount }}</span>
-                  <span>komment</span>
+
+                <div class="comment-header-right">
+                  <button
+                    v-if="canManageOccurrence"
+                    class="comment-toggle-inline"
+                    :disabled="isTogglingChat"
+                    @click="toggleEventComments"
+                  >
+                    <i class='bx' :class="isTogglingChat ? 'bx-loader-circle bx-spin' : (isEventChatEnabled ? 'bx-message-x' : 'bx-message-check')"></i>
+                    <span>{{ isEventChatEnabled ? 'Kommentek kikapcsolása' : 'Kommentek bekapcsolása' }}</span>
+                  </button>
+
+                  <div class="comment-counter">
+                    <span>{{ commentCount }}</span>
+                    <span>komment</span>
+                  </div>
                 </div>
               </div>
               
@@ -138,6 +151,38 @@
                 :aktualisFelhasznalo="currentUser"
                 @komment-sikeres="onCommentAdded"
               />
+            </div>
+
+            <div v-else-if="showCommentPlaceholder" class="comment-section comment-section-placeholder">
+              <div class="comment-header">
+                <div class="header-left">
+                  <i class='bx bx-message-dots'></i>
+                  <h2>Hozzászólások</h2>
+                </div>
+
+                <div class="comment-header-right">
+                  <button
+                    v-if="canManageOccurrence"
+                    class="comment-toggle-inline"
+                    :disabled="isTogglingChat"
+                    @click="toggleEventComments"
+                  >
+                    <i class='bx' :class="isTogglingChat ? 'bx-loader-circle bx-spin' : (isEventChatEnabled ? 'bx-message-x' : 'bx-message-check')"></i>
+                    <span>{{ isEventChatEnabled ? 'Kommentek kikapcsolása' : 'Kommentek bekapcsolása' }}</span>
+                  </button>
+
+                  <div class="comment-counter">
+                    <span>{{ commentCount }}</span>
+                    <span>komment</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="comment-lock-message">
+                <i class='bx bx-info-circle'></i>
+                <h3>{{ commentPlaceholderTitle }}</h3>
+                <p>{{ commentPlaceholderDescription }}</p>
+              </div>
             </div>
 
           </div>
@@ -293,6 +338,7 @@ export default {
       favoriteCount: 0,
       userParticipation: null,
       studentHasClass: null,
+      isTogglingChat: false,
       isUpdatingOccurrence: false,
       occurrenceForm: {
         startDate: '',
@@ -321,6 +367,51 @@ export default {
 
     canManageOccurrence() {
       return !this.isReadOnlyMode && Number(this.currentUser?.id) > 0 && Number(this.eventData?.user_id) === Number(this.currentUser?.id)
+    },
+
+    hasParticipationDecision() {
+      return this.userParticipation === 'y' || this.userParticipation === 'n'
+    },
+
+    isEventChatEnabled() {
+      return this.eventData?.chat_enabled !== false
+    },
+
+    canShowCommentSection() {
+      return !this.isReadOnlyMode
+        && this.isEventChatEnabled
+        && Boolean(this.currentUser)
+        && this.userParticipation === 'y'
+    },
+
+    showCommentPlaceholder() {
+      return !this.isReadOnlyMode
+        && Boolean(this.currentUser)
+        && !this.canShowCommentSection
+    },
+
+    commentPlaceholderTitle() {
+      if (!this.isEventChatEnabled) {
+        return 'Kommentelés kikapcsolva'
+      }
+
+      if (!this.hasParticipationDecision) {
+        return 'Kommentelés még nem elérhető'
+      }
+
+      return 'Kommentelés nem elérhető'
+    },
+
+    commentPlaceholderDescription() {
+      if (!this.isEventChatEnabled) {
+        return 'A kommentelés ki van kapcsolva ennél az eseménynél. A szervező bármikor visszakapcsolhatja.'
+      }
+
+      if (!this.hasParticipationDecision) {
+        return 'Először jelöld be, hogy részt veszel-e az eseményen, és utána megjelenik a kommentbox.'
+      }
+
+      return 'Kommentelni csak akkor tudsz, ha a részvételnél a Részvétel opciót választod.'
     }
   },
   
@@ -355,6 +446,11 @@ export default {
     },
 
     normalizeEvent(event) {
+      const rawChatEnabled = event?.chat_enabled
+      const chatEnabled = rawChatEnabled === undefined || rawChatEnabled === null
+        ? true
+        : !(rawChatEnabled === false || rawChatEnabled === 0 || rawChatEnabled === '0')
+
       return {
         ...event,
         status: this.normalizeEventStatus(event?.status),
@@ -362,7 +458,8 @@ export default {
         participants: Number(event?.participants || event?.participant_count || 0),
         favorites: Number(event?.favorites || event?.favorite_count || 0),
         comment_count: Number(event?.comment_count || event?.comments_count || 0),
-        isFavorite: Boolean(event?.isFavorite || event?.is_favorite || event?.is_favourite)
+        isFavorite: Boolean(event?.isFavorite || event?.is_favorite || event?.is_favourite),
+        chat_enabled: chatEnabled
       }
     },
 
@@ -704,7 +801,59 @@ export default {
         this.showMessage('Hiba történt a kedvenc jelölés mentésekor.', 'error')
       }
     },
-    
+
+    async toggleEventComments() {
+      if (!this.canManageOccurrence) {
+        this.showMessage('Csak a létrehozó módosíthatja a kommentelést.', 'warning')
+        return
+      }
+
+      const token = getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      const eventId = Number(this.eventData?.id || this.eventId)
+      if (!eventId) {
+        this.showMessage('Nem található esemény azonosító.', 'error')
+        return
+      }
+
+      this.isTogglingChat = true
+
+      try {
+        const response = await axios.patch(
+          `${API_BASE}/events/${eventId}/chat`,
+          { chat_enabled: !this.isEventChatEnabled },
+          {
+            headers: getAuthHeaders(token, true),
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          const message = response?.data?.message || 'Nem sikerült módosítani a kommentelést.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        if (this.eventData) {
+          this.eventData.chat_enabled = Boolean(response?.data?.chat_enabled)
+        }
+
+        this.showMessage(
+          response?.data?.message || (this.eventData?.chat_enabled ? 'Kommentelés engedélyezve.' : 'Kommentelés kikapcsolva.'),
+          'success'
+        )
+      } catch (error) {
+        console.error('Hiba a kommentelés állapot módosítása közben:', error)
+        this.showMessage('Hiba történt a kommentelés állapot mentésekor.', 'error')
+      } finally {
+        this.isTogglingChat = false
+      }
+    },
+
     shareEvent() {
       if (this.isReadOnlyMode) {
         this.showMessage('Csak megtekintés módban a megosztás nem elérhető.', 'info')
@@ -1224,7 +1373,6 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  height: 100%;
 }
 
 .info-block {
@@ -1312,17 +1460,16 @@ export default {
   color: #4a5568;
   line-height: 1.7;
   white-space: pre-line;
+  max-height: 420px;
+  overflow: auto;
 }
 
 .details-block {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  display: block;
 }
 
 .details-block .detailed-content {
-  flex: 1;
-  min-height: 220px;
+  min-height: 140px;
 }
 
 /* Kép */
@@ -1561,11 +1708,83 @@ export default {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
+.comment-section-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.comment-section-placeholder .comment-header {
+  margin-bottom: 0;
+}
+
+.comment-section-placeholder .comment-lock-message {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.comment-lock-message {
+  width: 100%;
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 2px dashed #cbd5e1;
+  background: #f8fafc;
+}
+
+.comment-lock-message i {
+  font-size: 2.2rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.comment-lock-message h3 {
+  margin: 0 0 0.5rem 0;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.comment-lock-message p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.6;
+}
+
 .comment-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+}
+
+.comment-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.comment-toggle-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.comment-toggle-inline:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.comment-toggle-inline:hover:not(:disabled) {
+  border-color: #94a3b8;
+  background: #f1f5f9;
 }
 
 .header-left {
@@ -1698,6 +1917,12 @@ export default {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
+  }
+
+  .comment-header-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
 }
 
