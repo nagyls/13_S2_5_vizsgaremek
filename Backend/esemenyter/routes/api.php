@@ -94,7 +94,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'getClassMembers']);
     Route::delete('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'deleteClass']);
     Route::post('/establishment/classes/create', [ClassController::class, 'store']);
-
+    //álnév kezelés
+    Route::patch('/establishment/{establishmentId}/members/{memberId}/alias', [StudentController::class, 'setAlias']);
     // modify class membership -> PATCH
     Route::patch('/establishment/classes/add-students', [StudentController::class, 'storeInClass']);
     Route::patch('/establishment/classes/remove-students', [StudentController::class, 'removeFromClass']);

@@ -46,16 +46,16 @@ class Poll extends Model
         return $this->hasMany(PollAnswer::class);
     }
 
-    public function hasStarted(): bool
+    public function hasStarted()
     {
         if (!$this->start_date instanceof Carbon) {
             return true;
         }
 
-        return $this->start_date->lte(now());
+        return $this->start_date->isPast();
     }
 
-    public function hasEnded(): bool
+    public function hasEnded()
     {
         if ($this->is_active === false) {
             return true;
@@ -65,10 +65,10 @@ class Poll extends Model
             return false;
         }
 
-        return $this->deadline->copy()->endOfDay()->lt(now());
+        return $this->deadline->copy()->endOfDay()->isPast();
     }
 
-    public function resultsAreVisible(): bool
+    public function resultsAreVisible()
     {
         return !$this->hidden_results || $this->hasEnded();
     }

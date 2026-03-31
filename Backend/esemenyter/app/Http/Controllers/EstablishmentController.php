@@ -18,6 +18,10 @@ class EstablishmentController extends Controller
 
         $user = $request->user();
 
+        if (!$user) {
+            return response()->json(['message' => 'nem felhatalmazott!'], 401);
+        }
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255', Rule::unique('establishments', 'title')],
             'description' => ['nullable', 'string'],

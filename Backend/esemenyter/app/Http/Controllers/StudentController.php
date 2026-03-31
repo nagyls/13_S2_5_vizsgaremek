@@ -215,6 +215,40 @@ class StudentController extends Controller
         ]);
     }
 
+    public function setAlias(Request $request, int $establishmentId, int $memberId)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'alias' => 'nullable|string|max:255',
+        ]);
+
+        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
+        if (!$this->isMemberOfEstablishment($memberId, $establishmentId)) {
+            return response()->json(['errors' => 'A megadott tag nem tartozik az intézményhez!'], 400);
+        }
+        $staff = Staff::find($memberId);
+        if ($staff) {
+            $staff->alias = $validated['alias'];
+            $staff->save();
+        }else {
+             return response()->json(['errors' => 'A megadott tag nem diák!'], 400);
+        }
+
+        
+        $student = Student::find($memberId);
+        if (!$student || $student->establishment_id != $establishmentId) {
+            return response()->json(['errors' => 'A diák nem tartozik az intézményhez!'], 400);
+        }
+
+        $student->alias = $validated['alias'];
+        $student->save();
+
+        return response()->json(['message' => 'Álnév frissítve']);
+    }
+
     public function updateClassStudents(Request $request, int $establishmentId, int $classId)
     {
         $user = $request->user();
