@@ -8,7 +8,9 @@ use App\Models\Establishment;
 use App\Models\Staff;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\Mime\Message;
+use App\Models\Region;
+use App\Models\InnerRegion;
+use App\Models\Settlement;
 
 class EstablishmentController extends Controller
 {
@@ -129,7 +131,22 @@ class EstablishmentController extends Controller
     }
     public function getEstablishmentbyId($id)
     {
-        $establishment = Establishment::find($id);
+        $establishment = Establishment::where('id', $id)->join('settlements', 'settlements.id', '=', 'establishments.settlement_id')
+            ->join('inner_regions', 'inner_regions.id', '=', 'settlements.inner_region_id')
+            ->join('regions', 'regions.id', '=', 'inner_regions.region_id')
+            ->select(
+                'establishments.id',
+                'establishments.title',
+                'establishments.description',
+                'establishments.website',
+                'establishments.email',
+                'establishments.phone',
+                'establishments.address',
+                'settlements.name as settlement_name',
+                'inner_regions.name as inner_region_name',
+                'regions.name as region_name'
+            )
+            ->first();
 
         return response()->json([
             'data' => $establishment
@@ -175,21 +192,21 @@ class EstablishmentController extends Controller
             ->concat($studentMemberships)
             ->unique('id')
             ->sortBy(function ($item) {
-                return mb_strtolower((string) $item->title);
+                return mb_strtolower($item->title);
             })
             ->values();
 
         return response()->json([
             'data' => $establishments->map(function ($item) use ($user) {
                 return [
-                    'id' => (int) $item->id,
+                    'id' => $item->id,
                     'title' => $item->title,
                     'address' => $item->address,
                     'email' => $item->email,
                     'phone' => $item->phone,
                     'website' => $item->website,
                     'role' => $item->membership_role,
-                    'is_current' => (int) $user->establishment_id === (int) $item->id,
+                    'is_current' => $user->establishment_id === $item->id,
                 ];
             })->values()
         ]);

@@ -2,20 +2,41 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 
 use App\Models\Establishment;
 use App\Models\User;
-use App\Models\Students;
-use App\Models\ClassStudent;
-use Illuminate\Http\Request;
-use App\Models\ClassModel;
+use App\Models\Staff;
 use App\Models\Student;
+use App\Models\ClassStudent;
+use App\Models\ClassModel;
 use App\Models\Event;
 use App\Models\EventShown;
+
 use Illuminate\Support\Facades\DB;
 
-class StudentController extends Controller
+class MemberController extends Controller
 {
+    //get staff
+    public function getStaff($establishmentId)
+    {
+        $establishment = Establishment::find($establishmentId);
+        if (!$establishment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Intézmény nem található!'
+            ], 400);
+        }
+        $staff = User::join('staffs', 'users.id', '=', 'staffs.user_id')
+            ->where('staffs.establishment_id', $establishmentId)
+            ->select('users.*')
+            ->distinct()
+            ->get();
+
+        return response()->json([
+            'data' => $staff
+        ]);
+    }
     // Diák hozzáadása osztályhoz
     public function storeInClass(Request $request)
     {
@@ -25,7 +46,7 @@ class StudentController extends Controller
             'class_id' => 'required|integer|exists:classes,id',
             'student_id'   => 'required|array',
             'student_id.*' => 'integer|exists:students,id',
-        ],[
+        ], [
             'establishment_id.required' => 'Az intézmény azonosító megadása kötelező.',
             'establishment_id.integer' => 'Az intézmény azonosítónak egész számnak kell lennie.',
             'establishment_id.exists' => 'Intézmény nem található!',
@@ -49,17 +70,17 @@ class StudentController extends Controller
         if ($class && $establishment && $class->establishment_id != $establishmentId) {
             return response()->json([
                 'errors' => 'Az osztály nem tartozik az intézményhez!'
-            ], 400); 
+            ], 400);
         }
 
         $studentIds = $request->input('student_id');
-        
+
 
         $validStudentsIds = Student::whereIn('id', $studentIds)
             ->where('establishment_id', $establishmentId)
             ->pluck('id')
             ->toArray();
-            
+
         if (count($validStudentsIds) !== count($studentIds)) {
             $invalidIds = array_diff($studentIds, $validStudentsIds);
             return response()->json([
@@ -71,7 +92,7 @@ class StudentController extends Controller
             ->pluck('user_id')
             ->toArray();
 
-        $alreadyMember= ClassStudent::where('class_id', $classId)
+        $alreadyMember = ClassStudent::where('class_id', $classId)
             ->whereIn('user_id', $userIds)
             ->pluck('user_id')
             ->toArray();
@@ -82,7 +103,7 @@ class StudentController extends Controller
 
         foreach ($toInsert as $userId) {
             ClassStudent::create([
-                'user_id' => $userId, 
+                'user_id' => $userId,
                 'class_id' => $classId
             ]);
         }
@@ -122,17 +143,17 @@ class StudentController extends Controller
         if ($class && $establishment && $class->establishment_id != $establishmentId) {
             return response()->json([
                 'errors' => 'Az osztály nem tartozik az intézményhez!'
-            ], 400); 
+            ], 400);
         }
 
         $studentIds = $request->input('student_id');
-        
+
 
         $validStudentsIds = Student::whereIn('id', $studentIds)
             ->where('establishment_id', $establishmentId)
             ->pluck('id')
             ->toArray();
-            
+
         if (count($validStudentsIds) !== count($studentIds)) {
             $invalidIds = array_diff($studentIds, $validStudentsIds);
             return response()->json([
@@ -165,7 +186,7 @@ class StudentController extends Controller
 
         $students = User::join('students', 'users.id', '=', 'students.user_id')
             ->where('students.establishment_id', $establishmentId)
-            ->select('users.id','students.id as student_id','users.name', 'students.alias','users.email', 'students.created_at','students.updated_at')
+            ->select('users.id', 'students.id as student_id', 'users.name', 'students.alias', 'users.email', 'students.created_at', 'students.updated_at')
             ->distinct()
             ->get();
 
@@ -190,7 +211,7 @@ class StudentController extends Controller
 
         $studentIds = $request->input('student_id');
 
-   
+
         $validStudentsIds = Student::whereIn('id', $studentIds)
             ->where('establishment_id', $establishmentId)
             ->pluck('id')
@@ -226,28 +247,23 @@ class StudentController extends Controller
         if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
             return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
         }
-        if (!$this->isMemberOfEstablishment($memberId, $establishmentId)) {
+        if ($this->isMemberEstablishment($memberId, $establishmentId)) {
             return response()->json(['errors' => 'A megadott tag nem tartozik az intézményhez!'], 400);
         }
-        $staff = Staff::find($memberId);
-        if ($staff) {
+        if ($this->isStaffEstablishment($memberId, $establishmentId)) {
+            $staff = Staff::find($memberId);
             $staff->alias = $validated['alias'];
             $staff->save();
-        }else {
-             return response()->json(['errors' => 'A megadott tag nem diák!'], 400);
+            return response()->json(['message' => 'Álnév frissítve']);
         }
-
-        
         $student = Student::find($memberId);
-        if (!$student || $student->establishment_id != $establishmentId) {
-            return response()->json(['errors' => 'A diák nem tartozik az intézményhez!'], 400);
-        }
-
         $student->alias = $validated['alias'];
         $student->save();
 
         return response()->json(['message' => 'Álnév frissítve']);
     }
+
+
 
     public function updateClassStudents(Request $request, int $establishmentId, int $classId)
     {
@@ -344,8 +360,8 @@ class StudentController extends Controller
             ->where(function ($query) use ($classId, $class) {
                 $query->where('target_group', 'teljes_iskola')
                     ->orWhere(function ($subQuery) use ($classId) {
-                            $subQuery->whereIn('target_group', ['osztaly_szintu', 'sajat_osztaly'])
-                                ->whereJsonContains('target_class_ids', $classId);
+                        $subQuery->whereIn('target_group', ['osztaly_szintu', 'sajat_osztaly'])
+                            ->whereJsonContains('target_class_ids', $classId);
                     })
                     ->orWhere(function ($subQuery) use ($class) {
                         $subQuery->whereIn('target_group', ['evfolyam_szintu', 'evfolyam'])

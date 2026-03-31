@@ -14,8 +14,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\EstablishmentController;
 use App\Http\Controllers\ClassController;
-use App\Http\Controllers\StaffController;
-use App\Http\Controllers\StudentController;
+use App\Http\Controllers\MemberController;
 use App\Http\Controllers\RequestController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\PollController;
@@ -78,8 +77,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/mine', [EstablishmentController::class, 'getMyEstablishments']); //összes intézmény ahol a user tag
         Route::get('/{establishmentId}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
 
-        Route::get('{establishmentId}/members/students', [StudentController::class, 'getStudents']);
-        Route::get('{establishmentId}/members/staff', [StaffController::class, 'getStaff']);
+        Route::get('{establishmentId}/members/students', [MemberController::class, 'getStudents']);
+        Route::get('{establishmentId}/members/staff', [MemberController::class, 'getStaff']);
         //kollaborácios események
         Route::get('/{establishmentId}/event-access', [EventController::class, 'getCollabEvents']);
         Route::patch('/{establishmentId}/event-access', [EventController::class, 'handleCollabEvents']);
@@ -95,10 +94,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'deleteClass']);
     Route::post('/establishment/classes/create', [ClassController::class, 'store']);
     //álnév kezelés
-    Route::patch('/establishment/{establishmentId}/members/{memberId}/alias', [StudentController::class, 'setAlias']);
+    Route::patch('/establishment/{establishmentId}/members/{memberId}/alias', [MemberController::class, 'setAlias']);
     // modify class membership -> PATCH
-    Route::patch('/establishment/classes/add-students', [StudentController::class, 'storeInClass']);
-    Route::patch('/establishment/classes/remove-students', [StudentController::class, 'removeFromClass']);
+    Route::patch('/establishment/classes/add-students', [MemberController::class, 'storeInClass']);
+    Route::patch('/establishment/classes/remove-students', [MemberController::class, 'removeFromClass']);
     Route::patch('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'updateClassTeacher']);
 
     //kérelmek
