@@ -23,13 +23,14 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'name_updated_at',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'name_updated_at' => 'datetime',
+    ];
     protected $hidden = [
         'password',
         'remember_token',
