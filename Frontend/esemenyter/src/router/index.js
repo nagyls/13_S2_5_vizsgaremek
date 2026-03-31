@@ -147,7 +147,9 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (isStudentOrTeacher && to.path === '/dashboard') {
+  const allowRoleChooser = to.path === '/dashboard' && String(to.query?.chooseRole || '') === '1';
+
+  if (isStudentOrTeacher && to.path === '/dashboard' && !allowRoleChooser) {
     next('/user-dashboard');
     return;
   }

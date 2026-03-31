@@ -291,8 +291,12 @@ class StudentController extends Controller
         }
 
         $normalizedUserIds = collect($userIds)
-            ->map(fn($id) => (int) $id)
-            ->filter(fn($id) => $id > 0)
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->filter(function ($id) {
+                return $id > 0;
+            })
             ->unique()
             ->values();
 

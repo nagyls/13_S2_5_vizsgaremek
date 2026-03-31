@@ -18,6 +18,7 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\RequestController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\PollController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -67,10 +68,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/events/{eventId}/favourite', [EventController::class, 'makeFavourite']);
     Route::patch('/events/{eventId}/occurrence', [EventController::class, 'manageOccurrence']);  //SZAKKÖR MÓDOSÍTÁS
     Route::patch('/events/{eventId}/chat', [EventController::class, 'handleChat']);  //CHAT MÓDOSÍTÁS
+    Route::get('/events/{eventId}/poll', [PollController::class, 'getEventPoll']);
 
     //intézmény kezelés
     Route::prefix('establishment')->group(function () {
         Route::post('/create', [EstablishmentController::class, 'store']); //intézmény létrehozása
+        Route::patch('/switch', [EstablishmentController::class, 'switchEstablishment']);
         Route::get('{establishmentId}/role', [EstablishmentController::class, 'getRole']); // felhasználó szerepének lekérdezése az aktuális intézményben
         Route::get('/mine', [EstablishmentController::class, 'getMyEstablishments']); //összes intézmény ahol a user tag
         Route::get('/{establishmentId}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
@@ -110,4 +113,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/events/{eventId}/comments', [CommentController::class, 'getComments']);
     Route::post('/events/comments', [CommentController::class, 'makeComment']);
     Route::delete('/events/comments/{commentId}', [CommentController::class, 'deleteComment']);
+
+    // szavazások
+    Route::post('/polls', [PollController::class, 'makePoll']);
+    Route::post('/polls/{pollId}/answer', [PollController::class, 'answerPoll']);
+    Route::patch('/polls/{pollId}/close', [PollController::class, 'stopPoll']);
+    Route::get('/polls/{pollId}/results', [PollController::class, 'getPollResults']);
 });

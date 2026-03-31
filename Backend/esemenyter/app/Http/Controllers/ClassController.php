@@ -141,13 +141,19 @@ class ClassController extends Controller
 
         $userIds = $studentIds
             ->concat($teacherIds)
-            ->map(fn($id) => (int) $id)
+            ->map(function ($id) {
+                return (int) $id;
+            })
             ->unique()
             ->values();
 
         return response()->json([
-            'student_ids' => $studentIds->map(fn($id) => (int) $id)->values(),
-            'teacher_ids' => $teacherIds->map(fn($id) => (int) $id)->values(),
+            'student_ids' => $studentIds->map(function ($id) {
+                return (int) $id;
+            })->values(),
+            'teacher_ids' => $teacherIds->map(function ($id) {
+                return (int) $id;
+            })->values(),
             'user_ids' => $userIds,
             'class_ids' => array_values($classesInEstablishment),
         ]);
@@ -201,12 +207,16 @@ class ClassController extends Controller
 
         $resolvedGrades = $classes
             ->pluck('grade')
-            ->map(fn($grade) => (int) $grade)
+            ->map(function ($grade) {
+                return (int) $grade;
+            })
             ->unique()
             ->values();
 
         $missingGrades = collect($validated['grade_ids'])
-            ->map(fn($grade) => (int) $grade)
+            ->map(function ($grade) {
+                return (int) $grade;
+            })
             ->diff($resolvedGrades)
             ->values();
 
@@ -219,20 +229,28 @@ class ClassController extends Controller
 
         $classIds = $classes
             ->pluck('id')
-            ->map(fn($id) => (int) $id)
+            ->map(function ($id) {
+                return (int) $id;
+            })
             ->values();
 
         $studentIds = User::join('class_students', 'users.id', '=', 'class_students.user_id')
             ->whereIn('class_students.class_id', $classIds)
             ->distinct()
             ->pluck('users.id')
-            ->map(fn($id) => (int) $id)
+            ->map(function ($id) {
+                return (int) $id;
+            })
             ->values();
 
         $teacherIds = $classes
             ->pluck('user_id')
-            ->filter(fn($id) => !is_null($id))
-            ->map(fn($id) => (int) $id)
+            ->filter(function ($id) {
+                return !is_null($id);
+            })
+            ->map(function ($id) {
+                return (int) $id;
+            })
             ->unique()
             ->values();
 

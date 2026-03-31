@@ -115,7 +115,9 @@ class EventController extends Controller
             $validClassIds = ClassModel::where('establishment_id', $validated['establishment_id'])
                 ->whereIn('id', $selectedClassIds)
                 ->pluck('id')
-                ->map(fn($id) => (int) $id)
+                ->map(function ($id) {
+                    return (int) $id;
+                })
                 ->toArray();
 
             if (count($validClassIds) !== count($selectedClassIds)) {
@@ -129,7 +131,9 @@ class EventController extends Controller
             $validGrades = ClassModel::where('establishment_id', $validated['establishment_id'])
                 ->whereIn('grade', $selectedGradeIds)
                 ->pluck('grade')
-                ->map(fn($grade) => (int) $grade)
+                ->map(function ($grade) {
+                    return (int) $grade;
+                })
                 ->unique()
                 ->values()
                 ->toArray();
@@ -496,7 +500,9 @@ class EventController extends Controller
 
         $eventIds = $events
             ->pluck('id')
-            ->map(fn($id) => (int) $id)
+            ->map(function ($id) {
+                return (int) $id;
+            })
             ->values()
             ->all();
 
@@ -507,7 +513,9 @@ class EventController extends Controller
                 ->whereIn('event_id', $eventIds)
                 ->where('is_favourite', true)
                 ->pluck('event_id')
-                ->map(fn($id) => (int) $id)
+                ->map(function ($id) {
+                    return (int) $id;
+                })
                 ->unique()
                 ->flip();
         }

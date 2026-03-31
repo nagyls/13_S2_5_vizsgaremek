@@ -7,6 +7,7 @@ use Illuminate\Validation\Rule;
 use App\Models\Establishment;
 use App\Models\Staff;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\Mime\Message;
 
 class EstablishmentController extends Controller
@@ -133,13 +134,121 @@ class EstablishmentController extends Controller
     public function getMyEstablishments(Request $request)
     {
         $user = $request->user();
-        $establishments = Establishment::where('user_id', $user->id)
-            ->orderBy('title')
+
+        if (!$user) {
+            return response()->json(['message' => 'nem felhatalmazott!'], 401);
+        }
+
+        $staffMemberships = Establishment::query()
+            ->join('staffs', 'staffs.establishment_id', '=', 'establishments.id')
+            ->where('staffs.user_id', $user->id)
+            ->select(
+                'establishments.id',
+                'establishments.title',
+                'establishments.address',
+                'establishments.email',
+                'establishments.phone',
+                'establishments.website',
+                'staffs.role as membership_role'
+            )
             ->get();
 
+        $studentMemberships = Establishment::query()
+            ->join('students', 'students.establishment_id', '=', 'establishments.id')
+            ->where('students.user_id', $user->id)
+            ->select(
+                'establishments.id',
+                'establishments.title',
+                'establishments.address',
+                'establishments.email',
+                'establishments.phone',
+                'establishments.website',
+                DB::raw("'student' as membership_role")
+            )
+            ->get();
+
+        $establishments = $staffMemberships
+            ->concat($studentMemberships)
+            ->unique('id')
+            ->sortBy(function ($item) {
+                return mb_strtolower((string) $item->title);
+            })
+            ->values();
+
         return response()->json([
-            'data' => $establishments
+            'data' => $establishments->map(function ($item) use ($user) {
+                return [
+                    'id' => (int) $item->id,
+                    'title' => $item->title,
+                    'address' => $item->address,
+                    'email' => $item->email,
+                    'phone' => $item->phone,
+                    'website' => $item->website,
+                    'role' => $item->membership_role,
+                    'is_current' => (int) $user->establishment_id === (int) $item->id,
+                ];
+            })->values()
         ]);
+    }
+
+    public function switchEstablishment(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'nem felhatalmazott!'], 401);
+        }
+
+        $validated = $request->validate([
+            'establishment_id' => ['required', 'integer', 'exists:establishments,id'],
+        ], [
+            'establishment_id.required' => 'Az intézmény azonosító megadása kötelező.',
+            'establishment_id.integer' => 'Az intézmény azonosítónak egész számnak kell lennie.',
+            'establishment_id.exists' => 'Nem létező intézmény.',
+        ]);
+
+        $establishmentId = (int) $validated['establishment_id'];
+
+        if (!$this->isMemberEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem vagy tagja ennek az intézménynek.'], 403);
+        }
+
+        $establishment = Establishment::find($establishmentId);
+        $role = $this->resolveRoleForEstablishment($user->id, $establishmentId);
+
+        $user->establishment_id = $establishmentId;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Aktív intézmény sikeresen módosítva.',
+            'data' => [
+                'id' => $establishment->id,
+                'title' => $establishment->title,
+                'address' => $establishment->address,
+                'email' => $establishment->email,
+                'phone' => $establishment->phone,
+                'website' => $establishment->website,
+                'role' => $role,
+                'establishment_id' => $establishment->id,
+            ]
+        ]);
+    }
+
+    protected function resolveRoleForEstablishment(int $userId, int $establishmentId): ?string
+    {
+        if ($this->isAdminEstablishment($userId, $establishmentId)) {
+            return 'admin';
+        }
+
+        if ($this->isStaffEstablishment($userId, $establishmentId)) {
+            return 'teacher';
+        }
+
+        if ($this->isMemberEstablishment($userId, $establishmentId)) {
+            return 'student';
+        }
+
+        return null;
     }
 
     public function getRole(Request $request, $establishmentId)

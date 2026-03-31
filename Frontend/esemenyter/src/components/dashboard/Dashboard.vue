@@ -3,7 +3,7 @@
     <header class="main-header">
       <div class="container">
         <div class="header-content">
-          <div class="logo-section" @click="$router.push('/dashboard')">
+          <div class="logo-section" @click="handleLogoClick">
             <div class="logo-icon">
               <img :src="logo2" alt="EseményTér logó" class="logo-image">
             </div>
@@ -958,6 +958,7 @@ export default {
         specialTeaching: {}
       },
       profileConfigured: false,
+      forceRoleSelection: false,
       showUserMenu: false,
       showScrollTop: false,
       
@@ -1325,6 +1326,13 @@ export default {
           this.user.role = userData.role;
         }
 
+        if (this.forceRoleSelection) {
+          this.selectedRole = '';
+          this.profileConfigured = false;
+          this.saveUserData();
+          return;
+        }
+
         if (this.user.role) {
           this.selectedRole = this.user.role;
         }
@@ -1392,6 +1400,15 @@ export default {
     toggleUserMenu() {
       this.showUserMenu = !this.showUserMenu;
     },
+
+    handleLogoClick() {
+      if (this.forceRoleSelection) {
+        this.exitRoleSelection();
+        return;
+      }
+
+      this.$router.push('/dashboard');
+    },
     
     // Diák beállítás
     setupStudent() {
@@ -1456,6 +1473,10 @@ export default {
       if (this.currentStep > 1) {
         this.currentStep--;
       } else {
+        if (this.forceRoleSelection) {
+          this.exitRoleSelection();
+          return;
+        }
         this.selectedRole = '';
         this.currentStep = 1;
         this.resetStudentSetup();
@@ -1504,6 +1525,10 @@ export default {
       if (this.teacherCurrentStep > 1) {
         this.teacherCurrentStep--;
       } else {
+        if (this.forceRoleSelection) {
+          this.exitRoleSelection();
+          return;
+        }
         this.selectedRole = '';
         this.teacherCurrentStep = 1;
         this.resetTeacherSetup();
@@ -1550,10 +1575,26 @@ export default {
       if (this.adminCurrentStep > 1) {
         this.adminCurrentStep--;
       } else {
+        if (this.forceRoleSelection) {
+          this.exitRoleSelection();
+          return;
+        }
         this.selectedRole = '';
         this.adminCurrentStep = 1;
         this.resetAdminSetup();
       }
+    },
+
+    exitRoleSelection() {
+      this.forceRoleSelection = false;
+      this.selectedRole = '';
+      this.currentStep = 1;
+      this.teacherCurrentStep = 1;
+      this.adminCurrentStep = 1;
+      this.resetStudentSetup();
+      this.resetTeacherSetup();
+      this.resetAdminSetup();
+      this.$router.push('/profile');
     },
     
     // Iskola form validálása
@@ -1860,12 +1901,91 @@ export default {
       );
     },
 
+    saveCurrentInstitution(institutionId) {
+      const numericInstitutionId = Number(institutionId);
+
+      if (!Number.isFinite(numericInstitutionId) || numericInstitutionId <= 0) {
+        return;
+      }
+
+      if (localStorage.getItem('esemenyter_token')) {
+        localStorage.setItem('CurrentInstitution', String(numericInstitutionId));
+        sessionStorage.removeItem('CurrentInstitution');
+        return;
+      }
+
+      sessionStorage.setItem('CurrentInstitution', String(numericInstitutionId));
+      localStorage.removeItem('CurrentInstitution');
+    },
+
+    async fetchRoleForInstitution(establishmentId) {
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      if (!token) {
+        return '';
+      }
+
+      try {
+        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${establishmentId}/role`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json'
+          }
+        });
+
+        return response?.data?.role || '';
+      } catch (error) {
+        console.error('Hiba az intézményi szerepkör lekérésekor:', error);
+        return '';
+      }
+    },
+
+    async handleAlreadyMember(establishmentId, fallbackRole, fallbackSchoolTitle) {
+      const role = await this.fetchRoleForInstitution(establishmentId);
+      const nextRole = role || fallbackRole || this.user.role || '';
+
+      this.user.role = nextRole;
+      this.user.pendingApproval = false;
+      this.user.requestedRole = '';
+      this.user.schoolId = establishmentId;
+      this.user.school = fallbackSchoolTitle || this.user.school;
+      this.profileConfigured = Boolean(nextRole);
+
+      this.saveCurrentInstitution(establishmentId);
+      this.saveUserData();
+
+      toast.info('Már tagja vagy ennek az intézménynek, átváltottunk erre a profilra.');
+
+      if (nextRole === 'admin') {
+        this.$router.push('/institution-dashboard');
+        return;
+      }
+
+      this.$router.push('/user-dashboard');
+    },
+
     // Profil befejező metódusok
     async completeStudentProfileSetup() {
       try {
         await this.submitInstitutionRequest(this.selectedSchoolId, 'student');
       } catch (error) {
-        if (error.response?.status !== 409) {
+        const status = error.response?.status;
+        const message = String(error.response?.data?.message || '');
+
+        if (status === 409 && message.includes('Már tagja vagy az intézménynek')) {
+          await this.handleAlreadyMember(
+            this.selectedSchoolId,
+            'student',
+            this.selectedSchool?.title || ''
+          );
+          return;
+        }
+
+        if (status === 409 && message.includes('Kérelem már létezik')) {
+          toast.info('Ehhez az intézményhez már van folyamatban kérelmed.');
+        } else if (status !== 409) {
           toast.error('A csatlakozási kérelem elküldése sikertelen.');
           return;
         }
@@ -1889,7 +2009,21 @@ export default {
       try {
         await this.submitInstitutionRequest(this.teacherSelectedSchoolId, 'teacher');
       } catch (error) {
-        if (error.response?.status !== 409) {
+        const status = error.response?.status;
+        const message = String(error.response?.data?.message || '');
+
+        if (status === 409 && message.includes('Már tagja vagy az intézménynek')) {
+          await this.handleAlreadyMember(
+            this.teacherSelectedSchoolId,
+            'teacher',
+            this.teacherSelectedSchool?.title || ''
+          );
+          return;
+        }
+
+        if (status === 409 && message.includes('Kérelem már létezik')) {
+          toast.info('Ehhez az intézményhez már van folyamatban kérelmed.');
+        } else if (status !== 409) {
           toast.error('A csatlakozási kérelem elküldése sikertelen.');
           return;
         }
@@ -2120,6 +2254,8 @@ export default {
       this.$router.push('/');
       return;
     }
+
+    this.forceRoleSelection = String(this.$route?.query?.chooseRole || '') === '1';
 
     this.checkLoginStatus();
     this.loadRegions();
