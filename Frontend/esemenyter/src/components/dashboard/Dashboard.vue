@@ -914,7 +914,7 @@
                   <i class='bx bx-arrow-back'></i>
                   {{ adminCurrentStep === 1 ? 'Vissza' : 'Előző lépés' }}
                 </button>
-                <button class="btn-primary" @click="adminNextStep" :disabled="!isAdminStepValid">
+                <button class="btn-primary" @click="adminNextStep" :disabled="!isAdminStepValid || isSubmittingAdmin">
                   {{ adminCurrentStep === 5 ? 'Iskola regisztrálása' : 'Következő lépés' }}
                   <i class='bx bx-chevron-right'></i>
                 </button>
@@ -1041,6 +1041,7 @@ export default {
       },
       schoolFormErrors: {},
       adminAgreement: false,
+      isSubmittingAdmin: false,
       
       // Közös adatlisták
       regions: [],
@@ -1567,6 +1568,7 @@ export default {
         this.adminCurrentStep = 5;
       }
       else if (this.adminCurrentStep === 5) {
+        if (this.isSubmittingAdmin) return;
         this.completeAdminProfileSetup();
       }
     },
@@ -2051,6 +2053,9 @@ export default {
     },
     
     completeAdminProfileSetup() {
+      // Dupla kattintás megakadályozása
+      if (this.isSubmittingAdmin) return;
+      this.isSubmittingAdmin = true;
 
       // Token ellenőrzése
       let token = localStorage.getItem('esemenyter_token');
@@ -2060,6 +2065,7 @@ export default {
     
       if (!token) {
         toast.error('Nincs bejelentkezve. Kérjük jelentkezzen be újra.');
+        this.isSubmittingAdmin = false;
         this.$router.push('/');
         return;
       }
@@ -2067,6 +2073,7 @@ export default {
       // Ellenőrizzük, hogy van-e kiválasztott város
       if (!this.adminSelectedCityId) {
         toast.error('Kérjük válasszon ki egy várost!');
+        this.isSubmittingAdmin = false;
         return;
       }
     
@@ -2110,11 +2117,13 @@ export default {
 
         this.saveUserData();
       
+        this.isSubmittingAdmin = false;
         setTimeout(() => {
           this.$router.push('/institution-dashboard');
         }, 1500);
       })
       .catch(err => {
+        this.isSubmittingAdmin = false;
         console.error('Hiba az intézmény létrehozásakor:', err);
 
         if (err.response) {
@@ -2122,6 +2131,7 @@ export default {
           console.error('Hiba státusz:', err.response.status);
 
           if (err.response.status === 401) {
+            this.isSubmittingAdmin = false;
             toast.error('A munkamenet lejárt. Kérjük jelentkezzen be újra.');
 
             // Token törlése

@@ -60,6 +60,7 @@ Route::prefix('establishments')->group(function () {
 
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::patch('/user/update', [UserAuthController::class, 'update']);
     //esemény kezelés
     Route::get('/establishment/{establishmentId}/events', [EventController::class, 'getEvents']);
     Route::post('/establishment/events', [EventController::class, 'store']);

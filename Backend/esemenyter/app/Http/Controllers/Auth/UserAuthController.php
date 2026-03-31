@@ -46,5 +46,33 @@ class UserAuthController extends Controller
             'token' => $token,
         ]);
     }
+
+    public function update(Request $request)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+
+        // 15 napos korlátozás ellenőrzése
+        if ($user->name_updated_at && $user->name_updated_at->diffInDays(now()) < 15) {
+            $daysLeft = ceil(15 - $user->name_updated_at->diffInDays(now(), false));
+            return response()->json([
+                'message' => "A nevedet legközelebb $daysLeft nap múlva módosíthatod.",
+                'remaining_days' => $daysLeft
+            ], 422);
+        }
+
+        $user->update([
+            'name' => $request->name,
+            'name_updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Profil sikeresen frissítve!',
+            'user' => $user
+        ], 200);
+    }
     
 }

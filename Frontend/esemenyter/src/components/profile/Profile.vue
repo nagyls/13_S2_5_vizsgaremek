@@ -39,6 +39,14 @@
                     <i class='bx bx-home'></i>
                     <span>Főoldal</span>
                   </router-link>
+                  <router-link
+                    v-if="user.role === 'admin'"
+                    to="/institution-dashboard"
+                    class="menu-item"
+                  >
+                    <i class='bx bx-building-house'></i>
+                    <span>Intézményvezetői felület</span>
+                  </router-link>
                   <router-link to="/events-list" class="menu-item">
                     <i class='bx bx-calendar'></i>
                     <span>Események</span>
@@ -68,7 +76,31 @@
             <span>{{ userInitials }}</span>
           </div>
           <div class="profile-title">
-            <h1>{{ user.name }}</h1>
+            <div v-if="!isEditingName" class="name-display-group">
+              <h1>{{ user.name }}</h1>
+              <button class="btn-icon-edit" @click="startEditingName" title="Név szerkesztése">
+                <i class='bx bx-edit-alt'></i>
+              </button>
+            </div>
+            <div v-else class="name-edit-group">
+              <input 
+                v-model="editName" 
+                type="text" 
+                class="form-control name-edit-input" 
+                @keyup.enter="saveName"
+                @keyup.esc="cancelEditingName"
+                ref="nameInput"
+              >
+              <div class="edit-actions">
+                <button class="btn-save-mini" @click="saveName" :disabled="isSavingName">
+                  <i v-if="isSavingName" class='bx bx-loader-alt bx-spin'></i>
+                  <i v-else class='bx bx-check'></i>
+                </button>
+                <button class="btn-cancel-mini" @click="cancelEditingName" :disabled="isSavingName">
+                  <i class='bx bx-x'></i>
+                </button>
+              </div>
+            </div>
             <p class="profile-role" :class="user.role">
               <i :class="roleIcon"></i>
               {{ roleDisplayName }}
@@ -351,6 +383,9 @@ export default {
         created_at: null,
         updated_at: null
       },
+      isEditingName: false,
+      editName: '',
+      isSavingName: false,
       showUserMenu: false,
       showEstablishmentSwitcher: false,
       isLoadingEstablishments: false,
@@ -403,6 +438,51 @@ export default {
   },
   
   methods: {
+    startEditingName() {
+      this.editName = this.user.name;
+      this.isEditingName = true;
+      this.$nextTick(() => {
+        if (this.$refs.nameInput) {
+          this.$refs.nameInput.focus();
+        }
+      });
+    },
+
+    cancelEditingName() {
+      this.isEditingName = false;
+      this.editName = '';
+    },
+
+    async saveName() {
+      if (!this.editName.trim() || this.editName === this.user.name) {
+        this.cancelEditingName();
+        return;
+      }
+
+      this.isSavingName = true;
+      try {
+        const token = getToken();
+        const response = await axios.patch(`${API_BASE}/user/update`, 
+          { name: this.editName },
+          { headers: getAuthHeaders(token) }
+        );
+
+        this.user.name = this.editName;
+        this.persistStoredUser({ 
+          name: this.editName,
+          name_updated_at: response.data.user.name_updated_at 
+        });
+        this.showNotification('Név sikeresen frissítve!', 'success');
+        this.isEditingName = false;
+      } catch (error) {
+        console.error('Hiba a név frissítésekor:', error);
+        const message = error.response?.data?.message || 'Nem sikerült frissíteni a nevet.';
+        this.showNotification(message, 'error');
+      } finally {
+        this.isSavingName = false;
+      }
+    },
+
     loadUserData() {
       const savedUser =
         localStorage.getItem('esemenyter_user') ||
@@ -895,8 +975,90 @@ export default {
 
 .slide-fade-enter-from,
 .slide-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
+  opacit: 0;
+  color: #111827;
+}
+
+.name-display-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.btn-icon-edit {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.btn-icon-edit:hover {
+  background: #f3f4f6;
+  color: #4f46e5;
+}
+
+.name-edit-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.name-edit-input {
+  font-size: 24px;
+  font-weight: 700;
+  padding: 4px 12px;
+  height: auto;
+  max-width: 300px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-save-mini, .btn-cancel-mini {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s;
+}
+
+.btn-save-mini {
+  background: #10b981;
+  color: white;
+}
+
+.btn-save-mini:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn-cancel-mini {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-cancel-mini:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.btn-save-mini:disabled, .btn-cancel-mini:disabled {
+  opacity: 0.5;
+  cursor: not-allowednslateY(-10px);
 }
 
 /* Fő tartalom */

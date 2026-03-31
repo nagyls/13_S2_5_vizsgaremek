@@ -121,21 +121,23 @@
                   <input id="poll-title" v-model="pollForm.title" type="text" maxlength="255" placeholder="Pl. Melyik időpont legyen megfelelő?">
                 </div>
 
-                <div class="poll-field poll-inline-grid">
-                  <label class="poll-checkbox-field">
-                    <input v-model="pollForm.isTimed" type="checkbox" @change="handlePollTimingChange">
-                    <span>Időzített szavazás</span>
-                  </label>
+                <div class="poll-settings-wrapper">
+                  <div class="poll-checkbox-grid">
+                    <label class="poll-checkbox-field">
+                      <input v-model="pollForm.isTimed" type="checkbox" @change="handlePollTimingChange">
+                      <span>Időzített szavazás</span>
+                    </label>
 
-                  <label v-if="pollForm.isTimed">
-                    <span>Lezárás napja</span>
+                    <label class="poll-checkbox-field">
+                      <input v-model="pollForm.hiddenResults" type="checkbox">
+                      <span>Eredmények csak lezárás után látszanak</span>
+                    </label>
+                  </div>
+
+                  <div v-if="pollForm.isTimed" class="poll-field poll-deadline-field">
+                    <label>Lezárás napja</label>
                     <input v-model="pollForm.deadline" type="date">
-                  </label>
-
-                  <label class="poll-checkbox-field">
-                    <input v-model="pollForm.hiddenResults" type="checkbox">
-                    <span>Eredmények csak lezárás után látszanak</span>
-                  </label>
+                  </div>
                 </div>
 
                 <div class="poll-field">
@@ -2480,6 +2482,45 @@ export default {
 .occurrence-manager .occurrence-actions {
   display: grid;
   gap: 0.7rem;
+}
+
+.poll-checkbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.2rem;
+  align-items: center;
+}
+
+.poll-settings-wrapper {
+  background: #f8fafc;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 2rem;
+}
+
+.poll-deadline-field {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+  margin-bottom: 0 !important;
+}
+
+.poll-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #4a5568;
+  user-select: none;
+}
+
+.poll-checkbox-field input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
 }
 
 .answer-button {
