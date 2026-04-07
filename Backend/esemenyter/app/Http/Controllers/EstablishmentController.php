@@ -131,7 +131,7 @@ class EstablishmentController extends Controller
     }
     public function getEstablishmentbyId($id)
     {
-        $establishment = Establishment::where('id', $id)->join('settlements', 'settlements.id', '=', 'establishments.settlement_id')
+        $establishment = Establishment::where('establishments.id', $id)->join('settlements', 'settlements.id', '=', 'establishments.settlement_id')
             ->join('inner_regions', 'inner_regions.id', '=', 'settlements.inner_region_id')
             ->join('regions', 'regions.id', '=', 'inner_regions.region_id')
             ->select(
@@ -142,9 +142,9 @@ class EstablishmentController extends Controller
                 'establishments.email',
                 'establishments.phone',
                 'establishments.address',
-                'settlements.name as settlement_name',
-                'inner_regions.name as inner_region_name',
-                'regions.name as region_name'
+                'settlements.title as settlement_name',
+                'inner_regions.title as inner_region_name',
+                'regions.title as region_name'
             )
             ->first();
 

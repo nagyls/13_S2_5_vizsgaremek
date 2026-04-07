@@ -145,7 +145,7 @@
                   </div>
                   <div class="info-item">
                     <span class="info-label">Járás:</span>
-                    <span class="info-value">{{ user.district + "i" || 'Nincs megadva' }}</span>
+                    <span class="info-value">{{ user.district ? `${user.district}i` : 'Nincs megadva' }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">Város:</span>
@@ -172,7 +172,7 @@
                   </div>
                   <div class="info-item">
                     <span class="info-label">Járás:</span>
-                    <span class="info-value">{{ user.district + "i" || 'Nincs megadva' }}</span>
+                    <span class="info-value">{{ user.district ? `${user.district}i` : 'Nincs megadva' }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">Város:</span>
@@ -207,7 +207,7 @@
                   </div>
                   <div class="info-item">
                     <span class="info-label">Járás:</span>
-                    <span class="info-value">{{ user.district + "i" || 'Nincs megadva' }}</span>
+                    <span class="info-value">{{ user.district ? `${user.district}i` : 'Nincs megadva' }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">Város:</span>
@@ -555,6 +555,7 @@ export default {
           if (currentEstablishment.role) {
             this.user.role = currentEstablishment.role;
           }
+          await this.loadEstablishmentDetails(currentEstablishment.id);
           this.persistStoredUser({
             role: this.user.role,
             school: this.user.school,
@@ -639,6 +640,53 @@ export default {
       }
     },
 
+    async loadEstablishmentDetails(establishmentId) {
+      const numericEstablishmentId = Number(establishmentId);
+      if (!Number.isFinite(numericEstablishmentId) || numericEstablishmentId <= 0) {
+        return;
+      }
+
+      const token = getToken();
+      if (!token) {
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_BASE}/establishment/${numericEstablishmentId}`, {
+          headers: getAuthHeaders(token)
+        });
+
+        const details = response?.data?.data;
+        if (!details) {
+          return;
+        }
+
+        this.user.region = details.region_name || '';
+        this.user.district = details.inner_region_name || '';
+        this.user.city = details.settlement_name || '';
+        this.user.school = details.title || this.user.school;
+        this.user.schoolAddress = details.address || this.user.schoolAddress;
+        this.user.schoolEmail = details.email || this.user.schoolEmail;
+        this.user.schoolPhone = details.phone || this.user.schoolPhone;
+        this.user.schoolWebsite = details.website || this.user.schoolWebsite;
+
+        this.persistStoredUser({
+          region: this.user.region,
+          district: this.user.district,
+          city: this.user.city,
+          school: this.user.school,
+          schoolAddress: this.user.schoolAddress,
+          schoolEmail: this.user.schoolEmail,
+          schoolPhone: this.user.schoolPhone,
+          schoolWebsite: this.user.schoolWebsite,
+          establishment_id: this.user.schoolId,
+          institution_id: this.user.schoolId
+        });
+      } catch (error) {
+        console.error('Hiba az intézmény részleteinek betöltésekor:', error);
+      }
+    },
+
     async switchEstablishment(establishment) {
       if (!establishment || establishment.is_current || this.isSwitchingEstablishment) {
         return;
@@ -690,6 +738,7 @@ export default {
         this.showNotification(response?.data?.message || 'Profil sikeresen átváltva.', 'success');
         this.closeEstablishmentSwitcher();
         await this.loadUserFromBackend();
+        await this.loadEstablishmentDetails(nextSchoolId);
       } catch (error) {
         console.error('Hiba az aktív intézmény váltásakor:', error);
         const message = error?.response?.data?.message || 'Nem sikerült átváltani a kiválasztott profilra.';
