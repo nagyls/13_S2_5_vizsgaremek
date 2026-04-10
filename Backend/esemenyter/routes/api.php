@@ -102,8 +102,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'updateClassTeacher']);
 
     //kérelmek
+    Route::get('/establishment/requests/my-pending', [RequestController::class, 'getMyPendingRequest']);
     Route::get('/establishment/{establishmentId}/requests/students', [RequestController::class, 'getStudentRequests']);
     Route::get('/establishment/{establishmentId}/requests/teachers', [RequestController::class, 'getTeacherRequests']);
+    Route::get('/establishment/{establishmentId}/requests/me', [RequestController::class, 'getMyRequestStatus']);
 
     Route::post('/establishment/requests/create', [RequestController::class, 'submitRequest']);
     Route::patch('/establishment/requests/handle', [RequestController::class, 'handleRequest']);

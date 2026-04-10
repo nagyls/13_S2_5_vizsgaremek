@@ -10,6 +10,72 @@ use App\Models\User;
 
 class RequestController extends Controller
 {
+    public function getMyPendingRequest(Request $request)
+    {
+        $user = $request->user();
+
+        $pendingRequest = EstablishmentRequest::where('user_id', $user->id)
+            ->latest('id')
+            ->first();
+
+        if (!$pendingRequest) {
+            return response()->json([
+                'pending' => false,
+                'request' => null,
+            ]);
+        }
+
+        return response()->json([
+            'pending' => true,
+            'request' => [
+                'id' => $pendingRequest->id,
+                'establishment_id' => $pendingRequest->establishment_id,
+                'role' => $pendingRequest->role,
+                    'status' => $pendingRequest->status,
+                'created_at' => $pendingRequest->created_at,
+            ],
+        ]);
+    }
+
+    public function getMyRequestStatus(Request $request, $establishmentId)
+    {
+        $user = $request->user();
+
+        $hasStaffMembership = Staff::where('user_id', $user->id)
+            ->where('establishment_id', $establishmentId)
+            ->exists();
+
+        $hasStudentMembership = Student::where('user_id', $user->id)
+            ->where('establishment_id', $establishmentId)
+            ->exists();
+
+        if ($hasStaffMembership || $hasStudentMembership) {
+            return response()->json([
+                'status' => 'accepted',
+                'pending' => false,
+            ]);
+        }
+
+        $pendingRequest = EstablishmentRequest::where('user_id', $user->id)
+            ->where('establishment_id', $establishmentId)
+            ->latest('id')
+            ->first();
+
+        if ($pendingRequest) {
+            return response()->json([
+                'status' => $pendingRequest->status,
+                'pending' => $pendingRequest->status === 'pending',
+                'role' => $pendingRequest->role,
+                'request_id' => $pendingRequest->id,
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'none',
+            'pending' => false,
+        ]);
+    }
+
     // Get requestek
 
     public function getStudentRequests(Request $request, $establishmentId)
@@ -63,7 +129,19 @@ class RequestController extends Controller
     {
         $user = $request->user();
 
-        $isRequest = EstablishmentRequest::where('user_id', $user->id)->where('establishment_id', $request->establishment_id)->first();
+        $rejectedRequests = EstablishmentRequest::where('user_id', $user->id)
+            ->where('establishment_id', $request->establishment_id)
+            ->where('status', 'rejected')
+            ->get();
+
+        if ($rejectedRequests->isNotEmpty()) {
+            EstablishmentRequest::whereIn('id', $rejectedRequests->pluck('id')->all())->delete();
+        }
+
+        $isRequest = EstablishmentRequest::where('user_id', $user->id)
+            ->where('establishment_id', $request->establishment_id)
+            ->where('status', 'pending')
+            ->first();
         $isPartofStaff = Staff::where('user_id', $user->id)->where('establishment_id', $request->establishment_id)->first();
         $isPartofStudents = Student::where('user_id', $user->id)->where('establishment_id', $request->establishment_id)->first();
 
@@ -87,6 +165,7 @@ class RequestController extends Controller
             'user_id' => $user->id,
             'establishment_id' => $request->establishment_id,
             'role' => $request->role,
+            'status' => 'pending',
         ]);
         return response()->json(['message' => 'Kérelem benyújtva!'], 201);
     }
@@ -117,6 +196,7 @@ class RequestController extends Controller
         // csak az adott intézményhez tartozó kéréseket dolgozzuk fel
         $requests = EstablishmentRequest::whereIn('id', $validated['request_id'])
             ->where('establishment_id', $validated['establishment_id'])
+            ->where('status', 'pending')
             ->get();
 
 
@@ -150,7 +230,8 @@ class RequestController extends Controller
                     $item->delete();
                 }
             } else { // reject
-                EstablishmentRequest::whereIn('id', $requests->pluck('id')->toArray())->delete();
+                EstablishmentRequest::whereIn('id', $requests->pluck('id')->toArray())
+                    ->update(['status' => 'rejected']);
                 $rejected = count($requests);
             }
         }
@@ -172,7 +253,10 @@ class RequestController extends Controller
     public function revokeRequest(Request $request, $establishmentId)
     {
         $user = $request->user();
-        $establishmentRequest = EstablishmentRequest::where('user_id', $user->id)->where('establishment_id', $establishmentId)->first();
+        $establishmentRequest = EstablishmentRequest::where('user_id', $user->id)
+            ->where('establishment_id', $establishmentId)
+            ->where('status', 'pending')
+            ->first();
         if (!$establishmentRequest) {
             return response()->json(['message' => 'Kérelem nem található!'], 404);
         }

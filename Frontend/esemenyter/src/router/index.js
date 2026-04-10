@@ -15,6 +15,7 @@ import UserDashboard from '@/components/dashboard/UserDashboard.vue'
 import InstitutionManagerDashboard from '@/components/dashboard/InstitutionManagerDashboard.vue'
 import PendingApproval from '@/components/dashboard/PendingApproval.vue'
 import Profile from '@/components/profile/Profile.vue'
+import ApprovalRejected from '@/components/dashboard/ApprovalRejected.vue'
 
 const routes = [
   {
@@ -110,6 +111,12 @@ const routes = [
     meta: { title: 'Függőben lévő jóváhagyások' }
   },
   {
+    path: '/approval-rejected',
+    name: 'approval-rejected',
+    component: ApprovalRejected,
+    meta: { title: 'Elutasított jóváhagyások' }
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: Profile,
@@ -141,11 +148,6 @@ router.beforeEach((to, from, next) => {
   }
 
   const isStudentOrTeacher = role === 'student' || role === 'teacher';
-
-  if (isStudentOrTeacher && to.path === '/pending-approval') {
-    next('/user-dashboard');
-    return;
-  }
 
   const allowRoleChooser = to.path === '/dashboard' && String(to.query?.chooseRole || '') === '1';
 

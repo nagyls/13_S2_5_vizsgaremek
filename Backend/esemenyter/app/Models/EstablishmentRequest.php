@@ -12,6 +12,7 @@ class EstablishmentRequest extends Model
         'user_id',
         'role',
         'establishment_id',
+        'status',
     ];
     const UPDATED_AT = null;
 

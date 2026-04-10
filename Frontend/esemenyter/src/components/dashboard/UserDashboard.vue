@@ -307,11 +307,41 @@ export default {
         });
 
         const backendUser = response.data || {};
-        const hasEstablishedMembership = !!backendUser.establishment_id;
-        const canHavePending = ['student', 'teacher'].includes(this.user.role) && !!this.user.schoolId;
+        const hasEstablishedMembership = Number(backendUser.establishment_id) > 0;
+        if (hasEstablishedMembership) {
+          return;
+        }
 
-        if (canHavePending && !hasEstablishedMembership) {
+        const institutionId = Number(
+          this.user.schoolId ||
+          this.user.institution_id ||
+          localStorage.getItem('CurrentInstitution') ||
+          sessionStorage.getItem('CurrentInstitution')
+        );
+
+        const effectiveRole = this.user.role || this.user.requestedRole || '';
+        const canHaveRequest =
+          ['student', 'teacher'].includes(effectiveRole) &&
+          Number.isFinite(institutionId) &&
+          institutionId > 0;
+        if (!canHaveRequest) {
+          return;
+        }
+
+        const requestStatusResponse = await axios.get(
+          `http://127.0.0.1:8000/api/establishment/${institutionId}/requests/me`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const status = requestStatusResponse?.data?.status || '';
+
+        if (status === 'pending') {
           this.$router.push('/pending-approval');
+          return;
+        }
+
+        if (status === 'rejected') {
+          this.$router.push('/approval-rejected');
         }
       } catch (error) {
         console.error('Hiba a függőben lévő kérelem ellenőrzésekor:', error);
