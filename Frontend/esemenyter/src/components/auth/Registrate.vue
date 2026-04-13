@@ -55,6 +55,26 @@
                 </div>
             </form>
         </div>
+
+        <transition name="modal-fade">
+            <div v-if="showVerificationPopup" class="verification-overlay" role="dialog" aria-modal="true" aria-labelledby="verification-title">
+                <div class="verification-card">
+                    <div class="verification-icon">
+                        <i class='bx bx-envelope-open'></i>
+                    </div>
+                    <h2 id="verification-title">Erősítsd meg az email címed</h2>
+                    <p>
+                        Sikeres volt a regisztráció. Küldtünk egy megerősítő emailt a megadott címre.
+                        Kérjük, nyisd meg és kattints a linkre, hogy aktiváld a fiókodat.
+                    </p>
+                    <div class="verification-actions">
+                        <button type="button" class="verification-button" @click="goToLogin">
+                            Tovább a bejelentkezéshez
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
     </div>
 </template>
 
@@ -78,6 +98,7 @@ export default {
             showPass2: false,
             acceptTerms: false,
             loading: false,
+            showVerificationPopup: false,
             logo2
         };
     },
@@ -140,20 +161,49 @@ export default {
                 clearAuthStorage();
                 localStorage.setItem('pending_verification_email', res.data.user.email);
                 
-                toast.success("Sikeres regisztráció! Kérjük, ellenőrizd az email címedet.");
-                
-                setTimeout(() => {
-                    this.$router.push('/login');
-                }, 2000);
+                this.showVerificationPopup = true;
                 
             } catch (err) {
-                const errorMsg = err.response?.data?.message || 
-                               err.response?.data?.error || 
-                               "Ismeretlen hiba történt";
+                const errorMsg = this.translateRegisterError(err);
                 toast.error("Hiba: " + errorMsg);
             } finally {
                 this.loading = false;
             }
+        },
+
+        goToLogin() {
+            this.showVerificationPopup = false;
+            this.$router.push('/login');
+        },
+
+        translateRegisterError(err) {
+            const rawMessage = err.response?.data?.message || err.response?.data?.error;
+            const validationErrors = err.response?.data?.errors;
+
+            const translations = {
+                'The password field must contain at least one uppercase and one lowercase letter.': 'A jelszónak legalább egy nagybetűt és egy kisbetűt kell tartalmaznia.',
+                'The password field must be at least 6 characters.': 'A jelszónak legalább 6 karakter hosszúnak kell lennie.',
+                'The password confirmation does not match.': 'A jelszavak nem egyeznek.',
+                'The email field must be a valid email address.': 'Kérjük, adj meg érvényes email címet.',
+                'The email has already been taken.': 'Ezzel az email címmel már regisztráltak.',
+                'The username field is required.': 'A név megadása kötelező.',
+                'The email field is required.': 'Az email cím megadása kötelező.',
+                'The password field is required.': 'A jelszó megadása kötelező.'
+            };
+
+            if (validationErrors && typeof validationErrors === 'object') {
+                const firstFieldErrors = Object.values(validationErrors).flat();
+                if (firstFieldErrors.length > 0) {
+                    const firstMessage = firstFieldErrors[0];
+                    return translations[firstMessage] || firstMessage || 'Ismeretlen hiba történt';
+                }
+            }
+
+            if (rawMessage) {
+                return translations[rawMessage] || rawMessage;
+            }
+
+            return 'Ismeretlen hiba történt';
         }
     },
     
@@ -500,6 +550,111 @@ export default {
     width: 100%;
 }
 
+.verification-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(8, 12, 28, 0.42);
+    backdrop-filter: blur(10px);
+    z-index: 20;
+}
+
+.verification-card {
+    width: min(100%, 520px);
+    border-radius: 28px;
+    padding: 34px 30px;
+    color: #102033;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(247, 250, 255, 0.88));
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 30px 80px rgba(6, 18, 40, 0.28);
+    text-align: center;
+    animation: modalPop 0.24s ease-out;
+}
+
+.verification-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #667eea, #7f8cff);
+    color: #fff;
+    box-shadow: 0 16px 32px rgba(102, 126, 234, 0.35);
+}
+
+.verification-icon i {
+    font-size: 34px;
+}
+
+.verification-card h2 {
+    margin: 0 0 12px;
+    font-size: 28px;
+    line-height: 1.2;
+    color: #14213d;
+}
+
+.verification-card p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #4d5b75;
+}
+
+.verification-actions {
+    margin-top: 26px;
+}
+
+.verification-button {
+    appearance: none;
+    border: none;
+    border-radius: 999px;
+    padding: 14px 24px;
+    min-width: 240px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #667eea, #4f6cf7);
+    box-shadow: 0 14px 30px rgba(79, 108, 247, 0.3);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.verification-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 34px rgba(79, 108, 247, 0.36);
+}
+
+.verification-button:focus-visible {
+    outline: 3px solid rgba(79, 108, 247, 0.28);
+    outline-offset: 3px;
+}
+
+@keyframes modalPop {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+    transition: opacity 0.2s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+    opacity: 0;
+}
+
 @media (max-width: 500px) {
     .register-wrapper {
         width: 90%;
@@ -516,6 +671,20 @@ export default {
     
     .terms-text {
         font-size: 13px;
+    }
+
+    .verification-card {
+        padding: 28px 22px;
+        border-radius: 24px;
+    }
+
+    .verification-card h2 {
+        font-size: 24px;
+    }
+
+    .verification-button {
+        width: 100%;
+        min-width: 0;
     }
 }
 
