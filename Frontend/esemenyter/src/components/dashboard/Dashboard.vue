@@ -588,6 +588,27 @@
                     </div>
                   </div>
                   <div class="confirmation-item">
+                    <i class='bx bx-map'></i>
+                    <div>
+                      <h5>Régió</h5>
+                      <p>{{ teacherSelectedRegion?.title }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-map-alt'></i>
+                    <div>
+                      <h5>Járás</h5>
+                      <p>{{ teacherSelectedDistrict?.title }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-city'></i>
+                    <div>
+                      <h5>Város</h5>
+                      <p>{{ teacherSelectedCity?.title }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
                     <i class='bx bx-school'></i>
                     <div>
                       <h5>Iskola</h5>
@@ -1161,8 +1182,7 @@ export default {
     teacherSelectedSchool() {
       return this.teacherSchools.find(s => s.id === this.teacherSelectedSchoolId);
     },
-    
-    // Admin kiválasztott elemek
+
     adminSelectedRegion() {
       return this.regions.find(r => r.id === this.adminSelectedRegionId);
     },

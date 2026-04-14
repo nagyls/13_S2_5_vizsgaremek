@@ -17,7 +17,7 @@
 
         <template v-else>
           <div class="input-box">
-            <input v-model="email" type="email" placeholder="Email cím" required>
+            <input v-model="email" type="email" placeholder="Email cím" required readonly class="email-input">
             <i class='bx bx-envelope'></i>
           </div>
 
@@ -142,15 +142,17 @@ export default {
 }
 
 .reset-password-wrapper {
-  width: 460px;
+  width: 440px;
   max-width: calc(100vw - 32px);
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
   color: #fff;
   border-radius: 20px;
   padding: 40px;
+  animation: slideUp 0.6s ease-out;
 }
 
 .reset-password-form {
@@ -162,15 +164,24 @@ export default {
 .logo-icon {
   display: flex;
   justify-content: center;
+  align-items: center;
   cursor: pointer;
+  margin-bottom: 18px;
 }
 
 .logo-image {
-  width: 110px;
+  max-width: 120px;
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
 }
 
 h1 {
   text-align: center;
+  font-size: 32px;
+  margin-bottom: 10px;
+  font-weight: 600;
 }
 
 .intro-text {
@@ -182,23 +193,41 @@ h1 {
 .input-box {
   position: relative;
   width: 100%;
-  height: 50px;
 }
 
 .input-box input {
   width: 100%;
-  height: 100%;
-  background: transparent;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  height: 55px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
   outline: none;
-  border-radius: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 30px;
   font-size: 16px;
   color: #fff;
-  padding: 20px 45px 20px 20px;
+  padding: 0 45px 0 20px;
+  transition: all 0.3s ease;
 }
 
 .input-box input::placeholder {
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.input-box input:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #fff;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+.email-input {
+  cursor: not-allowed;
+  opacity: 0.92;
+}
+
+.email-input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: none;
 }
 
 .input-box i {
@@ -208,19 +237,51 @@ h1 {
   transform: translateY(-50%);
   font-size: 20px;
   cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  transition: color 0.3s ease;
+}
+
+.input-box input:focus + i {
+  color: #fff;
 }
 
 .btn {
+  position: relative;
   width: 100%;
-  height: 45px;
+  height: 50px;
   border: none;
   outline: none;
-  border-radius: 40px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+  border-radius: 30px;
+  background: #fff;
   cursor: pointer;
   font-size: 16px;
-  color: #333;
-  font-weight: 700;
+  color: #667eea;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(102, 126, 234, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover:not(:disabled)::before {
+  width: 300px;
+  height: 300px;
 }
 
 .btn:disabled {
@@ -252,5 +313,34 @@ h1 {
 .register-link a {
   color: #fff;
   font-weight: 700;
+  text-decoration: none;
+}
+
+.register-link a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 520px) {
+  .reset-password-wrapper {
+    width: 100%;
+    padding: 30px 20px;
+    border-radius: 20px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  .intro-text {
+    font-size: 14px;
+  }
+
+  .logo-image {
+    max-width: 110px;
+  }
+
+  .input-box input {
+    height: 50px;
+  }
 }
 </style>

@@ -260,6 +260,48 @@ export default {
   },
 
   methods: {
+    updateStoredUserState(updates) {
+      const storages = [localStorage, sessionStorage];
+
+      storages.forEach(storage => {
+        const savedUserRaw = storage.getItem('esemenyter_user');
+        if (!savedUserRaw) {
+          return;
+        }
+
+        try {
+          const savedUser = JSON.parse(savedUserRaw);
+          Object.assign(savedUser, updates);
+          storage.setItem('esemenyter_user', JSON.stringify(savedUser));
+        } catch (error) {
+          // Hibás storage érték esetén ne álljon le az oldal.
+        }
+      });
+    },
+
+    resetMembershipAndRedirectToDashboard() {
+      this.user = {
+        ...this.user,
+        role: '',
+        institution_id: null,
+        schoolId: null,
+        school: ''
+      };
+
+      this.updateStoredUserState({
+        role: '',
+        requestedRole: '',
+        pendingApproval: false,
+        institution_id: null,
+        schoolId: null,
+        school: ''
+      });
+
+      localStorage.removeItem('CurrentInstitution');
+      sessionStorage.removeItem('CurrentInstitution');
+      this.$router.replace('/dashboard');
+    },
+
     loadUserData() {
       const savedUser =
         localStorage.getItem('esemenyter_user') ||
@@ -312,6 +354,12 @@ export default {
           return;
         }
 
+        // Ha az intézményi tagság megszűnt, a helyi role/státusz is törlendő.
+        if (this.user.role === 'student' || this.user.role === 'teacher') {
+          this.resetMembershipAndRedirectToDashboard();
+          return;
+        }
+
         const institutionId = Number(
           this.user.schoolId ||
           this.user.institution_id ||
@@ -325,6 +373,7 @@ export default {
           Number.isFinite(institutionId) &&
           institutionId > 0;
         if (!canHaveRequest) {
+          this.resetMembershipAndRedirectToDashboard();
           return;
         }
 
@@ -342,6 +391,11 @@ export default {
 
         if (status === 'rejected') {
           this.$router.push('/approval-rejected');
+          return;
+        }
+
+        if (status === 'none' || status === '') {
+          this.resetMembershipAndRedirectToDashboard();
         }
       } catch (error) {
         console.error('Hiba a függőben lévő kérelem ellenőrzésekor:', error);

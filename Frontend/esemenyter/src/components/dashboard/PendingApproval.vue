@@ -182,7 +182,7 @@ export default {
       return null;
     },
 
-    updateStoredPendingState(nextPendingApproval) {
+    updateStoredUserState(updates) {
       const storages = [localStorage, sessionStorage];
 
       storages.forEach(storage => {
@@ -193,12 +193,38 @@ export default {
 
         try {
           const savedUser = JSON.parse(savedUserRaw);
-          savedUser.pendingApproval = Boolean(nextPendingApproval);
+          Object.assign(savedUser, updates);
           storage.setItem('esemenyter_user', JSON.stringify(savedUser));
         } catch (error) {
           // Hibás storage érték esetén ne álljon le az oldal.
         }
       });
+    },
+
+    updateStoredPendingState(nextPendingApproval) {
+      this.updateStoredUserState({
+        pendingApproval: Boolean(nextPendingApproval)
+      });
+    },
+
+    async resolveApprovedRole(institutionId, token) {
+      if (!institutionId || !token) {
+        return '';
+      }
+
+      try {
+        const roleResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/role`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json'
+          }
+        });
+
+        return roleResponse?.data?.role || '';
+      } catch (error) {
+        console.error('Hiba a jóváhagyott szerepkör lekérésekor:', error);
+        return '';
+      }
     },
 
     async checkRequestStatus() {
@@ -220,19 +246,37 @@ export default {
         const status = response?.data?.status || '';
 
         if (status === 'accepted') {
-          this.updateStoredPendingState(false);
+          const approvedRole = await this.resolveApprovedRole(institutionId, token);
+          const nextRole = approvedRole || this.user.role || this.user.requestedRole || '';
+
+          this.user.role = nextRole;
+          this.user.pendingApproval = false;
+          this.user.requestedRole = '';
+
+          this.updateStoredUserState({
+            pendingApproval: false,
+            role: nextRole,
+            requestedRole: ''
+          });
+
           this.$router.replace('/user-dashboard');
           return;
         }
 
         if (status === 'rejected') {
-          this.updateStoredPendingState(false);
+          this.updateStoredUserState({
+            pendingApproval: false,
+            requestedRole: ''
+          });
           this.$router.replace('/approval-rejected');
           return;
         }
 
         if (status === 'none') {
-          this.updateStoredPendingState(false);
+          this.updateStoredUserState({
+            pendingApproval: false,
+            requestedRole: ''
+          });
           this.$router.replace('/dashboard');
         }
       } catch (error) {

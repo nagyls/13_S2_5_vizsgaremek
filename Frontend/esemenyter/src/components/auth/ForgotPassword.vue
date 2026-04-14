@@ -95,11 +95,13 @@ export default {
   max-width: calc(100vw - 32px);
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
   color: #fff;
   border-radius: 20px;
   padding: 40px;
+  animation: slideUp 0.6s ease-out;
 }
 
 .forgot-password-form {
@@ -111,15 +113,24 @@ export default {
 .logo-icon {
   display: flex;
   justify-content: center;
+  align-items: center;
+  margin-bottom: 18px;
   cursor: pointer;
 }
 
 .logo-image {
-  width: 110px;
+  max-width: 120px;
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
 }
 
 h1 {
   text-align: center;
+  font-size: 32px;
+  margin-bottom: 10px;
+  font-weight: 600;
 }
 
 .intro-text {
@@ -131,23 +142,32 @@ h1 {
 .input-box {
   position: relative;
   width: 100%;
-  height: 50px;
+  height: 55px;
+  margin: 5px 0;
 }
 
 .input-box input {
   width: 100%;
   height: 100%;
-  background: transparent;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
   outline: none;
-  border-radius: 40px;
-  font-size: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 30px;
+  padding: 0 45px 0 20px;
   color: #fff;
-  padding: 20px 45px 20px 20px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.input-box input:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #fff;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
 }
 
 .input-box input::placeholder {
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .input-box i {
@@ -156,19 +176,52 @@ h1 {
   top: 50%;
   transform: translateY(-50%);
   font-size: 20px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  transition: color 0.3s ease;
+}
+
+.input-box input:focus + i {
+  color: #fff;
 }
 
 .btn {
+  position: relative;
   width: 100%;
-  height: 45px;
+  height: 50px;
+  background: #fff;
   border: none;
   outline: none;
-  border-radius: 40px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+  border-radius: 30px;
   cursor: pointer;
   font-size: 16px;
-  color: #333;
-  font-weight: 700;
+  color: #667eea;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(102, 126, 234, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.btn:hover:not(:disabled)::before {
+  width: 300px;
+  height: 300px;
 }
 
 .btn:disabled {
@@ -187,13 +240,66 @@ h1 {
   border: 1px solid rgba(134, 239, 172, 0.45);
 }
 
+.status-box.error {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(252, 165, 165, 0.45);
+}
+
 .register-link {
   font-size: 14.5px;
   text-align: center;
+  margin-top: 4px;
 }
 
 .register-link a {
   color: #fff;
-  font-weight: 700;
+  text-decoration: none;
+  font-weight: 600;
+  position: relative;
+}
+
+.register-link a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #fff;
+  transition: width 0.3s ease;
+}
+
+.register-link a:hover::after {
+  width: 100%;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .forgot-password-wrapper {
+    width: 90%;
+    padding: 30px 20px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  .input-box {
+    height: 50px;
+  }
+
+  .logo-image {
+    max-width: 110px;
+  }
 }
 </style>
