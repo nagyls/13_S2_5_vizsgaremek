@@ -3,7 +3,7 @@
     <div class="container">
       <!-- Navigáció -->
       <div class="navigation">
-        <button class="btn-back" @click="$router.push('/user-dashboard')">
+        <button class="btn-back" @click="$router.back()">
           <i class='bx bx-arrow-back'></i>
           <span><-- Vissza</span>
         </button>
@@ -26,7 +26,7 @@
         <h3>Hiba történt</h3>
         <p class="error-message">{{ errorMessage }}</p>
         <div class="error-actions">
-          <button @click="$router.push('/user-dashboard')" class="btn btn-secondary">
+          <button @click="$router.back()" class="btn btn-secondary">
             <i class='bx bx-arrow-back'></i> Vissza
           </button>
           <button @click="$router.push('/esemenyek')" class="btn btn-primary">
@@ -446,19 +446,37 @@
               <div class="occurrence-form-grid">
                 <label>
                   Kezdés dátuma
-                  <input type="date" v-model="occurrenceForm.startDate" @input="updateOccurrenceStartDateTime">
+                  <input type="date" v-model="occurrenceForm.startDate" @input="updateOccurrenceStartDateTime" @change="updateOccurrenceStartDateTime">
                 </label>
                 <label>
                   Kezdés időpontja
-                  <input type="time" v-model="occurrenceForm.startTime" @input="updateOccurrenceStartDateTime">
+                  <input
+                    :type="isFirefoxBrowser ? 'text' : 'time'"
+                    v-model="occurrenceForm.startTime"
+                    inputmode="numeric"
+                    placeholder="HH:MM"
+                    pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                    @input="updateOccurrenceStartDateTime"
+                    @change="updateOccurrenceStartDateTime"
+                    @blur="normalizeOccurrenceTime('startTime', updateOccurrenceStartDateTime)"
+                  >
                 </label>
                 <label>
                   Befejezés dátuma
-                  <input type="date" v-model="occurrenceForm.endDate" @input="updateOccurrenceEndDateTime">
+                  <input type="date" v-model="occurrenceForm.endDate" @input="updateOccurrenceEndDateTime" @change="updateOccurrenceEndDateTime">
                 </label>
                 <label>
                   Befejezés időpontja
-                  <input type="time" v-model="occurrenceForm.endTime" @input="updateOccurrenceEndDateTime">
+                  <input
+                    :type="isFirefoxBrowser ? 'text' : 'time'"
+                    v-model="occurrenceForm.endTime"
+                    inputmode="numeric"
+                    placeholder="HH:MM"
+                    pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                    @input="updateOccurrenceEndDateTime"
+                    @change="updateOccurrenceEndDateTime"
+                    @blur="normalizeOccurrenceTime('endTime', updateOccurrenceEndDateTime)"
+                  >
                 </label>
               </div>
 
@@ -537,6 +555,7 @@ export default {
       },
       isTogglingChat: false,
       isUpdatingOccurrence: false,
+      isFirefoxBrowser: false,
       occurrenceForm: {
         startDate: '',
         startTime: '',
@@ -549,6 +568,7 @@ export default {
   },
   
   async created() {
+    this.isFirefoxBrowser = typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent || '')
     await this.loadCurrentUser()
     await this.loadEvent()
   },
@@ -1410,10 +1430,54 @@ export default {
     },
 
     combineDateAndTime(date, time) {
-      if (!date || !time) {
+      const normalizedTime = this.normalizeTimeValue(time)
+
+      if (!date || !normalizedTime) {
         return ''
       }
-      return `${date}T${time}`
+      return `${date}T${normalizedTime}`
+    },
+
+    normalizeTimeValue(timeValue) {
+      if (!timeValue) {
+        return ''
+      }
+
+      const raw = String(timeValue).trim().replace(/\./g, ':')
+      if (raw === '') {
+        return ''
+      }
+
+      let hours
+      let minutes
+
+      const compactMatch = raw.match(/^(\d{1,2})(\d{2})$/)
+      if (compactMatch) {
+        hours = Number(compactMatch[1])
+        minutes = Number(compactMatch[2])
+      } else {
+        const separatedMatch = raw.match(/^(\d{1,2}):(\d{1,2})$/)
+        if (!separatedMatch) {
+          return ''
+        }
+        hours = Number(separatedMatch[1])
+        minutes = Number(separatedMatch[2])
+      }
+
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        return ''
+      }
+
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+    },
+
+    normalizeOccurrenceTime(fieldName, afterNormalize) {
+      const normalized = this.normalizeTimeValue(this.occurrenceForm[fieldName])
+      this.occurrenceForm[fieldName] = normalized
+
+      if (typeof afterNormalize === 'function') {
+        afterNormalize.call(this)
+      }
     },
 
     updateOccurrenceStartDateTime() {
