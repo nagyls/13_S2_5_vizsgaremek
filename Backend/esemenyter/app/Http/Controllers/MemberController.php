@@ -29,7 +29,7 @@ class MemberController extends Controller
         }
         $staff = User::join('staffs', 'users.id', '=', 'staffs.user_id')
             ->where('staffs.establishment_id', $establishmentId)
-            ->select('users.*')
+            ->select('users.id', 'users.name', 'users.email', 'staffs.alias', 'staffs.created_at', 'staffs.updated_at')
             ->distinct()
             ->get();
 
@@ -228,11 +228,120 @@ class MemberController extends Controller
             ->pluck('user_id')
             ->toArray();
 
-        ClassStudent::whereIn('user_id', $userIds)
+        $classIdsInEstablishment = ClassModel::where('establishment_id', $establishmentId)
+            ->pluck('id')
+            ->toArray();
+
+        if (!empty($classIdsInEstablishment)) {
+            ClassStudent::whereIn('class_id', $classIdsInEstablishment)
+                ->whereIn('user_id', $userIds)
+                ->delete();
+        }
+
+        if (!empty($userIds)) {
+            EventShown::where('establishment_id', $establishmentId)
+                ->whereIn('user_id', $userIds)
+                ->delete();
+        }
+
+        Student::whereIn('id', $validStudentsIds)
+            ->where('establishment_id', $establishmentId)
             ->delete();
 
+        $this->changeUsersCurrentEstablishmentAfterRemoval($userIds, $establishmentId);
+
         return response()->json([
-            'message' => 'Diák(ok) eltávolítva az osztályból!'
+            'message' => 'Diák(ok) eltávolítva az intézményből!'
+        ]);
+    }
+
+    public function removeStaff(Request $request)
+    {
+        $authUser = $request->user();
+
+        $validated = $request->validate([
+            'establishment_id' => 'required|integer|exists:establishments,id',
+            'user_id' => 'required|array|min:1',
+            'user_id.*' => 'integer|exists:users,id',
+        ], [
+            'establishment_id.required' => 'Az intézmény azonosító megadása kötelező.',
+            'establishment_id.integer' => 'Az intézmény azonosítónak egész számnak kell lennie.',
+            'establishment_id.exists' => 'Intézmény nem található!',
+            'user_id.required' => 'Legalább egy felhasználót meg kell adni.',
+            'user_id.array' => 'A user_id mezőnek tömbnek kell lennie.',
+            'user_id.min' => 'Legalább egy felhasználót meg kell adni.',
+            'user_id.*.integer' => 'A user_id elemeinek egész számnak kell lennie.',
+            'user_id.*.exists' => 'A megadott felhasználó nem található.',
+        ]);
+
+        $establishmentId = (int) $validated['establishment_id'];
+
+        if (!$this->isAdminEstablishment($authUser->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
+
+        $targetUserIds = collect($validated['user_id'])
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if (in_array((int) $authUser->id, $targetUserIds, true)) {
+            return response()->json([
+                'message' => 'Saját felhasználódat nem tudod eltávolítani az intézményből.'
+            ], 422);
+        }
+
+        $staffRows = Staff::where('establishment_id', $establishmentId)
+            ->whereIn('user_id', $targetUserIds)
+            ->get(['id', 'user_id', 'role']);
+
+        $foundUserIds = $staffRows
+            ->pluck('user_id')
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->toArray();
+
+        if (count($foundUserIds) !== count($targetUserIds)) {
+            $invalidIds = array_values(array_diff($targetUserIds, $foundUserIds));
+            return response()->json([
+                'message' => 'Egy vagy több felhasználó nem tanár ebben az intézményben.',
+                'invalid_user_ids' => $invalidIds,
+            ], 400);
+        }
+
+        $adminUserIds = $staffRows
+            ->where('role', 'admin')
+            ->pluck('user_id')
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->values()
+            ->toArray();
+
+        if (!empty($adminUserIds)) {
+            return response()->json([
+                'message' => 'Admin jogosultságú tag nem távolítható el ezzel a művelettel.',
+                'admin_user_ids' => $adminUserIds,
+            ], 422);
+        }
+
+        ClassModel::where('establishment_id', $establishmentId)
+            ->whereIn('user_id', $targetUserIds)
+            ->update(['user_id' => null]);
+
+        Staff::where('establishment_id', $establishmentId)
+            ->whereIn('user_id', $targetUserIds)
+            ->delete();
+
+        $this->changeUsersCurrentEstablishmentAfterRemoval($targetUserIds, $establishmentId);
+
+        return response()->json([
+            'message' => 'Tanár(ok) eltávolítva az intézményből.',
+            'removed_user_ids' => $targetUserIds,
         ]);
     }
 
@@ -333,6 +442,44 @@ class MemberController extends Controller
         return response()->json(['message' => 'Osztály tagság frissítve']);
     }
 
+    private function changeUsersCurrentEstablishmentAfterRemoval(array $userIds, int $removedEstablishmentId): void
+    {
+        $normalizedUserIds = collect($userIds)
+            ->map(function ($id) {
+                return $id;
+            })
+            ->filter(function ($id) {
+                return $id > 0;
+            })
+            ->unique()
+            ->values();
+
+        if ($normalizedUserIds->isEmpty()) {
+            return;
+        }
+
+        $usersToSync = User::whereIn('id', $normalizedUserIds->all())
+            ->where('establishment_id', $removedEstablishmentId)
+            ->get(['id', 'establishment_id']);
+
+        foreach ($usersToSync as $targetUser) {
+            $nextStaffEstablishmentId = Staff::where('user_id', $targetUser->id)
+                ->where('establishment_id', '!=', $removedEstablishmentId)
+                ->orderBy('establishment_id')
+                ->value('establishment_id');
+
+            $nextStudentEstablishmentId = Student::where('user_id', $targetUser->id)
+                ->where('establishment_id', '!=', $removedEstablishmentId)
+                ->orderBy('establishment_id')
+                ->value('establishment_id');
+
+            $nextEstablishmentId = $nextStaffEstablishmentId ?? $nextStudentEstablishmentId;
+
+            $targetUser->establishment_id = $nextEstablishmentId ? $nextEstablishmentId : null;
+            $targetUser->save();
+        }
+    }
+
     private function retroactiveEventShow(int $establishmentId, int $classId, array $userIds): void
     {
         $class = ClassModel::find($classId);
@@ -377,9 +524,9 @@ class MemberController extends Controller
         foreach ($targetedEventIds as $eventId) {
             foreach ($normalizedUserIds as $userId) {
                 EventShown::firstOrCreate([
-                    'event_id' => (int) $eventId,
-                    'user_id' => (int) $userId,
-                    'establishment_id' => (int) $establishmentId,
+                    'event_id' => $eventId,
+                    'user_id' => $userId,
+                    'establishment_id' => $establishmentId,
                 ]);
             }
         }

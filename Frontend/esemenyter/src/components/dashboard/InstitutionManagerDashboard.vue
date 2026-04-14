@@ -180,6 +180,17 @@
               Csatlakozási kérelmek
             </h3>
             <div class="header-actions">
+              <label class="join-request-toggle" for="join-request-availability">
+                <span class="join-request-toggle-label">Új kérelmek fogadása</span>
+                <input
+                  id="join-request-availability"
+                  type="checkbox"
+                  :checked="acceptsJoinRequests"
+                  :disabled="isUpdatingJoinRequestAvailability"
+                  @change="handleJoinRequestAvailabilityToggle"
+                />
+                <span class="join-request-toggle-track"></span>
+              </label>
               <div class="search-wrapper">
                 <i class='bx bx-search'></i>
                 <input 
@@ -264,7 +275,7 @@
                     <span>{{ getUserInitials(request.user) }}</span>
                   </div>
                   <div class="user-info">
-                    <h4>{{ request.user.name }}</h4>
+                    <h4>{{ getDisplayName(request.user) }}</h4>
                     <p class="user-email">{{ request.user.email }}</p>
                   </div>
                 </div>
@@ -326,7 +337,7 @@
                     <span>{{ getUserInitials(request.user) }}</span>
                   </div>
                   <div class="user-info">
-                    <h4>{{ request.user.name }}</h4>
+                    <h4>{{ getDisplayName(request.user) }}</h4>
                     <p class="user-email">{{ request.user.email }}</p>
                   </div>
                 </div>
@@ -437,7 +448,7 @@
                     :key="teacher.id" 
                     :value="teacher.id"
                   >
-                    {{ teacher.name }}
+                    {{ getDisplayName(teacher) }}
                   </option>
                 </select>
               </div>
@@ -535,7 +546,7 @@
                   <span>{{ getUserInitials(student) }}</span>
                 </div>
                 <div class="user-card-info">
-                  <h4>{{ student.name }}</h4>
+                  <h4>{{ getDisplayName(student) }}</h4>
                   <p class="user-email">{{ student.email }}</p>
                 </div>
               </div>
@@ -548,6 +559,14 @@
               <div class="user-card-actions">
                 <button class="btn-icon" @click="editUserClass(student)" title="Osztály módosítása">
                   <i class='bx bx-edit'></i>
+                </button>
+                <button
+                  class="btn-icon btn-danger"
+                  @click="removeStudentFromInstitution(student)"
+                  :disabled="removingStudentIds.includes(Number(student.id))"
+                  title="Diák eltávolítása az intézményből"
+                >
+                  <i class='bx bx-user-minus'></i>
                 </button>
               </div>
             </div>
@@ -565,7 +584,7 @@
                   <span>{{ getUserInitials(teacher) }}</span>
                 </div>
                 <div class="user-card-info">
-                  <h4>{{ teacher.name }}</h4>
+                  <h4>{{ getDisplayName(teacher) }}</h4>
                   <p class="user-email">{{ teacher.email }}</p>
                 </div>
               </div>
@@ -578,6 +597,14 @@
               <div class="user-card-actions">
                 <button class="btn-icon" @click="editTeacherClasses(teacher)" title="Osztályok módosítása">
                   <i class='bx bx-edit'></i>
+                </button>
+                <button
+                  class="btn-icon btn-danger"
+                  @click="removeTeacherFromInstitution(teacher)"
+                  :disabled="removingTeacherIds.includes(Number(teacher.id))"
+                  title="Tanár eltávolítása az intézményből"
+                >
+                  <i class='bx bx-user-minus'></i>
                 </button>
               </div>
             </div>
@@ -606,7 +633,7 @@
                 <span>{{ getUserInitials(selectedRequest?.user) }}</span>
               </div>
               <div class="user-summary-info">
-                <h4>{{ selectedRequest?.user.name }}</h4>
+                <h4>{{ getDisplayName(selectedRequest?.user) }}</h4>
                 <p>{{ selectedRequest?.user.email }}</p>
                 <div class="role-badge-small">
                   {{ selectedRequest?.role === 'student' ? 'Diák' : 'Tanár' }}
@@ -919,7 +946,7 @@
                 <select v-model="classEditNewTeacherId" class="form-select" :disabled="classEditIsUpdatingTeacher">
                   <option value="">-- Válassz tanárt --</option>
                   <option v-for="t in teachers" :key="t.id" :value="String(t.id)">
-                    {{ t.name }}
+                    {{ getDisplayName(t) }}
                   </option>
                 </select>
                 <button
@@ -954,10 +981,10 @@
               <div v-else class="class-members-list">
                 <div v-for="member in classEditMembers" :key="member.id" class="class-member-row">
                   <div class="member-info">
-                    <div class="member-avatar">{{ (member.name || '?').charAt(0).toUpperCase() }}</div>
+                    <div class="member-avatar">{{ (getDisplayName(member) || '?').charAt(0).toUpperCase() }}</div>
                     <div class="member-text">
-                      <span class="member-name">{{ member.name }}</span>
-                      <span v-if="member.alias" class="member-alias">{{ member.alias }}</span>
+                      <span class="member-name">{{ getDisplayName(member) }}</span>
+                      <span v-if="member.alias && member.name && member.alias !== member.name" class="member-alias">Felhasználónév: {{ member.name }}</span>
                     </div>
                   </div>
                   <button
@@ -990,7 +1017,7 @@
                       :key="s.student_id"
                       :value="s.student_id"
                     >
-                      {{ s.name }}{{ s.alias ? ` (${s.alias})` : '' }}
+                      {{ getDisplayName(s) }}{{ s.alias && s.name && s.alias !== s.name ? ` (${s.name})` : '' }}
                     </option>
                   </select>
                   <button
@@ -1084,6 +1111,8 @@ export default {
       
       // Keresés
       searchQuery: '',
+      acceptsJoinRequests: true,
+      isUpdatingJoinRequestAvailability: false,
 
       selectedRequestIds: [],
       isBulkProcessingRequests: false,
@@ -1133,7 +1162,9 @@ export default {
       classEditAddStudentIds: [],
       classEditIsAddingStudents: false,
       classEditRemovingStudentId: null,
-      classEditError: ''
+      classEditError: '',
+      removingStudentIds: [],
+      removingTeacherIds: []
     };
   },
   
@@ -1188,7 +1219,9 @@ export default {
       const query = this.searchQuery.toLowerCase();
       return this.pendingStudentRequests.filter(request => {
         const user = request.user || this.getUserById(request.user_id);
+        const alias = (user?.alias || request?.alias || '').toLowerCase();
         return user && (
+          alias.includes(query) ||
           (user.name || '').toLowerCase().includes(query) ||
           (user.email || '').toLowerCase().includes(query)
         );
@@ -1202,7 +1235,9 @@ export default {
       const query = this.searchQuery.toLowerCase();
       return this.pendingTeacherRequests.filter(request => {
         const user = request.user || this.getUserById(request.user_id);
+        const alias = (user?.alias || request?.alias || '').toLowerCase();
         return user && (
+          alias.includes(query) ||
           (user.name || '').toLowerCase().includes(query) ||
           (user.email || '').toLowerCase().includes(query)
         );
@@ -1243,13 +1278,23 @@ export default {
     
     // Felhasználó kezdőbetűi
     getUserInitials(user) {
-      if (!user || !user.name) return '?';
-      return user.name
+      const displayName = this.getDisplayName(user);
+      if (!displayName) return '?';
+      return displayName
         .split(' ')
         .map(word => word[0])
         .join('')
         .toUpperCase()
         .substring(0, 2);
+    },
+
+    getDisplayName(user) {
+      const alias = (user?.alias || '').toString().trim();
+      if (alias !== '') {
+        return alias;
+      }
+
+      return (user?.name || '').toString().trim();
     },
     
     // Dátum formázás
@@ -1432,6 +1477,48 @@ export default {
 
       return { success: true, processedCount: requestIds.length };
     },
+
+    handleJoinRequestAvailabilityToggle(event) {
+      const nextValue = Boolean(event?.target?.checked);
+      this.updateJoinRequestAvailability(nextValue);
+    },
+
+    async updateJoinRequestAvailability(nextValue) {
+      try {
+        const token =
+          localStorage.getItem('esemenyter_token') ||
+          sessionStorage.getItem('esemenyter_token');
+        const institutionId = Number(this.user?.institution_id);
+
+        if (!token || !institutionId) {
+          this.showNotification('Hiányzó hitelesítés vagy intézmény azonosító.', 'error');
+          return;
+        }
+
+        this.isUpdatingJoinRequestAvailability = true;
+
+        const response = await axios.patch(
+          `http://127.0.0.1:8000/api/establishment/${institutionId}/join-requests/availability`,
+          { accepts_join_requests: nextValue },
+          {
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+          }
+        );
+
+        this.acceptsJoinRequests = Boolean(response?.data?.accepts_join_requests);
+        this.showNotification(
+          response?.data?.message || 'A csatlakozási kérelmek fogadása sikeresen frissítve.',
+          'success'
+        );
+      } catch (error) {
+        this.showNotification(
+          error?.response?.data?.message || 'Nem sikerült frissíteni a csatlakozási kérelmek fogadását.',
+          'error'
+        );
+      } finally {
+        this.isUpdatingJoinRequestAvailability = false;
+      }
+    },
     
     // Adatok betöltése
     async loadInstitutionData() {
@@ -1462,6 +1549,15 @@ export default {
           type: institutionData.type || ''
         };
 
+        const joinRequestAvailabilityResponse = await axios.get(
+          `http://127.0.0.1:8000/api/establishment/${institutionId}/join-requests/availability`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        this.acceptsJoinRequests = Boolean(joinRequestAvailabilityResponse?.data?.accepts_join_requests);
+
         // Kérelmek betöltése a létező végpontokról (diák + tanár)
         const [studentRequestsResponse, teacherRequestsResponse] = await Promise.all([
           axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/requests/students`, {
@@ -1486,15 +1582,18 @@ export default {
           const resolvedUserId = request.user_id ?? request.user?.id ?? null;
           const resolvedName = (request.user?.name || request.name || '').toString().trim();
           const resolvedEmail = (request.user?.email || request.email || '').toString().trim();
+          const resolvedAlias = (request.user?.alias || request.alias || '').toString().trim();
 
           return {
             ...request,
             id: resolvedRequestId,
             user_id: resolvedUserId,
+            alias: resolvedAlias,
             user: request.user || {
               id: resolvedUserId,
               name: resolvedName || `Felhasználó #${resolvedUserId ?? '?'}`,
-              email: resolvedEmail
+              email: resolvedEmail,
+              alias: resolvedAlias,
             }
           };
         });
@@ -1996,6 +2095,7 @@ export default {
           { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
         );
         this.classEditAddStudentIds = [];
+        await this.loadClasses(establishmentId);
         await this.loadClassEditMembers();
         await this.loadStudentClassAssignments(establishmentId);
         this.updateStats();
@@ -2029,6 +2129,7 @@ export default {
           },
           { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
         );
+        await this.loadClasses(establishmentId);
         this.classEditMembers = this.classEditMembers.filter(m => Number(m.id) !== Number(member.id));
         await this.loadStudentClassAssignments(establishmentId);
         this.updateStats();
@@ -2414,6 +2515,47 @@ export default {
         this.isUpdatingStudentClass = false;
       }
     },
+
+    async removeStudentFromInstitution(student) {
+      const studentUserId = Number(student?.id);
+      const studentRecordId = Number(student?.student_id);
+      const establishmentId = Number(this.user?.institution_id);
+
+      if (!studentUserId || !studentRecordId || !establishmentId) {
+        this.showNotification('Hiányzó diák vagy intézmény azonosító.', 'error');
+        return;
+      }
+
+      const isConfirmed = await this.askForConfirmation(`Biztosan eltávolítod ${this.getDisplayName(student)} diákot az intézményből?`);
+      if (!isConfirmed) {
+        return;
+      }
+
+      const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token');
+
+      this.removingStudentIds = [...this.removingStudentIds, studentUserId];
+
+      try {
+        await axios.patch('http://127.0.0.1:8000/api/establishment/members/remove-students', {
+          establishment_id: establishmentId,
+          student_id: [studentRecordId]
+        }, {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        });
+
+        await this.loadInstitutionUsers(establishmentId);
+        await this.loadClasses(establishmentId);
+        await this.loadStudentClassAssignments(establishmentId);
+        this.updateStats();
+
+        this.showNotification('Diák sikeresen eltávolítva az intézményből.', 'success');
+      } catch (error) {
+        const message = error?.response?.data?.message || error?.response?.data?.errors || 'Nem sikerült eltávolítani a diákot.';
+        this.showNotification(typeof message === 'string' ? message : 'Nem sikerült eltávolítani a diákot.', 'error');
+      } finally {
+        this.removingStudentIds = this.removingStudentIds.filter(id => id !== studentUserId);
+      }
+    },
     
     async editTeacherClasses(teacher) {
       try {
@@ -2501,6 +2643,51 @@ export default {
         this.showNotification('Nem sikerült menteni a tanár osztályát.', 'error');
       } finally {
         this.isUpdatingTeacherClass = false;
+      }
+    },
+
+    async removeTeacherFromInstitution(teacher) {
+      const teacherUserId = Number(teacher?.id);
+      const establishmentId = Number(this.user?.institution_id);
+
+      if (!teacherUserId || !establishmentId) {
+        this.showNotification('Hiányzó tanár vagy intézmény azonosító.', 'error');
+        return;
+      }
+
+      if (teacherUserId === Number(this.user?.id)) {
+        this.showNotification('Saját magadat nem távolíthatod el.', 'warning');
+        return;
+      }
+
+      const isConfirmed = await this.askForConfirmation(`Biztosan eltávolítod ${this.getDisplayName(teacher)} tanárt az intézményből?`);
+      if (!isConfirmed) {
+        return;
+      }
+
+      const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token');
+
+      this.removingTeacherIds = [...this.removingTeacherIds, teacherUserId];
+
+      try {
+        await axios.patch('http://127.0.0.1:8000/api/establishment/members/remove-staff', {
+          establishment_id: establishmentId,
+          user_id: [teacherUserId]
+        }, {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        });
+
+        await this.loadInstitutionUsers(establishmentId);
+        await this.loadClasses(establishmentId);
+        await this.loadStudentClassAssignments(establishmentId);
+        this.updateStats();
+
+        this.showNotification('Tanár sikeresen eltávolítva az intézményből.', 'success');
+      } catch (error) {
+        const message = error?.response?.data?.message || error?.response?.data?.errors || 'Nem sikerült eltávolítani a tanárt.';
+        this.showNotification(typeof message === 'string' ? message : 'Nem sikerült eltávolítani a tanárt.', 'error');
+      } finally {
+        this.removingTeacherIds = this.removingTeacherIds.filter(id => id !== teacherUserId);
       }
     },
     
@@ -2988,6 +3175,60 @@ export default {
 .header-actions {
   display: flex;
   gap: 15px;
+  align-items: center;
+}
+
+.join-request-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.join-request-toggle-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.join-request-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.join-request-toggle-track {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: #d1d5db;
+  transition: background-color 0.2s ease;
+}
+
+.join-request-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.2s ease;
+}
+
+.join-request-toggle input:checked + .join-request-toggle-track {
+  background: #4f46e5;
+}
+
+.join-request-toggle input:checked + .join-request-toggle-track::after {
+  transform: translateX(20px);
+}
+
+.join-request-toggle input:disabled + .join-request-toggle-track {
+  opacity: 0.6;
 }
 
 .search-wrapper {
@@ -3448,6 +3689,24 @@ export default {
   color: white;
   border-color: #4f46e5;
   transform: translateY(-2px);
+}
+
+.btn-icon.btn-danger {
+  color: #dc2626;
+  border-color: #fecaca;
+  background: #fff5f5;
+}
+
+.btn-icon.btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.btn-icon:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
 }
 
 .classes-list {
@@ -4148,6 +4407,16 @@ export default {
 
   .request-tabs {
     flex-direction: column;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .join-request-toggle {
+    justify-content: space-between;
   }
 
   .bulk-actions-bar {

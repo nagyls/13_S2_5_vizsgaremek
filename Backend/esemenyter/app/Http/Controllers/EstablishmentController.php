@@ -32,6 +32,7 @@ class EstablishmentController extends Controller
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:32'],
             'address' => ['nullable', 'string', 'max:255'],
+            'admin_alias' => ['nullable', 'string', 'max:255'],
         ], [
             'title.required' => 'Az intézmény neve kötelező.',
             'title.string' => 'Az intézmény neve szöveges érték kell legyen.',
@@ -48,12 +49,22 @@ class EstablishmentController extends Controller
             'phone.max' => 'A telefonszám nem lehet hosszabb 32 karakternél.',
             'address.string' => 'A cím szöveges érték kell legyen.',
             'address.max' => 'A cím nem lehet hosszabb 255 karakternél.',
+            'admin_alias.string' => 'Az alias szöveges érték kell legyen.',
+            'admin_alias.max' => 'Az alias nem lehet hosszabb 255 karakternél.',
         ]);
         $validated['user_id'] = $request->user()->id;
+        $validated['accepts_join_requests'] = true;
+        $adminAlias = trim((string) ($validated['admin_alias'] ?? ''));
+        if ($adminAlias === '') {
+            $adminAlias = (string) $request->user()->name;
+        }
+
+        unset($validated['admin_alias']);
         $establishment = Establishment::create($validated);
 
         $staff = Staff::create([
             'role' => 'admin',
+            'alias' => $adminAlias,
             'establishment_id' => $establishment->id,
             'user_id' => $request->user()->id,
         ]);
@@ -75,8 +86,9 @@ class EstablishmentController extends Controller
             $query = Establishment::query()
                 ->join('settlements', 'settlements.id', '=', 'establishments.settlement_id')
                 ->join('inner_regions', 'inner_regions.id', '=', 'settlements.inner_region_id')
+                ->where('establishments.accepts_join_requests', true)
                 ->where('inner_regions.region_id', $regionId)
-                ->select('establishments.id', 'establishments.title')
+                ->select('establishments.id', 'establishments.title', 'establishments.accepts_join_requests')
                 ->distinct();
 
             if ($request->has('search') && !empty($request->search)) {
@@ -91,12 +103,14 @@ class EstablishmentController extends Controller
                     return [
                         'id' => $item->id,
                         'title' => $item->title,
+                        'accepts_join_requests' => (bool) $item->accepts_join_requests,
                     ];
                 })->values(),
             ]);
         }
 
         $query = Establishment::query();
+        $query->where('accepts_join_requests', true);
         if ($request->has('search') && !empty($request->search) && $request->has('settlement_id') && !empty($request->settlement_id)) {
             $search = $request->search;
             $query->where('title', 'LIKE', "%{$search}%")->where('settlement_id', '=', "{$request->settlement_id}");
@@ -110,6 +124,7 @@ class EstablishmentController extends Controller
                     return [
                         'id' => $item->id,
                         'title' => $item->title,
+                        'accepts_join_requests' => (bool) $item->accepts_join_requests,
                     ];
                 })->values(),
             ]);
@@ -125,6 +140,7 @@ class EstablishmentController extends Controller
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
+                    'accepts_join_requests' => (bool) $item->accepts_join_requests,
                 ];
             })->values(),
         ]);
@@ -294,6 +310,61 @@ class EstablishmentController extends Controller
         return response()->json([
             'message' => 'Nem tagja egy intézménynek sem!',
             403
+        ]);
+    }
+
+    public function getJoinRequestAvailability(Request $request, int $establishmentId)
+    {
+        $user = $request->user();
+
+        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
+
+        $establishment = Establishment::find($establishmentId);
+        if (!$establishment) {
+            return response()->json(['message' => 'Intézmény nem található!'], 404);
+        }
+
+        return response()->json([
+            'establishment_id' => $establishment->id,
+            'accepts_join_requests' => (bool) $establishment->accepts_join_requests,
+        ]);
+    }
+
+    public function updateJoinRequestAvailability(Request $request, int $establishmentId)
+    {
+        $user = $request->user();
+
+        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
+
+        $validated = $request->validate([
+            'accepts_join_requests' => ['required', 'boolean'],
+        ], [
+            'accepts_join_requests.required' => 'A csatlakozási kérelmek fogadása mező kötelező.',
+            'accepts_join_requests.boolean' => 'A csatlakozási kérelmek fogadása mező csak igaz/hamis érték lehet.',
+        ]);
+
+        $establishment = Establishment::find($establishmentId);
+        if (!$establishment) {
+            return response()->json(['message' => 'Intézmény nem található!'], 404);
+        }
+
+        $establishment->accepts_join_requests = $validated['accepts_join_requests'];
+        $establishment->save();
+
+        if ($establishment->accepts_join_requests) {
+            $message = 'Az intézmény ismét fogad új csatlakozási kérelmeket.';
+        } else {
+            $message = 'Az intézmény jelenleg nem fogad új csatlakozási kérelmeket.';
+        }
+
+        return response()->json([
+            'message' => $message,
+            'establishment_id' => $establishment->id,
+            'accepts_join_requests' => (bool) $establishment->accepts_join_requests,
         ]);
     }
 }

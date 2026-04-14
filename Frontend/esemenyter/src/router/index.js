@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../components/auth/Login.vue'
 import Registrate from '../components/auth/Registrate.vue'
 import EmailVerification from '../components/auth/EmailVerification.vue'
+import ForgotPassword from '../components/auth/ForgotPassword.vue'
+import ResetPassword from '../components/auth/ResetPassword.vue'
 import Aszf from '../components/legal/Aszf.vue'
 import Privacy from '../components/legal/Privacy.vue'
 import MainPage from '../components/home/MainPage.vue'
@@ -35,6 +37,18 @@ const routes = [
     name: 'verify-email',
     component: EmailVerification,
     meta: { title: 'Email megerősítés' }
+  },
+  {
+    path: '/forgot-password',
+    name: 'forgot-password',
+    component: ForgotPassword,
+    meta: { title: 'Elfelejtett jelszó' }
+  },
+  {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: ResetPassword,
+    meta: { title: 'Új jelszó beállítása' }
   },
   {
     path: '/aszf',

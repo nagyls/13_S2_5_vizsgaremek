@@ -110,14 +110,20 @@ class PollController extends Controller
         }
 
         DB::transaction(function () use ($user, $validated, $uniqueOptions) {
+            if ($validated['is_timed']) {
+                $deadline = $validated['deadline'] ?? null;
+            } else {
+                $deadline = null;
+            }
+
             $poll = Poll::create([
                 'title' => $validated['title'],
                 'user_id' => $user->id,
                 'event_id' => $validated['event_id'],
                 'start_date' => now()->toDateString(),
-                'deadline' => $validated['is_timed'] ? ($validated['deadline'] ?? null) : null,
-                'is_timed' => (bool) $validated['is_timed'],
-                'hidden_results' => (bool) $validated['hidden_results'],
+                'deadline' => $deadline,
+                'is_timed' => $validated['is_timed'],
+                'hidden_results' => $validated['hidden_results'],
                 'is_active' => true,
             ]);
 
@@ -258,32 +264,52 @@ class PollController extends Controller
         $totalVotes = (int) $results->sum('votes');
         $resultsVisible = $poll->resultsAreVisible();
 
+        if ($resultsVisible) {
+            $totalVotesResult = $totalVotes;
+        } else {
+            $totalVotesResult = null;
+        }
+
+        if ($userAnswer) {
+            $selectedOptionId = (int) $userAnswer->poll_option_id;
+        } else {
+            $selectedOptionId = null;
+        }
+
         return [
             'id' => $poll->id,
             'title' => $poll->title,
             'event_id' => $poll->event_id,
             'start_date' => optional($poll->start_date)->toDateString(),
             'deadline' => optional($poll->deadline)->toDateString(),
-            'is_timed' => (bool) $poll->is_timed,
-            'hidden_results' => (bool) $poll->hidden_results,
-            'is_active' => (bool) $poll->is_active,
+            'is_timed' => $poll->is_timed,
+            'hidden_results' => $poll->hidden_results,
+            'is_active' => $poll->is_active,
             'created_at' => optional($poll->created_at)->toIso8601String(),
             'is_started' => $poll->hasStarted(),
             'is_ended' => $poll->hasEnded(),
             'results_visible' => $resultsVisible,
-            'total_votes' => $resultsVisible ? $totalVotes : null,
+            'total_votes' => $totalVotesResult,
             'has_answered' => (bool) $userAnswer,
-            'selected_option_id' => $userAnswer ? (int) $userAnswer->poll_option_id : null,
+            'selected_option_id' => $selectedOptionId,
             'can_answer' => $hasOptedIn && $poll->hasStarted() && !$poll->hasEnded() && !$userAnswer,
             'can_manage' => $isCreator,
             'options' => $poll->options->map(function ($option) use ($resultsVisible, $results) {
                 $result = $results->firstWhere('option_id', $option->id);
 
+                if ($resultsVisible) {
+                    $votes = $result['votes'] ?? 0;
+                    $percentage = $result['percentage'] ?? 0;
+                } else {
+                    $votes = null;
+                    $percentage = null;
+                }
+
                 return [
                     'id' => $option->id,
                     'title' => $option->title,
-                    'votes' => $resultsVisible ? (int) ($result['votes'] ?? 0) : null,
-                    'percentage' => $resultsVisible ? (float) ($result['percentage'] ?? 0) : null,
+                    'votes' => $votes,
+                    'percentage' => $percentage,
                 ];
             })->values(),
         ];
@@ -302,11 +328,17 @@ class PollController extends Controller
         $totalVotes = (int) $baseResults->sum('votes');
 
         return $baseResults->map(function ($item) use ($totalVotes) {
+            if ($totalVotes > 0) {
+                $percentage = round(($item['votes'] / $totalVotes) * 100, 1);
+            } else {
+                $percentage = 0;
+            }
+
             return [
                 'option_id' => $item['option_id'],
                 'option' => $item['option'],
                 'votes' => $item['votes'],
-                'percentage' => $totalVotes > 0 ? round(($item['votes'] / $totalVotes) * 100, 1) : 0,
+                'percentage' => $percentage,
             ];
         })->values();
     }

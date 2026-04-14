@@ -18,6 +18,7 @@
                     <label>
                         <input type="checkbox" v-model="rememberMe" />Emlékezz rám
                     </label>
+                    <router-link to="/forgot-password" class="forgot-link">Elfelejtett jelszó?</router-link>
                 </div>
 
                 <button style="font-weight: bold;" id="login_btn" type="submit" class="btn" :disabled="loading">
@@ -306,6 +307,16 @@ export default {
     border-radius: 20px;
     padding: 40px;
     animation: slideUp 0.6s ease-out;
+}
+
+.forgot-link {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
 }
 
 @keyframes slideUp {

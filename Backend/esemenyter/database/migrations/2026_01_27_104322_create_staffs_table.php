@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('staffs', function (Blueprint $table) {
             $table->id();
             $table->enum('role', ['admin', 'teacher'])->default('teacher');
+            $table->string('alias')->nullable();
             $table->foreignId('establishment_id')->constrained('establishments')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();

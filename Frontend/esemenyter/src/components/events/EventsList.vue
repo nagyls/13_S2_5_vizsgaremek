@@ -327,6 +327,7 @@
 import axios from 'axios';
 import logo2 from '../../assets/logo2.svg';
 import { API_BASE, getToken, getAuthHeaders, clearAuthStorage } from '../../services/api';
+import toast from '../../services/toast';
 
 export default {
   name: 'EsemenyekLista',
@@ -440,11 +441,56 @@ export default {
 
     async loadCurrentUser() {
       try {
-        const savedUser =
+        const token = getToken();
+        const savedUserRaw =
           localStorage.getItem('esemenyter_user') ||
           sessionStorage.getItem('esemenyter_user');
-        if (savedUser) {
-          this.currentUser = JSON.parse(savedUser);
+
+        let savedUserData = {};
+        if (savedUserRaw) {
+          try {
+            savedUserData = JSON.parse(savedUserRaw) || {};
+          } catch (parseError) {
+            savedUserData = {};
+          }
+        }
+
+        if (token) {
+          const response = await axios.get(`${API_BASE}/user`, {
+            headers: getAuthHeaders(token),
+            validateStatus: (status) => status >= 200 && status < 600
+          });
+
+          if (response.status >= 200 && response.status < 300 && response.data) {
+            const backendUser = response.data || {};
+            const mergedUser = {
+              ...savedUserData,
+              ...backendUser,
+              isLoggedIn: true
+            };
+
+            this.currentUser = mergedUser;
+
+            const serializedUser = JSON.stringify(mergedUser);
+            if (localStorage.getItem('esemenyter_token')) {
+              localStorage.setItem('esemenyter_user', serializedUser);
+            }
+            if (sessionStorage.getItem('esemenyter_token')) {
+              sessionStorage.setItem('esemenyter_user', serializedUser);
+            }
+
+            const userEstablishmentId = Number(response.data?.establishment_id || 0);
+            if (Number.isFinite(userEstablishmentId) && userEstablishmentId > 0) {
+              localStorage.setItem('CurrentInstitution', String(userEstablishmentId));
+              sessionStorage.setItem('CurrentInstitution', String(userEstablishmentId));
+            }
+
+            return;
+          }
+        }
+
+        if (savedUserRaw) {
+          this.currentUser = savedUserData;
         }
       } catch (error) {
         console.error('Hiba a felhasználó betöltésekor:', error);
@@ -677,6 +723,12 @@ export default {
         validateStatus: (status) => status >= 200 && status < 600
       });
 
+      // Ha 403 (Forbidden) a hibakód, azt jelenti hogy a diák már nem tagja az intézménynek
+      if (response.status === 403) {
+        await this.handleUnauthorizedInstitution();
+        return [];
+      }
+
       if (response.status >= 400) return [];
 
       const { data } = response;
@@ -734,6 +786,56 @@ export default {
       this.filters.status = '';
       this.filters.favouriteOnly = false;
       this.loadEvents();
+    },
+
+    async handleUnauthorizedInstitution() {
+      // A diák már nem tagja az intézménynek
+      // Kérjük le az összes intézményt, ahol még tagja
+      const token = getToken();
+
+      try {
+        const response = await axios.get(`${API_BASE}/establishment/mine`, {
+          headers: getAuthHeaders(token),
+          validateStatus: (status) => status >= 200 && status < 600
+        });
+
+        if (response.status === 200 && Array.isArray(response.data)) {
+          const institutions = response.data;
+
+          if (institutions.length > 0) {
+            // Van más intézménye - irányítsuk át az elsőre
+            const newInstitutionId = institutions[0].id;
+            localStorage.setItem('CurrentInstitution', String(newInstitutionId));
+            sessionStorage.setItem('CurrentInstitution', String(newInstitutionId));
+
+            toast.warning('Eltávolítottak az intézményből. Átirányítás másik intézményre...');
+
+            // Újra betöltjük az eseményeket az új intézményből
+            await this.$nextTick();
+            this.loadEvents();
+          } else {
+            // Nincs más intézménye - az alap oldal felé irányítás
+            localStorage.removeItem('CurrentInstitution');
+            sessionStorage.removeItem('CurrentInstitution');
+
+            toast.warning('Eltávolítottak az intézményből. Visszatérés az alap oldalra...');
+
+            // Irányítsuk az alapoldal felé (mint aki még nem csatlakozott intézményhez)
+            this.$router.push('/');
+          }
+        } else {
+          // API hiba esetén az alapoldal felé irányítás
+          localStorage.removeItem('CurrentInstitution');
+          sessionStorage.removeItem('CurrentInstitution');
+          this.$router.push('/');
+        }
+      } catch (error) {
+        console.error('Hiba az intézmények lekérésekor:', error);
+        // Hiba esetén is az alapoldal felé irányítás
+        localStorage.removeItem('CurrentInstitution');
+        sessionStorage.removeItem('CurrentInstitution');
+        this.$router.push('/');
+      }
     }
   }
 }

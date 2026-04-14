@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ClassModel;
 use App\Models\User;
+use App\Models\Staff;
 use App\Models\Establishment;
 
 
@@ -59,16 +60,39 @@ class ClassController extends Controller
         if (!$this->isStaffEstablishment($user->id, $establishment)) {
             return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
         }
-        $classes = ClassModel::where('establishment_id', $establishment)->orderBy('grade')->orderBy('name')->get();
+        $classes = ClassModel::where('establishment_id', $establishment)
+            ->orderBy('grade')
+            ->orderBy('name')
+            ->get();
+
+        $studentCounts = User::join('class_students', 'users.id', '=', 'class_students.user_id')
+            ->whereIn('class_students.class_id', $classes->pluck('id'))
+            ->selectRaw('class_students.class_id, COUNT(users.id) as student_count')
+            ->groupBy('class_students.class_id')
+            ->pluck('student_count', 'class_students.class_id');
+
         return response()->json([
-            'data' => $classes->map(function ($item) {
+            'data' => $classes->map(function ($item) use ($studentCounts) {
+                $teacherUser = User::find($item->user_id);
+                $teacherAlias = null;
+
+                if ($item->user_id) {
+                    $teacherAlias = Staff::where('user_id', $item->user_id)
+                        ->where('establishment_id', $item->establishment_id)
+                        ->value('alias');
+                }
+
+                $teacherName = $teacherAlias ?: optional($teacherUser)->name;
+
                 return [
                     'id' => $item->id,
-                    'user' => optional(User::find($item->user_id))->name,
+                    'user' => $teacherName,
+                    'teacher_name' => $teacherName,
                     'user_id' => $item->user_id,
                     'name' => $item->name,
                     'grade' => $item->grade,
                     'capacity' => $item->capacity,
+                    'student_count' => (int) ($studentCounts[$item->id] ?? 0),
                 ];
             })->values(),
         ]);

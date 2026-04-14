@@ -3,7 +3,7 @@
     <div class="container">
       <!-- Navigáció -->
       <div class="navigation">
-        <button class="btn-back" @click="$router.back()">
+        <button class="btn-back" @click="$router.push('/user-dashboard')">
           <i class='bx bx-arrow-back'></i>
           <span><-- Vissza</span>
         </button>
@@ -26,7 +26,7 @@
         <h3>Hiba történt</h3>
         <p class="error-message">{{ errorMessage }}</p>
         <div class="error-actions">
-          <button @click="$router.back()" class="btn btn-secondary">
+          <button @click="$router.push('/user-dashboard')" class="btn btn-secondary">
             <i class='bx bx-arrow-back'></i> Vissza
           </button>
           <button @click="$router.push('/esemenyek')" class="btn btn-primary">
@@ -61,10 +61,6 @@
               >
                 <i class='bx' :class="eventData?.isFavorite ? 'bxs-star active' : 'bx-star'"></i>
                 <span class="btn-text">Kedvenc</span>
-              </button>
-              <button class="icon-button" @click="shareEvent">
-                <i class='bx bx-share-alt'></i>
-                <span class="btn-text">Megosztás</span>
               </button>
             </div>
           </div>
@@ -1365,29 +1361,7 @@ export default {
       }
     },
 
-    shareEvent() {
-      if (this.isReadOnlyMode) {
-        this.showMessage('Csak megtekintés módban a megosztás nem elérhető.', 'info')
-        return
-      }
 
-      if (navigator.share) {
-        navigator.share({
-          title: this.eventData.title,
-          text: this.eventData.description,
-          url: window.location.href
-        }).catch(() => {
-          this.copyLink()
-        })
-      } else {
-        this.copyLink()
-      }
-    },
-    
-    copyLink() {
-      navigator.clipboard.writeText(window.location.href)
-      this.showMessage('Link másolva a vágólapra!', 'success')
-    },
 
     toDateTimeLocalValue(dateString) {
       if (!dateString) {

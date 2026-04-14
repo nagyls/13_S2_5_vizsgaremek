@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\UserAuthController;
 use App\Http\Controllers\Auth\UserLogoutController;
 use App\Http\Controllers\Auth\UserRegisterController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\VerificationController;
 
 
@@ -26,6 +27,8 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [UserRegisterController::class, 'register']);
 
 Route::post('/login', [UserAuthController::class, 'login']);
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink']);
+Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 Route::delete('/logout', [UserLogoutController::class, 'logout'])->middleware('auth:sanctum');
 Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
     ->name('verification.verify');
@@ -75,6 +78,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/create', [EstablishmentController::class, 'store']); //intézmény létrehozása
         Route::patch('/switch', [EstablishmentController::class, 'switchEstablishment']);
         Route::get('{establishmentId}/role', [EstablishmentController::class, 'getRole']); // felhasználó szerepének lekérdezése az aktuális intézményben
+        Route::get('{establishmentId}/join-requests/availability', [EstablishmentController::class, 'getJoinRequestAvailability']);
+        Route::patch('{establishmentId}/join-requests/availability', [EstablishmentController::class, 'updateJoinRequestAvailability']);
         Route::get('/mine', [EstablishmentController::class, 'getMyEstablishments']); //összes intézmény ahol a user tag
         Route::get('/{establishmentId}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
 
@@ -99,6 +104,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // modify class membership -> PATCH
     Route::patch('/establishment/classes/add-students', [MemberController::class, 'storeInClass']);
     Route::patch('/establishment/classes/remove-students', [MemberController::class, 'removeFromClass']);
+    Route::patch('/establishment/members/remove-students', [MemberController::class, 'removeStudents']);
+    Route::patch('/establishment/members/remove-staff', [MemberController::class, 'removeStaff']);
     Route::patch('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'updateClassTeacher']);
 
     //kérelmek

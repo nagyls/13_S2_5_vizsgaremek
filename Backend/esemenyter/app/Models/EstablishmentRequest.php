@@ -11,6 +11,7 @@ class EstablishmentRequest extends Model
     protected $fillable = [
         'user_id',
         'role',
+        'alias',
         'establishment_id',
         'status',
     ];

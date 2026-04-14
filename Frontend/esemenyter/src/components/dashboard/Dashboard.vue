@@ -225,7 +225,7 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.title + "i" }}</h5>
+                      <h5>{{ district.title }}</h5>
                       <p>{{ district.cityCount || 'járás' }}</p>
                     </div>
                   </div>
@@ -361,6 +361,19 @@
                       <p>{{ selectedSchool?.title }}</p>
                     </div>
                   </div>
+                  <div class="confirmation-item confirmation-item-input">
+                    <i class='bx bx-user'></i>
+                    <div>
+                      <h5>Intézményi név (valós név)</h5>
+                      <input
+                        type="text"
+                        v-model="studentAlias"
+                        class="alias-input"
+                        placeholder="Pl.: Kovács Anna"
+                      />
+                      <p class="alias-hint">Ha üresen hagyod, a felhasználóneved jelenik meg intézményi névként.</p>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -466,7 +479,7 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.title + "i"}}</h5>
+                      <h5>{{ district.title }}</h5>
                       <p>{{ district.cityCount || 'járás'}}</p>
                     </div>
                   </div>
@@ -581,6 +594,19 @@
                       <p>{{ teacherSelectedSchool?.title }}</p>
                     </div>
                   </div>
+                  <div class="confirmation-item confirmation-item-input">
+                    <i class='bx bx-user'></i>
+                    <div>
+                      <h5>Intézményi név (valós név)</h5>
+                      <input
+                        type="text"
+                        v-model="teacherAlias"
+                        class="alias-input"
+                        placeholder="Pl.: Nagy Péter"
+                      />
+                      <p class="alias-hint">Ha üresen hagyod, a felhasználóneved jelenik meg intézményi névként.</p>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -686,7 +712,7 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.title + "i" }}</h5>
+                      <h5>{{ district.title }}</h5>
                       <p>{{ district.cityCount || 'járás' }}</p>
                     </div>
                   </div>
@@ -893,6 +919,19 @@
                       <p>{{ schoolForm.phone }}</p>
                     </div>
                   </div>
+                  <div class="confirmation-item confirmation-item-input">
+                    <i class='bx bx-user-circle'></i>
+                    <div>
+                      <h5>Admin intézményi név (valós név)</h5>
+                      <input
+                        type="text"
+                        v-model="adminAlias"
+                        class="alias-input"
+                        placeholder="Pl.: Tóth Tamás"
+                      />
+                      <p class="alias-hint">Ha üresen hagyod, a felhasználóneved jelenik meg intézményi névként.</p>
+                    </div>
+                  </div>
                 </div>
                 
                 <div class="admin-agreement">
@@ -974,6 +1013,7 @@ export default {
       selectedDistrictId: null,
       selectedCityId: null,
       selectedSchoolId: null,
+      studentAlias: '',
       
       // Tanár beállítás adatai
       teacherCurrentStep: 1,
@@ -985,6 +1025,7 @@ export default {
       teacherSelectedDistrictId: null,
       teacherSelectedCityId: null,
       teacherSelectedSchoolId: null,
+      teacherAlias: '',
       isClassTeacher: false,
       selectedMainClass: '',
       selectedClasses: [],
@@ -1027,6 +1068,7 @@ export default {
       adminNewCityZip: '',
       adminNewCityError: '',
       showAddCityModal: false,
+      adminAlias: '',
       schoolForm: {
         name: '',
         description: '',
@@ -1321,6 +1363,16 @@ export default {
           specialTeaching: this.user.specialTeaching || {}
         }
 
+        if (!this.studentAlias) {
+          this.studentAlias = this.user.name || '';
+        }
+        if (!this.teacherAlias) {
+          this.teacherAlias = this.user.name || '';
+        }
+        if (!this.adminAlias) {
+          this.adminAlias = this.user.name || '';
+        }
+
         await this.fetchAndSaveRole(token);
 
         if (!this.user.role && userData.role) {
@@ -1416,6 +1468,7 @@ export default {
       this.selectedRole = 'student';
       this.currentStep = 1;
       this.resetStudentSetup();
+      this.studentAlias = this.user.name || '';
     },
     
     // Tanár beállítás
@@ -1423,6 +1476,7 @@ export default {
       this.selectedRole = 'teacher';
       this.teacherCurrentStep = 1;
       this.resetTeacherSetup();
+      this.teacherAlias = this.user.name || '';
     },
     
     // Admin beállítás
@@ -1430,6 +1484,7 @@ export default {
       this.selectedRole = 'admin';
       this.adminCurrentStep = 1;
       this.resetAdminSetup();
+      this.adminAlias = this.user.name || '';
     },
     
     // Diák lépésenkénti navigáció
@@ -1659,6 +1714,7 @@ export default {
       this.jarasSearchQuery = '';
       this.citySearchQuery = '';
       this.schoolSearchQuery = '';
+      this.studentAlias = this.user.name || '';
     },
     
     resetTeacherSetup() {
@@ -1682,6 +1738,7 @@ export default {
       this.teacherjarasSearchQuery = '';
       this.teacherCitySearchQuery = '';
       this.teacherSchoolSearchQuery = '';
+      this.teacherAlias = this.user.name || '';
     },
     
     resetAdminSetup() {
@@ -1711,6 +1768,7 @@ export default {
       this.adminSearchQuery = '';
       this.adminjarasSearchQuery = '';
       this.adminCitySearchQuery = '';
+      this.adminAlias = this.user.name || '';
     },
     
     // Diák adatbetöltők
@@ -1749,7 +1807,8 @@ export default {
         }
       })
       .then(res => {
-        this.schools = res.data.data || [];
+        const schools = Array.isArray(res?.data?.data) ? res.data.data : [];
+        this.schools = schools.filter(school => school.accepts_join_requests !== false);
         this.schoolSearchQuery = '';
       })
       .catch(err => {
@@ -1795,7 +1854,8 @@ export default {
         }
       })
       .then(res => {
-        this.teacherSchools = res.data.data || [];
+        const schools = Array.isArray(res?.data?.data) ? res.data.data : [];
+        this.teacherSchools = schools.filter(school => school.accepts_join_requests !== false);
         this.teacherSchoolSearchQuery = '';
       })
       .catch(() => {
@@ -1878,7 +1938,7 @@ export default {
       this.adminNewCityName = '';
     },
     
-    async submitInstitutionRequest(establishmentId, role) {
+    async submitInstitutionRequest(establishmentId, role, aliasValue = '') {
       const token =
         localStorage.getItem('esemenyter_token') ||
         sessionStorage.getItem('esemenyter_token');
@@ -1887,11 +1947,14 @@ export default {
         throw new Error('Nincs érvényes bejelentkezés.');
       }
 
+      const alias = String(aliasValue || this.user.name || '').trim();
+
       return axios.post(
         `http://127.0.0.1:8000/api/establishment/requests/create`,
         {
           establishment_id: establishmentId,
-          role
+          role,
+          alias,
         },
         {
           headers: {
@@ -1971,7 +2034,7 @@ export default {
     // Profil befejező metódusok
     async completeStudentProfileSetup() {
       try {
-        await this.submitInstitutionRequest(this.selectedSchoolId, 'student');
+        await this.submitInstitutionRequest(this.selectedSchoolId, 'student', this.studentAlias);
       } catch (error) {
         const status = error.response?.status;
         const message = String(error.response?.data?.message || '');
@@ -1987,6 +2050,9 @@ export default {
 
         if (status === 409 && message.includes('Kérelem már létezik')) {
           toast.info('Ehhez az intézményhez már van folyamatban kérelmed.');
+        } else if (status === 422 && message.includes('nem fogad új csatlakozási kérelmeket')) {
+          toast.warning(message);
+          return;
         } else if (status !== 409) {
           toast.error('A csatlakozási kérelem elküldése sikertelen.');
           return;
@@ -2009,7 +2075,7 @@ export default {
     
     async completeTeacherProfileSetup() {
       try {
-        await this.submitInstitutionRequest(this.teacherSelectedSchoolId, 'teacher');
+        await this.submitInstitutionRequest(this.teacherSelectedSchoolId, 'teacher', this.teacherAlias);
       } catch (error) {
         const status = error.response?.status;
         const message = String(error.response?.data?.message || '');
@@ -2025,6 +2091,9 @@ export default {
 
         if (status === 409 && message.includes('Kérelem már létezik')) {
           toast.info('Ehhez az intézményhez már van folyamatban kérelmed.');
+        } else if (status === 422 && message.includes('nem fogad új csatlakozási kérelmeket')) {
+          toast.warning(message);
+          return;
         } else if (status !== 409) {
           toast.error('A csatlakozási kérelem elküldése sikertelen.');
           return;
@@ -2084,7 +2153,8 @@ export default {
         website: this.schoolForm.website || null,
         email: this.schoolForm.email || null,
         phone: this.schoolForm.phone || null,
-        address: this.schoolForm.address
+        address: this.schoolForm.address,
+        admin_alias: String(this.adminAlias || this.user.name || '').trim(),
       };
     
       // Külön axios kérés a biztonság kedvéért
@@ -2896,6 +2966,33 @@ export default {
   color: #4f46e5;
 }
 
+
+.confirmation-item-input {
+  align-items: flex-start;
+}
+
+.alias-input {
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.alias-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
+}
+
+.alias-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
 .confirmation-item h5 {
   margin: 0 0 4px 0;
   font-size: 14px;
