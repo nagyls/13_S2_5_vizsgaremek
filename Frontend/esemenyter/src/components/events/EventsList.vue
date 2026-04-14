@@ -87,6 +87,10 @@
             </div>
             <h1 class="hero-title">Fedezd fel az eseményeket</h1>
             <p class="hero-description">Csatlakozz iskolád eseményeihez, vagy fedezz fel globális programokat.</p>
+            <p class="hero-context" v-if="currentInstitutionName">
+              <i class='bx bx-building-house'></i>
+              <span>Intézmény: <strong>{{ currentInstitutionName }}</strong></span>
+            </p>
             <div class="hero-actions">
               <router-link to="/events-calendar" class="hero-calendar-btn">
                 <i class='bx bx-calendar-week'></i>
@@ -338,6 +342,7 @@ export default {
       events: [],
       isLoading: true,
       currentUser: null,
+      currentInstitutionTitle: '',
       showUserMenu: false,
       favouriteLoadingById: {},
       hasFavouriteEventsInInstitution: false,
@@ -393,6 +398,28 @@ export default {
     
     canCreateEvent() {
       return ['teacher', 'admin'].includes(this.normalizedRole);
+    },
+
+    currentInstitutionName() {
+      const fromUser = [
+        this.currentUser?.school,
+        this.currentUser?.establishment_title,
+        this.currentUser?.establishment?.title,
+        this.currentUser?.institution?.title
+      ]
+        .map(value => String(value || '').trim())
+        .find(Boolean);
+
+      if (fromUser) {
+        return fromUser;
+      }
+
+      const resolvedTitle = String(this.currentInstitutionTitle || '').trim();
+      if (resolvedTitle) {
+        return resolvedTitle;
+      }
+
+      return '';
     },
     
     hasActiveFilters() {
@@ -485,15 +512,57 @@ export default {
               sessionStorage.setItem('CurrentInstitution', String(userEstablishmentId));
             }
 
+            await this.resolveCurrentInstitutionTitle();
+
             return;
           }
         }
 
         if (savedUserRaw) {
           this.currentUser = savedUserData;
+          await this.resolveCurrentInstitutionTitle();
         }
       } catch (error) {
         console.error('Hiba a felhasználó betöltésekor:', error);
+      }
+    },
+
+    async resolveCurrentInstitutionTitle() {
+      const institutionId = this.getCurrentInstitutionId();
+      if (!institutionId) {
+        this.currentInstitutionTitle = '';
+        return;
+      }
+
+      const token = getToken();
+      if (!token) {
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_BASE}/establishment/mine`, {
+          headers: getAuthHeaders(token),
+          validateStatus: (status) => status >= 200 && status < 600
+        });
+
+        if (response.status < 200 || response.status >= 300) {
+          return;
+        }
+
+        const institutions = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+            ? response.data
+            : [];
+
+        const selectedInstitution = institutions.find(item => Number(item?.id) === Number(institutionId));
+        const title = String(selectedInstitution?.title || '').trim();
+
+        if (title) {
+          this.currentInstitutionTitle = title;
+        }
+      } catch (error) {
+        console.error('Hiba az aktuális intézmény nevének lekérésekor:', error);
       }
     },
   
@@ -1171,6 +1240,32 @@ export default {
   max-width: 600px;
 }
 
+.hero-context {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #f8fafc;
+  max-width: min(48%, 440px);
+  z-index: 1;
+}
+
+.hero-context i {
+  font-size: 1rem;
+}
+
+.hero-context strong {
+  font-weight: 700;
+}
+
 .hero-actions {
   margin-top: 1.25rem;
 }
@@ -1821,6 +1916,12 @@ export default {
   
   .hero-badges {
     flex-direction: column;
+  }
+
+  .hero-context {
+    position: static;
+    margin-top: 0.75rem;
+    max-width: 100%;
   }
   
   .badge {

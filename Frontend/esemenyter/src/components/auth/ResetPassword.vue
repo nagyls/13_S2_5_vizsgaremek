@@ -36,10 +36,6 @@
           </button>
         </template>
 
-        <div v-if="successMessage" class="status-box success">
-          {{ successMessage }}
-        </div>
-
         <div class="register-link">
           <p><router-link to="/login">Vissza a bejelentkezéshez</router-link></p>
         </div>
@@ -64,7 +60,6 @@ export default {
       password: '',
       passwordConfirmation: '',
       loading: false,
-      successMessage: '',
       showPassword: false,
       showPasswordConfirmation: false,
       logo2,
@@ -107,8 +102,8 @@ export default {
         })
 
         clearAuthStorage()
-        this.successMessage = response?.data?.message || 'A jelszó sikeresen módosítva.'
-        toast.success(this.successMessage)
+        const successMessage = response?.data?.message || 'A jelszó sikeresen módosítva.'
+        toast.success(successMessage)
 
         setTimeout(() => {
           this.$router.push('/login')
