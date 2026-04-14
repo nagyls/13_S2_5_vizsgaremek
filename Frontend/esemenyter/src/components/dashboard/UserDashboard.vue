@@ -260,6 +260,48 @@ export default {
   },
 
   methods: {
+    updateStoredUserState(updates) {
+      const storages = [localStorage, sessionStorage];
+
+      storages.forEach(storage => {
+        const savedUserRaw = storage.getItem('esemenyter_user');
+        if (!savedUserRaw) {
+          return;
+        }
+
+        try {
+          const savedUser = JSON.parse(savedUserRaw);
+          Object.assign(savedUser, updates);
+          storage.setItem('esemenyter_user', JSON.stringify(savedUser));
+        } catch (error) {
+          // Hibás storage érték esetén ne álljon le az oldal.
+        }
+      });
+    },
+
+    resetMembershipAndRedirectToDashboard() {
+      this.user = {
+        ...this.user,
+        role: '',
+        institution_id: null,
+        schoolId: null,
+        school: ''
+      };
+
+      this.updateStoredUserState({
+        role: '',
+        requestedRole: '',
+        pendingApproval: false,
+        institution_id: null,
+        schoolId: null,
+        school: ''
+      });
+
+      localStorage.removeItem('CurrentInstitution');
+      sessionStorage.removeItem('CurrentInstitution');
+      this.$router.replace('/dashboard');
+    },
+
     loadUserData() {
       const savedUser =
         localStorage.getItem('esemenyter_user') ||
@@ -307,11 +349,53 @@ export default {
         });
 
         const backendUser = response.data || {};
-        const hasEstablishedMembership = !!backendUser.establishment_id;
-        const canHavePending = ['student', 'teacher'].includes(this.user.role) && !!this.user.schoolId;
+        const hasEstablishedMembership = Number(backendUser.establishment_id) > 0;
+        if (hasEstablishedMembership) {
+          return;
+        }
 
-        if (canHavePending && !hasEstablishedMembership) {
+        // Ha az intézményi tagság megszűnt, a helyi role/státusz is törlendő.
+        if (this.user.role === 'student' || this.user.role === 'teacher') {
+          this.resetMembershipAndRedirectToDashboard();
+          return;
+        }
+
+        const institutionId = Number(
+          this.user.schoolId ||
+          this.user.institution_id ||
+          localStorage.getItem('CurrentInstitution') ||
+          sessionStorage.getItem('CurrentInstitution')
+        );
+
+        const effectiveRole = this.user.role || this.user.requestedRole || '';
+        const canHaveRequest =
+          ['student', 'teacher'].includes(effectiveRole) &&
+          Number.isFinite(institutionId) &&
+          institutionId > 0;
+        if (!canHaveRequest) {
+          this.resetMembershipAndRedirectToDashboard();
+          return;
+        }
+
+        const requestStatusResponse = await axios.get(
+          `http://127.0.0.1:8000/api/establishment/${institutionId}/requests/me`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const status = requestStatusResponse?.data?.status || '';
+
+        if (status === 'pending') {
           this.$router.push('/pending-approval');
+          return;
+        }
+
+        if (status === 'rejected') {
+          this.$router.push('/approval-rejected');
+          return;
+        }
+
+        if (status === 'none' || status === '') {
+          this.resetMembershipAndRedirectToDashboard();
         }
       } catch (error) {
         console.error('Hiba a függőben lévő kérelem ellenőrzésekor:', error);

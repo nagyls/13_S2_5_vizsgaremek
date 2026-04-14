@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\UserAuthController;
 use App\Http\Controllers\Auth\UserLogoutController;
 use App\Http\Controllers\Auth\UserRegisterController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\VerificationController;
 
 
@@ -14,10 +15,10 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\EstablishmentController;
 use App\Http\Controllers\ClassController;
-use App\Http\Controllers\StaffController;
-use App\Http\Controllers\StudentController;
+use App\Http\Controllers\MemberController;
 use App\Http\Controllers\RequestController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\PollController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -26,6 +27,8 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [UserRegisterController::class, 'register']);
 
 Route::post('/login', [UserAuthController::class, 'login']);
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink']);
+Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 Route::delete('/logout', [UserLogoutController::class, 'logout'])->middleware('auth:sanctum');
 Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
     ->name('verification.verify');
@@ -47,7 +50,7 @@ Route::prefix('regions')->group(function () {
 });
 Route::prefix('innerregions')->group(function () {
     Route::get('/all', [RegionController::class, 'getallinnerregions']);
-    Route::get('/', [RegionController::class, 'innerregions']);  
+    Route::get('/', [RegionController::class, 'innerregions']);
 });
 Route::prefix('settlements')->group(function () {
     Route::get('/all', [RegionController::class, 'getallsettlements']);
@@ -60,23 +63,28 @@ Route::prefix('establishments')->group(function () {
 
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::patch('/user/update', [UserAuthController::class, 'update']);
     //esemény kezelés
     Route::get('/establishment/{establishmentId}/events', [EventController::class, 'getEvents']);
     Route::post('/establishment/events', [EventController::class, 'store']);
     Route::patch('/events/{eventId}/participation', [EventController::class, 'setParticipation']);
     Route::patch('/events/{eventId}/favourite', [EventController::class, 'makeFavourite']);
     Route::patch('/events/{eventId}/occurrence', [EventController::class, 'manageOccurrence']);  //SZAKKÖR MÓDOSÍTÁS
-
+    Route::patch('/events/{eventId}/chat', [EventController::class, 'handleChat']);  //CHAT MÓDOSÍTÁS
+    Route::get('/events/{eventId}/poll', [PollController::class, 'getEventPoll']);
 
     //intézmény kezelés
     Route::prefix('establishment')->group(function () {
         Route::post('/create', [EstablishmentController::class, 'store']); //intézmény létrehozása
+        Route::patch('/switch', [EstablishmentController::class, 'switchEstablishment']);
         Route::get('{establishmentId}/role', [EstablishmentController::class, 'getRole']); // felhasználó szerepének lekérdezése az aktuális intézményben
+        Route::get('{establishmentId}/join-requests/availability', [EstablishmentController::class, 'getJoinRequestAvailability']);
+        Route::patch('{establishmentId}/join-requests/availability', [EstablishmentController::class, 'updateJoinRequestAvailability']);
         Route::get('/mine', [EstablishmentController::class, 'getMyEstablishments']); //összes intézmény ahol a user tag
         Route::get('/{establishmentId}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
 
-        Route::get('{establishmentId}/members/students', [StudentController::class, 'getStudents']);
-        Route::get('{establishmentId}/members/staff', [StaffController::class, 'getStaff']);
+        Route::get('{establishmentId}/members/students', [MemberController::class, 'getStudents']);
+        Route::get('{establishmentId}/members/staff', [MemberController::class, 'getStaff']);
         //kollaborácios események
         Route::get('/{establishmentId}/event-access', [EventController::class, 'getCollabEvents']);
         Route::patch('/{establishmentId}/event-access', [EventController::class, 'handleCollabEvents']);
@@ -91,15 +99,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'getClassMembers']);
     Route::delete('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'deleteClass']);
     Route::post('/establishment/classes/create', [ClassController::class, 'store']);
-
+    //álnév kezelés
+    Route::patch('/establishment/{establishmentId}/members/{memberId}/alias', [MemberController::class, 'setAlias']);
     // modify class membership -> PATCH
-    Route::patch('/establishment/classes/add-students', [StudentController::class, 'storeInClass']);
-    Route::patch('/establishment/classes/remove-students', [StudentController::class, 'removeFromClass']);
+    Route::patch('/establishment/classes/add-students', [MemberController::class, 'storeInClass']);
+    Route::patch('/establishment/classes/remove-students', [MemberController::class, 'removeFromClass']);
+    Route::patch('/establishment/members/remove-students', [MemberController::class, 'removeStudents']);
+    Route::patch('/establishment/members/remove-staff', [MemberController::class, 'removeStaff']);
     Route::patch('/establishment/{establishmentId}/classes/{classId}', [ClassController::class, 'updateClassTeacher']);
 
     //kérelmek
+    Route::get('/establishment/requests/my-pending', [RequestController::class, 'getMyPendingRequest']);
     Route::get('/establishment/{establishmentId}/requests/students', [RequestController::class, 'getStudentRequests']);
     Route::get('/establishment/{establishmentId}/requests/teachers', [RequestController::class, 'getTeacherRequests']);
+    Route::get('/establishment/{establishmentId}/requests/me', [RequestController::class, 'getMyRequestStatus']);
 
     Route::post('/establishment/requests/create', [RequestController::class, 'submitRequest']);
     Route::patch('/establishment/requests/handle', [RequestController::class, 'handleRequest']);
@@ -110,4 +123,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/events/{eventId}/comments', [CommentController::class, 'getComments']);
     Route::post('/events/comments', [CommentController::class, 'makeComment']);
     Route::delete('/events/comments/{commentId}', [CommentController::class, 'deleteComment']);
+
+    // szavazások
+    Route::post('/polls', [PollController::class, 'makePoll']);
+    Route::post('/polls/{pollId}/answer', [PollController::class, 'answerPoll']);
+    Route::patch('/polls/{pollId}/close', [PollController::class, 'stopPoll']);
+    Route::get('/polls/{pollId}/results', [PollController::class, 'getPollResults']);
 });

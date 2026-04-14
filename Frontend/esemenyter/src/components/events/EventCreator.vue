@@ -287,16 +287,22 @@
                   v-model="eventForm.startDate"
                   :min="todayMin"
                   @input="updateStartDateTimeFromParts"
+                  @change="updateStartDateTimeFromParts"
                   required
                 >
               </div>
               <div class="form-group">
                 <label>Kezdés időpontja *</label>
                 <input
-                  type="time"
+                  :type="isFirefoxBrowser ? 'text' : 'time'"
                   v-model="eventForm.startTime"
+                  inputmode="numeric"
+                  placeholder="HH:MM"
+                  pattern="^([01]?\d|2[0-3]):[0-5]\d$"
                   step="60"
                   @input="updateStartDateTimeFromParts"
+                  @change="updateStartDateTimeFromParts"
+                  @blur="normalizeEventFormTime('startTime', updateStartDateTimeFromParts)"
                   required
                 >
               </div>
@@ -307,17 +313,23 @@
                   v-model="eventForm.endDate"
                   :min="eventForm.startDate || todayMin"
                   @input="updateEndDateTimeFromParts"
+                  @change="updateEndDateTimeFromParts"
                   required
                 >
               </div>
               <div class="form-group">
                 <label>Befejezés időpontja *</label>
                 <input
-                  type="time"
+                  :type="isFirefoxBrowser ? 'text' : 'time'"
                   v-model="eventForm.endTime"
+                  inputmode="numeric"
+                  placeholder="HH:MM"
+                  pattern="^([01]?\d|2[0-3]):[0-5]\d$"
                   step="60"
                   :min="eventForm.endDate === eventForm.startDate ? eventForm.startTime : ''"
                   @input="updateEndDateTimeFromParts"
+                  @change="updateEndDateTimeFromParts"
+                  @blur="normalizeEventFormTime('endTime', updateEndDateTimeFromParts)"
                   required
                 >
               </div>
@@ -343,7 +355,15 @@
 
               <div class="recurrence-step">
                 <label>2. Hánykor kezdődjön? *</label>
-                <input type="time" v-model="eventForm.recurrenceStartTime" required>
+                <input
+                  :type="isFirefoxBrowser ? 'text' : 'time'"
+                  v-model="eventForm.recurrenceStartTime"
+                  inputmode="numeric"
+                  placeholder="HH:MM"
+                  pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                  @blur="normalizeEventFormTime('recurrenceStartTime')"
+                  required
+                >
               </div>
 
               <div class="recurrence-step">
@@ -507,6 +527,7 @@ export default {
       isLoadingGrades: false,
       currentStep: 1,
       isSubmitting: false,
+      isFirefoxBrowser: false,
       todayMin: new Date().toISOString().slice(0, 10),
       nowMin,
       selectedEventScope: 'school',
@@ -817,6 +838,7 @@ export default {
   },
 
   created() {
+    this.isFirefoxBrowser = typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent || '')
     this.initialize()
   },
 
@@ -857,12 +879,56 @@ export default {
       )
     },
 
-    combineDateAndTime(date, time) {
-      if (!date || !time) {
+    normalizeTimeValue(timeValue) {
+      if (!timeValue) {
         return ''
       }
 
-      return `${date}T${time}`
+      const raw = String(timeValue).trim().replace(/\./g, ':')
+      if (raw === '') {
+        return ''
+      }
+
+      let hours
+      let minutes
+
+      const compactMatch = raw.match(/^(\d{1,2})(\d{2})$/)
+      if (compactMatch) {
+        hours = Number(compactMatch[1])
+        minutes = Number(compactMatch[2])
+      } else {
+        const separatedMatch = raw.match(/^(\d{1,2}):(\d{1,2})$/)
+        if (!separatedMatch) {
+          return ''
+        }
+        hours = Number(separatedMatch[1])
+        minutes = Number(separatedMatch[2])
+      }
+
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        return ''
+      }
+
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+    },
+
+    normalizeEventFormTime(fieldName, afterNormalize) {
+      const normalized = this.normalizeTimeValue(this.eventForm[fieldName])
+      this.eventForm[fieldName] = normalized
+
+      if (typeof afterNormalize === 'function') {
+        afterNormalize.call(this)
+      }
+    },
+
+    combineDateAndTime(date, time) {
+      const normalizedTime = this.normalizeTimeValue(time)
+
+      if (!date || !normalizedTime) {
+        return ''
+      }
+
+      return `${date}T${normalizedTime}`
     },
 
     splitDateTimeParts(dateTime) {

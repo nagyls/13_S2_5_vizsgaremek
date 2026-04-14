@@ -3,7 +3,7 @@
     <header class="main-header">
       <div class="container">
         <div class="header-content">
-          <div class="logo-section" @click="$router.push('/dashboard')">
+          <div class="logo-section" @click="handleLogoClick">
             <div class="logo-icon">
               <img :src="logo2" alt="EseményTér logó" class="logo-image">
             </div>
@@ -225,7 +225,7 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.title + "i" }}</h5>
+                      <h5>{{ district.title }}</h5>
                       <p>{{ district.cityCount || 'járás' }}</p>
                     </div>
                   </div>
@@ -361,6 +361,19 @@
                       <p>{{ selectedSchool?.title }}</p>
                     </div>
                   </div>
+                  <div class="confirmation-item confirmation-item-input">
+                    <i class='bx bx-user'></i>
+                    <div>
+                      <h5>Intézményi név (valós név)</h5>
+                      <input
+                        type="text"
+                        v-model="studentAlias"
+                        class="alias-input"
+                        placeholder="Pl.: Kovács Anna"
+                      />
+                      <p class="alias-hint">Ha üresen hagyod, a felhasználóneved jelenik meg intézményi névként.</p>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -466,7 +479,7 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.title + "i"}}</h5>
+                      <h5>{{ district.title }}</h5>
                       <p>{{ district.cityCount || 'járás'}}</p>
                     </div>
                   </div>
@@ -575,10 +588,44 @@
                     </div>
                   </div>
                   <div class="confirmation-item">
+                    <i class='bx bx-map'></i>
+                    <div>
+                      <h5>Régió</h5>
+                      <p>{{ teacherSelectedRegion?.title }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-map-alt'></i>
+                    <div>
+                      <h5>Járás</h5>
+                      <p>{{ teacherSelectedDistrict?.title }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
+                    <i class='bx bx-city'></i>
+                    <div>
+                      <h5>Város</h5>
+                      <p>{{ teacherSelectedCity?.title }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item">
                     <i class='bx bx-school'></i>
                     <div>
                       <h5>Iskola</h5>
                       <p>{{ teacherSelectedSchool?.title }}</p>
+                    </div>
+                  </div>
+                  <div class="confirmation-item confirmation-item-input">
+                    <i class='bx bx-user'></i>
+                    <div>
+                      <h5>Intézményi név (valós név)</h5>
+                      <input
+                        type="text"
+                        v-model="teacherAlias"
+                        class="alias-input"
+                        placeholder="Pl.: Nagy Péter"
+                      />
+                      <p class="alias-hint">Ha üresen hagyod, a felhasználóneved jelenik meg intézményi névként.</p>
                     </div>
                   </div>
                 </div>
@@ -686,7 +733,7 @@
                       <i class='bx bx-map-pin'></i>
                     </div>
                     <div class="suggestion-text">
-                      <h5>{{ district.title + "i" }}</h5>
+                      <h5>{{ district.title }}</h5>
                       <p>{{ district.cityCount || 'járás' }}</p>
                     </div>
                   </div>
@@ -893,6 +940,19 @@
                       <p>{{ schoolForm.phone }}</p>
                     </div>
                   </div>
+                  <div class="confirmation-item confirmation-item-input">
+                    <i class='bx bx-user-circle'></i>
+                    <div>
+                      <h5>Admin intézményi név (valós név)</h5>
+                      <input
+                        type="text"
+                        v-model="adminAlias"
+                        class="alias-input"
+                        placeholder="Pl.: Tóth Tamás"
+                      />
+                      <p class="alias-hint">Ha üresen hagyod, a felhasználóneved jelenik meg intézményi névként.</p>
+                    </div>
+                  </div>
                 </div>
                 
                 <div class="admin-agreement">
@@ -914,7 +974,7 @@
                   <i class='bx bx-arrow-back'></i>
                   {{ adminCurrentStep === 1 ? 'Vissza' : 'Előző lépés' }}
                 </button>
-                <button class="btn-primary" @click="adminNextStep" :disabled="!isAdminStepValid">
+                <button class="btn-primary" @click="adminNextStep" :disabled="!isAdminStepValid || isSubmittingAdmin">
                   {{ adminCurrentStep === 5 ? 'Iskola regisztrálása' : 'Következő lépés' }}
                   <i class='bx bx-chevron-right'></i>
                 </button>
@@ -958,6 +1018,7 @@ export default {
         specialTeaching: {}
       },
       profileConfigured: false,
+      forceRoleSelection: false,
       showUserMenu: false,
       showScrollTop: false,
       
@@ -973,6 +1034,7 @@ export default {
       selectedDistrictId: null,
       selectedCityId: null,
       selectedSchoolId: null,
+      studentAlias: '',
       
       // Tanár beállítás adatai
       teacherCurrentStep: 1,
@@ -984,6 +1046,7 @@ export default {
       teacherSelectedDistrictId: null,
       teacherSelectedCityId: null,
       teacherSelectedSchoolId: null,
+      teacherAlias: '',
       isClassTeacher: false,
       selectedMainClass: '',
       selectedClasses: [],
@@ -1026,6 +1089,7 @@ export default {
       adminNewCityZip: '',
       adminNewCityError: '',
       showAddCityModal: false,
+      adminAlias: '',
       schoolForm: {
         name: '',
         description: '',
@@ -1040,6 +1104,7 @@ export default {
       },
       schoolFormErrors: {},
       adminAgreement: false,
+      isSubmittingAdmin: false,
       
       // Közös adatlisták
       regions: [],
@@ -1117,8 +1182,7 @@ export default {
     teacherSelectedSchool() {
       return this.teacherSchools.find(s => s.id === this.teacherSelectedSchoolId);
     },
-    
-    // Admin kiválasztott elemek
+
     adminSelectedRegion() {
       return this.regions.find(r => r.id === this.adminSelectedRegionId);
     },
@@ -1319,10 +1383,27 @@ export default {
           specialTeaching: this.user.specialTeaching || {}
         }
 
+        if (!this.studentAlias) {
+          this.studentAlias = this.user.name || '';
+        }
+        if (!this.teacherAlias) {
+          this.teacherAlias = this.user.name || '';
+        }
+        if (!this.adminAlias) {
+          this.adminAlias = this.user.name || '';
+        }
+
         await this.fetchAndSaveRole(token);
 
         if (!this.user.role && userData.role) {
           this.user.role = userData.role;
+        }
+
+        if (this.forceRoleSelection) {
+          this.selectedRole = '';
+          this.profileConfigured = false;
+          this.saveUserData();
+          return;
         }
 
         if (this.user.role) {
@@ -1392,12 +1473,22 @@ export default {
     toggleUserMenu() {
       this.showUserMenu = !this.showUserMenu;
     },
+
+    handleLogoClick() {
+      if (this.forceRoleSelection) {
+        this.exitRoleSelection();
+        return;
+      }
+
+      this.$router.push('/dashboard');
+    },
     
     // Diák beállítás
     setupStudent() {
       this.selectedRole = 'student';
       this.currentStep = 1;
       this.resetStudentSetup();
+      this.studentAlias = this.user.name || '';
     },
     
     // Tanár beállítás
@@ -1405,6 +1496,7 @@ export default {
       this.selectedRole = 'teacher';
       this.teacherCurrentStep = 1;
       this.resetTeacherSetup();
+      this.teacherAlias = this.user.name || '';
     },
     
     // Admin beállítás
@@ -1412,6 +1504,7 @@ export default {
       this.selectedRole = 'admin';
       this.adminCurrentStep = 1;
       this.resetAdminSetup();
+      this.adminAlias = this.user.name || '';
     },
     
     // Diák lépésenkénti navigáció
@@ -1456,6 +1549,10 @@ export default {
       if (this.currentStep > 1) {
         this.currentStep--;
       } else {
+        if (this.forceRoleSelection) {
+          this.exitRoleSelection();
+          return;
+        }
         this.selectedRole = '';
         this.currentStep = 1;
         this.resetStudentSetup();
@@ -1504,6 +1601,10 @@ export default {
       if (this.teacherCurrentStep > 1) {
         this.teacherCurrentStep--;
       } else {
+        if (this.forceRoleSelection) {
+          this.exitRoleSelection();
+          return;
+        }
         this.selectedRole = '';
         this.teacherCurrentStep = 1;
         this.resetTeacherSetup();
@@ -1542,6 +1643,7 @@ export default {
         this.adminCurrentStep = 5;
       }
       else if (this.adminCurrentStep === 5) {
+        if (this.isSubmittingAdmin) return;
         this.completeAdminProfileSetup();
       }
     },
@@ -1550,10 +1652,26 @@ export default {
       if (this.adminCurrentStep > 1) {
         this.adminCurrentStep--;
       } else {
+        if (this.forceRoleSelection) {
+          this.exitRoleSelection();
+          return;
+        }
         this.selectedRole = '';
         this.adminCurrentStep = 1;
         this.resetAdminSetup();
       }
+    },
+
+    exitRoleSelection() {
+      this.forceRoleSelection = false;
+      this.selectedRole = '';
+      this.currentStep = 1;
+      this.teacherCurrentStep = 1;
+      this.adminCurrentStep = 1;
+      this.resetStudentSetup();
+      this.resetTeacherSetup();
+      this.resetAdminSetup();
+      this.$router.push('/profile');
     },
     
     // Iskola form validálása
@@ -1616,6 +1734,7 @@ export default {
       this.jarasSearchQuery = '';
       this.citySearchQuery = '';
       this.schoolSearchQuery = '';
+      this.studentAlias = this.user.name || '';
     },
     
     resetTeacherSetup() {
@@ -1639,6 +1758,7 @@ export default {
       this.teacherjarasSearchQuery = '';
       this.teacherCitySearchQuery = '';
       this.teacherSchoolSearchQuery = '';
+      this.teacherAlias = this.user.name || '';
     },
     
     resetAdminSetup() {
@@ -1668,6 +1788,7 @@ export default {
       this.adminSearchQuery = '';
       this.adminjarasSearchQuery = '';
       this.adminCitySearchQuery = '';
+      this.adminAlias = this.user.name || '';
     },
     
     // Diák adatbetöltők
@@ -1706,7 +1827,8 @@ export default {
         }
       })
       .then(res => {
-        this.schools = res.data.data || [];
+        const schools = Array.isArray(res?.data?.data) ? res.data.data : [];
+        this.schools = schools.filter(school => school.accepts_join_requests !== false);
         this.schoolSearchQuery = '';
       })
       .catch(err => {
@@ -1752,7 +1874,8 @@ export default {
         }
       })
       .then(res => {
-        this.teacherSchools = res.data.data || [];
+        const schools = Array.isArray(res?.data?.data) ? res.data.data : [];
+        this.teacherSchools = schools.filter(school => school.accepts_join_requests !== false);
         this.teacherSchoolSearchQuery = '';
       })
       .catch(() => {
@@ -1835,7 +1958,7 @@ export default {
       this.adminNewCityName = '';
     },
     
-    async submitInstitutionRequest(establishmentId, role) {
+    async submitInstitutionRequest(establishmentId, role, aliasValue = '') {
       const token =
         localStorage.getItem('esemenyter_token') ||
         sessionStorage.getItem('esemenyter_token');
@@ -1844,11 +1967,14 @@ export default {
         throw new Error('Nincs érvényes bejelentkezés.');
       }
 
+      const alias = String(aliasValue || this.user.name || '').trim();
+
       return axios.post(
         `http://127.0.0.1:8000/api/establishment/requests/create`,
         {
           establishment_id: establishmentId,
-          role
+          role,
+          alias,
         },
         {
           headers: {
@@ -1860,12 +1986,94 @@ export default {
       );
     },
 
+    saveCurrentInstitution(institutionId) {
+      const numericInstitutionId = Number(institutionId);
+
+      if (!Number.isFinite(numericInstitutionId) || numericInstitutionId <= 0) {
+        return;
+      }
+
+      if (localStorage.getItem('esemenyter_token')) {
+        localStorage.setItem('CurrentInstitution', String(numericInstitutionId));
+        sessionStorage.removeItem('CurrentInstitution');
+        return;
+      }
+
+      sessionStorage.setItem('CurrentInstitution', String(numericInstitutionId));
+      localStorage.removeItem('CurrentInstitution');
+    },
+
+    async fetchRoleForInstitution(establishmentId) {
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      if (!token) {
+        return '';
+      }
+
+      try {
+        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${establishmentId}/role`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json'
+          }
+        });
+
+        return response?.data?.role || '';
+      } catch (error) {
+        console.error('Hiba az intézményi szerepkör lekérésekor:', error);
+        return '';
+      }
+    },
+
+    async handleAlreadyMember(establishmentId, fallbackRole, fallbackSchoolTitle) {
+      const role = await this.fetchRoleForInstitution(establishmentId);
+      const nextRole = role || fallbackRole || this.user.role || '';
+
+      this.user.role = nextRole;
+      this.user.pendingApproval = false;
+      this.user.requestedRole = '';
+      this.user.schoolId = establishmentId;
+      this.user.school = fallbackSchoolTitle || this.user.school;
+      this.profileConfigured = Boolean(nextRole);
+
+      this.saveCurrentInstitution(establishmentId);
+      this.saveUserData();
+
+      toast.info('Már tagja vagy ennek az intézménynek, átváltottunk erre a profilra.');
+
+      if (nextRole === 'admin') {
+        this.$router.push('/institution-dashboard');
+        return;
+      }
+
+      this.$router.push('/user-dashboard');
+    },
+
     // Profil befejező metódusok
     async completeStudentProfileSetup() {
       try {
-        await this.submitInstitutionRequest(this.selectedSchoolId, 'student');
+        await this.submitInstitutionRequest(this.selectedSchoolId, 'student', this.studentAlias);
       } catch (error) {
-        if (error.response?.status !== 409) {
+        const status = error.response?.status;
+        const message = String(error.response?.data?.message || '');
+
+        if (status === 409 && message.includes('Már tagja vagy az intézménynek')) {
+          await this.handleAlreadyMember(
+            this.selectedSchoolId,
+            'student',
+            this.selectedSchool?.title || ''
+          );
+          return;
+        }
+
+        if (status === 409 && message.includes('Kérelem már létezik')) {
+          toast.info('Ehhez az intézményhez már van folyamatban kérelmed.');
+        } else if (status === 422 && message.includes('nem fogad új csatlakozási kérelmeket')) {
+          toast.warning(message);
+          return;
+        } else if (status !== 409) {
           toast.error('A csatlakozási kérelem elküldése sikertelen.');
           return;
         }
@@ -1887,9 +2095,26 @@ export default {
     
     async completeTeacherProfileSetup() {
       try {
-        await this.submitInstitutionRequest(this.teacherSelectedSchoolId, 'teacher');
+        await this.submitInstitutionRequest(this.teacherSelectedSchoolId, 'teacher', this.teacherAlias);
       } catch (error) {
-        if (error.response?.status !== 409) {
+        const status = error.response?.status;
+        const message = String(error.response?.data?.message || '');
+
+        if (status === 409 && message.includes('Már tagja vagy az intézménynek')) {
+          await this.handleAlreadyMember(
+            this.teacherSelectedSchoolId,
+            'teacher',
+            this.teacherSelectedSchool?.title || ''
+          );
+          return;
+        }
+
+        if (status === 409 && message.includes('Kérelem már létezik')) {
+          toast.info('Ehhez az intézményhez már van folyamatban kérelmed.');
+        } else if (status === 422 && message.includes('nem fogad új csatlakozási kérelmeket')) {
+          toast.warning(message);
+          return;
+        } else if (status !== 409) {
           toast.error('A csatlakozási kérelem elküldése sikertelen.');
           return;
         }
@@ -1917,6 +2142,9 @@ export default {
     },
     
     completeAdminProfileSetup() {
+      // Dupla kattintás megakadályozása
+      if (this.isSubmittingAdmin) return;
+      this.isSubmittingAdmin = true;
 
       // Token ellenőrzése
       let token = localStorage.getItem('esemenyter_token');
@@ -1926,6 +2154,7 @@ export default {
     
       if (!token) {
         toast.error('Nincs bejelentkezve. Kérjük jelentkezzen be újra.');
+        this.isSubmittingAdmin = false;
         this.$router.push('/');
         return;
       }
@@ -1933,6 +2162,7 @@ export default {
       // Ellenőrizzük, hogy van-e kiválasztott város
       if (!this.adminSelectedCityId) {
         toast.error('Kérjük válasszon ki egy várost!');
+        this.isSubmittingAdmin = false;
         return;
       }
     
@@ -1943,7 +2173,8 @@ export default {
         website: this.schoolForm.website || null,
         email: this.schoolForm.email || null,
         phone: this.schoolForm.phone || null,
-        address: this.schoolForm.address
+        address: this.schoolForm.address,
+        admin_alias: String(this.adminAlias || this.user.name || '').trim(),
       };
     
       // Külön axios kérés a biztonság kedvéért
@@ -1976,11 +2207,13 @@ export default {
 
         this.saveUserData();
       
+        this.isSubmittingAdmin = false;
         setTimeout(() => {
           this.$router.push('/institution-dashboard');
         }, 1500);
       })
       .catch(err => {
+        this.isSubmittingAdmin = false;
         console.error('Hiba az intézmény létrehozásakor:', err);
 
         if (err.response) {
@@ -1988,6 +2221,7 @@ export default {
           console.error('Hiba státusz:', err.response.status);
 
           if (err.response.status === 401) {
+            this.isSubmittingAdmin = false;
             toast.error('A munkamenet lejárt. Kérjük jelentkezzen be újra.');
 
             // Token törlése
@@ -2120,6 +2354,8 @@ export default {
       this.$router.push('/');
       return;
     }
+
+    this.forceRoleSelection = String(this.$route?.query?.chooseRole || '') === '1';
 
     this.checkLoginStatus();
     this.loadRegions();
@@ -2750,6 +2986,33 @@ export default {
   color: #4f46e5;
 }
 
+
+.confirmation-item-input {
+  align-items: flex-start;
+}
+
+.alias-input {
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.alias-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
+}
+
+.alias-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
 .confirmation-item h5 {
   margin: 0 0 4px 0;
   font-size: 14px;

@@ -18,6 +18,7 @@
                     <label>
                         <input type="checkbox" v-model="rememberMe" />Emlékezz rám
                     </label>
+                    <router-link to="/forgot-password" class="forgot-link">Elfelejtett jelszó?</router-link>
                 </div>
 
                 <button style="font-weight: bold;" id="login_btn" type="submit" class="btn" :disabled="loading">
@@ -59,10 +60,52 @@ export default {
     },
 
         getRedirectPath(userData) {
+            const requestedRole = userData?.requestedRole || '';
+            const hasPendingApproval = Boolean(userData?.pendingApproval);
+            const requestStatus = String(userData?.requestStatus || '');
             const role = userData?.role || '';
+
+            if (requestStatus === 'rejected') {
+                return '/approval-rejected';
+            }
+
+            if ((hasPendingApproval || requestStatus === 'pending') && (requestedRole === 'student' || requestedRole === 'teacher')) {
+                return '/pending-approval';
+            }
 
             if (role === 'admin' || role === 'teacher' || role === 'student') return '/user-dashboard';
             return '/dashboard';
+        },
+
+        async fetchPendingRequest(token) {
+            try {
+                const response = await axios.get(`${API_BASE}/establishment/requests/my-pending`, {
+                    headers: getAuthHeaders(token)
+                });
+
+                return response.data?.request || null;
+            } catch (error) {
+                return null;
+            }
+        },
+
+        applyPendingRequestToUserData(userData, pendingRequest) {
+            if (!pendingRequest) {
+                return userData;
+            }
+
+            const pendingRole = String(pendingRequest.role || '');
+            const pendingInstitutionId = Number(pendingRequest.establishment_id) || null;
+            const pendingStatus = String(pendingRequest.status || 'pending');
+
+            return {
+                ...userData,
+                pendingApproval: pendingStatus === 'pending',
+                requestedRole: pendingRole,
+                requestStatus: pendingStatus,
+                schoolId: pendingInstitutionId,
+                institution_id: userData.institution_id || pendingInstitutionId || null,
+            };
         },
 
         async fetchRole(token, establishmentId) {
@@ -129,8 +172,9 @@ export default {
 
                 const backendUser = userResponse.data || {};
                 const role = await this.fetchRole(token, backendUser.establishment_id);
+                const pendingRequest = await this.fetchPendingRequest(token);
 
-        const userData = {
+            const baseUserData = {
                     id: backendUser.id || res.data.user.id,
                     name: backendUser.name || res.data.user.name,
                     email: backendUser.email || res.data.user.email,
@@ -141,10 +185,13 @@ export default {
                     is_student: res.data.is_student || false,
                     establishment_ids: res.data.establishment_ids || [],
                     isLoggedIn: true,
+                    requestStatus: '',
                     loggedInAt: new Date().toISOString()
         };
 
-                this.saveCurrentInstitution(userData.institution_id);
+                const userData = this.applyPendingRequestToUserData(baseUserData, pendingRequest);
+
+                this.saveCurrentInstitution(userData.schoolId || userData.institution_id);
 
                 this.saveAuthData(userData, token);
 
@@ -179,18 +226,24 @@ export default {
 
     axios.get(`${API_BASE}/user`)
                 .then(async (response) => {
-                    const userData = JSON.parse(
-                        localStorage.getItem('esemenyter_user') ||
-                        sessionStorage.getItem('esemenyter_user') ||
-                        '{}'
-                    );
+                    let userData = {};
+                    try {
+                        userData = JSON.parse(
+                            localStorage.getItem('esemenyter_user') ||
+                            sessionStorage.getItem('esemenyter_user') ||
+                            '{}'
+                        );
+                    } catch (error) {
+                        userData = {};
+                    }
 
                     const backendUser = response.data || {};
                     const role = await this.fetchRole(
                         token,
                         backendUser.establishment_id || userData.institution_id
                     );
-                    const mergedUserData = {
+                    const pendingRequest = await this.fetchPendingRequest(token);
+                    const baseMergedUserData = {
                         ...userData,
                         id: backendUser.id || userData.id,
                         name: backendUser.name || userData.name,
@@ -199,7 +252,10 @@ export default {
                         institution_id: backendUser.establishment_id || userData.institution_id || null,
                         email_verified: Boolean(backendUser.email_verified_at),
                         isLoggedIn: true,
+                        requestStatus: userData.requestStatus || '',
                     };
+
+                    const mergedUserData = this.applyPendingRequestToUserData(baseMergedUserData, pendingRequest);
 
                     if (!mergedUserData.email_verified) {
                         clearAuthStorage();
@@ -212,7 +268,7 @@ export default {
                         sessionStorage.setItem('esemenyter_user', JSON.stringify(mergedUserData));
                     }
 
-                    this.saveCurrentInstitution(mergedUserData.institution_id);
+                    this.saveCurrentInstitution(mergedUserData.schoolId || mergedUserData.institution_id);
 
                     this.$router.push(this.getRedirectPath(mergedUserData));
         })
@@ -251,6 +307,16 @@ export default {
     border-radius: 20px;
     padding: 40px;
     animation: slideUp 0.6s ease-out;
+}
+
+.forgot-link {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
 }
 
 @keyframes slideUp {

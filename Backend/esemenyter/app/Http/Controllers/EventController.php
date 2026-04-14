@@ -115,7 +115,9 @@ class EventController extends Controller
             $validClassIds = ClassModel::where('establishment_id', $validated['establishment_id'])
                 ->whereIn('id', $selectedClassIds)
                 ->pluck('id')
-                ->map(fn($id) => (int) $id)
+                ->map(function ($id) {
+                    return (int) $id;
+                })
                 ->toArray();
 
             if (count($validClassIds) !== count($selectedClassIds)) {
@@ -129,7 +131,9 @@ class EventController extends Controller
             $validGrades = ClassModel::where('establishment_id', $validated['establishment_id'])
                 ->whereIn('grade', $selectedGradeIds)
                 ->pluck('grade')
-                ->map(fn($grade) => (int) $grade)
+                ->map(function ($grade) {
+                    return (int) $grade;
+                })
                 ->unique()
                 ->values()
                 ->toArray();
@@ -149,13 +153,33 @@ class EventController extends Controller
             //eredeti: 
             //  $event = DB::transaction(function () use ($user, $validated, $users) {
             $event = DB::transaction(function () use ($user, $validated, $users, $isRecurring) { //SZAKKÖR MÓDOSÍTÁS
+                if (($validated['target_group'] ?? null) === 'osztaly_szintu') {
+                    $targetClassIds = array_values(array_map('intval', $validated['selected_class_ids'] ?? []));
+                } else {
+                    $targetClassIds = null;
+                }
+
+                if (($validated['target_group'] ?? null) === 'evfolyam_szintu') {
+                    $targetGradeIds = array_values(array_map('intval', $validated['selected_grade_ids'] ?? []));
+                } else {
+                    $targetGradeIds = null;
+                }
+
+                if ($isRecurring) {
+                    $recurrenceFrequency = $validated['recurrence_frequency'] ?? 'weekly';
+                    $recurrenceUntil = $validated['recurrence_until'];
+                } else {
+                    $recurrenceFrequency = null;
+                    $recurrenceUntil = null;
+                }
+
                 $event = Event::create([
                     'user_id' => $user->id,
                     'establishment_id' => $validated['establishment_id'],
                     'type' => $validated['type'],
                     'target_group' => $validated['target_group'] ?? null,
-                    'target_class_ids' => ($validated['target_group'] ?? null) === 'osztaly_szintu' ? array_values(array_map('intval', $validated['selected_class_ids'] ?? [])) : null,
-                    'target_grade_ids' => ($validated['target_group'] ?? null) === 'evfolyam_szintu' ? array_values(array_map('intval', $validated['selected_grade_ids'] ?? [])) : null,
+                    'target_class_ids' => $targetClassIds,
+                    'target_grade_ids' => $targetGradeIds,
                     'title' => $validated['title'],
                     'description' => $validated['description'],
                     'content' => $validated['content'],
@@ -165,8 +189,8 @@ class EventController extends Controller
                     //SZAKKÖR MÓDOSÍTÁS
                     'status' => 'upcoming',
                     'is_recurring' => $isRecurring,
-                    'recurrence_frequency' => $isRecurring ? ($validated['recurrence_frequency'] ?? 'weekly') : null,
-                    'recurrence_until' => $isRecurring ? $validated['recurrence_until'] : null,
+                    'recurrence_frequency' => $recurrenceFrequency,
+                    'recurrence_until' => $recurrenceUntil,
                     'recurrence_parent_event_id' => null,
                     //
                 ]);
@@ -223,13 +247,25 @@ class EventController extends Controller
             }
 
             $event = DB::transaction(function () use ($user, $validated, $users, $collabIds) {
+                if (($validated['target_group'] ?? null) === 'osztaly_szintu') {
+                    $targetClassIds = array_values(array_map('intval', $validated['selected_class_ids'] ?? []));
+                } else {
+                    $targetClassIds = null;
+                }
+
+                if (($validated['target_group'] ?? null) === 'evfolyam_szintu') {
+                    $targetGradeIds = array_values(array_map('intval', $validated['selected_grade_ids'] ?? []));
+                } else {
+                    $targetGradeIds = null;
+                }
+
                 $event = Event::create([
                     'user_id' => $user->id,
                     'establishment_id' => $validated['establishment_id'],
                     'type' => $validated['type'],
                     'target_group' => $validated['target_group'] ?? null,
-                    'target_class_ids' => ($validated['target_group'] ?? null) === 'osztaly_szintu' ? array_values(array_map('intval', $validated['selected_class_ids'] ?? [])) : null,
-                    'target_grade_ids' => ($validated['target_group'] ?? null) === 'evfolyam_szintu' ? array_values(array_map('intval', $validated['selected_grade_ids'] ?? [])) : null,
+                    'target_class_ids' => $targetClassIds,
+                    'target_grade_ids' => $targetGradeIds,
                     'title' => $validated['title'],
                     'description' => $validated['description'],
                     'content' => $validated['content'],
@@ -468,6 +504,8 @@ class EventController extends Controller
             return response()->json(['message' => 'nem jogosult'], 403);
         }
 
+        $this->recroactiveEventVisibility((int) $user->id, $establishmentId);
+
 
         $visibleEventIds = EventShown::where('establishment_id', $establishmentId)
 
@@ -496,7 +534,9 @@ class EventController extends Controller
 
         $eventIds = $events
             ->pluck('id')
-            ->map(fn($id) => (int) $id)
+            ->map(function ($id) {
+                return (int) $id;
+            })
             ->values()
             ->all();
 
@@ -507,7 +547,9 @@ class EventController extends Controller
                 ->whereIn('event_id', $eventIds)
                 ->where('is_favourite', true)
                 ->pluck('event_id')
-                ->map(fn($id) => (int) $id)
+                ->map(function ($id) {
+                    return (int) $id;
+                })
                 ->unique()
                 ->flip();
         }
@@ -551,7 +593,7 @@ class EventController extends Controller
             $event->participants = (int) ($stats->attending_count ?? 0);
             $event->comment_count = (int) ($commentStats->comment_count ?? 0);
             $event->user_participation = $userFeedbackByEvent->get($event->id);
-            $event->is_favourite = $favouriteEventIdSet->has((int) $event->id);
+            $event->is_favourite = $favouriteEventIdSet->has($event->id);
 
             return $event;
         });
@@ -559,6 +601,107 @@ class EventController extends Controller
             'events' => $events
         ]);
     }
+
+    private function recroactiveEventVisibility(int $userId, int $establishmentId): void
+    {
+        $studentClassRows = DB::table('class_students')
+            ->join('classes', 'class_students.class_id', '=', 'classes.id')
+            ->where('class_students.user_id', $userId)
+            ->where('classes.establishment_id', $establishmentId)
+            ->get(['classes.id', 'classes.grade']);
+
+        $homeroomClassRows = DB::table('classes')
+            ->where('establishment_id', $establishmentId)
+            ->where('user_id', $userId)
+            ->get(['id', 'grade']);
+
+        $classRows = $studentClassRows
+            ->concat($homeroomClassRows)
+            ->unique('id')
+            ->values();
+
+        $userClassIds = $classRows
+            ->pluck('id')
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->values()
+            ->all();
+
+        $userGradeIds = $classRows
+            ->pluck('grade')
+            ->map(function ($grade) {
+                return (int) $grade;
+            })
+            ->unique()
+            ->values()
+            ->all();
+
+        $existingVisibleEventIdSet = EventShown::where('establishment_id', $establishmentId)
+            ->where('user_id', $userId)
+            ->pluck('event_id')
+            ->map(function ($eventId) {
+                return (int) $eventId;
+            })
+            ->flip();
+
+        $candidateEvents = Event::where('establishment_id', $establishmentId)
+            ->whereIn('target_group', ['teljes_iskola', 'osztaly_szintu', 'sajat_osztaly', 'evfolyam_szintu', 'evfolyam'])
+            ->get(['id', 'target_group', 'target_class_ids', 'target_grade_ids']);
+
+        $rowsToInsert = [];
+
+        foreach ($candidateEvents as $event) {
+            if ($existingVisibleEventIdSet->has((int) $event->id)) {
+                continue;
+            }
+
+            $isVisibleByTarget = false;
+
+            if ($event->target_group === 'teljes_iskola') {
+                $isVisibleByTarget = true;
+            }
+
+            if (in_array($event->target_group, ['osztaly_szintu', 'sajat_osztaly'], true)) {
+                $eventClassIds = collect($event->target_class_ids ?? [])
+                    ->map(function ($id) {
+                        return (int) $id;
+                    })
+                    ->values()
+                    ->all();
+
+                $isVisibleByTarget = !empty(array_intersect($eventClassIds, $userClassIds));
+            }
+
+            if (in_array($event->target_group, ['evfolyam_szintu', 'evfolyam'], true)) {
+                $eventGradeIds = collect($event->target_grade_ids ?? [])
+                    ->map(function ($id) {
+                        return (int) $id;
+                    })
+                    ->values()
+                    ->all();
+
+                $isVisibleByTarget = !empty(array_intersect($eventGradeIds, $userGradeIds));
+            }
+
+            if (!$isVisibleByTarget) {
+                continue;
+            }
+
+            $rowsToInsert[] = [
+                'event_id' => (int) $event->id,
+                'user_id' => $userId,
+                'establishment_id' => $establishmentId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        if (!empty($rowsToInsert)) {
+            EventShown::insert($rowsToInsert);
+        }
+    }
+
     //részvétel
     public function setParticipation(Request $request, int $eventId)
     {
@@ -616,6 +759,36 @@ class EventController extends Controller
             'attending_count' => $attendingCount,
             'not_attending_count' => $notAttendingCount,
             'participant_count' => $attendingCount,
+        ]);
+    }
+    public function handleChat(Request $request, int $eventId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'nem jogosult'], 401);
+        }
+        $validated = $request->validate([
+            'chat_enabled' => 'required|boolean',
+        ], [
+            'chat_enabled.required' => 'A chat engedélyezése kötelező.',
+            'chat_enabled.boolean' => 'A chat engedélyezése mező értéke csak igaz vagy hamis lehet.',
+        ]);
+
+        $event = Event::find($eventId);
+        if (!$event) {
+            return response()->json(['message' => 'Az esemény nem található.'], 404);
+        }
+        if ($event->user_id !== $user->id) {
+            return response()->json(['message' => 'Csak a létrehozó kezelheti a chat beállításait.'], 403);
+        }
+        $event->chat_enabled = $validated['chat_enabled'];
+        $event->save();
+
+        return response()->json([
+            'message' => 'Chat beállítások frissítve.',
+            'chat_enabled' => $event->chat_enabled,
+            'event' => $event->id,
         ]);
     }
 
@@ -704,10 +877,14 @@ class EventController extends Controller
             'updated_at' => now(),
         ]);
 
+        if ($newValue) {
+            $message = 'Esemény hozzáadva a kedvencekhez.';
+        } else {
+            $message = 'Esemény eltávolítva a kedvencek közül.';
+        }
+
         return response()->json([
-            'message' => $newValue
-                ? 'Esemény hozzáadva a kedvencekhez.'
-                : 'Esemény eltávolítva a kedvencek közül.',
+            'message' => $message,
         ]);
     }
 }

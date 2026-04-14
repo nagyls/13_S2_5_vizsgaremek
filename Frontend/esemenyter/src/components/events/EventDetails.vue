@@ -62,10 +62,6 @@
                 <i class='bx' :class="eventData?.isFavorite ? 'bxs-star active' : 'bx-star'"></i>
                 <span class="btn-text">Kedvenc</span>
               </button>
-              <button class="icon-button" @click="shareEvent">
-                <i class='bx bx-share-alt'></i>
-                <span class="btn-text">Megosztás</span>
-              </button>
             </div>
           </div>
         </div>
@@ -109,6 +105,194 @@
               <div class="detailed-content">{{ eventData.content }}</div>
             </div>
 
+            <div v-if="canCreatePoll" class="info-block poll-builder-block">
+              <div class="block-header">
+                <i class='bx bx-bar-chart-alt-2'></i>
+                <h2>Szavazás létrehozása</h2>
+              </div>
+
+              <div class="poll-form">
+                <div class="poll-field">
+                  <label for="poll-title">Kérdés</label>
+                  <input id="poll-title" v-model="pollForm.title" type="text" maxlength="255" placeholder="Pl. Melyik időpont legyen megfelelő?">
+                </div>
+
+                <div class="poll-settings-wrapper">
+                  <div class="poll-checkbox-grid">
+                    <label class="poll-checkbox-field">
+                      <input v-model="pollForm.isTimed" type="checkbox" @change="handlePollTimingChange">
+                      <span>Időzített szavazás</span>
+                    </label>
+
+                    <label class="poll-checkbox-field">
+                      <input v-model="pollForm.hiddenResults" type="checkbox">
+                      <span>Eredmények csak lezárás után látszanak</span>
+                    </label>
+                  </div>
+
+                  <div v-if="pollForm.isTimed" class="poll-field poll-deadline-field">
+                    <label>Lezárás napja</label>
+                    <input v-model="pollForm.deadline" type="date">
+                  </div>
+                </div>
+
+                <div class="poll-field">
+                  <label>Opciók</label>
+                  <div class="poll-option-inputs">
+                    <div v-for="(option, index) in pollForm.options" :key="`poll-option-${index}`" class="poll-option-input-row">
+                      <input
+                        v-model="pollForm.options[index]"
+                        type="text"
+                        maxlength="255"
+                        :placeholder="`Opció ${index + 1}`"
+                      >
+                      <button
+                        type="button"
+                        class="poll-option-remove"
+                        :disabled="pollForm.options.length <= 2"
+                        @click="removePollOptionField(index)"
+                      >
+                        <i class='bx bx-trash'></i>
+                      </button>
+                    </div>
+                  </div>
+                  <button type="button" class="poll-option-add" :disabled="pollForm.options.length >= 10" @click="addPollOptionField">
+                    <i class='bx bx-plus'></i>
+                    Opció hozzáadása
+                  </button>
+                </div>
+
+                <div class="poll-actions">
+                  <button class="btn btn-primary poll-submit-button" :disabled="isCreatingPoll" @click="createPoll">
+                    <i class='bx' :class="isCreatingPoll ? 'bx-loader-circle bx-spin' : 'bx-check-circle'"></i>
+                    {{ isCreatingPoll ? 'Létrehozás...' : 'Szavazás létrehozása' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="canViewPolls" class="info-block poll-results-block">
+              <div class="block-header">
+                <i class='bx bx-poll'></i>
+                <h2>Szavazások</h2>
+              </div>
+
+              <div v-if="isPollLoading" class="poll-info-note">
+                <i class='bx bx-loader-circle bx-spin'></i>
+                Szavazások betöltése...
+              </div>
+
+              <div v-else-if="!polls.length" class="poll-info-note">
+                <i class='bx bx-info-circle'></i>
+                Ehhez az eseményhez még nincs szavazás.
+              </div>
+
+              <div v-else class="poll-list">
+                <div v-for="poll in polls" :key="poll.id" class="poll-panel">
+                  <div class="poll-panel-header">
+                    <div>
+                      <div class="poll-question">{{ poll.title }}</div>
+                      <div class="poll-meta-row">
+                        <span class="poll-pill">{{ getPollStateLabel(poll) }}</span>
+                        <span v-if="poll.is_timed" class="poll-pill muted">Időzített</span>
+                        <span v-if="poll.hidden_results" class="poll-pill muted">Rejtett eredmény</span>
+                      </div>
+                    </div>
+
+                    <button
+                      v-if="poll.can_manage && !poll.is_ended"
+                      type="button"
+                      class="poll-stop-button"
+                      :disabled="Boolean(stoppingPollIds[poll.id])"
+                      @click="stopPoll(poll)"
+                    >
+                      <i class='bx' :class="stoppingPollIds[poll.id] ? 'bx-loader-circle bx-spin' : 'bx-stop-circle'"></i>
+                      {{ stoppingPollIds[poll.id] ? 'Lezárás...' : 'Szavazás lezárása' }}
+                    </button>
+                  </div>
+
+                  <div class="poll-summary-grid">
+                    <div class="poll-summary-item">
+                      <span class="poll-summary-label">Indulás</span>
+                      <span>{{ formatPollCalendarDate(poll.start_date) }}</span>
+                    </div>
+                    <div class="poll-summary-item">
+                      <span class="poll-summary-label">Lezárás</span>
+                      <span>{{ poll.is_timed ? formatPollCalendarDate(poll.deadline) : 'Kézi lezárás' }}</span>
+                    </div>
+                    <div class="poll-summary-item">
+                      <span class="poll-summary-label">Összes szavazat</span>
+                      <span>{{ poll.results_visible ? (poll.total_votes || 0) : 'Rejtve' }}</span>
+                    </div>
+                  </div>
+
+                  <div v-if="!poll.is_started" class="poll-info-note">
+                    <i class='bx bx-time-five'></i>
+                    A szavazás még nem indult el.
+                  </div>
+
+                  <div v-else-if="poll.hidden_results && !poll.results_visible" class="poll-info-note">
+                    <i class='bx bx-lock-alt'></i>
+                    Az eredmények csak a szavazás lezárása után válnak láthatóvá.
+                  </div>
+
+                  <div class="poll-option-list">
+                    <button
+                      v-for="option in poll.options"
+                      :key="option.id"
+                      type="button"
+                      class="poll-option-card"
+                      :class="{
+                        selected: Number(selectedPollOptionIds[poll.id]) === Number(option.id),
+                        voted: Number(poll.selected_option_id) === Number(option.id)
+                      }"
+                      :disabled="!poll.can_answer || Boolean(submittingPollVoteIds[poll.id])"
+                      @click="selectedPollOptionIds = { ...selectedPollOptionIds, [poll.id]: Number(option.id) }"
+                    >
+                      <div class="poll-option-header">
+                        <span class="poll-option-title">{{ option.title }}</span>
+                        <span v-if="Number(poll.selected_option_id) === Number(option.id)" class="poll-badge">A te szavazatod</span>
+                      </div>
+
+                      <div v-if="poll.results_visible" class="poll-result-row">
+                        <div class="poll-result-bar-track">
+                          <div
+                            class="poll-result-bar-fill"
+                            :style="{ width: `${getPollResultPercentage(poll, option.id)}%` }"
+                          ></div>
+                        </div>
+                        <div class="poll-result-meta">
+                          <span>{{ getPollResultVotes(poll, option.id) }} szavazat</span>
+                          <span>{{ getPollResultPercentage(poll, option.id) }}%</span>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div v-if="poll.can_answer" class="poll-actions">
+                    <button
+                      class="btn btn-primary poll-submit-button"
+                      :disabled="!selectedPollOptionIds[poll.id] || Boolean(submittingPollVoteIds[poll.id])"
+                      @click="submitPollVote(poll)"
+                    >
+                      <i class='bx' :class="submittingPollVoteIds[poll.id] ? 'bx-loader-circle bx-spin' : 'bx-send'"></i>
+                      {{ submittingPollVoteIds[poll.id] ? 'Szavazás...' : 'Szavazok' }}
+                    </button>
+                  </div>
+
+                  <div v-else-if="poll.has_answered" class="poll-info-note success">
+                    <i class='bx bx-check-circle'></i>
+                    Már leadtad a szavazatodat ehhez a szavazáshoz.
+                  </div>
+
+                  <div v-else-if="poll.is_ended" class="poll-info-note success">
+                    <i class='bx bx-flag'></i>
+                    Ez a szavazás lezárult.
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Kép -->
             <div v-if="eventData.image_url" class="info-block">
               <div class="block-header">
@@ -121,15 +305,28 @@
             </div>
 
             <!-- Komment szekció -->
-            <div v-if="!isReadOnlyMode" class="comment-section">
+            <div v-if="canShowCommentSection" class="comment-section">
               <div class="comment-header">
                 <div class="header-left">
                   <i class='bx bx-message-dots'></i>
                   <h2>Hozzászólások</h2>
                 </div>
-                <div class="comment-counter">
-                  <span>{{ commentCount }}</span>
-                  <span>komment</span>
+
+                <div class="comment-header-right">
+                  <button
+                    v-if="canManageOccurrence"
+                    class="comment-toggle-inline"
+                    :disabled="isTogglingChat"
+                    @click="toggleEventComments"
+                  >
+                    <i class='bx' :class="isTogglingChat ? 'bx-loader-circle bx-spin' : (isEventChatEnabled ? 'bx-message-x' : 'bx-message-check')"></i>
+                    <span>{{ isEventChatEnabled ? 'Kommentek kikapcsolása' : 'Kommentek bekapcsolása' }}</span>
+                  </button>
+
+                  <div class="comment-counter">
+                    <span>{{ commentCount }}</span>
+                    <span>komment</span>
+                  </div>
                 </div>
               </div>
               
@@ -138,6 +335,38 @@
                 :aktualisFelhasznalo="currentUser"
                 @komment-sikeres="onCommentAdded"
               />
+            </div>
+
+            <div v-else-if="showCommentPlaceholder" class="comment-section comment-section-placeholder">
+              <div class="comment-header">
+                <div class="header-left">
+                  <i class='bx bx-message-dots'></i>
+                  <h2>Hozzászólások</h2>
+                </div>
+
+                <div class="comment-header-right">
+                  <button
+                    v-if="canManageOccurrence"
+                    class="comment-toggle-inline"
+                    :disabled="isTogglingChat"
+                    @click="toggleEventComments"
+                  >
+                    <i class='bx' :class="isTogglingChat ? 'bx-loader-circle bx-spin' : (isEventChatEnabled ? 'bx-message-x' : 'bx-message-check')"></i>
+                    <span>{{ isEventChatEnabled ? 'Kommentek kikapcsolása' : 'Kommentek bekapcsolása' }}</span>
+                  </button>
+
+                  <div class="comment-counter">
+                    <span>{{ commentCount }}</span>
+                    <span>komment</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="comment-lock-message">
+                <i class='bx bx-info-circle'></i>
+                <h3>{{ commentPlaceholderTitle }}</h3>
+                <p>{{ commentPlaceholderDescription }}</p>
+              </div>
             </div>
 
           </div>
@@ -217,19 +446,37 @@
               <div class="occurrence-form-grid">
                 <label>
                   Kezdés dátuma
-                  <input type="date" v-model="occurrenceForm.startDate" @input="updateOccurrenceStartDateTime">
+                  <input type="date" v-model="occurrenceForm.startDate" @input="updateOccurrenceStartDateTime" @change="updateOccurrenceStartDateTime">
                 </label>
                 <label>
                   Kezdés időpontja
-                  <input type="time" v-model="occurrenceForm.startTime" @input="updateOccurrenceStartDateTime">
+                  <input
+                    :type="isFirefoxBrowser ? 'text' : 'time'"
+                    v-model="occurrenceForm.startTime"
+                    inputmode="numeric"
+                    placeholder="HH:MM"
+                    pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                    @input="updateOccurrenceStartDateTime"
+                    @change="updateOccurrenceStartDateTime"
+                    @blur="normalizeOccurrenceTime('startTime', updateOccurrenceStartDateTime)"
+                  >
                 </label>
                 <label>
                   Befejezés dátuma
-                  <input type="date" v-model="occurrenceForm.endDate" @input="updateOccurrenceEndDateTime">
+                  <input type="date" v-model="occurrenceForm.endDate" @input="updateOccurrenceEndDateTime" @change="updateOccurrenceEndDateTime">
                 </label>
                 <label>
                   Befejezés időpontja
-                  <input type="time" v-model="occurrenceForm.endTime" @input="updateOccurrenceEndDateTime">
+                  <input
+                    :type="isFirefoxBrowser ? 'text' : 'time'"
+                    v-model="occurrenceForm.endTime"
+                    inputmode="numeric"
+                    placeholder="HH:MM"
+                    pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                    @input="updateOccurrenceEndDateTime"
+                    @change="updateOccurrenceEndDateTime"
+                    @blur="normalizeOccurrenceTime('endTime', updateOccurrenceEndDateTime)"
+                  >
                 </label>
               </div>
 
@@ -293,7 +540,22 @@ export default {
       favoriteCount: 0,
       userParticipation: null,
       studentHasClass: null,
+      polls: [],
+      isPollLoading: false,
+      isCreatingPoll: false,
+      submittingPollVoteIds: {},
+      stoppingPollIds: {},
+      selectedPollOptionIds: {},
+      pollForm: {
+        title: '',
+        deadline: '',
+        isTimed: false,
+        hiddenResults: false,
+        options: ['', '']
+      },
+      isTogglingChat: false,
       isUpdatingOccurrence: false,
+      isFirefoxBrowser: false,
       occurrenceForm: {
         startDate: '',
         startTime: '',
@@ -306,6 +568,7 @@ export default {
   },
   
   async created() {
+    this.isFirefoxBrowser = typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent || '')
     await this.loadCurrentUser()
     await this.loadEvent()
   },
@@ -321,6 +584,63 @@ export default {
 
     canManageOccurrence() {
       return !this.isReadOnlyMode && Number(this.currentUser?.id) > 0 && Number(this.eventData?.user_id) === Number(this.currentUser?.id)
+    },
+
+    isEventCreator() {
+      return !this.isReadOnlyMode && Number(this.currentUser?.id) > 0 && Number(this.eventData?.user_id) === Number(this.currentUser?.id)
+    },
+
+    canCreatePoll() {
+      return this.isEventCreator
+    },
+
+    canViewPolls() {
+      return this.isEventCreator || this.userParticipation === 'y'
+    },
+
+    hasParticipationDecision() {
+      return this.userParticipation === 'y' || this.userParticipation === 'n'
+    },
+
+    isEventChatEnabled() {
+      return this.eventData?.chat_enabled !== false
+    },
+
+    canShowCommentSection() {
+      return !this.isReadOnlyMode
+        && this.isEventChatEnabled
+        && Boolean(this.currentUser)
+        && this.userParticipation === 'y'
+    },
+
+    showCommentPlaceholder() {
+      return !this.isReadOnlyMode
+        && Boolean(this.currentUser)
+        && !this.canShowCommentSection
+    },
+
+    commentPlaceholderTitle() {
+      if (!this.isEventChatEnabled) {
+        return 'Kommentelés kikapcsolva'
+      }
+
+      if (!this.hasParticipationDecision) {
+        return 'Kommentelés még nem elérhető'
+      }
+
+      return 'Kommentelés nem elérhető'
+    },
+
+    commentPlaceholderDescription() {
+      if (!this.isEventChatEnabled) {
+        return 'A kommentelés ki van kapcsolva ennél az eseménynél. A szervező bármikor visszakapcsolhatja.'
+      }
+
+      if (!this.hasParticipationDecision) {
+        return 'Először jelöld be, hogy részt veszel-e az eseményen, és utána megjelenik a kommentbox.'
+      }
+
+      return 'Kommentelni csak akkor tudsz, ha a részvételnél a Részvétel opciót választod.'
     }
   },
   
@@ -355,6 +675,11 @@ export default {
     },
 
     normalizeEvent(event) {
+      const rawChatEnabled = event?.chat_enabled
+      const chatEnabled = rawChatEnabled === undefined || rawChatEnabled === null
+        ? true
+        : !(rawChatEnabled === false || rawChatEnabled === 0 || rawChatEnabled === '0')
+
       return {
         ...event,
         status: this.normalizeEventStatus(event?.status),
@@ -362,7 +687,8 @@ export default {
         participants: Number(event?.participants || event?.participant_count || 0),
         favorites: Number(event?.favorites || event?.favorite_count || 0),
         comment_count: Number(event?.comment_count || event?.comments_count || 0),
-        isFavorite: Boolean(event?.isFavorite || event?.is_favorite || event?.is_favourite)
+        isFavorite: Boolean(event?.isFavorite || event?.is_favorite || event?.is_favourite),
+        chat_enabled: chatEnabled
       }
     },
 
@@ -382,7 +708,8 @@ export default {
         this.splitDateTimeParts(foundEvent.end_date, 'end')
         await Promise.all([
           this.loadStats(),
-          this.loadParticipationStatus()
+          this.loadParticipationStatus(),
+          this.loadPolls()
         ])
       } catch (error) {
         console.error('Hiba az esemény betöltésekor:', error)
@@ -491,6 +818,301 @@ export default {
 
       this.userParticipation = this.eventData?.user_participation || null
     },
+
+    async loadPolls() {
+      this.polls = []
+      this.selectedPollOptionIds = {}
+
+      const token = getToken()
+      const eventId = Number(this.eventData?.id || this.eventId)
+
+      if (!token || !eventId || !this.currentUser) {
+        return
+      }
+
+      this.isPollLoading = true
+
+      try {
+        const response = await axios.get(`${API_BASE}/events/${eventId}/poll`, {
+          headers: getAuthHeaders(token),
+          validateStatus: (status) => status >= 200 && status < 600
+        })
+
+        if (response.status === 403 || response.status === 404) {
+          this.polls = []
+          return
+        }
+
+        if (response.status >= 400) {
+          throw new Error(response?.data?.message || 'Nem sikerült betölteni a szavazást.')
+        }
+
+        this.polls = Array.isArray(response?.data?.polls) ? response.data.polls : []
+        this.selectedPollOptionIds = this.polls.reduce((carry, poll) => {
+          if (poll?.selected_option_id) {
+            carry[poll.id] = Number(poll.selected_option_id)
+          }
+
+          return carry
+        }, {})
+      } catch (error) {
+        console.error('Hiba a szavazás betöltésekor:', error)
+      } finally {
+        this.isPollLoading = false
+      }
+    },
+
+    handlePollTimingChange() {
+      if (!this.pollForm.isTimed) {
+        this.pollForm.deadline = ''
+      }
+    },
+
+    addPollOptionField() {
+      if (this.pollForm.options.length >= 10) {
+        return
+      }
+
+      this.pollForm.options.push('')
+    },
+
+    removePollOptionField(index) {
+      if (this.pollForm.options.length <= 2) {
+        return
+      }
+
+      this.pollForm.options.splice(index, 1)
+    },
+
+    async createPoll() {
+      if (!this.canCreatePoll) {
+        this.showMessage('Csak az esemény létrehozója készíthet szavazást.', 'warning')
+        return
+      }
+
+      const title = String(this.pollForm.title || '').trim()
+      const options = this.pollForm.options.map(option => String(option || '').trim()).filter(Boolean)
+      const deadline = this.pollForm.isTimed ? (this.pollForm.deadline || null) : null
+
+      if (!title) {
+        this.showMessage('Add meg a szavazás kérdését.', 'warning')
+        return
+      }
+
+      if (new Set(options).size < 2) {
+        this.showMessage('Legalább 2 különböző opció szükséges.', 'warning')
+        return
+      }
+
+      if (this.pollForm.isTimed && !deadline) {
+        this.showMessage('Időzített szavazásnál add meg a lezárás napját.', 'warning')
+        return
+      }
+
+      if (deadline && new Date(deadline) < new Date(new Date().toISOString().slice(0, 10))) {
+        this.showMessage('A lezárási nap nem lehet korábbi a létrehozás napjánál.', 'warning')
+        return
+      }
+
+      const token = getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      this.isCreatingPoll = true
+
+      try {
+        const response = await axios.post(
+          `${API_BASE}/polls`,
+          {
+            event_id: Number(this.eventData?.id || this.eventId),
+            title,
+            options,
+            deadline,
+            is_timed: this.pollForm.isTimed,
+            hidden_results: this.pollForm.hiddenResults
+          },
+          {
+            headers: getAuthHeaders(token, true),
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          const message = response?.data?.message || 'Nem sikerült létrehozni a szavazást.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        this.resetPollForm()
+        this.showMessage(response?.data?.message || 'Szavazás sikeresen létrehozva.', 'success')
+        await this.loadPolls()
+      } catch (error) {
+        console.error('Szavazás létrehozási hiba:', error)
+        this.showMessage('Hiba történt a szavazás létrehozásakor.', 'error')
+      } finally {
+        this.isCreatingPoll = false
+      }
+    },
+
+    resetPollForm() {
+      this.pollForm = {
+        title: '',
+        deadline: '',
+        isTimed: false,
+        hiddenResults: false,
+        options: ['', '']
+      }
+    },
+
+    async submitPollVote(poll) {
+      if (!poll?.can_answer || !this.selectedPollOptionIds[poll.id]) {
+        return
+      }
+
+      const token = getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      this.submittingPollVoteIds = {
+        ...this.submittingPollVoteIds,
+        [poll.id]: true
+      }
+
+      try {
+        const response = await axios.post(
+          `${API_BASE}/polls/${poll.id}/answer`,
+          { option_id: Number(this.selectedPollOptionIds[poll.id]) },
+          {
+            headers: getAuthHeaders(token, true),
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          const message = response?.data?.message || 'Nem sikerült rögzíteni a szavazatot.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        this.showMessage(response?.data?.message || 'Szavazat rögzítve.', 'success')
+        await this.loadPolls()
+      } catch (error) {
+        console.error('Szavazási hiba:', error)
+        this.showMessage('Hiba történt a szavazat mentésekor.', 'error')
+      } finally {
+        this.submittingPollVoteIds = {
+          ...this.submittingPollVoteIds,
+          [poll.id]: false
+        }
+      }
+    },
+
+    async stopPoll(poll) {
+      if (!poll?.can_manage || poll?.is_ended) {
+        return
+      }
+
+      const confirmed = await toast.confirm('Biztosan lezárod ezt a szavazást?', {
+        confirmText: 'Lezárom',
+        cancelText: 'Mégse'
+      })
+
+      if (!confirmed) {
+        return
+      }
+
+      const token = getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      this.stoppingPollIds = {
+        ...this.stoppingPollIds,
+        [poll.id]: true
+      }
+
+      try {
+        const response = await axios.patch(
+          `${API_BASE}/polls/${poll.id}/close`,
+          {},
+          {
+            headers: getAuthHeaders(token, true),
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          const message = response?.data?.message || 'Nem sikerült lezárni a szavazást.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        this.showMessage(response?.data?.message || 'Szavazás lezárva.', 'success')
+        await this.loadPolls()
+      } catch (error) {
+        console.error('Szavazás lezárási hiba:', error)
+        this.showMessage('Hiba történt a szavazás lezárásakor.', 'error')
+      } finally {
+        this.stoppingPollIds = {
+          ...this.stoppingPollIds,
+          [poll.id]: false
+        }
+      }
+    },
+
+    getPollResult(poll, optionId) {
+      if (!poll?.results_visible) {
+        return null
+      }
+
+      return poll?.options?.find(item => Number(item.id) === Number(optionId)) || null
+    },
+
+    getPollResultVotes(poll, optionId) {
+      return Number(this.getPollResult(poll, optionId)?.votes || 0)
+    },
+
+    getPollResultPercentage(poll, optionId) {
+      return Number(this.getPollResult(poll, optionId)?.percentage || 0)
+    },
+
+    getPollStateLabel(poll) {
+      if (!poll?.is_started) {
+        return 'Még nem indult'
+      }
+
+      if (poll?.is_ended) {
+        return 'Lezárult'
+      }
+
+      return 'Aktív'
+    },
+
+    formatPollCalendarDate(dateString) {
+      if (!dateString) {
+        return 'Nincs megadva'
+      }
+
+      const match = String(dateString).match(/^(\d{4})-(\d{2})-(\d{2})$/)
+      if (!match) {
+        return this.formatDate(dateString)
+      }
+
+      const year = Number(match[1])
+      const month = Number(match[2]) - 1
+      const day = Number(match[3])
+
+      return new Date(year, month, day).toLocaleDateString('hu-HU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    },
     
     async submitParticipation(answer) {
       if (this.isReadOnlyMode) {
@@ -548,6 +1170,8 @@ export default {
         } else {
           this.showMessage('A nem részvétel sikeresen rögzítve.', 'success')
         }
+
+        await this.loadPolls()
       } catch (error) {
         console.error('Hiba a részvétel mentésekor:', error)
         this.showMessage('Hiba történt a részvétel mentésekor.', 'error')
@@ -704,30 +1328,60 @@ export default {
         this.showMessage('Hiba történt a kedvenc jelölés mentésekor.', 'error')
       }
     },
-    
-    shareEvent() {
-      if (this.isReadOnlyMode) {
-        this.showMessage('Csak megtekintés módban a megosztás nem elérhető.', 'info')
+
+    async toggleEventComments() {
+      if (!this.canManageOccurrence) {
+        this.showMessage('Csak a létrehozó módosíthatja a kommentelést.', 'warning')
         return
       }
 
-      if (navigator.share) {
-        navigator.share({
-          title: this.eventData.title,
-          text: this.eventData.description,
-          url: window.location.href
-        }).catch(() => {
-          this.copyLink()
-        })
-      } else {
-        this.copyLink()
+      const token = getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      const eventId = Number(this.eventData?.id || this.eventId)
+      if (!eventId) {
+        this.showMessage('Nem található esemény azonosító.', 'error')
+        return
+      }
+
+      this.isTogglingChat = true
+
+      try {
+        const response = await axios.patch(
+          `${API_BASE}/events/${eventId}/chat`,
+          { chat_enabled: !this.isEventChatEnabled },
+          {
+            headers: getAuthHeaders(token, true),
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          const message = response?.data?.message || 'Nem sikerült módosítani a kommentelést.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        if (this.eventData) {
+          this.eventData.chat_enabled = Boolean(response?.data?.chat_enabled)
+        }
+
+        this.showMessage(
+          response?.data?.message || (this.eventData?.chat_enabled ? 'Kommentelés engedélyezve.' : 'Kommentelés kikapcsolva.'),
+          'success'
+        )
+      } catch (error) {
+        console.error('Hiba a kommentelés állapot módosítása közben:', error)
+        this.showMessage('Hiba történt a kommentelés állapot mentésekor.', 'error')
+      } finally {
+        this.isTogglingChat = false
       }
     },
-    
-    copyLink() {
-      navigator.clipboard.writeText(window.location.href)
-      this.showMessage('Link másolva a vágólapra!', 'success')
-    },
+
+
 
     toDateTimeLocalValue(dateString) {
       if (!dateString) {
@@ -776,10 +1430,54 @@ export default {
     },
 
     combineDateAndTime(date, time) {
-      if (!date || !time) {
+      const normalizedTime = this.normalizeTimeValue(time)
+
+      if (!date || !normalizedTime) {
         return ''
       }
-      return `${date}T${time}`
+      return `${date}T${normalizedTime}`
+    },
+
+    normalizeTimeValue(timeValue) {
+      if (!timeValue) {
+        return ''
+      }
+
+      const raw = String(timeValue).trim().replace(/\./g, ':')
+      if (raw === '') {
+        return ''
+      }
+
+      let hours
+      let minutes
+
+      const compactMatch = raw.match(/^(\d{1,2})(\d{2})$/)
+      if (compactMatch) {
+        hours = Number(compactMatch[1])
+        minutes = Number(compactMatch[2])
+      } else {
+        const separatedMatch = raw.match(/^(\d{1,2}):(\d{1,2})$/)
+        if (!separatedMatch) {
+          return ''
+        }
+        hours = Number(separatedMatch[1])
+        minutes = Number(separatedMatch[2])
+      }
+
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        return ''
+      }
+
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+    },
+
+    normalizeOccurrenceTime(fieldName, afterNormalize) {
+      const normalized = this.normalizeTimeValue(this.occurrenceForm[fieldName])
+      this.occurrenceForm[fieldName] = normalized
+
+      if (typeof afterNormalize === 'function') {
+        afterNormalize.call(this)
+      }
     },
 
     updateOccurrenceStartDateTime() {
@@ -1210,6 +1908,340 @@ export default {
   color: #f59e0b;
 }
 
+.poll-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.poll-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.poll-inline-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.poll-inline-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.poll-checkbox-field {
+  justify-content: center;
+}
+
+.poll-checkbox-field input {
+  width: 18px;
+  height: 18px;
+}
+
+.poll-checkbox-field span {
+  font-weight: 600;
+}
+
+.poll-field label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.poll-field input {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.poll-field input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.poll-option-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.poll-option-input-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.poll-option-remove,
+.poll-option-add {
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.poll-option-remove {
+  width: 48px;
+  min-width: 48px;
+  background: #fff5f5;
+  color: #e53e3e;
+}
+
+.poll-option-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.poll-option-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: flex-start;
+  padding: 0.75rem 1rem;
+  background: #edf2ff;
+  color: #4c51bf;
+}
+
+.poll-option-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.poll-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  background: #f8fafc;
+}
+
+.poll-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 34rem;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+}
+
+.poll-results-block {
+  max-height: 42rem;
+  overflow: hidden;
+}
+
+.poll-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.poll-meta-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.poll-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.poll-pill.muted {
+  background: #edf2f7;
+  color: #4a5568;
+}
+
+.poll-stop-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 12px;
+  background: #fff1f2;
+  color: #be123c;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.poll-stop-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.poll-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.poll-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: white;
+  color: #2d3748;
+}
+
+.poll-summary-label {
+  font-size: 0.8rem;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.poll-question {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.poll-summary {
+  color: #718096;
+  font-size: 0.95rem;
+}
+
+.poll-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.poll-option-card {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 18px;
+  padding: 1rem;
+  text-align: left;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.poll-option-card:hover:not(:disabled) {
+  border-color: #a3bffa;
+  transform: translateY(-1px);
+}
+
+.poll-option-card.selected,
+.poll-option-card.voted {
+  border-color: #667eea;
+  background: #eef2ff;
+}
+
+.poll-option-card:disabled {
+  cursor: default;
+}
+
+.poll-option-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.poll-option-title {
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.poll-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #667eea;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.poll-result-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.poll-result-bar-track {
+  width: 100%;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.poll-result-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.poll-result-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #4a5568;
+}
+
+.poll-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.poll-submit-button {
+  min-width: 220px;
+}
+
+.poll-info-note {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  font-weight: 500;
+}
+
+.poll-info-note.success {
+  background: #f0fff4;
+  color: #2f855a;
+}
+
+@media (max-width: 768px) {
+  .poll-panel-header {
+    flex-direction: column;
+  }
+
+  .poll-stop-button,
+  .poll-submit-button {
+    width: 100%;
+  }
+
+  .poll-actions {
+    justify-content: stretch;
+  }
+}
+
 /* Tartalom rács */
 .content-grid {
   display: grid;
@@ -1224,7 +2256,6 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  height: 100%;
 }
 
 .info-block {
@@ -1312,17 +2343,16 @@ export default {
   color: #4a5568;
   line-height: 1.7;
   white-space: pre-line;
+  max-height: 420px;
+  overflow: auto;
 }
 
 .details-block {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  display: block;
 }
 
 .details-block .detailed-content {
-  flex: 1;
-  min-height: 220px;
+  min-height: 140px;
 }
 
 /* Kép */
@@ -1492,6 +2522,45 @@ export default {
   gap: 0.7rem;
 }
 
+.poll-checkbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.2rem;
+  align-items: center;
+}
+
+.poll-settings-wrapper {
+  background: #f8fafc;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 2rem;
+}
+
+.poll-deadline-field {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+  margin-bottom: 0 !important;
+}
+
+.poll-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #4a5568;
+  user-select: none;
+}
+
+.poll-checkbox-field input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
 .answer-button {
   display: flex;
   align-items: center;
@@ -1561,11 +2630,83 @@ export default {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
+.comment-section-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.comment-section-placeholder .comment-header {
+  margin-bottom: 0;
+}
+
+.comment-section-placeholder .comment-lock-message {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.comment-lock-message {
+  width: 100%;
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 2px dashed #cbd5e1;
+  background: #f8fafc;
+}
+
+.comment-lock-message i {
+  font-size: 2.2rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.comment-lock-message h3 {
+  margin: 0 0 0.5rem 0;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.comment-lock-message p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.6;
+}
+
 .comment-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+}
+
+.comment-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.comment-toggle-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.comment-toggle-inline:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.comment-toggle-inline:hover:not(:disabled) {
+  border-color: #94a3b8;
+  background: #f1f5f9;
 }
 
 .header-left {
@@ -1698,6 +2839,12 @@ export default {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
+  }
+
+  .comment-header-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
 }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ClassModel;
 use App\Models\User;
+use App\Models\Staff;
 use App\Models\Establishment;
 
 
@@ -59,16 +60,39 @@ class ClassController extends Controller
         if (!$this->isStaffEstablishment($user->id, $establishment)) {
             return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
         }
-        $classes = ClassModel::where('establishment_id', $establishment)->orderBy('grade')->orderBy('name')->get();
+        $classes = ClassModel::where('establishment_id', $establishment)
+            ->orderBy('grade')
+            ->orderBy('name')
+            ->get();
+
+        $studentCounts = User::join('class_students', 'users.id', '=', 'class_students.user_id')
+            ->whereIn('class_students.class_id', $classes->pluck('id'))
+            ->selectRaw('class_students.class_id, COUNT(users.id) as student_count')
+            ->groupBy('class_students.class_id')
+            ->pluck('student_count', 'class_students.class_id');
+
         return response()->json([
-            'data' => $classes->map(function ($item) {
+            'data' => $classes->map(function ($item) use ($studentCounts) {
+                $teacherUser = User::find($item->user_id);
+                $teacherAlias = null;
+
+                if ($item->user_id) {
+                    $teacherAlias = Staff::where('user_id', $item->user_id)
+                        ->where('establishment_id', $item->establishment_id)
+                        ->value('alias');
+                }
+
+                $teacherName = $teacherAlias ?: optional($teacherUser)->name;
+
                 return [
                     'id' => $item->id,
-                    'user' => optional(User::find($item->user_id))->name,
+                    'user' => $teacherName,
+                    'teacher_name' => $teacherName,
                     'user_id' => $item->user_id,
                     'name' => $item->name,
                     'grade' => $item->grade,
                     'capacity' => $item->capacity,
+                    'student_count' => (int) ($studentCounts[$item->id] ?? 0),
                 ];
             })->values(),
         ]);
@@ -141,13 +165,19 @@ class ClassController extends Controller
 
         $userIds = $studentIds
             ->concat($teacherIds)
-            ->map(fn($id) => (int) $id)
+            ->map(function ($id) {
+                return (int) $id;
+            })
             ->unique()
             ->values();
 
         return response()->json([
-            'student_ids' => $studentIds->map(fn($id) => (int) $id)->values(),
-            'teacher_ids' => $teacherIds->map(fn($id) => (int) $id)->values(),
+            'student_ids' => $studentIds->map(function ($id) {
+                return (int) $id;
+            })->values(),
+            'teacher_ids' => $teacherIds->map(function ($id) {
+                return (int) $id;
+            })->values(),
             'user_ids' => $userIds,
             'class_ids' => array_values($classesInEstablishment),
         ]);
@@ -201,12 +231,16 @@ class ClassController extends Controller
 
         $resolvedGrades = $classes
             ->pluck('grade')
-            ->map(fn($grade) => (int) $grade)
+            ->map(function ($grade) {
+                return (int) $grade;
+            })
             ->unique()
             ->values();
 
         $missingGrades = collect($validated['grade_ids'])
-            ->map(fn($grade) => (int) $grade)
+            ->map(function ($grade) {
+                return (int) $grade;
+            })
             ->diff($resolvedGrades)
             ->values();
 
@@ -219,20 +253,28 @@ class ClassController extends Controller
 
         $classIds = $classes
             ->pluck('id')
-            ->map(fn($id) => (int) $id)
+            ->map(function ($id) {
+                return (int) $id;
+            })
             ->values();
 
         $studentIds = User::join('class_students', 'users.id', '=', 'class_students.user_id')
             ->whereIn('class_students.class_id', $classIds)
             ->distinct()
             ->pluck('users.id')
-            ->map(fn($id) => (int) $id)
+            ->map(function ($id) {
+                return (int) $id;
+            })
             ->values();
 
         $teacherIds = $classes
             ->pluck('user_id')
-            ->filter(fn($id) => !is_null($id))
-            ->map(fn($id) => (int) $id)
+            ->filter(function ($id) {
+                return !is_null($id);
+            })
+            ->map(function ($id) {
+                return (int) $id;
+            })
             ->unique()
             ->values();
 

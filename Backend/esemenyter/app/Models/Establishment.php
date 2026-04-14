@@ -18,6 +18,11 @@ class Establishment extends Model
         'email',
         'phone',
         'address',
+        'accepts_join_requests',
+    ];
+
+    protected $casts = [
+        'accepts_join_requests' => 'boolean',
     ];
 
     public function students()

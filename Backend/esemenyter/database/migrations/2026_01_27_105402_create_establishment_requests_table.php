@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('establishment_requests', function (Blueprint $table) {
             $table->id();
+            $table->enum('status', ['pending', 'rejected', 'approved'])->default('pending');
             $table->enum('role', ['student', 'teacher']);
+            $table->string('alias')->nullable();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('establishment_id')->constrained('establishments')->cascadeOnDelete();
             $table->timestamp('created_at')->useCurrent();

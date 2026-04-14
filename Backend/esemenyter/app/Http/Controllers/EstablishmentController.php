@@ -7,7 +7,10 @@ use Illuminate\Validation\Rule;
 use App\Models\Establishment;
 use App\Models\Staff;
 use App\Models\User;
-use Symfony\Component\Mime\Message;
+use Illuminate\Support\Facades\DB;
+use App\Models\Region;
+use App\Models\InnerRegion;
+use App\Models\Settlement;
 
 class EstablishmentController extends Controller
 {
@@ -17,6 +20,10 @@ class EstablishmentController extends Controller
 
         $user = $request->user();
 
+        if (!$user) {
+            return response()->json(['message' => 'nem felhatalmazott!'], 401);
+        }
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255', Rule::unique('establishments', 'title')],
             'description' => ['nullable', 'string'],
@@ -25,6 +32,7 @@ class EstablishmentController extends Controller
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:32'],
             'address' => ['nullable', 'string', 'max:255'],
+            'admin_alias' => ['nullable', 'string', 'max:255'],
         ], [
             'title.required' => 'Az intézmény neve kötelező.',
             'title.string' => 'Az intézmény neve szöveges érték kell legyen.',
@@ -41,12 +49,22 @@ class EstablishmentController extends Controller
             'phone.max' => 'A telefonszám nem lehet hosszabb 32 karakternél.',
             'address.string' => 'A cím szöveges érték kell legyen.',
             'address.max' => 'A cím nem lehet hosszabb 255 karakternél.',
+            'admin_alias.string' => 'Az alias szöveges érték kell legyen.',
+            'admin_alias.max' => 'Az alias nem lehet hosszabb 255 karakternél.',
         ]);
         $validated['user_id'] = $request->user()->id;
+        $validated['accepts_join_requests'] = true;
+        $adminAlias = trim((string) ($validated['admin_alias'] ?? ''));
+        if ($adminAlias === '') {
+            $adminAlias = (string) $request->user()->name;
+        }
+
+        unset($validated['admin_alias']);
         $establishment = Establishment::create($validated);
 
         $staff = Staff::create([
             'role' => 'admin',
+            'alias' => $adminAlias,
             'establishment_id' => $establishment->id,
             'user_id' => $request->user()->id,
         ]);
@@ -68,8 +86,9 @@ class EstablishmentController extends Controller
             $query = Establishment::query()
                 ->join('settlements', 'settlements.id', '=', 'establishments.settlement_id')
                 ->join('inner_regions', 'inner_regions.id', '=', 'settlements.inner_region_id')
+                ->where('establishments.accepts_join_requests', true)
                 ->where('inner_regions.region_id', $regionId)
-                ->select('establishments.id', 'establishments.title')
+                ->select('establishments.id', 'establishments.title', 'establishments.accepts_join_requests')
                 ->distinct();
 
             if ($request->has('search') && !empty($request->search)) {
@@ -84,12 +103,14 @@ class EstablishmentController extends Controller
                     return [
                         'id' => $item->id,
                         'title' => $item->title,
+                        'accepts_join_requests' => (bool) $item->accepts_join_requests,
                     ];
                 })->values(),
             ]);
         }
 
         $query = Establishment::query();
+        $query->where('accepts_join_requests', true);
         if ($request->has('search') && !empty($request->search) && $request->has('settlement_id') && !empty($request->settlement_id)) {
             $search = $request->search;
             $query->where('title', 'LIKE', "%{$search}%")->where('settlement_id', '=', "{$request->settlement_id}");
@@ -103,6 +124,7 @@ class EstablishmentController extends Controller
                     return [
                         'id' => $item->id,
                         'title' => $item->title,
+                        'accepts_join_requests' => (bool) $item->accepts_join_requests,
                     ];
                 })->values(),
             ]);
@@ -118,13 +140,29 @@ class EstablishmentController extends Controller
                 return [
                     'id' => $item->id,
                     'title' => $item->title,
+                    'accepts_join_requests' => (bool) $item->accepts_join_requests,
                 ];
             })->values(),
         ]);
     }
     public function getEstablishmentbyId($id)
     {
-        $establishment = Establishment::find($id);
+        $establishment = Establishment::where('establishments.id', $id)->join('settlements', 'settlements.id', '=', 'establishments.settlement_id')
+            ->join('inner_regions', 'inner_regions.id', '=', 'settlements.inner_region_id')
+            ->join('regions', 'regions.id', '=', 'inner_regions.region_id')
+            ->select(
+                'establishments.id',
+                'establishments.title',
+                'establishments.description',
+                'establishments.website',
+                'establishments.email',
+                'establishments.phone',
+                'establishments.address',
+                'settlements.title as settlement_name',
+                'inner_regions.title as inner_region_name',
+                'regions.title as region_name'
+            )
+            ->first();
 
         return response()->json([
             'data' => $establishment
@@ -133,13 +171,121 @@ class EstablishmentController extends Controller
     public function getMyEstablishments(Request $request)
     {
         $user = $request->user();
-        $establishments = Establishment::where('user_id', $user->id)
-            ->orderBy('title')
+
+        if (!$user) {
+            return response()->json(['message' => 'nem felhatalmazott!'], 401);
+        }
+
+        $staffMemberships = Establishment::query()
+            ->join('staffs', 'staffs.establishment_id', '=', 'establishments.id')
+            ->where('staffs.user_id', $user->id)
+            ->select(
+                'establishments.id',
+                'establishments.title',
+                'establishments.address',
+                'establishments.email',
+                'establishments.phone',
+                'establishments.website',
+                'staffs.role as membership_role'
+            )
             ->get();
 
+        $studentMemberships = Establishment::query()
+            ->join('students', 'students.establishment_id', '=', 'establishments.id')
+            ->where('students.user_id', $user->id)
+            ->select(
+                'establishments.id',
+                'establishments.title',
+                'establishments.address',
+                'establishments.email',
+                'establishments.phone',
+                'establishments.website',
+                DB::raw("'student' as membership_role")
+            )
+            ->get();
+
+        $establishments = $staffMemberships
+            ->concat($studentMemberships)
+            ->unique('id')
+            ->sortBy(function ($item) {
+                return mb_strtolower($item->title);
+            })
+            ->values();
+
         return response()->json([
-            'data' => $establishments
+            'data' => $establishments->map(function ($item) use ($user) {
+                return [
+                    'id' => $item->id,
+                    'title' => $item->title,
+                    'address' => $item->address,
+                    'email' => $item->email,
+                    'phone' => $item->phone,
+                    'website' => $item->website,
+                    'role' => $item->membership_role,
+                    'is_current' => $user->establishment_id === $item->id,
+                ];
+            })->values()
         ]);
+    }
+
+    public function switchEstablishment(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'nem felhatalmazott!'], 401);
+        }
+
+        $validated = $request->validate([
+            'establishment_id' => ['required', 'integer', 'exists:establishments,id'],
+        ], [
+            'establishment_id.required' => 'Az intézmény azonosító megadása kötelező.',
+            'establishment_id.integer' => 'Az intézmény azonosítónak egész számnak kell lennie.',
+            'establishment_id.exists' => 'Nem létező intézmény.',
+        ]);
+
+        $establishmentId = (int) $validated['establishment_id'];
+
+        if (!$this->isMemberEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem vagy tagja ennek az intézménynek.'], 403);
+        }
+
+        $establishment = Establishment::find($establishmentId);
+        $role = $this->resolveRoleForEstablishment($user->id, $establishmentId);
+
+        $user->establishment_id = $establishmentId;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Aktív intézmény sikeresen módosítva.',
+            'data' => [
+                'id' => $establishment->id,
+                'title' => $establishment->title,
+                'address' => $establishment->address,
+                'email' => $establishment->email,
+                'phone' => $establishment->phone,
+                'website' => $establishment->website,
+                'role' => $role,
+                'establishment_id' => $establishment->id,
+            ]
+        ]);
+    }
+
+    protected function resolveRoleForEstablishment(int $userId, int $establishmentId): ?string
+    {
+        if ($this->isAdminEstablishment($userId, $establishmentId)) {
+            return 'admin';
+        }
+
+        if ($this->isStaffEstablishment($userId, $establishmentId)) {
+            return 'teacher';
+        }
+
+        if ($this->isMemberEstablishment($userId, $establishmentId)) {
+            return 'student';
+        }
+
+        return null;
     }
 
     public function getRole(Request $request, $establishmentId)
@@ -164,6 +310,61 @@ class EstablishmentController extends Controller
         return response()->json([
             'message' => 'Nem tagja egy intézménynek sem!',
             403
+        ]);
+    }
+
+    public function getJoinRequestAvailability(Request $request, int $establishmentId)
+    {
+        $user = $request->user();
+
+        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
+
+        $establishment = Establishment::find($establishmentId);
+        if (!$establishment) {
+            return response()->json(['message' => 'Intézmény nem található!'], 404);
+        }
+
+        return response()->json([
+            'establishment_id' => $establishment->id,
+            'accepts_join_requests' => (bool) $establishment->accepts_join_requests,
+        ]);
+    }
+
+    public function updateJoinRequestAvailability(Request $request, int $establishmentId)
+    {
+        $user = $request->user();
+
+        if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
+
+        $validated = $request->validate([
+            'accepts_join_requests' => ['required', 'boolean'],
+        ], [
+            'accepts_join_requests.required' => 'A csatlakozási kérelmek fogadása mező kötelező.',
+            'accepts_join_requests.boolean' => 'A csatlakozási kérelmek fogadása mező csak igaz/hamis érték lehet.',
+        ]);
+
+        $establishment = Establishment::find($establishmentId);
+        if (!$establishment) {
+            return response()->json(['message' => 'Intézmény nem található!'], 404);
+        }
+
+        $establishment->accepts_join_requests = $validated['accepts_join_requests'];
+        $establishment->save();
+
+        if ($establishment->accepts_join_requests) {
+            $message = 'Az intézmény ismét fogad új csatlakozási kérelmeket.';
+        } else {
+            $message = 'Az intézmény jelenleg nem fogad új csatlakozási kérelmeket.';
+        }
+
+        return response()->json([
+            'message' => $message,
+            'establishment_id' => $establishment->id,
+            'accepts_join_requests' => (bool) $establishment->accepts_join_requests,
         ]);
     }
 }

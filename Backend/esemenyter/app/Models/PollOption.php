@@ -9,6 +9,16 @@ class PollOption extends Model
     //
     protected $fillable = [
         'poll_id',
-        'option_text',
+        'title',
     ];
+
+    public function poll()
+    {
+        return $this->belongsTo(Poll::class);
+    }
+
+    public function answers()
+    {
+        return $this->hasMany(PollAnswer::class);
+    }
 }

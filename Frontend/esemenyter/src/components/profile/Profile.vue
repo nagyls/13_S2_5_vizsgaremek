@@ -39,6 +39,14 @@
                     <i class='bx bx-home'></i>
                     <span>Főoldal</span>
                   </router-link>
+                  <router-link
+                    v-if="user.role === 'admin'"
+                    to="/institution-dashboard"
+                    class="menu-item"
+                  >
+                    <i class='bx bx-building-house'></i>
+                    <span>Intézményvezetői felület</span>
+                  </router-link>
                   <router-link to="/events-list" class="menu-item">
                     <i class='bx bx-calendar'></i>
                     <span>Események</span>
@@ -68,7 +76,31 @@
             <span>{{ userInitials }}</span>
           </div>
           <div class="profile-title">
-            <h1>{{ user.name }}</h1>
+            <div v-if="!isEditingName" class="name-display-group">
+              <h1>{{ user.name }}</h1>
+              <button class="btn-icon-edit" @click="startEditingName" title="Név szerkesztése">
+                <i class='bx bx-edit-alt'></i>
+              </button>
+            </div>
+            <div v-else class="name-edit-group">
+              <input 
+                v-model="editName" 
+                type="text" 
+                class="form-control name-edit-input" 
+                @keyup.enter="saveName"
+                @keyup.esc="cancelEditingName"
+                ref="nameInput"
+              >
+              <div class="edit-actions">
+                <button class="btn-save-mini" @click="saveName" :disabled="isSavingName">
+                  <i v-if="isSavingName" class='bx bx-loader-alt bx-spin'></i>
+                  <i v-else class='bx bx-check'></i>
+                </button>
+                <button class="btn-cancel-mini" @click="cancelEditingName" :disabled="isSavingName">
+                  <i class='bx bx-x'></i>
+                </button>
+              </div>
+            </div>
             <p class="profile-role" :class="user.role">
               <i :class="roleIcon"></i>
               {{ roleDisplayName }}
@@ -113,7 +145,7 @@
                   </div>
                   <div class="info-item">
                     <span class="info-label">Járás:</span>
-                    <span class="info-value">{{ user.district + "i" || 'Nincs megadva' }}</span>
+                    <span class="info-value">{{ user.district ? `${user.district}i` : 'Nincs megadva' }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">Város:</span>
@@ -140,7 +172,7 @@
                   </div>
                   <div class="info-item">
                     <span class="info-label">Járás:</span>
-                    <span class="info-value">{{ user.district + "i" || 'Nincs megadva' }}</span>
+                    <span class="info-value">{{ user.district ? `${user.district}i` : 'Nincs megadva' }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">Város:</span>
@@ -175,7 +207,7 @@
                   </div>
                   <div class="info-item">
                     <span class="info-label">Járás:</span>
-                    <span class="info-value">{{ user.district + "i" || 'Nincs megadva' }}</span>
+                    <span class="info-value">{{ user.district ? `${user.district}i` : 'Nincs megadva' }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">Város:</span>
@@ -224,11 +256,79 @@
                   </div>
                 </div>
               </div>
+
+              <div class="info-card switcher-card">
+                <h3><i class='bx bx-transfer-alt'></i> Profilváltás</h3>
+                <div class="switcher-card-content">
+                  <p>Válts másik intézményi profilra, vagy indíts új csatlakozást tanárként, diákként, illetve hozz létre új intézményt.</p>
+                  <button class="btn-primary" type="button" @click="openEstablishmentSwitcher">
+                    <i class='bx bx-transfer'></i>
+                    Profilváltó megnyitása
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </main>
+
+    <transition name="slide-fade">
+      <div v-if="showEstablishmentSwitcher" class="modal-backdrop" @click.self="closeEstablishmentSwitcher">
+        <div class="switcher-modal">
+          <div class="switcher-header">
+            <div>
+              <h2>Profilváltás</h2>
+              <p>Válassz az intézményeid közül, vagy menj tovább új csatlakozásra.</p>
+            </div>
+            <button type="button" class="switcher-close" @click="closeEstablishmentSwitcher">
+              <i class='bx bx-x'></i>
+            </button>
+          </div>
+
+          <div v-if="isLoadingEstablishments" class="switcher-state">
+            <i class='bx bx-loader-circle bx-spin'></i>
+            <span>Intézmények betöltése...</span>
+          </div>
+
+          <div v-else class="switcher-body">
+            <div v-if="establishments.length" class="establishment-list">
+              <button
+                v-for="establishment in establishments"
+                :key="establishment.id"
+                type="button"
+                class="establishment-option"
+                :class="{ current: establishment.is_current }"
+                :disabled="Boolean(establishment.is_current) || isSwitchingEstablishment"
+                @click="switchEstablishment(establishment)"
+              >
+                <div class="establishment-option-main">
+                  <div class="establishment-option-title-row">
+                    <h3>{{ establishment.title }}</h3>
+                    <span class="establishment-role" :class="establishment.role">{{ getRoleDisplayName(establishment.role) }}</span>
+                  </div>
+                  <p v-if="establishment.address" class="establishment-address">{{ establishment.address }}</p>
+                </div>
+                <span v-if="establishment.is_current" class="current-establishment-badge">Jelenlegi</span>
+                <i v-else class='bx bx-chevron-right'></i>
+              </button>
+            </div>
+
+            <div v-else class="switcher-state empty">
+              <i class='bx bx-buildings'></i>
+              <span>Még nincs másik választható intézményed.</span>
+            </div>
+
+            <div class="switcher-footer">
+              <button type="button" class="btn-primary" @click="goToRoleChooser">
+                <i class='bx bx-plus-circle'></i>
+                Másik intézményhez csatlakozom vagy újat hozok létre
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- Értesítés -->
     <transition name="toast">
@@ -283,7 +383,14 @@ export default {
         created_at: null,
         updated_at: null
       },
+      isEditingName: false,
+      editName: '',
+      isSavingName: false,
       showUserMenu: false,
+      showEstablishmentSwitcher: false,
+      isLoadingEstablishments: false,
+      isSwitchingEstablishment: false,
+      establishments: [],
       showScrollTop: false,
       showToast: false,
       toastMessage: '',
@@ -308,7 +415,7 @@ export default {
         'teacher': 'Tanár',
         'admin': 'Adminisztrátor'
       };
-      return roles[this.user.role] || this.user.role;
+      return roles[this.user.role] || this.user.role || 'Felhasználó';
     },
     
     roleIcon() {
@@ -331,6 +438,51 @@ export default {
   },
   
   methods: {
+    startEditingName() {
+      this.editName = this.user.name;
+      this.isEditingName = true;
+      this.$nextTick(() => {
+        if (this.$refs.nameInput) {
+          this.$refs.nameInput.focus();
+        }
+      });
+    },
+
+    cancelEditingName() {
+      this.isEditingName = false;
+      this.editName = '';
+    },
+
+    async saveName() {
+      if (!this.editName.trim() || this.editName === this.user.name) {
+        this.cancelEditingName();
+        return;
+      }
+
+      this.isSavingName = true;
+      try {
+        const token = getToken();
+        const response = await axios.patch(`${API_BASE}/user/update`, 
+          { name: this.editName },
+          { headers: getAuthHeaders(token) }
+        );
+
+        this.user.name = this.editName;
+        this.persistStoredUser({ 
+          name: this.editName,
+          name_updated_at: response.data.user.name_updated_at 
+        });
+        this.showNotification('Név sikeresen frissítve!', 'success');
+        this.isEditingName = false;
+      } catch (error) {
+        console.error('Hiba a név frissítésekor:', error);
+        const message = error.response?.data?.message || 'Nem sikerült frissíteni a nevet.';
+        this.showNotification(message, 'error');
+      } finally {
+        this.isSavingName = false;
+      }
+    },
+
     loadUserData() {
       const savedUser =
         localStorage.getItem('esemenyter_user') ||
@@ -367,10 +519,55 @@ export default {
           ...userData,
           schoolId: userData.establishment_id || this.user.schoolId || null
         };
+
+        await this.loadEstablishments();
         
       } catch (error) {
         console.error('Hiba a felhasználói adatok betöltésekor:', error);
         this.showNotification('Hiba történt az adatok betöltésekor', 'error');
+      }
+    },
+
+    async loadEstablishments() {
+      const token = getToken();
+
+      if (!token) {
+        return;
+      }
+
+      this.isLoadingEstablishments = true;
+
+      try {
+        const response = await axios.get(`${API_BASE}/establishment/mine`, {
+          headers: getAuthHeaders(token)
+        });
+
+        this.establishments = Array.isArray(response?.data?.data) ? response.data.data : [];
+
+        const currentEstablishment = this.establishments.find(item => item.is_current) || null;
+        if (currentEstablishment) {
+          this.user.school = currentEstablishment.title || this.user.school;
+          this.user.schoolId = currentEstablishment.id || this.user.schoolId;
+          this.user.schoolAddress = currentEstablishment.address || this.user.schoolAddress;
+          this.user.schoolEmail = currentEstablishment.email || this.user.schoolEmail;
+          this.user.schoolPhone = currentEstablishment.phone || this.user.schoolPhone;
+          this.user.schoolWebsite = currentEstablishment.website || this.user.schoolWebsite;
+          if (currentEstablishment.role) {
+            this.user.role = currentEstablishment.role;
+          }
+          await this.loadEstablishmentDetails(currentEstablishment.id);
+          this.persistStoredUser({
+            role: this.user.role,
+            school: this.user.school,
+            schoolId: this.user.schoolId,
+            establishment_id: this.user.schoolId,
+            institution_id: this.user.schoolId
+          });
+        }
+      } catch (error) {
+        console.error('Hiba az intézményi tagságok betöltésekor:', error);
+      } finally {
+        this.isLoadingEstablishments = false;
       }
     },
     
@@ -389,6 +586,171 @@ export default {
       } else {
         this.$router.push('/dashboard');
       }
+    },
+
+    openEstablishmentSwitcher() {
+      this.showUserMenu = false;
+      this.showEstablishmentSwitcher = true;
+      this.loadEstablishments();
+    },
+
+    closeEstablishmentSwitcher() {
+      this.showEstablishmentSwitcher = false;
+    },
+
+    getRoleDisplayName(role) {
+      const roles = {
+        student: 'Diák',
+        teacher: 'Tanár',
+        admin: 'Adminisztrátor'
+      };
+
+      return roles[role] || role || 'Ismeretlen';
+    },
+
+    saveCurrentInstitution(institutionId) {
+      const numericInstitutionId = Number(institutionId);
+
+      if (!Number.isFinite(numericInstitutionId) || numericInstitutionId <= 0) {
+        return;
+      }
+
+      if (localStorage.getItem('esemenyter_token')) {
+        localStorage.setItem('CurrentInstitution', String(numericInstitutionId));
+        sessionStorage.removeItem('CurrentInstitution');
+        return;
+      }
+
+      sessionStorage.setItem('CurrentInstitution', String(numericInstitutionId));
+      localStorage.removeItem('CurrentInstitution');
+    },
+
+    persistStoredUser(fields = {}) {
+      const localUser = localStorage.getItem('esemenyter_user');
+      const sessionUser = sessionStorage.getItem('esemenyter_user');
+
+      if (localUser) {
+        const parsed = JSON.parse(localUser);
+        localStorage.setItem('esemenyter_user', JSON.stringify({ ...parsed, ...fields }));
+      }
+
+      if (sessionUser) {
+        const parsed = JSON.parse(sessionUser);
+        sessionStorage.setItem('esemenyter_user', JSON.stringify({ ...parsed, ...fields }));
+      }
+    },
+
+    async loadEstablishmentDetails(establishmentId) {
+      const numericEstablishmentId = Number(establishmentId);
+      if (!Number.isFinite(numericEstablishmentId) || numericEstablishmentId <= 0) {
+        return;
+      }
+
+      const token = getToken();
+      if (!token) {
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_BASE}/establishment/${numericEstablishmentId}`, {
+          headers: getAuthHeaders(token)
+        });
+
+        const details = response?.data?.data;
+        if (!details) {
+          return;
+        }
+
+        this.user.region = details.region_name || '';
+        this.user.district = details.inner_region_name || '';
+        this.user.city = details.settlement_name || '';
+        this.user.school = details.title || this.user.school;
+        this.user.schoolAddress = details.address || this.user.schoolAddress;
+        this.user.schoolEmail = details.email || this.user.schoolEmail;
+        this.user.schoolPhone = details.phone || this.user.schoolPhone;
+        this.user.schoolWebsite = details.website || this.user.schoolWebsite;
+
+        this.persistStoredUser({
+          region: this.user.region,
+          district: this.user.district,
+          city: this.user.city,
+          school: this.user.school,
+          schoolAddress: this.user.schoolAddress,
+          schoolEmail: this.user.schoolEmail,
+          schoolPhone: this.user.schoolPhone,
+          schoolWebsite: this.user.schoolWebsite,
+          establishment_id: this.user.schoolId,
+          institution_id: this.user.schoolId
+        });
+      } catch (error) {
+        console.error('Hiba az intézmény részleteinek betöltésekor:', error);
+      }
+    },
+
+    async switchEstablishment(establishment) {
+      if (!establishment || establishment.is_current || this.isSwitchingEstablishment) {
+        return;
+      }
+
+      const token = getToken();
+      if (!token) {
+        this.$router.push('/');
+        return;
+      }
+
+      this.isSwitchingEstablishment = true;
+
+      try {
+        const response = await axios.patch(
+          `${API_BASE}/establishment/switch`,
+          { establishment_id: establishment.id },
+          { headers: getAuthHeaders(token, true) }
+        );
+
+        const payload = response?.data?.data || {};
+        const nextRole = payload.role || establishment.role || this.user.role;
+        const nextSchoolId = Number(payload.establishment_id || establishment.id) || null;
+        const nextSchool = payload.title || establishment.title || '';
+
+        this.saveCurrentInstitution(nextSchoolId);
+        this.user.role = nextRole;
+        this.user.schoolId = nextSchoolId;
+        this.user.school = nextSchool;
+        this.user.schoolAddress = payload.address || establishment.address || '';
+        this.user.schoolEmail = payload.email || establishment.email || '';
+        this.user.schoolPhone = payload.phone || establishment.phone || '';
+        this.user.schoolWebsite = payload.website || establishment.website || '';
+        this.establishments = this.establishments.map(item => ({
+          ...item,
+          is_current: Number(item.id) === Number(nextSchoolId)
+        }));
+
+        this.persistStoredUser({
+          role: nextRole,
+          school: nextSchool,
+          schoolId: nextSchoolId,
+          establishment_id: nextSchoolId,
+          institution_id: nextSchoolId,
+          pendingApproval: false,
+          requestedRole: ''
+        });
+
+        this.showNotification(response?.data?.message || 'Profil sikeresen átváltva.', 'success');
+        this.closeEstablishmentSwitcher();
+        await this.loadUserFromBackend();
+        await this.loadEstablishmentDetails(nextSchoolId);
+      } catch (error) {
+        console.error('Hiba az aktív intézmény váltásakor:', error);
+        const message = error?.response?.data?.message || 'Nem sikerült átváltani a kiválasztott profilra.';
+        this.showNotification(message, 'error');
+      } finally {
+        this.isSwitchingEstablishment = false;
+      }
+    },
+
+    goToRoleChooser() {
+      this.closeEstablishmentSwitcher();
+      this.$router.push({ path: '/dashboard', query: { chooseRole: '1' } });
     },
     
     toggleUserMenu() {
@@ -662,8 +1024,90 @@ export default {
 
 .slide-fade-enter-from,
 .slide-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
+  opacit: 0;
+  color: #111827;
+}
+
+.name-display-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.btn-icon-edit {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.btn-icon-edit:hover {
+  background: #f3f4f6;
+  color: #4f46e5;
+}
+
+.name-edit-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.name-edit-input {
+  font-size: 24px;
+  font-weight: 700;
+  padding: 4px 12px;
+  height: auto;
+  max-width: 300px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-save-mini, .btn-cancel-mini {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s;
+}
+
+.btn-save-mini {
+  background: #10b981;
+  color: white;
+}
+
+.btn-save-mini:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn-cancel-mini {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-cancel-mini:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.btn-save-mini:disabled, .btn-cancel-mini:disabled {
+  opacity: 0.5;
+  cursor: not-allowednslateY(-10px);
 }
 
 /* Fő tartalom */
@@ -739,6 +1183,208 @@ export default {
 .profile-actions {
   display: flex;
   gap: 16px;
+}
+
+.switcher-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.switcher-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.switcher-card-content p {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.switcher-card-content .btn-primary {
+  align-self: flex-start;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 2000;
+}
+
+.switcher-modal {
+  width: min(720px, 100%);
+  max-height: min(80vh, 760px);
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.switcher-header {
+  padding: 24px 28px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.switcher-header h2 {
+  margin: 0 0 6px 0;
+  color: #111827;
+}
+
+.switcher-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.switcher-close {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.switcher-body {
+  padding: 24px 28px 28px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.switcher-state {
+  padding: 40px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #4b5563;
+}
+
+.switcher-state.empty {
+  flex-direction: column;
+}
+
+.switcher-state i {
+  font-size: 24px;
+}
+
+.establishment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.establishment-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 20px;
+  border: 1px solid #dbe4ff;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.establishment-option:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #8b5cf6;
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.12);
+}
+
+.establishment-option:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.establishment-option.current {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+}
+
+.establishment-option-main {
+  min-width: 0;
+}
+
+.establishment-option-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.establishment-option-title-row h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+}
+
+.establishment-address {
+  margin: 8px 0 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.establishment-role {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.establishment-role.student {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.establishment-role.teacher {
+  background: rgba(249, 115, 22, 0.12);
+  color: #ea580c;
+}
+
+.establishment-role.admin {
+  background: rgba(99, 102, 241, 0.12);
+  color: #4f46e5;
+}
+
+.current-establishment-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #10b981;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.switcher-footer {
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* Profil tartalom */
@@ -1113,6 +1759,32 @@ export default {
   .profile-actions button {
     width: 100%;
     justify-content: center;
+  }
+
+  .switcher-card-content .btn-primary {
+    width: 100%;
+    justify-content: center;
+    align-self: stretch;
+  }
+
+  .switcher-modal {
+    max-height: 88vh;
+  }
+
+  .switcher-header,
+  .switcher-body {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .switcher-footer .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .establishment-option {
+    align-items: flex-start;
+    flex-direction: column;
   }
   
   .info-grid {

@@ -19,6 +19,8 @@ return new class extends Migration
             $table->date('start_date')->nullable();
             $table->date('deadline')->nullable();
             $table->boolean('is_timed')->default(false);
+            $table->boolean('hidden_results')->default(false);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

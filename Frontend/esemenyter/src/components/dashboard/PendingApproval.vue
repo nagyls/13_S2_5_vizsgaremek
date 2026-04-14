@@ -138,7 +138,8 @@ export default {
         schoolId: null
       },
       showUserMenu: false,
-      showScrollTop: false
+      showScrollTop: false,
+      statusPollingId: null
     }
   },
   
@@ -163,6 +164,126 @@ export default {
   },
   
   methods: {
+    resolveInstitutionId() {
+      const fromUser = Number(this.user.schoolId || this.user.institution_id);
+      if (Number.isFinite(fromUser) && fromUser > 0) {
+        return fromUser;
+      }
+
+      const storedInstitutionId = Number(
+        localStorage.getItem('CurrentInstitution') ||
+        sessionStorage.getItem('CurrentInstitution')
+      );
+
+      if (Number.isFinite(storedInstitutionId) && storedInstitutionId > 0) {
+        return storedInstitutionId;
+      }
+
+      return null;
+    },
+
+    updateStoredUserState(updates) {
+      const storages = [localStorage, sessionStorage];
+
+      storages.forEach(storage => {
+        const savedUserRaw = storage.getItem('esemenyter_user');
+        if (!savedUserRaw) {
+          return;
+        }
+
+        try {
+          const savedUser = JSON.parse(savedUserRaw);
+          Object.assign(savedUser, updates);
+          storage.setItem('esemenyter_user', JSON.stringify(savedUser));
+        } catch (error) {
+          // Hibás storage érték esetén ne álljon le az oldal.
+        }
+      });
+    },
+
+    updateStoredPendingState(nextPendingApproval) {
+      this.updateStoredUserState({
+        pendingApproval: Boolean(nextPendingApproval)
+      });
+    },
+
+    async resolveApprovedRole(institutionId, token) {
+      if (!institutionId || !token) {
+        return '';
+      }
+
+      try {
+        const roleResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/role`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json'
+          }
+        });
+
+        return roleResponse?.data?.role || '';
+      } catch (error) {
+        console.error('Hiba a jóváhagyott szerepkör lekérésekor:', error);
+        return '';
+      }
+    },
+
+    async checkRequestStatus() {
+      const token =
+        localStorage.getItem('esemenyter_token') ||
+        sessionStorage.getItem('esemenyter_token');
+
+      const institutionId = this.resolveInstitutionId();
+
+      if (!token || !institutionId) {
+        return;
+      }
+
+      try {
+        const response = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/requests/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const status = response?.data?.status || '';
+
+        if (status === 'accepted') {
+          const approvedRole = await this.resolveApprovedRole(institutionId, token);
+          const nextRole = approvedRole || this.user.role || this.user.requestedRole || '';
+
+          this.user.role = nextRole;
+          this.user.pendingApproval = false;
+          this.user.requestedRole = '';
+
+          this.updateStoredUserState({
+            pendingApproval: false,
+            role: nextRole,
+            requestedRole: ''
+          });
+
+          this.$router.replace('/user-dashboard');
+          return;
+        }
+
+        if (status === 'rejected') {
+          this.updateStoredUserState({
+            pendingApproval: false,
+            requestedRole: ''
+          });
+          this.$router.replace('/approval-rejected');
+          return;
+        }
+
+        if (status === 'none') {
+          this.updateStoredUserState({
+            pendingApproval: false,
+            requestedRole: ''
+          });
+          this.$router.replace('/dashboard');
+        }
+      } catch (error) {
+        console.error('Hiba a kérelem státuszának ellenőrzésekor:', error);
+      }
+    },
+
     loadUserData() {
       const savedUser =
         localStorage.getItem('esemenyter_user') ||
@@ -230,11 +351,21 @@ export default {
     window.addEventListener('scroll', this.handleScroll);
 
     document.addEventListener('click', this.handleDocumentClick);
+
+    this.checkRequestStatus();
+    this.statusPollingId = window.setInterval(() => {
+      this.checkRequestStatus();
+    }, 15000);
   },
   
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
     document.removeEventListener('click', this.handleDocumentClick);
+
+    if (this.statusPollingId) {
+      window.clearInterval(this.statusPollingId);
+      this.statusPollingId = null;
+    }
   }
 }
 </script>

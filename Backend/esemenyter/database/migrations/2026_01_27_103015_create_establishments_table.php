@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('phone', 32)->nullable();
             $table->string('address', 255)->nullable();
             $table->boolean('verified')->default(false);
+            $table->boolean('accepts_join_requests')->default(true);
             $table->foreignId('settlement_id')->constrained('settlements')->onDelete('cascade');
             $table->timestamps();
         });

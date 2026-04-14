@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Email Megerősítés</title>
+    <title>Jelszó-visszaállítás</title>
     <style>
         * {
             margin: 0;
@@ -72,14 +72,13 @@
         .button-container {
             text-align: center;
             margin: 40px 0;
-
         }
 
         .button-container a {
             color: #ffffff;
         }
 
-        .verify-button {
+        .reset-button {
             display: inline-block;
             padding: 14px 40px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -92,7 +91,7 @@
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .verify-button:hover {
+        .reset-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
         }
@@ -159,40 +158,37 @@
 </head>
 <body>
     <div class="email-container">
-
         <div class="header">
             <img src="cid:logo" alt="EseményTér logó" class="brand-logo">
-            <h1>Üdvözöljük az EseményTérben!</h1>
-            <p>Email cím megerősítése</p>
+            <h1>Jelszó-visszaállítás</h1>
+            <p>Új jelszó beállítása</p>
         </div>
-
 
         <div class="content">
             <div class="greeting">
-                Hello {{ $notifiable->name }}!
+                Helló {{ $notifiable->name }}!
             </div>
 
             <div class="message">
-                <p>Köszönünk, hogy regisztráltál az EseményTérben!</p>
+                <p>Jelszó-visszaállítási kérelmet kaptunk az EseményTér fiókodhoz.</p>
                 <p style="margin-top: 15px;">
-                    Az email címed megerősítéséhez kattints az alábbi gombra. Ez egy fontos lépés a fiók biztonságához.
+                    Az új jelszó beállításához kattints az alábbi gombra.
                 </p>
             </div>
 
             <div class="button-container">
-                <a href="{{ $actionUrl }}" class="verify-button">
-                    Email megerősítése
+                <a href="{{ $actionUrl }}" class="reset-button">
+                    Új jelszó beállítása
                 </a>
             </div>
 
-
             <div class="security-note">
                 <strong>Biztonsági megjegyzés:</strong><br>
-                Ha nem Te regisztráltál, kérjük, hagyj figyelmen kívül erre az emailt. A link 24 óra múlva lejár.
+                Ha nem Te kérted a jelszó-visszaállítást, kérjük, hagyd figyelmen kívül ezt az emailt.
             </div>
 
             <div class="expiry-notice">
-                <strong>Fontos:</strong> Ez a megerősítési link 24 óra múlva lejár. Addig végezd el a megerősítést!
+                <strong>Fontos:</strong> Ez a visszaállítási link {{ $expiryMinutes }} perc múlva lejár.
             </div>
 
             <div class="alternative-text">

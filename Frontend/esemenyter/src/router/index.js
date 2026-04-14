@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../components/auth/Login.vue'
 import Registrate from '../components/auth/Registrate.vue'
 import EmailVerification from '../components/auth/EmailVerification.vue'
+import ForgotPassword from '../components/auth/ForgotPassword.vue'
+import ResetPassword from '../components/auth/ResetPassword.vue'
 import Aszf from '../components/legal/Aszf.vue'
 import Privacy from '../components/legal/Privacy.vue'
 import MainPage from '../components/home/MainPage.vue'
@@ -15,6 +17,7 @@ import UserDashboard from '@/components/dashboard/UserDashboard.vue'
 import InstitutionManagerDashboard from '@/components/dashboard/InstitutionManagerDashboard.vue'
 import PendingApproval from '@/components/dashboard/PendingApproval.vue'
 import Profile from '@/components/profile/Profile.vue'
+import ApprovalRejected from '@/components/dashboard/ApprovalRejected.vue'
 
 const routes = [
   {
@@ -34,6 +37,18 @@ const routes = [
     name: 'verify-email',
     component: EmailVerification,
     meta: { title: 'Email megerősítés' }
+  },
+  {
+    path: '/forgot-password',
+    name: 'forgot-password',
+    component: ForgotPassword,
+    meta: { title: 'Elfelejtett jelszó' }
+  },
+  {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: ResetPassword,
+    meta: { title: 'Új jelszó beállítása' }
   },
   {
     path: '/aszf',
@@ -110,6 +125,12 @@ const routes = [
     meta: { title: 'Függőben lévő jóváhagyások' }
   },
   {
+    path: '/approval-rejected',
+    name: 'approval-rejected',
+    component: ApprovalRejected,
+    meta: { title: 'Elutasított jóváhagyások' }
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: Profile,
@@ -142,12 +163,9 @@ router.beforeEach((to, from, next) => {
 
   const isStudentOrTeacher = role === 'student' || role === 'teacher';
 
-  if (isStudentOrTeacher && to.path === '/pending-approval') {
-    next('/user-dashboard');
-    return;
-  }
+  const allowRoleChooser = to.path === '/dashboard' && String(to.query?.chooseRole || '') === '1';
 
-  if (isStudentOrTeacher && to.path === '/dashboard') {
+  if (isStudentOrTeacher && to.path === '/dashboard' && !allowRoleChooser) {
     next('/user-dashboard');
     return;
   }

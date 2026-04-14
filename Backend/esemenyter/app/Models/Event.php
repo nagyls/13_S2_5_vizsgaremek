@@ -35,6 +35,7 @@ class Event extends Model
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'chat_enabled' => 'boolean',
         'target_class_ids' => 'array',
         'target_grade_ids' => 'array',
 

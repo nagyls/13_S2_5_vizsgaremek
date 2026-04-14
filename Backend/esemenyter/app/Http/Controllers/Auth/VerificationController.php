@@ -33,7 +33,7 @@ class VerificationController extends Controller
 
         $user = User::find($id);
 
-        if (!$user || !hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+        if (!$user || !hash_equals($hash, sha1($user->getEmailForVerification()))) {
             return $this->verificationResponse('invalid', $id, $hash);
         }
 
