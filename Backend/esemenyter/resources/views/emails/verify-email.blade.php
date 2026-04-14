@@ -72,6 +72,11 @@
         .button-container {
             text-align: center;
             margin: 40px 0;
+
+        }
+
+        .button-container a {
+            color: #ffffff;
         }
 
         .verify-button {

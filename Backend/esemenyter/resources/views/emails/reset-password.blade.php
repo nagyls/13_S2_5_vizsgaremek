@@ -74,6 +74,10 @@
             margin: 40px 0;
         }
 
+        .button-container a {
+            color: #ffffff;
+        }
+
         .reset-button {
             display: inline-block;
             padding: 14px 40px;
