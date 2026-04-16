@@ -8,7 +8,7 @@
 
         <h1>Új jelszó beállítása</h1>
         <p class="intro-text">
-          Add meg az email címedet és az új jelszavadat. A jelszónak legalább 6 karakteresnek kell lennie, és tartalmaznia kell kis- és nagybetűt, valamint számot.
+          Adja meg az email címét és az új jelszávát. A jelszónak legalább 6 karakteresnek kell lennie, és tartalmaznia kell kis- és nagybetűt, valamint számot.
         </p>
 
         <div v-if="!token || !email" class="status-box error">

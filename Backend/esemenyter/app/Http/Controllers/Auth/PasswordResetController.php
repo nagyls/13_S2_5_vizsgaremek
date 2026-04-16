@@ -16,7 +16,7 @@ class PasswordResetController extends Controller
     public function sendResetLink(Request $request)
     {
         $validated = $request->validate([
-            'email' => ['required', 'string', 'email'],
+            'email' => 'required|string|email',
         ], [
             'email.required' => 'Az email cim megadasa kotelezo.',
             'email.email' => 'Ervenytelen email cim.',
@@ -40,10 +40,10 @@ class PasswordResetController extends Controller
     public function reset(Request $request)
     {
         $validated = $request->validate([
-            'token' => ['required', 'string'],
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'confirmed', PasswordRule::defaults()->min(6)->mixedCase()->numbers()],
-            'password_confirmation' => ['required', 'string'],
+            'token' => 'required|string',
+            'email' => 'required|string|email',
+            'password' => ['required', 'confirmed', PasswordRule::min(6)->mixedCase()->numbers()],
+            'password_confirmation' => 'required|string',
         ], [
             'token.required' => 'A visszaallitasi token hianyzik vagy ervenytelen.',
             'email.required' => 'Az email cim megadasa kotelezo.',

@@ -133,9 +133,9 @@ class RequestController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'establishment_id' => ['required', 'integer', 'exists:establishments,id'],
-            'role' => ['required', 'string', 'in:student,teacher'],
-            'alias' => ['nullable', 'string', 'max:255'],
+            'establishment_id' => 'required|integer|exists:establishments,id',
+            'role' => 'required|string|in:student,teacher',
+            'alias' => 'nullable|string|max:255',
         ], [
             'establishment_id.required' => 'Az intézmény azonosító megadása kötelező.',
             'establishment_id.exists'   => 'Nem létező intézmény.',
@@ -145,7 +145,11 @@ class RequestController extends Controller
         ]);
 
         $establishmentId = $validated['establishment_id'];
-        $alias = trim((string) ($validated['alias'] ?? ''));
+        $aliasSource = '';
+        if (array_key_exists('alias', $validated)) {
+            $aliasSource = $validated['alias'];
+        }
+        $alias = trim((string) $aliasSource);
         if ($alias === '') {
             $alias = (string) $user->name;
         }
@@ -191,10 +195,10 @@ class RequestController extends Controller
     public function handleRequest(Request $request)
     {
         $validated = $request->validate([
-            'establishment_id' => ['required', 'integer', 'exists:establishments,id'],
-            'action' => ['required', 'string', 'in:accept,reject'],
-            'request_id' => ['required', 'array'],
-            'request_id.*' => ['integer', 'exists:establishment_requests,id'],
+            'establishment_id' => 'required|integer|exists:establishments,id',
+            'action' => 'required|string|in:accept,reject',
+            'request_id' => 'required|array',
+            'request_id.*' => 'integer|exists:establishment_requests,id',
         ], [
             'establishment_id.required' => 'Az intézmény azonosító megadása kötelező.',
             'establishment_id.exists'   => 'Nem létező intézmény.',

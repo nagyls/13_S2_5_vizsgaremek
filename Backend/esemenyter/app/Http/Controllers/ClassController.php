@@ -18,11 +18,11 @@ class ClassController extends Controller
     {
 
         $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'grade' => ['required', 'integer'],
-            'capacity' => ['nullable', 'integer'],
-            'establishment_id' => ['required', 'exists:establishments,id'],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'name' => 'required|string|max:100',
+            'grade' => 'required|integer',
+            'capacity' => 'nullable|integer',
+            'establishment_id' => 'required|exists:establishments,id',
+            'user_id' => 'nullable|integer|exists:users,id',
         ], [
             'capacity.integer'          => 'A maximális létszámnak egész számnak kell lennie.',
             'name.required'             => 'Az osztály neve kötelező.',
@@ -83,6 +83,10 @@ class ClassController extends Controller
                 }
 
                 $teacherName = $teacherAlias ?: optional($teacherUser)->name;
+                $studentCount = 0;
+                if (isset($studentCounts[$item->id])) {
+                    $studentCount = (int) $studentCounts[$item->id];
+                }
 
                 return [
                     'id' => $item->id,
@@ -92,7 +96,7 @@ class ClassController extends Controller
                     'name' => $item->name,
                     'grade' => $item->grade,
                     'capacity' => $item->capacity,
-                    'student_count' => (int) ($studentCounts[$item->id] ?? 0),
+                    'student_count' => $studentCount,
                 ];
             })->values(),
         ]);
@@ -293,14 +297,6 @@ class ClassController extends Controller
     }
     public function updateClassTeacher(Request $request, $establishmentId, $classId)
     {
-
-        request()->validate([
-            'teacher_id'   => 'required|integer|exists:users,id',
-        ], [
-            'teacher_id.required' => 'A teacher_id mező kötelező.',
-            'teacher_id.integer' => 'A teacher_id értéknek egész számnak kell lennie.',
-            'teacher_id.exists' => 'A teacher_id értéknek léteznie kell a users táblában.'
-        ]);
         $establishment = Establishment::find($establishmentId);
         if (!$establishment) {
             return response()->json([
@@ -314,26 +310,72 @@ class ClassController extends Controller
             ], 400);
         }
 
-        $user = $request->user();;
-        $classId = $request->input('class_id');
+        if ($class->establishment_id != $establishment->id) {
+            return response()->json([
+                'message' => 'Az osztály nem tartozik az intézményhez!'
+            ], 400);
+        }
+
+        $user = $request->user();
 
         if (!$this->isAdminEstablishment($user->id, $establishmentId)) {
             return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
         }
 
+        $validated = validator($request->all(), [
+            'teacher_id' => 'sometimes|nullable|integer|exists:users,id',
+            'name' => 'sometimes|required|string|max:100|alpha',
+            'grade' => 'sometimes|required|integer|min:1|max:100',
+            'capacity' => 'sometimes|required|integer|min:1|max:200',
+        ], [
+            'teacher_id.integer' => 'A teacher_id értéknek egész számnak kell lennie.',
+            'teacher_id.exists' => 'A teacher_id értéknek léteznie kell a users táblában.',
+            'name.required' => 'Az osztály neve kötelező.',
+            'name.string' => 'Az osztály neve szöveges érték kell legyen.',
+            'name.max' => 'Az osztály neve nem lehet hosszabb 100 karakternél.',
+            'name.alpha' => 'Az osztály neve csak betűket tartalmazhat.',
+            'grade.required' => 'Az évfolyam megadása kötelező.',
+            'grade.integer' => 'Az évfolyamnak egész számnak kell lennie.',
+            'grade.min' => 'Az évfolyamnak legalább 1-nek kell lennie.',
+            'grade.max' => 'Az évfolyam nem lehet nagyobb 100-nál.',
+            'capacity.required' => 'A maximális létszám megadása kötelező.',
+            'capacity.integer' => 'A maximális létszámnak egész számnak kell lennie.',
+            'capacity.min' => 'A maximális létszámnak legalább 1-nek kell lennie.',
+            'capacity.max' => 'A maximális létszám nem lehet nagyobb 200-nál.',
+        ])->validate();
 
-        if (!$this->isStaffEstablishment($request->teacher_id, $establishmentId)) {
+        if (empty($validated)) {
+            return response()->json([
+                'message' => 'Nincs frissíthető mező a kérésben.'
+            ], 422);
+        }
+
+        if (array_key_exists('teacher_id', $validated) && !is_null($validated['teacher_id']) && !$this->isStaffEstablishment($validated['teacher_id'], $establishmentId)) {
             return response()->json([
                 'message' => 'A megadott tanár nem tagja az intézménynek!'
             ], 400);
         }
 
-        // Tanár hozzárendelése az osztályhoz
-        $class->user_id = $request->teacher_id;
+        if (array_key_exists('teacher_id', $validated)) {
+            $class->user_id = $validated['teacher_id'];
+        }
+
+        if (array_key_exists('name', $validated)) {
+            $class->name = trim($validated['name']);
+        }
+
+        if (array_key_exists('grade', $validated)) {
+            $class->grade = $validated['grade'];
+        }
+
+        if (array_key_exists('capacity', $validated)) {
+            $class->capacity = $validated['capacity'];
+        }
+
         $class->save();
 
         return response()->json([
-            'message' => 'Tanár sikeresen hozzárendelve az osztályhoz!'
+            'message' => 'Osztály sikeresen frissítve!'
         ]);
     }
     //Osztály törlése

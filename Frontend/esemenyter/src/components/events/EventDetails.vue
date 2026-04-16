@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="event-details">
     <div class="container">
       <!-- Navigáció -->
@@ -15,7 +15,7 @@
           <div class="spinner"></div>
         </div>
         <h3>Esemény betöltése...</h3>
-        <p>Kérlek várj, amíg betöltjük az esemény részleteit</p>
+        <p>Kérjük, várjon, amíg betöltjük az esemény részleteit</p>
       </div>
 
       <!-- Hiba állapot -->
@@ -39,6 +39,14 @@
       <div v-else-if="eventData" class="event-content">
         <!-- Hero szekció -->
         <div class="hero-section">
+          <button
+            v-if="canManageOccurrence"
+            class="event-manage-trigger"
+            @click="openEventManageModal"
+            title="Esemény kezelése"
+          >
+            <i class='bx bx-cog'></i>
+          </button>
           <div class="hero-overlay"></div>
           <div class="hero-content">
             <div class="hero-badges">
@@ -333,6 +341,7 @@
               <CommentBox 
                 :esemenyId="parseInt(eventId)"
                 :aktualisFelhasznalo="currentUser"
+                :canModerateComments="isEventCreator"
                 @komment-sikeres="onCommentAdded"
               />
             </div>
@@ -416,7 +425,7 @@
             <!-- Részvétel -->
             <div v-if="!isReadOnlyMode && eventData.status === 'open' && currentUser" class="info-card participation">
               <h3><i class='bx bx-check-shield'></i> Részvétel</h3>
-              <p class="participation-description">{{ isFormal ? 'Hogyan szeretne részt venni az eseményen?' : 'Hogyan szeretnél részt venni az eseményen?' }}</p>
+              <p class="participation-description">Hogyan szeretne részt venni az eseményen?</p>
               <div class="participation-options">
                 <button @click="submitParticipation('y')" 
                         class="answer-button attending" 
@@ -439,75 +448,128 @@
               </div>
             </div>
 
-            <div v-if="canManageOccurrence" class="info-card occurrence-manager">
-              <h3><i class='bx bx-wrench'></i> Alkalom kezelése</h3>
-              <p class="participation-description">Létrehozóként módosíthatod az adott alkalom időpontját, vagy elmaradtként törölheted.</p>
+          </div>
+        </div>
 
-              <div class="occurrence-form-grid">
-                <label>
-                  Kezdés dátuma
-                  <input type="date" v-model="occurrenceForm.startDate" @input="updateOccurrenceStartDateTime" @change="updateOccurrenceStartDateTime">
-                </label>
-                <label>
-                  Kezdés időpontja
-                  <input
-                    :type="isFirefoxBrowser ? 'text' : 'time'"
-                    v-model="occurrenceForm.startTime"
-                    inputmode="numeric"
-                    placeholder="HH:MM"
-                    pattern="^([01]?\d|2[0-3]):[0-5]\d$"
-                    @input="updateOccurrenceStartDateTime"
-                    @change="updateOccurrenceStartDateTime"
-                    @blur="normalizeOccurrenceTime('startTime', updateOccurrenceStartDateTime)"
-                  >
-                </label>
-                <label>
-                  Befejezés dátuma
-                  <input type="date" v-model="occurrenceForm.endDate" @input="updateOccurrenceEndDateTime" @change="updateOccurrenceEndDateTime">
-                </label>
-                <label>
-                  Befejezés időpontja
-                  <input
-                    :type="isFirefoxBrowser ? 'text' : 'time'"
-                    v-model="occurrenceForm.endTime"
-                    inputmode="numeric"
-                    placeholder="HH:MM"
-                    pattern="^([01]?\d|2[0-3]):[0-5]\d$"
-                    @input="updateOccurrenceEndDateTime"
-                    @change="updateOccurrenceEndDateTime"
-                    @blur="normalizeOccurrenceTime('endTime', updateOccurrenceEndDateTime)"
-                  >
-                </label>
+        <transition name="fade">
+          <div v-if="showEventManageModal" class="manage-modal-overlay" @click.self="closeEventManageModal">
+            <div class="manage-modal-panel">
+              <div class="manage-modal-header">
+                <h3><i class='bx bx-cog'></i> Esemény kezelése</h3>
+                <button class="manage-modal-close" @click="closeEventManageModal">
+                  <i class='bx bx-x'></i>
+                </button>
               </div>
 
-              <div class="occurrence-actions">
-                <button
-                  class="answer-button attending"
-                  :disabled="isUpdatingOccurrence"
-                  @click="rescheduleOccurrence"
-                >
-                  <i class='bx bx-time-five'></i>
-                  <div class="answer-content">
-                    <span class="answer-title">Időpont módosítása</span>
-                    <span class="answer-description">Az adott alkalom átütemezése</span>
-                  </div>
-                </button>
+              <div class="manage-modal-body">
+                <div class="info-card participants-manager">
+                  <h3 class="participants-toggle" @click="participantsExpanded = !participantsExpanded">
+                    <span><i class='bx bx-group'></i> Résztvevők kezelése</span>
+                    <i class='bx' :class="participantsExpanded ? 'bx-chevron-up' : 'bx-chevron-down'"></i>
+                  </h3>
 
-                <button
-                  class="answer-button not-attending"
-                  :disabled="isUpdatingOccurrence"
-                  @click="cancelOccurrence"
-                >
-                  <i class='bx bx-calendar-x'></i>
-                  <div class="answer-content">
-                    <span class="answer-title">Alkalom elmarad</span>
-                    <span class="answer-description">Az adott alkalom törlése</span>
+                  <div v-show="participantsExpanded">
+                  <div v-if="isParticipantsLoading" class="participants-state loading">
+                    <i class='bx bx-loader-circle bx-spin'></i>
+                    <span>Résztvevők betöltése...</span>
                   </div>
-                </button>
+
+                  <div v-else-if="!participants.length" class="participants-state empty">
+                    <i class='bx bx-info-circle'></i>
+                    <span>Még nincs aktív résztvevő az eseményen.</span>
+                  </div>
+
+                  <div v-else class="participants-list">
+                    <div v-for="participant in participants" :key="participant.user_id" class="participant-item">
+                      <div class="participant-meta">
+                        <div class="participant-name">{{ participant.alias || participant.name || 'Ismeretlen felhasználó' }}</div>
+                        <div class="participant-subline">{{ participant.email || 'Nincs email megadva' }}</div>
+                      </div>
+
+                      <button
+                        class="participant-ban-button"
+                        :disabled="Boolean(banningParticipantIds[participant.user_id])"
+                        @click="banParticipant(participant)"
+                      >
+                        <i class='bx' :class="banningParticipantIds[participant.user_id] ? 'bx-loader-circle bx-spin' : 'bx-block'"></i>
+                        {{ banningParticipantIds[participant.user_id] ? 'Tiltás...' : 'Tiltás' }}
+                      </button>
+                    </div>
+                  </div>
+                  </div>
+                </div>
+
+                <div class="info-card occurrence-manager">
+                  <h3><i class='bx bx-wrench'></i> Időpont módosítása</h3>
+                  <p class="participation-description">Létrehozóként módosíthatja az adott alkalom időpontját, vagy elmaradtként törölheti.</p>
+
+                  <div class="occurrence-form-grid">
+                    <label>
+                      Kezdés dátuma
+                      <input type="date" v-model="occurrenceForm.startDate" @input="updateOccurrenceStartDateTime" @change="updateOccurrenceStartDateTime">
+                    </label>
+                    <label>
+                      Kezdés időpontja
+                      <input
+                        :type="isFirefoxBrowser ? 'text' : 'time'"
+                        v-model="occurrenceForm.startTime"
+                        inputmode="numeric"
+                        placeholder="HH:MM"
+                        pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                        @input="updateOccurrenceStartDateTime"
+                        @change="updateOccurrenceStartDateTime"
+                        @blur="normalizeOccurrenceTime('startTime', updateOccurrenceStartDateTime)"
+                      >
+                    </label>
+                    <label>
+                      Befejezés dátuma
+                      <input type="date" v-model="occurrenceForm.endDate" @input="updateOccurrenceEndDateTime" @change="updateOccurrenceEndDateTime">
+                    </label>
+                    <label>
+                      Befejezés időpontja
+                      <input
+                        :type="isFirefoxBrowser ? 'text' : 'time'"
+                        v-model="occurrenceForm.endTime"
+                        inputmode="numeric"
+                        placeholder="HH:MM"
+                        pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                        @input="updateOccurrenceEndDateTime"
+                        @change="updateOccurrenceEndDateTime"
+                        @blur="normalizeOccurrenceTime('endTime', updateOccurrenceEndDateTime)"
+                      >
+                    </label>
+                  </div>
+
+                  <div class="occurrence-actions">
+                    <button
+                      class="answer-button attending"
+                      :disabled="isUpdatingOccurrence"
+                      @click="rescheduleOccurrence"
+                    >
+                      <i class='bx bx-time-five'></i>
+                      <div class="answer-content">
+                        <span class="answer-title">Időpont módosítása</span>
+                        <span class="answer-description">Az adott alkalom átütemezése</span>
+                      </div>
+                    </button>
+
+                    <button
+                      class="answer-button not-attending"
+                      :disabled="isUpdatingOccurrence"
+                      @click="cancelOccurrence"
+                    >
+                      <i class='bx bx-calendar-x'></i>
+                      <div class="answer-content">
+                        <span class="answer-title">Alkalom elmarad</span>
+                        <span class="answer-description">Az adott alkalom törlése</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </transition>
 
       </div>
     </div>
@@ -555,6 +617,12 @@ export default {
       },
       isTogglingChat: false,
       isUpdatingOccurrence: false,
+      showEventManageModal: false,
+      participantsExpanded: true,
+      participantsExpanded: true,
+      isParticipantsLoading: false,
+      participants: [],
+      banningParticipantIds: {},
       isFirefoxBrowser: false,
       occurrenceForm: {
         startDate: '',
@@ -645,6 +713,14 @@ export default {
   },
   
   methods: {
+    openEventManageModal() {
+      this.showEventManageModal = true
+    },
+
+    closeEventManageModal() {
+      this.showEventManageModal = false
+    },
+
     backToEvents() {
       this.$router.push('/events-list')
     },
@@ -709,11 +785,12 @@ export default {
         await Promise.all([
           this.loadStats(),
           this.loadParticipationStatus(),
-          this.loadPolls()
+          this.loadPolls(),
+          this.loadParticipants()
         ])
       } catch (error) {
         console.error('Hiba az esemény betöltésekor:', error)
-        this.errorMessage = 'Nem sikerült betölteni az esemény adatait. Kérlek próbáld újra később.'
+        this.errorMessage = 'Nem sikerült betölteni az esemény adatait. Kérjük, próbálja újra később.'
       } finally {
         this.isLoading = false
       }
@@ -859,6 +936,110 @@ export default {
         console.error('Hiba a szavazás betöltésekor:', error)
       } finally {
         this.isPollLoading = false
+      }
+    },
+
+    async loadParticipants() {
+      if (!this.isEventCreator) {
+        this.participants = []
+        return
+      }
+
+      const token = getToken()
+      const eventId = Number(this.eventData?.id || this.eventId)
+
+      if (!token || !eventId) {
+        this.participants = []
+        return
+      }
+
+      this.isParticipantsLoading = true
+
+      try {
+        const response = await axios.get(`${API_BASE}/events/${eventId}/participants`, {
+          headers: getAuthHeaders(token),
+          validateStatus: (status) => status >= 200 && status < 600
+        })
+
+        if (response.status >= 400) {
+          this.participants = []
+          return
+        }
+
+        this.participants = Array.isArray(response?.data?.participants) ? response.data.participants : []
+      } catch (error) {
+        console.error('Hiba a résztvevők betöltésekor:', error)
+        this.participants = []
+      } finally {
+        this.isParticipantsLoading = false
+      }
+    },
+
+    async banParticipant(participant) {
+      const participantId = Number(participant?.user_id)
+      const eventId = Number(this.eventData?.id || this.eventId)
+
+      if (!participantId || !eventId) {
+        return
+      }
+
+      const confirmed = await toast.confirm(
+        `Biztosan ki szeretné tiltani ${participant?.alias || participant?.name || 'a felhasználót'} az eseményből?`,
+        {
+          confirmText: 'Tiltás',
+          cancelText: 'Mégse'
+        }
+      )
+
+      if (!confirmed) {
+        return
+      }
+
+      const token = getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      this.banningParticipantIds = {
+        ...this.banningParticipantIds,
+        [participantId]: true
+      }
+
+      try {
+        const response = await axios.delete(`${API_BASE}/events/${eventId}/participants/${participantId}`, {
+          headers: getAuthHeaders(token),
+          validateStatus: (status) => status >= 200 && status < 600
+        })
+
+        if (response.status >= 400) {
+          const message = response?.data?.message || 'Nem sikerült kitiltani a résztvevőt.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        this.participants = this.participants.filter(item => Number(item.user_id) !== participantId)
+        this.attendingCount = Number(response?.data?.attending_count || this.attendingCount)
+        this.notAttendingCount = Number(response?.data?.not_attending_count || this.notAttendingCount)
+        this.commentCount = Number(response?.data?.comment_count || this.commentCount)
+
+        if (this.eventData) {
+          this.eventData.attending_count = this.attendingCount
+          this.eventData.not_attending_count = this.notAttendingCount
+          this.eventData.participant_count = this.attendingCount
+          this.eventData.participants = this.attendingCount
+          this.eventData.comment_count = this.commentCount
+        }
+
+        this.showMessage(response?.data?.message || 'Résztvevő sikeresen kitiltva.', 'success')
+      } catch (error) {
+        console.error('Hiba a résztvevő kitiltásakor:', error)
+        this.showMessage('Hiba történt a résztvevő kitiltásakor.', 'error')
+      } finally {
+        this.banningParticipantIds = {
+          ...this.banningParticipantIds,
+          [participantId]: false
+        }
       }
     },
 
@@ -1121,7 +1302,7 @@ export default {
       }
 
       if (!this.currentUser) {
-        this.showMessage('A részvételhez be kell jelentkezned!', 'info')
+        this.showMessage('A részvételhez be kell jelentkeznie!', 'info')
         this.$router.push('/login')
         return
       }
@@ -1134,7 +1315,7 @@ export default {
       try {
         const token = getToken()
         if (!token) {
-          this.showMessage('A részvételhez be kell jelentkezned!', 'info')
+          this.showMessage('A részvételhez be kell jelentkeznie!', 'info')
           return
         }
 
@@ -1172,6 +1353,7 @@ export default {
         }
 
         await this.loadPolls()
+        await this.loadParticipants()
       } catch (error) {
         console.error('Hiba a részvétel mentésekor:', error)
         this.showMessage('Hiba történt a részvétel mentésekor.', 'error')
@@ -1276,7 +1458,7 @@ export default {
       }
 
       if (!this.currentUser) {
-        this.showMessage('A kedvencekhez adáshoz jelentkezz be!', 'info')
+        this.showMessage('A kedvencekhez adáshoz jelentkezzen be!', 'info')
         return
       }
 
@@ -1868,9 +2050,109 @@ export default {
   max-width: 800px;
 }
 
+.event-manage-trigger {
+  position: absolute;
+  top: 1.1rem;
+  right: 1.1rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(15, 23, 42, 0.45);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.event-manage-trigger i {
+  font-size: 1.3rem;
+}
+
+.event-manage-trigger:hover {
+  transform: translateY(-1px) rotate(15deg);
+  background: rgba(79, 70, 229, 0.8);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
 .hero-actions {
   display: flex;
   gap: 1rem;
+}
+
+.manage-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(2, 6, 23, 0.7);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.manage-modal-panel {
+  width: min(980px, 100%);
+  max-height: 90vh;
+  background: #f3f5ff;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(2, 6, 23, 0.4);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  display: flex;
+  flex-direction: column;
+}
+
+.manage-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(90deg, #1e293b, #334155);
+  color: #fff;
+}
+
+.manage-modal-header h3 {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 1.05rem;
+}
+
+.manage-modal-close {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.manage-modal-close i {
+  font-size: 1.2rem;
+}
+
+.manage-modal-body {
+  padding: 1rem;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.manage-modal-body .info-card {
+  margin: 0;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 
 .icon-button {
@@ -1912,6 +2194,102 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.participants-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.participants-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 0;
+}
+.participants-toggle:hover {
+  opacity: 0.8;
+}
+
+.participants-state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+
+.participants-state.loading {
+  background: #edf2ff;
+  color: #3949ab;
+}
+
+.participants-state.empty {
+  background: #f8fafc;
+  color: #4a5568;
+}
+
+.participants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.participant-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.participant-meta {
+  min-width: 0;
+}
+
+.participant-name {
+  font-weight: 700;
+  color: #1a202c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.participant-subline {
+  color: #718096;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.participant-ban-button {
+  border: none;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #fff;
+  background: #e53e3e;
+  cursor: pointer;
+}
+
+.participant-ban-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .poll-field {
@@ -2808,6 +3186,11 @@ export default {
   .hero-actions {
     flex-direction: column;
   }
+
+  .event-manage-trigger {
+    top: 0.8rem;
+    right: 0.8rem;
+  }
   
   .icon-button {
     width: 100%;
@@ -2845,6 +3228,15 @@ export default {
     width: 100%;
     justify-content: space-between;
     flex-wrap: wrap;
+  }
+
+  .manage-modal-panel {
+    max-height: 94vh;
+  }
+
+  .manage-modal-body {
+    grid-template-columns: 1fr;
+    padding: 0.75rem;
   }
 }
 
