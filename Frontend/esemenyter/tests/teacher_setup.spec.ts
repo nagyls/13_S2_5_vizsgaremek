@@ -16,7 +16,25 @@ test('teacher setup successfully', async ({ page }) => {
 
   await page.click('#register_btn');
 
-  await page.waitForURL(/dashboard/, { timeout: 15000 });
+  // Email verifikáció bypassolása a backend-en keresztül
+  await page.request.post('http://localhost:8000/api/test/verify-email', {
+    data: { email: email }
+  });
+
+  // A regisztráció után megjelenő popup-on kattintsunk a "Tovább a bejelentkezéshez" gombra
+  const verificationBtn = page.locator('.verification-button');
+  await verificationBtn.waitFor({ state: 'visible', timeout: 15000 });
+  await verificationBtn.click();
+
+  await page.waitForURL(/login/, { timeout: 15000 });
+
+  // Belépés
+  await page.locator('#login_email').fill(email);
+  await page.locator('#login_password').fill(password);
+  await page.click('#login_btn');
+
+  // URL minta megváltoztatása dashboard-ról a specifikusabb redirektre
+  await expect(page).toHaveURL(/dashboard|user-dashboard|pending-approval/, { timeout: 15000 });
 
   await page.locator('.role-card.teacher').click();
   await expect(page.locator('.role-card.teacher')).toHaveClass(/selected/);
