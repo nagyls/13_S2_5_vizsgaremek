@@ -16,6 +16,14 @@ test('successful registration', async ({ page }) => {
 
   await page.click('#register_btn');
 
-  await page.waitForURL(/dashboard/, { timeout: 15000 });
+  // Email verifikáció bypassolása a backend-en keresztül
+  await page.request.post('http://localhost:8000/api/test/verify-email', {
+    data: { email: email }
+  });
+
+  // A regisztráció után megjelenő popup-on kattintsunk a "Tovább a bejelentkezéshez" gombra
+  await page.click('.verification-button');
+
+  await page.waitForURL(/login/, { timeout: 15000 });
 
 });

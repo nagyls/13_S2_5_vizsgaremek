@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\UserLogoutController;
 use App\Http\Controllers\Auth\UserRegisterController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\VerificationController;
+use App\Http\Controllers\Auth\TestAuthController;
 
 
 use Illuminate\Http\Request;
@@ -27,6 +28,12 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [UserRegisterController::class, 'register']);
 
 Route::post('/login', [UserAuthController::class, 'login']);
+
+// Teszt célokra az email verifikáció bypassolásához
+if (app()->environment(['local', 'testing'])) {
+    Route::post('/test/verify-email', [TestAuthController::class, 'verifyUser']);
+}
+
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink']);
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 Route::delete('/logout', [UserLogoutController::class, 'logout'])->middleware('auth:sanctum');
