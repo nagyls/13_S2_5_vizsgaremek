@@ -2,11 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Event;
 use App\Models\Staff;
 use App\Models\Student;
 
 abstract class Controller
 {
+    // Eldönti, hogy egy esemény lezártnak számít-e státusz vagy dátum alapján.
+    protected function isEventClosed(Event $event): bool
+    {
+        if ($event->status === 'ended') {
+            return true;
+        }
+
+        return $event->end_date !== null && $event->end_date->lt(now());
+    }
+
     // Ellenőrzi, hogy a felhasználó admin az adott intézményben
     protected function isAdminEstablishment($userId, $establishmentId)
     {

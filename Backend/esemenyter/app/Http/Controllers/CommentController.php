@@ -60,6 +60,11 @@ class CommentController extends Controller
         if (!$event) {
             return response()->json(['error' => 'Not found'], 404);
         }
+
+        if ($this->isEventClosed($event)) {
+            return response()->json(['error' => 'Az esemény lezárult, ezért már nem lehet kommentelni.'], 422);
+        }
+
         $eventview = EventShown::where('event_id', $request->event_id)->where('user_id', $user->id)->first();
         if (!$eventview || $eventview->answer !== 'y' || !$event->chat_enabled) {
             return response()->json(['error' => 'Hozzáférés megtagadva'], 403);
