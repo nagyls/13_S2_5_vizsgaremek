@@ -22,13 +22,29 @@
 export default {
   name: 'Toast',
   props: {
-    message: { type: String, required: true },
-    type: { type: String, default: 'error' },
-    duration: { type: Number, default: 4000 },
-    meta: { type: Object, default: () => ({}) }
+    message: { 
+      type: String, 
+      required: true 
+    },
+    type: { 
+      type: String, 
+      default: 'error',
+      validator: (value) => ['error', 'success', 'warning', 'info', 'confirm'].includes(value)
+    },
+    duration: { 
+      type: Number, 
+      default: 4000 
+    },
+    meta: { 
+      type: Object, 
+      default: () => ({}) 
+    }
   },
   data() {
-    return { visible: true }
+    return { 
+      visible: true,
+      closeTimer: null
+    }
   },
   computed: {
     typeClass() {
@@ -52,11 +68,20 @@ export default {
     }
   },
   mounted() {
-    if (this.duration > 0) {
-      setTimeout(() => this.close(), this.duration)
+    this.startAutoCloseTimer();
+  },
+  beforeUnmount() {
+    // Memóriaszivárgás megelőzése az aktív időzítő törlésével
+    if (this.closeTimer) {
+      clearTimeout(this.closeTimer);
     }
   },
   methods: {
+    startAutoCloseTimer() {
+      if (this.duration > 0) {
+        this.closeTimer = setTimeout(() => this.close(), this.duration);
+      }
+    },
     confirm() {
       this.closeWith(true)
     },
@@ -68,6 +93,7 @@ export default {
     },
     closeWith(confirmed) {
       this.visible = false
+      // Megvárjuk az áttűnési animációt (300ms), mielőtt kiváltjuk az eseményt a szülőnek
       setTimeout(() => this.$emit('closed', { confirmed }), 300)
     }
   }
@@ -129,8 +155,13 @@ export default {
   color: white;
 }
 
-.toast-confirm { background: #f8f9ff; border-left-color: #4f46e5; }
-.toast-confirm .toast-icon { color: #4f46e5; }
+.toast-confirm { 
+  background: #f8f9ff; 
+  border-left-color: #4f46e5; 
+}
+.toast-confirm .toast-icon {
+  color: #4f46e5; 
+}
 
 .toast-close {
   background: none;
@@ -146,8 +177,13 @@ export default {
   color: #4b5563;
 }
 
-.toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
-.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateX(100%); }
+.toast-enter-active, .toast-leave-active {
+ transition: all 0.3s ease; 
+ }
+.toast-enter-from, .toast-leave-to {
+  opacity: 0; 
+  transform: translateX(100%);
+}
 
 @media (max-width: 768px) {
   .toast {
