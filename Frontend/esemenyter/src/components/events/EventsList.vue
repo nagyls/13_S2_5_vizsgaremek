@@ -1421,21 +1421,22 @@ export default {
 .filter-row {
   display: flex;
   flex-direction: row;
-  gap: 2rem;
-  flex-wrap: nowrap;
-  align-items: flex-start;
-  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
 .filter-row.compact {
-  gap: 2rem;
+  gap: 1rem;
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  min-width: fit-content;
+  flex: 1;
+  min-width: 250px;
   padding: 0.75rem 1rem;
   background: #f9fafb;
   border-radius: 12px;
@@ -1443,10 +1444,10 @@ export default {
 }
 
 .filter-group.inline {
-  flex-direction: row;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 0.75rem;
-  padding: 0.65rem 0.9rem;
+  padding: 0.75rem 1rem;
 }
 
 .filter-group label {

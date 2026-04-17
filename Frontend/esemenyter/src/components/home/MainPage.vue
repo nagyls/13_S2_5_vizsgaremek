@@ -69,9 +69,9 @@
                     <p>Interaktív részvétel</p>
                   </div>
                   <div class="card card-3 floating delayed-2">
-                    <i class='bx bx-bell-ring'></i>
-                    <h4>Értesítések</h4>
-                    <p>Időben informálás</p>
+                    <i class='bx bx-message'></i>
+                    <h4>Visszajelzés</h4>
+                    <p>Vélemények és kommentek</p>
                   </div>
                 </div>
               </div>
@@ -101,7 +101,7 @@
             <div class="feature-item">
               <div class="feature-icon-container">
                 <div class="icon-wrapper">
-                  <i class='bx bx-chart'></i>
+                  <i class='bx bx-poll'></i>
                 </div>
               </div>
               <h4>Élő szavazás és statisztika</h4>
@@ -114,18 +114,8 @@
                   <i class='bx bx-bell'></i>
                 </div>
               </div>
-              <h4>Okos értesítési rendszer</h4>
-              <p>Kapjon időben értesítéseket a számára fontos eseményekről és változásokról.</p>
-            </div>
-            
-            <div class="feature-item">
-              <div class="feature-icon-container">
-                <div class="icon-wrapper">
-                  <i class='bx bx-shield'></i>
-                </div>
-              </div>
-              <h4>Biztonságos környezet</h4>
-              <p>Adatainak védelme és biztonságos kommunikáció a legmagasabb szintű titkosítással.</p>
+              <h4>Interaktív visszajelzések</h4>
+              <p>Ossza meg véleményét a hozzászólások segítségével és vegyen részt aktívan a közösség életében.</p>
             </div>
           </div>
         </div>
