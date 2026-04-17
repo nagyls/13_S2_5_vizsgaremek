@@ -7,16 +7,16 @@
                 </div>
                 <h1>Bejelentkezés</h1>
                 <div class="input-box">
-                    <input id="email" type="text" placeholder="Email cím" v-model="email" required >
+                    <input id="login_email" type="text" placeholder="Email cím" v-model="email" required >
                     <i class='bx bx-user'></i> 
                 </div>
                 <div class="input-box">
-                    <input id="password" :type="showPassword ? 'text' : 'password'" placeholder="Jelszó" v-model="password" required >
+                    <input id="login_password" :type="showPassword ? 'text' : 'password'" placeholder="Jelszó" v-model="password" required >
                     <i :class="showPassword ? 'bx bx-lock-open' : 'bx bx-lock'" @click="togglePassword" style="cursor: pointer;"></i>
                 </div>
                 <div class="remember-forgot">
                     <label>
-                        <input type="checkbox" v-model="rememberMe" />Emlékezz rám
+                        <input type="checkbox" v-model="rememberMe" />Emlékezzen rám
                     </label>
                     <router-link to="/forgot-password" class="forgot-link">Elfelejtett jelszó?</router-link>
                 </div>
@@ -26,7 +26,7 @@
                 </button>
 
                 <div class="register-link">
-                    <p>Nincs még fiókod? <router-link to="/register">Regisztráció</router-link></p>
+                    <p>Nincs még fiókja? <router-link to="/register">Regisztráció</router-link></p>
                 </div>
             </form>
         </div>

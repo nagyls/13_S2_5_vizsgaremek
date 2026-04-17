@@ -1,243 +1,257 @@
-{
-  "info": {
-    "_postman_id": "b957e20a-289a-43de-820f-f32f1d1d9312",
-    "name": "Region/InnerRegion/Settlement apik",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
-    {
-      "name": "Régió keresés",
-      "id": "20972860-52b7-43ed-a091-42193a06db5e",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{base_url}}/api/regions/?search=B",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "api",
-            "regions",
-            ""
-          ],
-          "query": [
-            {
-              "key": "search",
-              "value": "B"
-            }
-          ]
-        },
-        "description": "Get regions with optional search filtering. Add a 'search' query parameter to filter regions by title."
-      },
-      "response": []
-    },
-    {
-      "name": "Összes régió lekérése",
-      "id": "6cb737a7-9fe7-4a62-aadc-9e90d54bd1f2",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{base_url}}/api/regions/all",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "api",
-            "regions",
-            "all"
-          ]
-        },
-        "description": "Get all regions without search filtering"
-      },
-      "response": []
-    },
-    {
-      "name": "Régió lekérése azonositóval",
-      "id": "247d981f-3c91-4d8c-87d2-4497f04d93f8",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{base_url}}/api/regions/1",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "api",
-            "regions",
-            "1"
-          ]
-        },
-        "description": "Get a single region by ID. Replace :id with the actual region ID."
-      },
-      "response": []
-    },
-    {
-      "name": "Járás keresés",
-      "id": "af157861-8091-4bb6-b677-2193f98b8d9a",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{base_url}}/api/innerregions?search=g&region_id=1",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "api",
-            "innerregions"
-          ],
-          "query": [
-            {
-              "key": "search",
-              "value": "g",
-              "uuid": "ffd27a1a-4e93-4b3f-94fc-91f60bf8fe71"
-            },
-            {
-              "key": "region_id",
-              "value": "1",
-              "uuid": "7a43ea23-cc4f-460c-b418-7e43c2b6720c"
-            }
-          ]
-        },
-        "description": "Generated from cURL: curl --request GET --location '{{base_url}}/api/subregions?search=&region_id=' --header 'Accept: application/json'"
-      },
-      "response": []
-    },
-    {
-      "name": "Összes Járás lekérése egy régióban",
-      "id": "c962c37a-a6dc-4c62-9ca6-0b809e870d46",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{base_url}}/api/innerregions/all?region_id=1",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "api",
-            "innerregions",
-            "all"
-          ],
-          "query": [
-            {
-              "key": "region_id",
-              "value": "1",
-              "uuid": "53b4d479-37a4-4dd5-b9e5-f8f14316e895"
-            }
-          ]
-        },
-        "description": "Generated from cURL: curl --location '{{base_url}}/api/subregions/all?region_id=' --header 'Accept: application/json'"
-      },
-      "response": []
-    },
-    {
-      "name": "Település keresés",
-      "id": "647eaa1d-b01f-4fd9-8141-2001a39d54e2",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/json",
-            "type": "text"
-          }
-        ],
-        "url": {
-          "raw": "{{base_url}}/api/settlements?search=&inner_region_id=1",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "api",
-            "settlements"
-          ],
-          "query": [
-            {
-              "key": "search",
-              "value": "",
-              "uuid": "b4db490c-e4b7-4bdd-9de5-3573c7321deb"
-            },
-            {
-              "key": "inner_region_id",
-              "value": "1",
-              "uuid": "6624a396-5126-462c-8cf4-b71be9eeb0eb"
-            }
-          ]
-        },
-        "description": "Searches and filters settlements by title and inner region.\n\nQuery Parameters:\n- `search` (optional): Filter settlements by title (LIKE search%)\n- `inner_region_id` (optional): Filter by inner region ID\n\nBoth parameters must be present and non-empty to apply filtering.\nReturns settlements ordered by title."
-      },
-      "response": []
-    },
-    {
-      "name": "Összes település lekérése egy járásból",
-      "id": "3eb437fc-3ce3-440c-95b4-9432a5b6eccf",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "application/json",
-            "type": "text"
-          }
-        ],
-        "url": {
-          "raw": "{{base_url}}/api/settlements/all?inner_region_id=1",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "api",
-            "settlements",
-            "all"
-          ],
-          "query": [
-            {
-              "key": "inner_region_id",
-              "value": "1",
-              "uuid": "c0ce6470-f0f7-46c1-9ebb-9908512069db"
-            }
-          ]
-        },
-        "description": "Retrieves all settlements, optionally filtered by inner region.\n\nQuery Parameters:\n- `inner_region_id` (optional): Filter by inner region ID\n\nReturns settlements ordered by title."
-      },
-      "response": []
-    }
-  ],
-  "variable": [
-    {
-      "id": "11f70cbf-20de-49e6-b2d4-206e1266b6d0",
-      "key": "base_url",
-      "value": "http://127.0.0.1:8000",
-      "type": "string"
-    }
-  ]
+﻿{
+    "info":  {
+                 "_postman_id":  "b957e20a-289a-43de-820f-f32f1d1d9312",
+                 "name":  "03 - Regio/Jaras/Telepules API-k",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "item":  [
+                 {
+                     "name":  "RĂ©giĂł keresĂ©s",
+                     "id":  "20972860-52b7-43ed-a091-42193a06db5e",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Accept",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/api/regions/?search=B",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "regions",
+                                                              ""
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "search",
+                                                                   "value":  "B"
+                                                               }
+                                                           ]
+                                             },
+                                     "description":  "Get regions with optional search filtering. Add a \u0027search\u0027 query parameter to filter regions by title."
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "Ă–sszes rĂ©giĂł lekĂ©rĂ©se",
+                     "id":  "6cb737a7-9fe7-4a62-aadc-9e90d54bd1f2",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Accept",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/api/regions/all",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "regions",
+                                                              "all"
+                                                          ]
+                                             },
+                                     "description":  "Get all regions without search filtering"
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "RĂ©giĂł lekĂ©rĂ©se azonositĂłval",
+                     "id":  "247d981f-3c91-4d8c-87d2-4497f04d93f8",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Accept",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/api/regions/1",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "regions",
+                                                              "1"
+                                                          ]
+                                             },
+                                     "description":  "Get a single region by ID. Replace :id with the actual region ID."
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "JĂˇrĂˇs keresĂ©s",
+                     "id":  "af157861-8091-4bb6-b677-2193f98b8d9a",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Accept",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/api/innerregions?search=g\u0026region_id=1",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "innerregions"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "search",
+                                                                   "value":  "g",
+                                                                   "uuid":  "ffd27a1a-4e93-4b3f-94fc-91f60bf8fe71"
+                                                               },
+                                                               {
+                                                                   "key":  "region_id",
+                                                                   "value":  "1",
+                                                                   "uuid":  "7a43ea23-cc4f-460c-b418-7e43c2b6720c"
+                                                               }
+                                                           ]
+                                             },
+                                     "description":  "Generated from cURL: curl --request GET --location \u0027{{base_url}}/api/subregions?search=\u0026region_id=\u0027 --header \u0027Accept: application/json\u0027"
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "Ă–sszes JĂˇrĂˇs lekĂ©rĂ©se egy rĂ©giĂłban",
+                     "id":  "c962c37a-a6dc-4c62-9ca6-0b809e870d46",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Accept",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/api/innerregions/all?region_id=1",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "innerregions",
+                                                              "all"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "region_id",
+                                                                   "value":  "1",
+                                                                   "uuid":  "53b4d479-37a4-4dd5-b9e5-f8f14316e895"
+                                                               }
+                                                           ]
+                                             },
+                                     "description":  "Generated from cURL: curl --location \u0027{{base_url}}/api/subregions/all?region_id=\u0027 --header \u0027Accept: application/json\u0027"
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "TelepĂĽlĂ©s keresĂ©s",
+                     "id":  "647eaa1d-b01f-4fd9-8141-2001a39d54e2",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Accept",
+                                                        "value":  "application/json",
+                                                        "type":  "text"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/api/settlements?search=\u0026inner_region_id=1",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "settlements"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "search",
+                                                                   "value":  "",
+                                                                   "uuid":  "b4db490c-e4b7-4bdd-9de5-3573c7321deb"
+                                                               },
+                                                               {
+                                                                   "key":  "inner_region_id",
+                                                                   "value":  "1",
+                                                                   "uuid":  "6624a396-5126-462c-8cf4-b71be9eeb0eb"
+                                                               }
+                                                           ]
+                                             },
+                                     "description":  "Searches and filters settlements by title and inner region.\n\nQuery Parameters:\n- `search` (optional): Filter settlements by title (LIKE search%)\n- `inner_region_id` (optional): Filter by inner region ID\n\nBoth parameters must be present and non-empty to apply filtering.\nReturns settlements ordered by title."
+                                 },
+                     "response":  [
+
+                                  ]
+                 },
+                 {
+                     "name":  "Ă–sszes telepĂĽlĂ©s lekĂ©rĂ©se egy jĂˇrĂˇsbĂłl",
+                     "id":  "3eb437fc-3ce3-440c-95b4-9432a5b6eccf",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Accept",
+                                                        "value":  "application/json",
+                                                        "type":  "text"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{base_url}}/api/settlements/all?inner_region_id=1",
+                                                 "host":  [
+                                                              "{{base_url}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "settlements",
+                                                              "all"
+                                                          ],
+                                                 "query":  [
+                                                               {
+                                                                   "key":  "inner_region_id",
+                                                                   "value":  "1",
+                                                                   "uuid":  "c0ce6470-f0f7-46c1-9ebb-9908512069db"
+                                                               }
+                                                           ]
+                                             },
+                                     "description":  "Retrieves all settlements, optionally filtered by inner region.\n\nQuery Parameters:\n- `inner_region_id` (optional): Filter by inner region ID\n\nReturns settlements ordered by title."
+                                 },
+                     "response":  [
+
+                                  ]
+                 }
+             ],
+    "variable":  [
+                     {
+                         "id":  "11f70cbf-20de-49e6-b2d4-206e1266b6d0",
+                         "key":  "base_url",
+                         "value":  "http://127.0.0.1:8000",
+                         "type":  "string"
+                     }
+                 ]
 }

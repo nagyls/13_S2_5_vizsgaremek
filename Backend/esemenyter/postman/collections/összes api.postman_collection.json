@@ -1,0 +1,2200 @@
+{
+  "info": {
+    "_postman_id": "e476bf2f-06ed-45ca-b287-40a50def8cb9",
+    "name": "összes api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Publikus vegpontok",
+      "item": [
+        {
+          "name": "Publikus - Regisztracio",
+          "id": "8d5b8189-0a95-41ed-87f2-2f27f5c97e73",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"Postman Smoke\",\n  \"email\": \"smoke+{{}}@example.com\",\n  \"password\": \"Password123\",\n  \"password_confirmation\": \"Password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - Admin bejelentkezes",
+          "id": "d3068933-29f4-4b54-a999-51497be8c764",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - Elfelejtett jelszo",
+          "id": "55dfba48-0a14-4752-877c-fa4b408fb7d3",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/forgot-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "forgot-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - Jelszo visszaallitas (ervenytelen token varhato)",
+          "id": "cd5e0944-47a2-467f-b300-fd5fe5453900",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"token\": \"invalid-token\",\n  \"password\": \"Password123\",\n  \"password_confirmation\": \"Password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reset-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reset-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - Email megerosites utvonal ellenorzes",
+          "id": "615731bc-ee22-4b6c-9279-09ddaf265f96",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/email/verify/1/invalidhash",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "email",
+                "verify",
+                "1",
+                "invalidhash"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - Osszes regio",
+          "id": "72dd2354-f510-4c29-88b2-dd3e4f020e42",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/regions/all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "regions",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - Regio azonosito alapjan",
+          "id": "f9e661df-746e-4442-9e04-d33687b0ec14",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/regions/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "regions",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - Regio kereses",
+          "id": "c4373536-e6e6-43ea-892a-4a9a4984e2a0",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/regions?title=CsongrĂˇd",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "regions"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "CsongrĂˇd"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - InnerOsszes regio",
+          "id": "2cf4a1d9-0384-4b7f-8556-106bcb362e31",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/innerregions/all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "innerregions",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - InnerRegio kereses",
+          "id": "b0c26ad6-3ebe-4890-af76-d6483bd44e1d",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/innerregions?title=Szeged",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "innerregions"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "Szeged"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - Osszes telepules",
+          "id": "4325c04c-af53-427b-b238-8807176a3dbd",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/settlements/all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "settlements",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - Telepules kereses",
+          "id": "29c3344e-5963-4cae-8376-987d42563685",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/settlements?title=Szeged",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "settlements"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "Szeged"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - Intezmeny kereses",
+          "id": "815963f9-f1fa-4755-887e-32961ee67c95",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishments?title=Teszt",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishments"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "Teszt"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "52692820-8644-460b-aa5e-a8541eda6e56"
+    },
+    {
+      "name": "02 - Vedett vegpontok (401 jogosulatlan)",
+      "item": [
+        {
+          "name": "Vedett - /user",
+          "id": "5136a952-4e52-4077-a984-827a6eeb2666",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /logout",
+          "id": "305a7e26-78ba-44d7-8094-0822bd213901",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /email/resend",
+          "id": "12714da7-5f2e-4456-8ad9-212c68a94d0b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/email/resend",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "email",
+                "resend"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /email/verification-status",
+          "id": "723c5b01-f264-4904-8cdc-b144009cbef5",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/email/verification-status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "email",
+                "verification-status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /user/update",
+          "id": "6cddb1e9-50d4-4ec4-83e3-98e159181d54",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"Teszt\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "update"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/events",
+          "id": "063aa53b-6418-4f5d-889e-48fbb60708b6",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/events",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "events"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/events",
+          "id": "43b91b4d-503b-49cc-8406-ea015f22a21c",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/events",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "events"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /events/{id}/participation",
+          "id": "f7e5255a-3c00-44e0-bd6d-4e07b7070015",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"answer\":\"y\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/participation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "participation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /events/{id}/favourite",
+          "id": "e9fdddda-5261-4347-988f-4fcd3961246a",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"is_favourite\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/favourite",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "favourite"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /events/{id}/occurrence",
+          "id": "3f2b538f-b519-4fb6-a910-7a60d691b4e1",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"cancel\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/occurrence",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "occurrence"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /events/{id}/chat",
+          "id": "e2aee6c5-2310-4689-9267-80284b490a30",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"chat_enabled\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "chat"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /events/{id}/participants",
+          "id": "f282ea3e-d55b-42b6-b8dd-821227469a01",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/participants",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "participants"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /events/{id}/participants/{userId}",
+          "id": "04eb559a-0efa-4664-83a8-b47aa602ac8f",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/participants/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "participants",
+                "{{user_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /events/{id}/poll",
+          "id": "54bde5da-7398-4625-81a4-aee0a861ae82",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/poll",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "poll"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/letrehozas",
+          "id": "a524f39d-cb39-49af-b70f-d1b6808dee0b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/create",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "create"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/switch",
+          "id": "2f6508ef-037f-4b3c-bf0d-1e4e8a8f6ee0",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"establishment_id\":{{establishment_id}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/switch",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "switch"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/role",
+          "id": "02167c16-7960-4d01-bf86-83826758b33f",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/role",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "role"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/join-requests/availability lekeres",
+          "id": "1ba0f9de-d4dd-4325-b2da-ce619a71051b",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/join-requests/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "join-requests",
+                "availability"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/join-requests/availability modositas",
+          "id": "46c13fcc-94dd-473d-b7b8-21d11e8108cb",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"accepts_join_requests\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/join-requests/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "join-requests",
+                "availability"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/staff/{staffId}/role",
+          "id": "6714beb4-fb77-45ee-bf64-d6787cf5a602",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"role\":\"teacher\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/staff/{{staff_id}}/role",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "staff",
+                "{{staff_id}}",
+                "role"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/details",
+          "id": "e37a9982-bb58-4918-b757-3c92585bc957",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/details",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "details"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/ownership",
+          "id": "e1e64a3d-015a-44fa-be09-edfc452c0979",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"user_id\":{{user_id}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/ownership",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "ownership"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/mine",
+          "id": "a2f07c6d-d6e2-4151-853f-40a643f5fc8a",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/mine",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "mine"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}",
+          "id": "cddb8370-acfa-4a1e-b199-3ec4fa9f13c5",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/members/diakok",
+          "id": "3d634d85-bf35-40ff-8ced-e22e44dfdbae",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/members/students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "members",
+                "students"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/members/staff",
+          "id": "89b05039-5176-4d0c-890b-1980c116bfe6",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/members/staff",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "members",
+                "staff"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/event-access lekeres",
+          "id": "e341ab69-843c-4b56-ae2f-388b5d5c489b",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/event-access",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "event-access"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/event-access modositas",
+          "id": "3e00e750-eb56-4ec2-9015-5a4ea21dd8e8",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/event-access",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "event-access"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/classes/members",
+          "id": "2165f9fb-f436-42a8-ab0a-65c74d74ff88",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/classes/members",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "classes",
+                "members"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/grades",
+          "id": "c59a75c3-3154-4147-bf39-49390852c262",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/grades",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "grades"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/grades/members",
+          "id": "6ac4b649-1c67-4d24-af3e-7ed4339bcf15",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/grades/members",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "grades",
+                "members"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/classes",
+          "id": "02027f8e-c99c-4b45-bc1a-31b4418edf20",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/classes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "classes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/classes/{classId} lekeres",
+          "id": "95bc92f9-23b4-4b01-bd30-273656423cfd",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/classes/{{class_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "classes",
+                "{{class_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/classes/{classId} torles",
+          "id": "68a0817f-e5a8-479c-8e2c-b23f108c9656",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/classes/{{class_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "classes",
+                "{{class_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/classes/letrehozas",
+          "id": "36d01a67-9548-49aa-8bc7-826af885f3e2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/classes/create",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "classes",
+                "create"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/members/{memberId}/alias",
+          "id": "eb58281e-a1e9-4114-9fcb-1031c39f4a13",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"alias\":\"TesztAlias\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/members/{{member_id}}/alias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "members",
+                "{{member_id}}",
+                "alias"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/classes/add-students",
+          "id": "eec9e41f-aa29-44b6-a847-4ff7d8375b4a",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/classes/add-students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "classes",
+                "add-students"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/classes/remove-students",
+          "id": "4d1db5ee-5a77-4f7e-b1c9-7e76af58bba8",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/classes/remove-students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "classes",
+                "remove-students"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/members/remove-students",
+          "id": "72611f6b-d487-4b23-a0fe-8a76a8c009c4",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/members/remove-students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "members",
+                "remove-students"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/members/remove-staff",
+          "id": "0f311107-8897-4a05-a8c4-3bd197c569a9",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/members/remove-staff",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "members",
+                "remove-staff"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/classes/{classId} modositas",
+          "id": "921c1d16-96aa-4eef-93d9-5998b2de399c",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"user_id\":{{user_id}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/classes/{{class_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "classes",
+                "{{class_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/requests/sajat-fuggoben",
+          "id": "9b364b91-5c58-423b-af62-7f3cbba1aab6",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/requests/my-pending",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "requests",
+                "my-pending"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/requests/diakok",
+          "id": "9e13dc1e-8f9d-4ef0-b42b-93625d28727e",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/requests/students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "requests",
+                "students"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/requests/teachers",
+          "id": "4b6590e9-1b31-43d7-aaaa-d7302d068c38",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/requests/teachers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "requests",
+                "teachers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/requests/me",
+          "id": "e0a92c41-4b59-4bf8-bb69-a3d8b14b121a",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/requests/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "requests",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/requests/letrehozas",
+          "id": "a308ccae-b2e9-4d5d-ad01-07e9c2c6c226",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/requests/create",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "requests",
+                "create"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/requests/handle",
+          "id": "c0a1f03b-e4e7-4194-a7ca-23e1d09390cd",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/requests/handle",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "requests",
+                "handle"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /establishment/{id}/requests/revoke",
+          "id": "1985a91a-529d-4179-979a-967c0883529c",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/requests/revoke",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "requests",
+                "revoke"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /events/{id}/kommentek lekeres",
+          "id": "4b90ea45-b59b-44a9-b6a5-75edb25fff2a",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "comments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /events/kommentek letrehozas",
+          "id": "a6ff9e30-efd5-4a0a-b002-6c48c49c89d5",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "comments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /events/kommentek/{commentId} torles",
+          "id": "b2ef5dff-9cde-4c88-b72f-96719be61122",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/comments/{{comment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "comments",
+                "{{comment_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /polls letrehozas",
+          "id": "8d61985b-a9c3-4451-b0fe-30ff50626a7f",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/polls",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "polls"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /polls/{id}/answer letrehozas",
+          "id": "44d48844-38b2-4a94-8fc6-489d9f232275",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/polls/{{poll_id}}/answer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "polls",
+                "{{poll_id}}",
+                "answer"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /polls/{id}/lezaras modositas",
+          "id": "15a8ffbe-7a40-4a5b-adf6-ea24ac3e83e4",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/polls/{{poll_id}}/close",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "polls",
+                "{{poll_id}}",
+                "close"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vedett - /polls/{id}/eredmenyek lekeres",
+          "id": "d09519c8-a426-4712-8e93-87bb6c4f9eb8",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/polls/{{poll_id}}/results",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "polls",
+                "{{poll_id}}",
+                "results"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "99fc6ea0-7574-4dd4-8fad-f25959c7829d"
+    }
+  ]
+}

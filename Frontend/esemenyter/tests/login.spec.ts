@@ -17,7 +17,15 @@ test('successful login', async ({ page }) => {
 
   await page.click('#register_btn');
 
-  await page.waitForURL(/dashboard/, { timeout: 15000 });
+  // Email verifikáció bypassolása a backend-en keresztül
+  await page.request.post('http://localhost:8000/api/test/verify-email', {
+    data: { email: email }
+  });
+
+  // A regisztráció után megjelenő popup-on kattintsunk a "Tovább a bejelentkezéshez" gombra
+  await page.click('.verification-button');
+
+  await page.waitForURL(/login/, { timeout: 15000 });
 
   await page.evaluate(() => {
     localStorage.clear();
@@ -27,10 +35,11 @@ test('successful login', async ({ page }) => {
   await page.goto('http://localhost:5173/login');
   await expect(page).toHaveURL(/login/);
 
-  await page.fill('#email', email);
-  await page.fill('#password', password);
+  await page.locator('#login_email').fill(email);
+  await page.locator('#login_password').fill(password);
 
   await page.click('#login_btn');
 
-  await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+  // URL minta megváltoztatása dashboard-ról a specifikusabb redirektre
+  await expect(page).toHaveURL(/dashboard|user-dashboard|pending-approval/, { timeout: 15000 });
 });

@@ -9,7 +9,7 @@ use App\Models\Event;
 
 class CommentController extends Controller
 {
-    //kommentek lekérése
+    // Esemény kommentjeinek lapozható lekérdezése
     public function getComments(Request $request, $eventId)
     {
         $user = $request->user();
@@ -25,6 +25,7 @@ class CommentController extends Controller
         if (!$eventview || $eventview->answer !== 'y' || !$event->chat_enabled) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
+        // A lekérdezés méretét korlátozzuk, hogy ne legyen túl nagy.
         $perPage = (int) $request->query('per_page', 50);
         if ($perPage <= 0) {
             $perPage = 50;
@@ -38,7 +39,7 @@ class CommentController extends Controller
 
         return response()->json($comments);
     }
-    //komment hozzáadása
+    // Új komment hozzáadása egy eseményhez
     public function makeComment(Request $request)
     {
         $user = $request->user();
@@ -59,6 +60,11 @@ class CommentController extends Controller
         if (!$event) {
             return response()->json(['error' => 'Not found'], 404);
         }
+
+        if ($this->isEventClosed($event)) {
+            return response()->json(['error' => 'Az esemény lezárult, ezért már nem lehet kommentelni.'], 422);
+        }
+
         $eventview = EventShown::where('event_id', $request->event_id)->where('user_id', $user->id)->first();
         if (!$eventview || $eventview->answer !== 'y' || !$event->chat_enabled) {
             return response()->json(['error' => 'Hozzáférés megtagadva'], 403);
@@ -72,7 +78,7 @@ class CommentController extends Controller
         return response()->json($comment, 201);
     }
 
-    //komment törlése
+    // Komment törlése
     public function deleteComment(Request $request, $commentId)
     {
         $user = $request->user();
@@ -84,7 +90,24 @@ class CommentController extends Controller
         if (!$comment) {
             return response()->json(['error' => 'Not found'], 404);
         }
-        if ($comment->user_id !== $user->id) {
+
+        $event = Event::find($comment->event_id);
+        if (!$event) {
+            return response()->json(['error' => 'Not found'], 404);
+        }
+
+        $canDeleteOwnComment = false;
+        if ($comment->user_id == $user->id) {
+            $canDeleteOwnComment = true;
+        }
+
+        $canDeleteAsCreator = false;
+        if ($event->user_id == $user->id) {
+            $canDeleteAsCreator = true;
+        }
+
+        // Saját kommentet lehet törölni, vagy az esemény létrehozója törölhet.
+        if (!$canDeleteOwnComment && !$canDeleteAsCreator) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 

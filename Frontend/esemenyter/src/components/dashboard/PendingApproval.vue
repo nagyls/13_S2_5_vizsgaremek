@@ -60,7 +60,7 @@
           <h2>Csatlakozási kérelmed elbírálás alatt áll</h2>
           
           <p class="pending-message">
-            Köszönjük, hogy csatlakozni szeretnél a(z)
+            Köszönjük, hogy csatlakozni szeretné a(z)
             <strong>{{ user.school || 'kiválasztott iskolához' }}</strong>!
           </p>
           
@@ -69,7 +69,7 @@
             <p>
               Kérelmedet az intézményvezető hamarosan elbírálja. 
               <!-- Amint elfogadásra kerül, értesítést kapsz és teljes hozzáférést kapsz a rendszerhez. -->
-              Amint elfogadásra kerül, hozzáférést kapsz a teljes rendszerhez.
+              Amint elfogadásra kerül, hozzáférést kap a teljes rendszerhez.
             </p>
           </div>
 
@@ -99,7 +99,7 @@
           <div class="info-message">
             <i class='bx bx-envelope'></i>
             <p>
-              Amint a kérelmedet elbírálták, hozzáférést kapsz a további funkciókhoz.
+              Amint a kérelmét elbírálták, hozzáférést kap a további funkciókhoz.
               Ez általában 1-2 munkanapot igénybe vehet.
             </p>
           </div>

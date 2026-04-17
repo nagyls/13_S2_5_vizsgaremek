@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class PollController extends Controller
 {
+    // Adott esemény szavazásainak lekérdezése
     public function getEventPoll(Request $request, $eventId)
     {
         $user = $request->user();
@@ -28,8 +29,17 @@ class PollController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        $isCreator = (int) $event->user_id === (int) $user->id;
-        $hasOptedIn = $eventview && $eventview->answer === 'y';
+        $eventClosed = $this->isEventClosed($event);
+
+        $isCreator = false;
+        if ($event->user_id == $user->id) {
+            $isCreator = true;
+        }
+
+        $hasOptedIn = false;
+        if ($eventview && $eventview->answer === 'y') {
+            $hasOptedIn = true;
+        }
 
         if (!$isCreator && !$hasOptedIn) {
             return response()->json(['message' => 'nem jogosult!'], 403);
@@ -41,13 +51,14 @@ class PollController extends Controller
             ->get();
 
         return response()->json([
-            'polls' => $polls->map(function ($poll) use ($user, $isCreator, $hasOptedIn) {
-                return $this->transformPoll($poll, $user->id, $isCreator, $hasOptedIn);
+            'polls' => $polls->map(function ($poll) use ($user, $isCreator, $hasOptedIn, $eventClosed) {
+                return $this->transformPoll($poll, $user->id, $isCreator, $hasOptedIn, $eventClosed);
             })->values(),
-            'can_create' => $isCreator,
+            'can_create' => $isCreator && !$eventClosed,
         ], 200);
     }
 
+    // Új szavazás létrehozása egy eseményhez
     public function makePoll(Request $request)
     {
         $user = $request->user();
@@ -87,6 +98,10 @@ class PollController extends Controller
             return response()->json(['message' => 'nem jogosult!'], 403);
         }
 
+        if ($this->isEventClosed($event)) {
+            return response()->json(['message' => 'Lezárt eseményhez nem lehet új szavazást létrehozni.'], 422);
+        }
+
         if ($validated['is_timed'] && empty($validated['deadline'])) {
             return response()->json(['message' => 'Időzített szavazásnál a lezárási dátum kötelező.'], 422);
         }
@@ -95,13 +110,10 @@ class PollController extends Controller
             return response()->json(['message' => 'A lezárási dátum nem lehet korábbi a szavazás létrehozásának napjánál.'], 422);
         }
 
+        // Az opciókat megtisztítjuk és az ismétlődéseket kiszűrjük.
         $uniqueOptions = collect($validated['options'])
-            ->map(function ($option) {
-                return trim($option);
-            })
-            ->filter(function ($option) {
-                return $option !== '';
-            })
+            ->map(fn($option) => trim($option))
+            ->filter(fn($option) => $option !== '')
             ->unique()
             ->values();
 
@@ -110,10 +122,12 @@ class PollController extends Controller
         }
 
         DB::transaction(function () use ($user, $validated, $uniqueOptions) {
+            // Határidő csak időzített szavazásnál értelmezett
+            $deadline = null;
             if ($validated['is_timed']) {
-                $deadline = $validated['deadline'] ?? null;
-            } else {
-                $deadline = null;
+                if (array_key_exists('deadline', $validated)) {
+                    $deadline = $validated['deadline'];
+                }
             }
 
             $poll = Poll::create([
@@ -127,14 +141,12 @@ class PollController extends Controller
                 'is_active' => true,
             ]);
 
-            $insertData = $uniqueOptions->map(function ($option) use ($poll) {
-                return [
-                    'title' => $option,
-                    'poll_id' => $poll->id,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            })->all();
+            $insertData = $uniqueOptions->map(fn($option) => [
+                'title' => $option,
+                'poll_id' => $poll->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ])->all();
 
             PollOption::insert($insertData);
         });
@@ -142,16 +154,22 @@ class PollController extends Controller
         return response()->json(['message' => 'szavazás létrehozva!'], 201);
     }
 
+    // Szavazat leadása egy szavazási opcióra
     public function answerPoll(Request $request, $pollId)
     {
         $user = $request->user();
         if (!$user) {
             return response()->json(['message' => 'nem felhatalmazott!'], 401);
         }
-        $poll = Poll::find($pollId);
+        $poll = Poll::with('event')->find($pollId);
         if (!$poll) {
             return response()->json(['message' => 'nem található!'], 404);
         }
+
+        if (!$poll->event || $this->isEventClosed($poll->event)) {
+            return response()->json(['message' => 'Lezárt eseménynél nem lehet szavazni.'], 422);
+        }
+
         $eventview = EventShown::where('event_id', $poll->event_id)->where('user_id', $user->id)->first();
         if (!$eventview || $eventview->answer !== 'y') {
             return response()->json(['message' => 'nem jogosult!'], 403);
@@ -190,6 +208,7 @@ class PollController extends Controller
         return response()->json(['message' => 'szavazat rögzítve!'], 200);
     }
 
+    // Szavazás lezárása
     public function stopPoll(Request $request, $pollId)
     {
         $user = $request->user();
@@ -202,7 +221,7 @@ class PollController extends Controller
             return response()->json(['message' => 'nem található!'], 404);
         }
 
-        if ((int) $poll->event->user_id !== (int) $user->id) {
+        if ($poll->event->user_id != $user->id) {
             return response()->json(['message' => 'nem jogosult!'], 403);
         }
 
@@ -216,6 +235,7 @@ class PollController extends Controller
         return response()->json(['message' => 'A szavazás lezárva.'], 200);
     }
 
+    // Szavazás eredményeinek lekérdezése
     public function getPollResults(Request $request, $pollId)
     {
         $user = $request->user();
@@ -229,7 +249,10 @@ class PollController extends Controller
         }
 
         $event = Event::find($poll->event_id);
-        $isCreator = $event && (int) $event->user_id === (int) $user->id;
+        $isCreator = false;
+        if ($event && $event->user_id == $user->id) {
+            $isCreator = true;
+        }
 
         $eventview = EventShown::where('event_id', $poll->event_id)
             ->where('user_id', $user->id)
@@ -254,7 +277,7 @@ class PollController extends Controller
         ], 200);
     }
 
-    protected function transformPoll(Poll $poll, int $userId, bool $isCreator, bool $hasOptedIn): array
+    protected function transformPoll(Poll $poll, int $userId, bool $isCreator, bool $hasOptedIn, bool $eventClosed): array
     {
         $userAnswer = PollAnswer::where('poll_id', $poll->id)
             ->where('user_id', $userId)
@@ -264,17 +287,9 @@ class PollController extends Controller
         $totalVotes = (int) $results->sum('votes');
         $resultsVisible = $poll->resultsAreVisible();
 
-        if ($resultsVisible) {
-            $totalVotesResult = $totalVotes;
-        } else {
-            $totalVotesResult = null;
-        }
+        $totalVotesResult = $resultsVisible ? $totalVotes : null;
 
-        if ($userAnswer) {
-            $selectedOptionId = (int) $userAnswer->poll_option_id;
-        } else {
-            $selectedOptionId = null;
-        }
+        $selectedOptionId = $userAnswer ? (int) $userAnswer->poll_option_id : null;
 
         return [
             'id' => $poll->id,
@@ -292,14 +307,21 @@ class PollController extends Controller
             'total_votes' => $totalVotesResult,
             'has_answered' => (bool) $userAnswer,
             'selected_option_id' => $selectedOptionId,
-            'can_answer' => $hasOptedIn && $poll->hasStarted() && !$poll->hasEnded() && !$userAnswer,
+            'can_answer' => $hasOptedIn && !$eventClosed && $poll->hasStarted() && !$poll->hasEnded() && !$userAnswer,
             'can_manage' => $isCreator,
             'options' => $poll->options->map(function ($option) use ($resultsVisible, $results) {
                 $result = $results->firstWhere('option_id', $option->id);
 
                 if ($resultsVisible) {
-                    $votes = $result['votes'] ?? 0;
-                    $percentage = $result['percentage'] ?? 0;
+                    $votes = 0;
+                    if (is_array($result) && array_key_exists('votes', $result)) {
+                        $votes = $result['votes'];
+                    }
+
+                    $percentage = 0;
+                    if (is_array($result) && array_key_exists('percentage', $result)) {
+                        $percentage = $result['percentage'];
+                    }
                 } else {
                     $votes = null;
                     $percentage = null;

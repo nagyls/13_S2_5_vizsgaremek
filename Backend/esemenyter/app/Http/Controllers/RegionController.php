@@ -9,10 +9,22 @@ use App\Models\InnerRegion;
 use App\Models\Settlement;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RegionController extends Controller
 {
+    // Intézményszám lekérdezése régiónként
+    private function getSchoolCountsByRegion(): \Illuminate\Support\Collection
+    {
+        return DB::table('establishments')
+            ->join('settlements', 'settlements.id', '=', 'establishments.settlement_id')
+            ->join('inner_regions', 'inner_regions.id', '=', 'settlements.inner_region_id')
+            ->select('inner_regions.region_id', DB::raw('COUNT(establishments.id) as cnt'))
+            ->groupBy('inner_regions.region_id')
+            ->pluck('cnt', 'inner_regions.region_id');
+    }
 
+    // Régiók keresése névtöredék alapján
     public function regions(Request $request)
     {
         $query = Region::query();
@@ -23,20 +35,42 @@ class RegionController extends Controller
 
         $regions = $query->orderBy('title')->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $regions
-        ]);
-    }
-    public function getallregions()
-    {
-        $regions = Region::orderBy('title')->get();
+        $schoolCounts = $this->getSchoolCountsByRegion();
+
+        $regions->each(function ($region) use ($schoolCounts) {
+            $schoolsCount = 0;
+            if (isset($schoolCounts[$region->id])) {
+                $schoolsCount = (int) $schoolCounts[$region->id];
+            }
+            $region->schools_count = $schoolsCount;
+        });
 
         return response()->json([
             'success' => true,
             'data' => $regions
         ]);
     }
+    // Összes régió listázása
+    public function getallregions()
+    {
+        $regions = Region::orderBy('title')->get();
+
+        $schoolCounts = $this->getSchoolCountsByRegion();
+
+        $regions->each(function ($region) use ($schoolCounts) {
+            $schoolsCount = 0;
+            if (isset($schoolCounts[$region->id])) {
+                $schoolsCount = (int) $schoolCounts[$region->id];
+            }
+            $region->schools_count = $schoolsCount;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $regions
+        ]);
+    }
+    // Egy régió adatainak lekérése ID alapján
     public function showregion($id)
     {
         $region = Region::find($id);
@@ -48,6 +82,7 @@ class RegionController extends Controller
     }
 
 
+    // Almegyék keresése régió ID és/vagy névtöredék alapján
     public function innerregions(Request $request)
     {
         $query = InnerRegion::query();
@@ -74,6 +109,7 @@ class RegionController extends Controller
             'data' => $innerRegions
         ]);
     }
+    // Összes almegye listázása
     public function getallinnerregions(Request $request)
     {
         $query = InnerRegion::query();
@@ -89,6 +125,7 @@ class RegionController extends Controller
         ]);
     }
 
+    // Települések keresése almegye ID és/vagy névtöredék alapján
     public function settlements(Request $request)
     {
         $query = Settlement::query();
@@ -115,6 +152,7 @@ class RegionController extends Controller
             'data' => $settlements
         ]);
     }
+    // Összes település listázása
     public function getallsettlements(Request $request)
     {
         $query = Settlement::query();

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use App\Http\Controllers\Controller;
 
 class UserAuthController extends Controller
@@ -14,8 +15,8 @@ class UserAuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => ['required', 'string', 'exists:users,email'],
-            'password' =>  ['required', 'string'],
+            'email' => 'required|string|exists:users,email',
+            'password' => 'required|string',
         ], [
             'email.exists' => 'Hibás Email!'
         ]);
@@ -50,13 +51,15 @@ class UserAuthController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => 'required|string|max:255',
         ]);
 
         $user = $request->user();
 
+        $hasNameUpdatedAt = Schema::hasColumn($user->getTable(), 'name_updated_at');
+
         // 15 napos korlátozás ellenőrzése
-        if ($user->name_updated_at && $user->name_updated_at->diffInDays(now()) < 15) {
+        if ($hasNameUpdatedAt && $user->name_updated_at && $user->name_updated_at->diffInDays(now()) < 15) {
             $daysLeft = ceil(15 - $user->name_updated_at->diffInDays(now(), false));
             return response()->json([
                 'message' => "A nevedet legközelebb $daysLeft nap múlva módosíthatod.",
@@ -64,10 +67,15 @@ class UserAuthController extends Controller
             ], 422);
         }
 
-        $user->update([
+        $updatePayload = [
             'name' => $request->name,
-            'name_updated_at' => now(),
-        ]);
+        ];
+
+        if ($hasNameUpdatedAt) {
+            $updatePayload['name_updated_at'] = now();
+        }
+
+        $user->update($updatePayload);
 
         return response()->json([
             'message' => 'Profil sikeresen frissítve!',

@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\UserLogoutController;
 use App\Http\Controllers\Auth\UserRegisterController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\VerificationController;
+use App\Http\Controllers\Auth\TestAuthController;
 
 
 use Illuminate\Http\Request;
@@ -27,6 +28,12 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [UserRegisterController::class, 'register']);
 
 Route::post('/login', [UserAuthController::class, 'login']);
+
+// Teszt célokra az email verifikáció bypassolásához
+if (app()->environment(['local', 'testing'])) {
+    Route::post('/test/verify-email', [TestAuthController::class, 'verifyUser']);
+}
+
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink']);
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 Route::delete('/logout', [UserLogoutController::class, 'logout'])->middleware('auth:sanctum');
@@ -71,6 +78,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/events/{eventId}/favourite', [EventController::class, 'makeFavourite']);
     Route::patch('/events/{eventId}/occurrence', [EventController::class, 'manageOccurrence']);  //SZAKKÖR MÓDOSÍTÁS
     Route::patch('/events/{eventId}/chat', [EventController::class, 'handleChat']);  //CHAT MÓDOSÍTÁS
+    Route::get('/events/{eventId}/participants', [EventController::class, 'getParticipants']);
+    Route::delete('/events/{eventId}/participants/{userId}', [EventController::class, 'banParticipant']);
     Route::get('/events/{eventId}/poll', [PollController::class, 'getEventPoll']);
 
     //intézmény kezelés
@@ -80,6 +89,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('{establishmentId}/role', [EstablishmentController::class, 'getRole']); // felhasználó szerepének lekérdezése az aktuális intézményben
         Route::get('{establishmentId}/join-requests/availability', [EstablishmentController::class, 'getJoinRequestAvailability']);
         Route::patch('{establishmentId}/join-requests/availability', [EstablishmentController::class, 'updateJoinRequestAvailability']);
+        Route::patch('{establishmentId}/staff/{staffId}/role', [EstablishmentController::class, 'promoteStaff']);
+        Route::patch('{establishmentId}/details', [EstablishmentController::class, 'updateEstablishmentDetails']);
+        Route::patch('{establishmentId}/ownership', [EstablishmentController::class, 'transferOwnership']);
         Route::get('/mine', [EstablishmentController::class, 'getMyEstablishments']); //összes intézmény ahol a user tag
         Route::get('/{establishmentId}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
 

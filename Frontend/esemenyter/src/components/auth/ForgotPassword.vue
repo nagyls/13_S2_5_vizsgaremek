@@ -8,7 +8,7 @@
 
         <h1>Elfelejtett jelszó</h1>
         <p class="intro-text">
-          Add meg a regisztrált email címedet, és küldünk egy linket az új jelszó beállításához.
+          Adja meg a regisztrált email címét, és küldünk egy linket az új jelszó beállításához.
         </p>
 
         <div class="input-box">
@@ -19,10 +19,6 @@
         <button type="submit" class="btn" :disabled="loading">
           {{ loading ? 'Küldés...' : 'Visszaállító email küldése' }}
         </button>
-
-        <div v-if="successMessage" class="status-box success">
-          {{ successMessage }}
-        </div>
 
         <div class="register-link">
           <p><router-link to="/login">Vissza a bejelentkezéshez</router-link></p>
@@ -45,25 +41,34 @@ export default {
     return {
       email: '',
       loading: false,
-      successMessage: '',
       logo2,
     }
   },
 
   methods: {
     async submitRequest() {
+      const normalizedEmail = String(this.email || '').trim().toLowerCase()
+      if (!normalizedEmail) {
+        toast.error('Adja meg az email címet.')
+        return
+      }
+
       this.loading = true
-      this.successMessage = ''
+      this.email = normalizedEmail
 
       try {
         const response = await axios.post(`${API_BASE}/forgot-password`, {
-          email: this.email,
+          email: normalizedEmail,
         })
 
-        this.successMessage = response?.data?.message || 'A jelszó-visszaállító email elküldve.'
-        toast.success(this.successMessage)
+        const successMessage = response?.data?.message || 'A jelszó-visszaállító email elküldve.'
+        toast.success(successMessage)
       } catch (error) {
-        const message = error?.response?.data?.message || 'Nem sikerült elküldeni a jelszó-visszaállító emailt.'
+        const firstValidationError = Object.values(error?.response?.data?.errors || {})?.[0]?.[0]
+        const message =
+          firstValidationError ||
+          error?.response?.data?.message ||
+          'Nem sikerült elküldeni a jelszó-visszaállító emailt.'
         toast.error(message)
       } finally {
         this.loading = false

@@ -1,0 +1,3737 @@
+{
+  "info": {
+    "_postman_id": "e4f25491-63ee-4a3b-b510-e95aeb9b3c35",
+    "name": "összes api 2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Publikus",
+      "item": [
+        {
+          "name": "Publikus - Osszes regio",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ],
+                "id": "821fdc32-df5e-4a82-935d-4046a0539861"
+              }
+            }
+          ],
+          "id": "7e8f7d11-3b90-496d-ac06-69b67b6722ef",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/regions/all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "regions",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publikus - Intezmeny kereses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ],
+                "id": "1153dd4b-e433-44ed-b9a0-ff8de7c07fbc"
+              }
+            }
+          ],
+          "id": "473a5e3f-acaf-459f-9017-61fbe1e86f22",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishments?search=Teszt&include_all=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishments"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Teszt"
+                },
+                {
+                  "key": "include_all",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "0cf5c70b-179c-4453-96d7-ed10bacd2a86"
+    },
+    {
+      "name": "02 - Adminisztrator folyamat",
+      "item": [
+        {
+          "name": "Adminisztrator bejelentkezes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.environment.set('admin_token', j.token);",
+                  "pm.environment.set('admin_user_id', String(j.user.id));"
+                ],
+                "id": "f339b97f-9bcc-45e3-a7e1-534c9f912e42"
+              }
+            }
+          ],
+          "id": "9374aa0b-db53-4dd8-94d2-7e7c0c242620",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Adminisztrator - Sajat intezmenyek",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "const arr = j.data || [];",
+                  "pm.test('has establishments', () => pm.expect(arr.length).to.be.above(0));",
+                  "const current = arr.find(x => x && x.is_current === true) || arr[0];",
+                  "if (current && current.id) pm.environment.set('establishment_id', String(current.id));"
+                ],
+                "id": "e5689dbb-0cf8-4b16-931b-0056958545c7"
+              }
+            }
+          ],
+          "id": "612c7ba5-defc-45a7-8cca-d139428cc84c",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/mine",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "mine"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Adminisztrator - Diakok intezmenyben",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "const arr = j.data || [];",
+                  "if (arr[0] && arr[0].id) pm.environment.set('student_user_id', String(arr[0].id));"
+                ],
+                "id": "e322680c-fd62-4219-ac06-82a6eba4a8eb"
+              }
+            }
+          ],
+          "id": "84e2896e-87c1-46b3-b2e2-9bebeb0eddcc",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/members/students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "members",
+                "students"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Adminisztrator - Meglevo esemenyek listaja",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "const arr = j.data || [];",
+                  "const ended = arr.find(x => x && x.status === 'ended') || arr[0];",
+                  "if (ended && ended.id) pm.environment.set('ended_event_id', String(ended.id));"
+                ],
+                "id": "d43ae5bc-f0b5-4712-b305-67a9b4bf4eca"
+              }
+            }
+          ],
+          "id": "85951be6-0a98-48ec-a47b-3f22fefba8ba",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/events",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "events"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Adminisztrator - Helyi esemeny letrehozasa",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "const ev = j.event || j.data || j;",
+                  "if (ev && ev.id) pm.environment.set('new_event_id', String(ev.id));"
+                ],
+                "id": "441014bb-921f-4e5d-bb90-b1527121fa15"
+              }
+            }
+          ],
+          "id": "422dbb3b-5cb0-4fe0-8ac0-5ad1771b12c2",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"local\",\n  \"establishment_id\": {{establishment_id}},\n  \"target_group\": \"teljes_iskola\",\n  \"title\": \"Postman Flow Event\",\n  \"description\": \"Automated flow event\",\n  \"content\": \"Created by Postman business flow\",\n  \"start_date\": \"2030-01-01 10:00:00\",\n  \"end_date\": \"2030-01-01 12:00:00\",\n  \"users\": [{{admin_user_id}}, {{student_user_id}}]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/events",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "events"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Adminisztrator - Szavazas letrehozasa uj esemenyhez",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "const p = j.poll || (j.data && (j.data.poll || j.data)) || j;",
+                  "const pollId = (p && p.id) || j.id || j.poll_id || (j.data && j.data.id);",
+                  "if (pollId) pm.environment.set('new_poll_id', String(pollId));",
+                  "const firstOpt = (p && p.options && p.options[0]) || (j.options && j.options[0]) || (j.data && j.data.options && j.data.options[0]);",
+                  "if (firstOpt && firstOpt.id) pm.environment.set('new_poll_option_id', String(firstOpt.id));",
+                  "pm.test('poll id beallitva', () => pm.expect(pm.environment.get('new_poll_id')).to.exist);",
+                  "pm.test('poll option beallitva', () => pm.expect(pm.environment.get('new_poll_option_id')).to.exist);"
+                ],
+                "id": "b92d190c-cdf2-43ad-a18c-623fca670d35"
+              }
+            }
+          ],
+          "id": "b5b7cd7a-b136-439c-9aa1-74d693b01d6d",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Flow Poll\",\n  \"options\": [\"Igen\", \"Nem\"],\n  \"event_id\": {{new_event_id}},\n  \"is_timed\": false,\n  \"hidden_results\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/polls",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "polls"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Adminisztrator - Uj esemeny szavazasainak lekerese",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "const polls = j.polls || [];",
+                  "pm.test('van szavazas', () => pm.expect(polls.length).to.be.above(0));",
+                  "if (polls[0] && polls[0].id) pm.environment.set('new_poll_id', String(polls[0].id));",
+                  "if (polls[0] && polls[0].options && polls[0].options[0] && polls[0].options[0].id) pm.environment.set('new_poll_option_id', String(polls[0].options[0].id));"
+                ],
+                "id": "0c931d87-1192-43ef-93b4-effe20eac72b"
+              }
+            }
+          ],
+          "id": "f483996d-815b-46fc-a362-3b379a7cfe3f",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/{{new_event_id}}/poll",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{new_event_id}}",
+                "poll"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "babbc035-dade-458f-9c01-b1c17d185a08"
+    },
+    {
+      "name": "03 - Diak folyamat",
+      "item": [
+        {
+          "name": "Diak bejelentkezes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.environment.set('student_token', j.token);"
+                ],
+                "id": "e33fffc6-db92-4c27-bf8b-541c19ee7586"
+              }
+            }
+          ],
+          "id": "e645816c-5126-4ce9-b28f-67b713c09647",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{student_email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Diak - reszvetel uj esemenyen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ],
+                "id": "620ed198-2025-46eb-9342-6626777da2fb"
+              }
+            }
+          ],
+          "id": "6dc7cbe0-5830-487a-8f57-dcfd230f544e",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"answer\":\"y\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/{{new_event_id}}/participation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{new_event_id}}",
+                "participation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Diak - komment uj esemenyhez",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "if (j && j.id) pm.environment.set('new_comment_id', String(j.id));"
+                ],
+                "id": "4ca35957-011f-4422-b159-151de6544d34"
+              }
+            }
+          ],
+          "id": "768f804c-7ec9-47e8-b801-d683e6605c25",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": {{new_event_id}},\n  \"content\": \"Postman diak komment\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "comments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Diak - szavazas uj esemenyen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ],
+                "id": "2a0df439-016b-4bd2-aae2-d70fb15809eb"
+              }
+            }
+          ],
+          "id": "69d4b3d9-dd2a-4ef1-8f7f-3bd19b18519c",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"option_id\": {{new_poll_option_id}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/polls/{{new_poll_id}}/answer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "polls",
+                "{{new_poll_id}}",
+                "answer"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "8f052d0e-ed47-49bc-a99d-1b294898e942"
+    },
+    {
+      "name": "04 - Admin vegso ellenorzes",
+      "item": [
+        {
+          "name": "Adminisztrator - komment lezart esemenyen (elvart hiba)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));"
+                ],
+                "id": "521b7d9f-730a-441d-bc96-ec1cdc30ab95"
+              }
+            }
+          ],
+          "id": "5a48a8e2-4c35-4523-ac49-f1cbf7ea1a33",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": {{ended_event_id}},\n  \"content\": \"Lezart teszt komment\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "comments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Adminisztrator - szavazas letrehozasa lezart esemenyen (elvart hiba)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));"
+                ],
+                "id": "a2d55e21-532f-46d8-a471-05a155e56b9c"
+              }
+            }
+          ],
+          "id": "3454436a-5d24-4b53-aabe-bb8f6c663ecf",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Lezart esemeny poll\",\n  \"options\": [\"A\", \"B\"],\n  \"event_id\": {{ended_event_id}},\n  \"is_timed\": false,\n  \"hidden_results\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/polls",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "polls"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "5227e10f-40f4-4728-b1d0-48e45a28996f"
+    },
+    {
+      "name": "05 - Kervenyezo folyamat",
+      "item": [
+        {
+          "name": "Kervenyezo bejelentkezes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.environment.set('requester_token', j.token);"
+                ],
+                "id": "fd7034d9-d50d-4930-81d9-908a4e89de35"
+              }
+            }
+          ],
+          "id": "960c4d26-2a71-4b72-8356-ee97118e5120",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{requester_email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Kervenyezo - sajat fuggoben levo kerelem",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ],
+                "id": "61aef733-6194-4f48-9456-6555c86de58f"
+              }
+            }
+          ],
+          "id": "1ad2b756-5206-44be-86b9-ecdd54faebff",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{requester_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/requests/my-pending",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "requests",
+                "my-pending"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "293c239e-c258-418b-b888-4ce8578f82af"
+    },
+    {
+      "name": "06 - Teljes API (tokenes)",
+      "item": [
+        {
+          "name": "Publikus - Regisztracio",
+          "id": "8d5b8189-0a95-41ed-87f2-2f27f5c97e73",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"Postman Smoke\",\n  \"email\": \"smoke+{{}}@example.com\",\n  \"password\": \"Password123\",\n  \"password_confirmation\": \"Password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "register"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publikus - Elfelejtett jelszo",
+          "id": "55dfba48-0a14-4752-877c-fa4b408fb7d3",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/forgot-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "forgot-password"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publikus - Jelszo visszaallitas (ervenytelen token varhato)",
+          "id": "cd5e0944-47a2-467f-b300-fd5fe5453900",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"token\": \"invalid-token\",\n  \"password\": \"Password123\",\n  \"password_confirmation\": \"Password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reset-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reset-password"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publikus - Email megerosites utvonal ellenorzes",
+          "id": "615731bc-ee22-4b6c-9279-09ddaf265f96",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/email/verify/1/invalidhash",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "email",
+                "verify",
+                "1",
+                "invalidhash"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('email verify endpoint valaszol', () => pm.expect(pm.response.code).to.be.oneOf([200,302,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publikus - Regio azonosito alapjan",
+          "id": "f9e661df-746e-4442-9e04-d33687b0ec14",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/regions/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "regions",
+                "1"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publikus - Regio kereses",
+          "id": "c4373536-e6e6-43ea-892a-4a9a4984e2a0",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/regions?title=CsongrĂˇd",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "regions"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "CsongrĂˇd"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publikus - InnerOsszes regio",
+          "id": "2cf4a1d9-0384-4b7f-8556-106bcb362e31",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/innerregions/all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "innerregions",
+                "all"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publikus - InnerRegio kereses",
+          "id": "b0c26ad6-3ebe-4890-af76-d6483bd44e1d",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/innerregions?title=Szeged",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "innerregions"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "Szeged"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publikus - Osszes telepules",
+          "id": "4325c04c-af53-427b-b238-8807176a3dbd",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/settlements/all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "settlements",
+                "all"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publikus - Telepules kereses",
+          "id": "29c3344e-5963-4cae-8376-987d42563685",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/settlements?title=Szeged",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "settlements"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "Szeged"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publikus - Intezmeny kereses",
+          "id": "815963f9-f1fa-4755-887e-32961ee67c95",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishments?title=Teszt",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishments"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "Teszt"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /user",
+          "id": "5136a952-4e52-4077-a984-827a6eeb2666",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /email/resend",
+          "id": "12714da7-5f2e-4456-8ad9-212c68a94d0b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/email/resend",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "email",
+                "resend"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /email/verification-status",
+          "id": "723c5b01-f264-4904-8cdc-b144009cbef5",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/email/verification-status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "email",
+                "verification-status"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /user/update",
+          "id": "6cddb1e9-50d4-4ec4-83e3-98e159181d54",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"Teszt\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/user/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "update"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /events/{id}/participation",
+          "id": "f7e5255a-3c00-44e0-bd6d-4e07b7070015",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"answer\":\"y\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/participation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "participation"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /events/{id}/favourite",
+          "id": "e9fdddda-5261-4347-988f-4fcd3961246a",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"is_favourite\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/favourite",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "favourite"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /events/{id}/occurrence",
+          "id": "3f2b538f-b519-4fb6-a910-7a60d691b4e1",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"cancel\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/occurrence",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "occurrence"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /events/{id}/chat",
+          "id": "e2aee6c5-2310-4689-9267-80284b490a30",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"chat_enabled\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/chat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "chat"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /events/{id}/participants",
+          "id": "f282ea3e-d55b-42b6-b8dd-821227469a01",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/participants",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "participants"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /events/{id}/participants/{userId}",
+          "id": "04eb559a-0efa-4664-83a8-b47aa602ac8f",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/participants/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "participants",
+                "{{user_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /events/{id}/poll",
+          "id": "54bde5da-7398-4625-81a4-aee0a861ae82",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/poll",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "poll"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/letrehozas",
+          "id": "a524f39d-cb39-49af-b70f-d1b6808dee0b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/create",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "create"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/switch",
+          "id": "2f6508ef-037f-4b3c-bf0d-1e4e8a8f6ee0",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"establishment_id\":{{establishment_id}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/switch",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "switch"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/role",
+          "id": "02167c16-7960-4d01-bf86-83826758b33f",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/role",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "role"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/join-requests/availability lekeres",
+          "id": "1ba0f9de-d4dd-4325-b2da-ce619a71051b",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/join-requests/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "join-requests",
+                "availability"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/staff/{staffId}/role",
+          "id": "6714beb4-fb77-45ee-bf64-d6787cf5a602",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"role\":\"teacher\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/staff/{{staff_id}}/role",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "staff",
+                "{{staff_id}}",
+                "role"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/details",
+          "id": "e37a9982-bb58-4918-b757-3c92585bc957",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/details",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "details"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/ownership",
+          "id": "e1e64a3d-015a-44fa-be09-edfc452c0979",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"user_id\":{{user_id}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/ownership",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "ownership"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}",
+          "id": "cddb8370-acfa-4a1e-b199-3ec4fa9f13c5",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/members/staff",
+          "id": "89b05039-5176-4d0c-890b-1980c116bfe6",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/members/staff",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "members",
+                "staff"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/event-access lekeres",
+          "id": "e341ab69-843c-4b56-ae2f-388b5d5c489b",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/event-access",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "event-access"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/classes/members",
+          "id": "2165f9fb-f436-42a8-ab0a-65c74d74ff88",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/classes/members?class_ids[]={{class_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "classes",
+                "members"
+              ],
+              "query": [
+                {
+                  "key": "class_ids[]",
+                  "value": "{{class_id}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/grades",
+          "id": "c59a75c3-3154-4147-bf39-49390852c262",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/grades",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "grades"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/grades/members",
+          "id": "6ac4b649-1c67-4d24-af3e-7ed4339bcf15",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/grades/members?grade_ids[]={{grade_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "grades",
+                "members"
+              ],
+              "query": [
+                {
+                  "key": "grade_ids[]",
+                  "value": "{{grade_id}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/classes",
+          "id": "02027f8e-c99c-4b45-bc1a-31b4418edf20",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/classes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "classes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/classes/{classId} lekeres",
+          "id": "95bc92f9-23b4-4b01-bd30-273656423cfd",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/classes/{{class_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "classes",
+                "{{class_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/classes/letrehozas",
+          "id": "36d01a67-9548-49aa-8bc7-826af885f3e2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/classes/create",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "classes",
+                "create"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/members/{memberId}/alias",
+          "id": "eb58281e-a1e9-4114-9fcb-1031c39f4a13",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"alias\":\"TesztAlias\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/members/{{member_id}}/alias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "members",
+                "{{member_id}}",
+                "alias"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/classes/add-students",
+          "id": "eec9e41f-aa29-44b6-a847-4ff7d8375b4a",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/classes/add-students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "classes",
+                "add-students"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/classes/remove-students",
+          "id": "4d1db5ee-5a77-4f7e-b1c9-7e76af58bba8",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/classes/remove-students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "classes",
+                "remove-students"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/members/remove-students",
+          "id": "72611f6b-d487-4b23-a0fe-8a76a8c009c4",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/members/remove-students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "members",
+                "remove-students"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/members/remove-staff",
+          "id": "0f311107-8897-4a05-a8c4-3bd197c569a9",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/members/remove-staff",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "members",
+                "remove-staff"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/requests/diakok",
+          "id": "9e13dc1e-8f9d-4ef0-b42b-93625d28727e",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/requests/students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "requests",
+                "students"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/requests/teachers",
+          "id": "4b6590e9-1b31-43d7-aaaa-d7302d068c38",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/requests/teachers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "requests",
+                "teachers"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/requests/me",
+          "id": "e0a92c41-4b59-4bf8-bb69-a3d8b14b121a",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/requests/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "requests",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/requests/letrehozas",
+          "id": "a308ccae-b2e9-4d5d-ad01-07e9c2c6c226",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/requests/create",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "requests",
+                "create"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/requests/handle",
+          "id": "c0a1f03b-e4e7-4194-a7ca-23e1d09390cd",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/establishment/requests/handle",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "requests",
+                "handle"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /establishment/{id}/requests/revoke",
+          "id": "1985a91a-529d-4179-979a-967c0883529c",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/establishment/{{establishment_id}}/requests/revoke",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "establishment",
+                "{{establishment_id}}",
+                "requests",
+                "revoke"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /events/{id}/kommentek lekeres",
+          "id": "4b90ea45-b59b-44a9-b6a5-75edb25fff2a",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/{{event_id}}/comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "{{event_id}}",
+                "comments"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /events/kommentek/{commentId} torles",
+          "id": "b2ef5dff-9cde-4c88-b72f-96719be61122",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/events/comments/{{comment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events",
+                "comments",
+                "{{comment_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /polls/{id}/answer letrehozas",
+          "id": "44d48844-38b2-4a94-8fc6-489d9f232275",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/polls/{{poll_id}}/answer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "polls",
+                "{{poll_id}}",
+                "answer"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /polls/{id}/lezaras modositas",
+          "id": "15a8ffbe-7a40-4a5b-adf6-ea24ac3e83e4",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/polls/{{poll_id}}/close",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "polls",
+                "{{poll_id}}",
+                "close"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hitelesitett valasz (ne 401/500)', () => { pm.expect(pm.response.code).to.not.eql(401); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vedett - /polls/{id}/eredmenyek lekeres",
+          "id": "d09519c8-a426-4712-8e93-87bb6c4f9eb8",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/polls/{{poll_id}}/results",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "polls",
+                "{{poll_id}}",
+                "results"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 varhato GET vegpontnal', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

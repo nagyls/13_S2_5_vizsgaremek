@@ -51,7 +51,7 @@
                 </button>
 
                 <div class="login-link">
-                    <p>Van már fiókod? <router-link to="/login">Bejelentkezés</router-link></p>
+                    <p>Van már fiókja? <router-link to="/login">Bejelentkezés</router-link></p>
                 </div>
             </form>
         </div>
@@ -62,10 +62,10 @@
                     <div class="verification-icon">
                         <i class='bx bx-envelope-open'></i>
                     </div>
-                    <h2 id="verification-title">Erősítsd meg az email címed</h2>
+                    <h2 id="verification-title">Erősítse meg az email címét</h2>
                     <p>
                         Sikeres volt a regisztráció. Küldtünk egy megerősítő emailt a megadott címre.
-                        Kérjük, nyisd meg és kattints a linkre, hogy aktiváld a fiókodat.
+                        Kérjük, nyissa meg és kattintson a linkre, hogy aktiválja fiókját.
                     </p>
                     <div class="verification-actions">
                         <button type="button" class="verification-button" @click="goToLogin">
@@ -144,7 +144,7 @@ export default {
             }
 
             if (!this.acceptTerms) {
-                toast.error("Kérjük, fogadd el az ÁSZF-et és az Adatvédelmi nyilatkozatot!");
+                toast.error("Kérjük, fogadja el az ÁSZF-et és az Adatvédelmi nyilatkozatot!");
                 return;
             }
 
@@ -184,7 +184,7 @@ export default {
                 'The password field must contain at least one uppercase and one lowercase letter.': 'A jelszónak legalább egy nagybetűt és egy kisbetűt kell tartalmaznia.',
                 'The password field must be at least 6 characters.': 'A jelszónak legalább 6 karakter hosszúnak kell lennie.',
                 'The password confirmation does not match.': 'A jelszavak nem egyeznek.',
-                'The email field must be a valid email address.': 'Kérjük, adj meg érvényes email címet.',
+                'The email field must be a valid email address.': 'Kérjük, adjon meg érvényes email címet.',
                 'The email has already been taken.': 'Ezzel az email címmel már regisztráltak.',
                 'The username field is required.': 'A név megadása kötelező.',
                 'The email field is required.': 'Az email cím megadása kötelező.',
