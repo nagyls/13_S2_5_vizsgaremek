@@ -85,8 +85,8 @@
                 {{ activeEventsCount }} aktív
               </span>
             </div>
-            <h1 class="hero-title">Fedezd fel az eseményeket</h1>
-            <p class="hero-description">Csatlakozz iskolád eseményeihez, vagy fedezz fel globális programokat.</p>
+            <h1 class="hero-title">Fedezze fel az eseményeket</h1>
+            <p class="hero-description">Csatlakozzon iskolája eseményeihez, vagy fedezze fel a globális programokat.</p>
             <p class="hero-context" v-if="currentInstitutionName">
               <i class='bx bx-building-house'></i>
               <span>Intézmény: <strong>{{ currentInstitutionName }}</strong></span>
@@ -113,7 +113,7 @@
           </div>
           <div class="stat-card">
             <div class="stat-icon">
-              <i class='bx bx-time'></i>
+              <i class='bx bx-calendar-week'></i>
             </div>
             <div class="stat-data">
               <span class="stat-number">{{ activeEventsCount }}</span>
@@ -245,7 +245,7 @@
               <div class="spinner"></div>
             </div>
             <h3>Események betöltése...</h3>
-            <p>Kérlek várj, amíg betöltjük az eseményeket</p>
+            <p>Kérjük, várjon, amíg betöltjük az eseményeket</p>
           </div>
           
           <div v-else-if="events.length === 0" class="status-card no-events">

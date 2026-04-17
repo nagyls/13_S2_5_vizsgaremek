@@ -42,8 +42,8 @@
                 </h1>
                 <p class="hero-description">
                   Az EseményTér egy olyan platform, ahol tanárok, diákok 
-                  zökkenőmentesen együttműködhetnek. <br> Hozz létre eseményeket, szavazzatok közösen, 
-                  vagy egyszerűen tartsd naprakészen magad!
+                  zökkenőmentesen együttmlűködhetnek. <br> Hozzon létre eseményeket, szavazzatok közösen,
+                  vagy egyszerűen tartsa naprakészen magát!
                 </p>
                 <div class="hero-actions">
                   <button class="btn-primary btn-hero" @click="goToRegister">
@@ -95,7 +95,7 @@
                 </div>
               </div>
               <h4>Intelligens eseménykezelés</h4>
-              <p>Könnyedén hozz létre, szerkessz és oszd meg az eseményeket valós idejű frissítésekkel.</p>
+              <p>Könnyedén hozzon létre, szerkesszen és ossza meg az eseményeket valós idejű frissítésekkel.</p>
             </div>
             
             <div class="feature-item">
@@ -105,7 +105,7 @@
                 </div>
               </div>
               <h4>Élő szavazás és statisztika</h4>
-              <p>Indíts szavazásokat és kövesd nyomon az eredményeket részletes statisztikákkal.</p>
+              <p>Indítson szavazásokat és kövesse nyomon az eredményeket részletes statisztikákkal.</p>
             </div>
             
             <div class="feature-item">
@@ -115,7 +115,7 @@
                 </div>
               </div>
               <h4>Okos értesítési rendszer</h4>
-              <p>Kapj időben értesítéseket a számodra fontos eseményekről és változásokról.</p>
+              <p>Kapjon időben értesítéseket a számára fontos eseményekről és változásokról.</p>
             </div>
             
             <div class="feature-item">
@@ -125,7 +125,7 @@
                 </div>
               </div>
               <h4>Biztonságos környezet</h4>
-              <p>Adataid védelme és biztonságos kommunikáció a legmagasabb szintű titkosítással.</p>
+              <p>Adatainak védelme és biztonságos kommunikáció a legmagasabb szintű titkosítással.</p>
             </div>
           </div>
         </div>

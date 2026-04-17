@@ -6,14 +6,14 @@ use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\EventShown;
 use App\Models\EventRequest;
-use Illuminate\Support\Carbon;  ////SZAKKÖR MÓDOSÍTÁS
+use Illuminate\Support\Carbon;
 use App\Models\ClassModel;
 use Illuminate\Support\Facades\DB;
 
 class EventController extends Controller
 {
 
-
+    // Esemény létrehozása
     public function store(Request $request)
     {
         $user = $request->user();
@@ -38,11 +38,9 @@ class EventController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
 
-            //SZAKKÖR MÓDOSÍTÁS
             'is_recurring' => 'sometimes|boolean',
             'recurrence_frequency' => 'nullable|required_if:is_recurring,1|in:weekly',
             'recurrence_until' => 'nullable|required_if:is_recurring,1|date',
-            //
 
             'users' => 'array|required_if:type,local,global',
             'users.*' => 'exists:users,id',
@@ -70,13 +68,11 @@ class EventController extends Controller
             'end_date.after' => 'A befejező dátumnak a kezdő dátunál később kell lennie.',
             'users.required_if' => 'A felhasználók megadása kötelező.',
 
-            //SZAKKÖR MÓDOSÍTÁS
             'is_recurring.boolean' => 'Az ismétlődés mező értéke csak igaz vagy hamis lehet.',
             'recurrence_frequency.required_if' => 'Ismétlődő eseménynél meg kell adni a gyakoriságot.',
             'recurrence_frequency.in' => 'Jelenleg csak heti ismétlődés támogatott.',
             'recurrence_until.required_if' => 'Ismétlődő eseménynél záró dátum megadása kötelező.',
             'recurrence_until.date' => 'Az ismétlődés záró dátuma érvényes dátum legyen.',
-            //
 
             'users.array' => 'A users mezőnek tömbnek kell lennie.',
             'users.min' => 'Legalább :min felhasználót meg kell adni.',
@@ -85,8 +81,10 @@ class EventController extends Controller
             'users.*.exists' => 'A megadott felhasználó nem található.',
         ]);
 
-        //SZAKKÖR MÓDOSÍTÁS
-        $isRecurring = (bool) ($validated['is_recurring'] ?? false);
+        $isRecurring = false;
+        if (array_key_exists('is_recurring', $validated)) {
+            $isRecurring = $validated['is_recurring'];
+        }
 
         if ($isRecurring) {
             $recurrenceUntilEndOfDay = Carbon::parse($validated['recurrence_until'])->endOfDay();
@@ -104,14 +102,36 @@ class EventController extends Controller
                 'message' => 'Ismétlődő eseményt jelenleg csak helyi eseménynél lehet létrehozni.'
             ], 422);
         }
-        //
 
-        $users = $validated['users'] ?? [];
-        $collabIds = $validated['collab_establishment_ids'] ?? [];
-        $selectedClassIds = array_values(array_map('intval', $validated['selected_class_ids'] ?? []));
-        $selectedGradeIds = array_values(array_map('intval', $validated['selected_grade_ids'] ?? []));
+        // Az opcionális listáknak adunk alapértelmezett üres tömböt.
+        $users = [];
+        if (array_key_exists('users', $validated)) {
+            $users = $validated['users'];
+        }
 
-        if (($validated['target_group'] ?? null) === 'osztaly_szintu' && !empty($selectedClassIds)) {
+        $collabIds = [];
+        if (array_key_exists('collab_establishment_ids', $validated)) {
+            $collabIds = $validated['collab_establishment_ids'];
+        }
+
+        $selectedClassSource = [];
+        if (array_key_exists('selected_class_ids', $validated)) {
+            $selectedClassSource = $validated['selected_class_ids'];
+        }
+        $selectedClassIds = array_values(array_map('intval', $selectedClassSource));
+
+        $selectedGradeSource = [];
+        if (array_key_exists('selected_grade_ids', $validated)) {
+            $selectedGradeSource = $validated['selected_grade_ids'];
+        }
+        $selectedGradeIds = array_values(array_map('intval', $selectedGradeSource));
+
+        $targetGroup = null;
+        if (array_key_exists('target_group', $validated)) {
+            $targetGroup = $validated['target_group'];
+        }
+
+        if ($targetGroup === 'osztaly_szintu' && !empty($selectedClassIds)) {
             $validClassIds = ClassModel::where('establishment_id', $validated['establishment_id'])
                 ->whereIn('id', $selectedClassIds)
                 ->pluck('id')
@@ -127,7 +147,7 @@ class EventController extends Controller
             }
         }
 
-        if (($validated['target_group'] ?? null) === 'evfolyam_szintu' && !empty($selectedGradeIds)) {
+        if ($targetGroup === 'evfolyam_szintu' && !empty($selectedGradeIds)) {
             $validGrades = ClassModel::where('establishment_id', $validated['establishment_id'])
                 ->whereIn('grade', $selectedGradeIds)
                 ->pluck('grade')
@@ -150,23 +170,32 @@ class EventController extends Controller
                 return response()->json(['message' => 'nem jogosult'], 403);
             }
 
-            //eredeti: 
-            //  $event = DB::transaction(function () use ($user, $validated, $users) {
-            $event = DB::transaction(function () use ($user, $validated, $users, $isRecurring) { //SZAKKÖR MÓDOSÍTÁS
-                if (($validated['target_group'] ?? null) === 'osztaly_szintu') {
-                    $targetClassIds = array_values(array_map('intval', $validated['selected_class_ids'] ?? []));
+            $event = DB::transaction(function () use ($user, $validated, $users, $isRecurring, $targetGroup) {
+                if ($targetGroup === 'osztaly_szintu') {
+                    $targetClassIdsSource = [];
+                    if (array_key_exists('selected_class_ids', $validated)) {
+                        $targetClassIdsSource = $validated['selected_class_ids'];
+                    }
+                    $targetClassIds = array_values(array_map('intval', $targetClassIdsSource));
                 } else {
                     $targetClassIds = null;
                 }
 
-                if (($validated['target_group'] ?? null) === 'evfolyam_szintu') {
-                    $targetGradeIds = array_values(array_map('intval', $validated['selected_grade_ids'] ?? []));
+                if ($targetGroup === 'evfolyam_szintu') {
+                    $targetGradeIdsSource = [];
+                    if (array_key_exists('selected_grade_ids', $validated)) {
+                        $targetGradeIdsSource = $validated['selected_grade_ids'];
+                    }
+                    $targetGradeIds = array_values(array_map('intval', $targetGradeIdsSource));
                 } else {
                     $targetGradeIds = null;
                 }
 
                 if ($isRecurring) {
-                    $recurrenceFrequency = $validated['recurrence_frequency'] ?? 'weekly';
+                    $recurrenceFrequency = 'weekly';
+                    if (array_key_exists('recurrence_frequency', $validated)) {
+                        $recurrenceFrequency = $validated['recurrence_frequency'];
+                    }
                     $recurrenceUntil = $validated['recurrence_until'];
                 } else {
                     $recurrenceFrequency = null;
@@ -177,7 +206,7 @@ class EventController extends Controller
                     'user_id' => $user->id,
                     'establishment_id' => $validated['establishment_id'],
                     'type' => $validated['type'],
-                    'target_group' => $validated['target_group'] ?? null,
+                    'target_group' => $targetGroup,
                     'target_class_ids' => $targetClassIds,
                     'target_grade_ids' => $targetGradeIds,
                     'title' => $validated['title'],
@@ -186,18 +215,16 @@ class EventController extends Controller
                     'start_date' => $validated['start_date'],
                     'end_date' => $validated['end_date'],
 
-                    //SZAKKÖR MÓDOSÍTÁS
                     'status' => 'upcoming',
                     'is_recurring' => $isRecurring,
                     'recurrence_frequency' => $recurrenceFrequency,
                     'recurrence_until' => $recurrenceUntil,
                     'recurrence_parent_event_id' => null,
-                    //
                 ]);
 
                 $shownRows = [];
 
-                // készítő láthatóság
+                // A létrehozó mindig lássa a saját eseményét.
                 $shownRows[] = [
                     'event_id' => $event->id,
                     'user_id' => $user->id,
@@ -206,9 +233,9 @@ class EventController extends Controller
                     'updated_at' => now(),
                 ];
 
-                // eredeti intézmény felhasználói láthatóság
+                // A kijelölt felhasználók számára is létrehozzuk a láthatóságot.
                 foreach ($users as $userId) {
-                    if ((int) $userId === (int) $user->id) {
+                    if ($userId == $user->id) {
                         continue;
                     }
 
@@ -227,7 +254,7 @@ class EventController extends Controller
                     EventShown::insert($shownRows);
                 }
 
-                //SZAKKÖR MÓDOSÍTÁS
+                // Heti ismétlődő alkalmak létrehozása
                 if ($isRecurring) {
                     $this->createWeeklyOccurrences(
                         $event,
@@ -235,7 +262,6 @@ class EventController extends Controller
                         $shownRows
                     );
                 }
-                //
 
                 return $event;
             });
@@ -246,15 +272,23 @@ class EventController extends Controller
                 return response()->json(['message' => 'nem jogosult'], 403);
             }
 
-            $event = DB::transaction(function () use ($user, $validated, $users, $collabIds) {
-                if (($validated['target_group'] ?? null) === 'osztaly_szintu') {
-                    $targetClassIds = array_values(array_map('intval', $validated['selected_class_ids'] ?? []));
+            $event = DB::transaction(function () use ($user, $validated, $users, $collabIds, $targetGroup) {
+                if ($targetGroup === 'osztaly_szintu') {
+                    $targetClassIdsSource = [];
+                    if (array_key_exists('selected_class_ids', $validated)) {
+                        $targetClassIdsSource = $validated['selected_class_ids'];
+                    }
+                    $targetClassIds = array_values(array_map('intval', $targetClassIdsSource));
                 } else {
                     $targetClassIds = null;
                 }
 
-                if (($validated['target_group'] ?? null) === 'evfolyam_szintu') {
-                    $targetGradeIds = array_values(array_map('intval', $validated['selected_grade_ids'] ?? []));
+                if ($targetGroup === 'evfolyam_szintu') {
+                    $targetGradeIdsSource = [];
+                    if (array_key_exists('selected_grade_ids', $validated)) {
+                        $targetGradeIdsSource = $validated['selected_grade_ids'];
+                    }
+                    $targetGradeIds = array_values(array_map('intval', $targetGradeIdsSource));
                 } else {
                     $targetGradeIds = null;
                 }
@@ -263,7 +297,7 @@ class EventController extends Controller
                     'user_id' => $user->id,
                     'establishment_id' => $validated['establishment_id'],
                     'type' => $validated['type'],
-                    'target_group' => $validated['target_group'] ?? null,
+                    'target_group' => $targetGroup,
                     'target_class_ids' => $targetClassIds,
                     'target_grade_ids' => $targetGradeIds,
                     'title' => $validated['title'],
@@ -272,13 +306,11 @@ class EventController extends Controller
                     'start_date' => $validated['start_date'],
                     'end_date' => $validated['end_date'],
 
-                    //SZAKKÖR MÓDOSÍTÁS
                     'status' => 'upcoming',
                     'is_recurring' => false,
                     'recurrence_frequency' => null,
                     'recurrence_until' => null,
                     'recurrence_parent_event_id' => null,
-                    //
 
                 ]);
 
@@ -330,7 +362,7 @@ class EventController extends Controller
         ], 201);
     }
 
-    //SZAKKÖR MÓDOSÍTÁS
+    // Heti ismétlődő alkalmak automatikus generálása az első alkalom alapján
     private function createWeeklyOccurrences(Event $event, string $recurrenceUntil, array $shownRows): void
     {
         $startDate = Carbon::parse($event->start_date);
@@ -380,8 +412,8 @@ class EventController extends Controller
             $iteration++;
         }
     }
-    //
 
+    // Kollaborációs esemény kérelem elfogadása vagy visszautasítása
     public function handleCollabEvents(Request $request, int $establishmentId)
     {
         $user = $request->user();
@@ -418,7 +450,10 @@ class EventController extends Controller
                 ->delete();
 
             if ($validated['action'] === 'accept') {
-                $users = $validated['users'] ?? [];
+                $users = [];
+                if (array_key_exists('users', $validated)) {
+                    $users = $validated['users'];
+                }
                 foreach ($users as $userId) {
                     if ($this->isMemberEstablishment($userId, $establishmentId)) {
                         $hasFavouriteInAnyEstablishment = EventShown::where('event_id', $eventId)
@@ -446,6 +481,7 @@ class EventController extends Controller
         return response()->json(['message' => 'Művelet végrehajtva'], 200);
     }
 
+    // Az intézményhez beérkezett kollaborációs esemény kérelmek listája
     public function getCollabEvents(Request $request, int $establishmentId)
     {
         $user = $request->user();
@@ -472,17 +508,11 @@ class EventController extends Controller
                 ->pluck('name', 'id');
 
             $events->each(function ($event) use ($creatorNames) {
-                $event->creator_name = $creatorNames[$event->user_id] ?? 'Ismeretlen szervező';
-            });
-        }
-
-        if ($events->isNotEmpty()) {
-            $creatorNames = DB::table('users')
-                ->whereIn('id', $events->pluck('user_id')->filter()->unique()->values())
-                ->pluck('name', 'id');
-
-            $events->each(function ($event) use ($creatorNames) {
-                $event->creator_name = $creatorNames[$event->user_id] ?? 'Ismeretlen szervező';
+                $creatorName = 'Ismeretlen szervező';
+                if (isset($creatorNames[$event->user_id])) {
+                    $creatorName = $creatorNames[$event->user_id];
+                }
+                $event->creator_name = $creatorName;
             });
         }
 
@@ -493,6 +523,7 @@ class EventController extends Controller
 
 
 
+    // Az intézmény eseményeinek listázása a bejelentkezett felhasználónak
     public function getEvents(Request $request, int $establishmentId)
     {
         $user = $request->user();
@@ -528,15 +559,17 @@ class EventController extends Controller
                 ->pluck('name', 'id');
 
             $events->each(function ($event) use ($creatorNames) {
-                $event->creator_name = $creatorNames[$event->user_id] ?? 'Ismeretlen szervező';
+                $creatorName = 'Ismeretlen szervező';
+                if (isset($creatorNames[$event->user_id])) {
+                    $creatorName = $creatorNames[$event->user_id];
+                }
+                $event->creator_name = $creatorName;
             });
         }
 
         $eventIds = $events
             ->pluck('id')
-            ->map(function ($id) {
-                return (int) $id;
-            })
+            ->map(fn($id) => (int) $id)
             ->values()
             ->all();
 
@@ -547,9 +580,7 @@ class EventController extends Controller
                 ->whereIn('event_id', $eventIds)
                 ->where('is_favourite', true)
                 ->pluck('event_id')
-                ->map(function ($id) {
-                    return (int) $id;
-                })
+                ->map(fn($id) => (int) $id)
                 ->unique()
                 ->flip();
         }
@@ -587,11 +618,26 @@ class EventController extends Controller
             $stats = $feedbackStatsByEvent->get($event->id);
             $commentStats = $commentCountsByEvent->get($event->id);
 
-            $event->attending_count = (int) ($stats->attending_count ?? 0);
-            $event->not_attending_count = (int) ($stats->not_attending_count ?? 0);
-            $event->participant_count = (int) ($stats->attending_count ?? 0);
-            $event->participants = (int) ($stats->attending_count ?? 0);
-            $event->comment_count = (int) ($commentStats->comment_count ?? 0);
+            $attendingCountValue = 0;
+            if ($stats && isset($stats->attending_count)) {
+                $attendingCountValue = (int) $stats->attending_count;
+            }
+
+            $notAttendingCountValue = 0;
+            if ($stats && isset($stats->not_attending_count)) {
+                $notAttendingCountValue = (int) $stats->not_attending_count;
+            }
+
+            $commentCountValue = 0;
+            if ($commentStats && isset($commentStats->comment_count)) {
+                $commentCountValue = (int) $commentStats->comment_count;
+            }
+
+            $event->attending_count = $attendingCountValue;
+            $event->not_attending_count = $notAttendingCountValue;
+            $event->participant_count = $attendingCountValue;
+            $event->participants = $attendingCountValue;
+            $event->comment_count = $commentCountValue;
             $event->user_participation = $userFeedbackByEvent->get($event->id);
             $event->is_favourite = $favouriteEventIdSet->has($event->id);
 
@@ -602,6 +648,7 @@ class EventController extends Controller
         ]);
     }
 
+    // Retroaktívan beállítja a láthatóságot azon eseményekre, amelyekre a felhasználó jogosult, de még nem szerepelt a listájában
     private function recroactiveEventVisibility(int $userId, int $establishmentId): void
     {
         $studentClassRows = DB::table('class_students')
@@ -622,17 +669,13 @@ class EventController extends Controller
 
         $userClassIds = $classRows
             ->pluck('id')
-            ->map(function ($id) {
-                return (int) $id;
-            })
+            ->map(fn($id) => (int) $id)
             ->values()
             ->all();
 
         $userGradeIds = $classRows
             ->pluck('grade')
-            ->map(function ($grade) {
-                return (int) $grade;
-            })
+            ->map(fn($grade) => (int) $grade)
             ->unique()
             ->values()
             ->all();
@@ -640,9 +683,7 @@ class EventController extends Controller
         $existingVisibleEventIdSet = EventShown::where('establishment_id', $establishmentId)
             ->where('user_id', $userId)
             ->pluck('event_id')
-            ->map(function ($eventId) {
-                return (int) $eventId;
-            })
+            ->map(fn($eventId) => (int) $eventId)
             ->flip();
 
         $candidateEvents = Event::where('establishment_id', $establishmentId)
@@ -663,10 +704,13 @@ class EventController extends Controller
             }
 
             if (in_array($event->target_group, ['osztaly_szintu', 'sajat_osztaly'], true)) {
-                $eventClassIds = collect($event->target_class_ids ?? [])
-                    ->map(function ($id) {
-                        return (int) $id;
-                    })
+                $targetClassIdsSource = [];
+                if ($event->target_class_ids !== null) {
+                    $targetClassIdsSource = $event->target_class_ids;
+                }
+
+                $eventClassIds = collect($targetClassIdsSource)
+                    ->map(fn($id) => (int) $id)
                     ->values()
                     ->all();
 
@@ -674,10 +718,13 @@ class EventController extends Controller
             }
 
             if (in_array($event->target_group, ['evfolyam_szintu', 'evfolyam'], true)) {
-                $eventGradeIds = collect($event->target_grade_ids ?? [])
-                    ->map(function ($id) {
-                        return (int) $id;
-                    })
+                $targetGradeIdsSource = [];
+                if ($event->target_grade_ids !== null) {
+                    $targetGradeIdsSource = $event->target_grade_ids;
+                }
+
+                $eventGradeIds = collect($targetGradeIdsSource)
+                    ->map(fn($id) => (int) $id)
                     ->values()
                     ->all();
 
@@ -702,7 +749,7 @@ class EventController extends Controller
         }
     }
 
-    //részvétel
+    // Felhasználó részvételi válaszának mentése
     public function setParticipation(Request $request, int $eventId)
     {
         $user = $request->user();
@@ -761,6 +808,118 @@ class EventController extends Controller
             'participant_count' => $attendingCount,
         ]);
     }
+
+    // Esemény aktív résztvevőinek listázása
+    public function getParticipants(Request $request, int $eventId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'nem jogosult'], 401);
+        }
+
+        $event = Event::find($eventId);
+        if (!$event) {
+            return response()->json(['message' => 'Az esemény nem található.'], 404);
+        }
+
+        if ($event->user_id != $user->id) {
+            return response()->json(['message' => 'Csak a létrehozó láthatja a résztvevőlistát.'], 403);
+        }
+
+        $participants = DB::table('event_shows')
+            ->join('users', 'event_shows.user_id', '=', 'users.id')
+            ->leftJoin('students', function ($join) use ($event) {
+                $join->on('students.user_id', '=', 'users.id')
+                    ->where('students.establishment_id', '=', $event->establishment_id);
+            })
+            ->leftJoin('staffs', function ($join) use ($event) {
+                $join->on('staffs.user_id', '=', 'users.id')
+                    ->where('staffs.establishment_id', '=', $event->establishment_id);
+            })
+            ->where('event_shows.event_id', $eventId)
+            ->where('event_shows.answer', 'y')
+            ->select(
+                'users.id as user_id',
+                'users.name',
+                'users.email',
+                'event_shows.answer',
+                'event_shows.updated_at',
+                DB::raw('COALESCE(students.alias, staffs.alias) as alias')
+            )
+            ->orderBy('users.name')
+            ->get();
+
+        return response()->json([
+            'participants' => $participants,
+        ]);
+    }
+
+    // Résztvevő kitiltása az eseményből
+    public function banParticipant(Request $request, int $eventId, int $userId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'nem jogosult'], 401);
+        }
+
+        $event = Event::find($eventId);
+        if (!$event) {
+            return response()->json(['message' => 'Az esemény nem található.'], 404);
+        }
+
+        if ($event->user_id != $user->id) {
+            return response()->json(['message' => 'Csak a létrehozó tilthat ki résztvevőt.'], 403);
+        }
+
+        if ($userId == $event->user_id) {
+            return response()->json(['message' => 'A létrehozó nem tiltható ki az eseményből.'], 422);
+        }
+
+        $wasParticipant = DB::table('event_shows')
+            ->where('event_id', $eventId)
+            ->where('user_id', $userId)
+            ->where('answer', 'y')
+            ->exists();
+
+        if (!$wasParticipant) {
+            return response()->json(['message' => 'A felhasználó nem aktív résztvevő.'], 404);
+        }
+
+        DB::table('event_shows')
+            ->where('event_id', $eventId)
+            ->where('user_id', $userId)
+            ->delete();
+
+        DB::table('event_messages')
+            ->where('event_id', $eventId)
+            ->where('user_id', $userId)
+            ->delete();
+
+        $attendingCount = DB::table('event_shows')
+            ->where('event_id', $eventId)
+            ->where('answer', 'y')
+            ->count();
+
+        $notAttendingCount = DB::table('event_shows')
+            ->where('event_id', $eventId)
+            ->where('answer', 'n')
+            ->count();
+
+        $commentCount = DB::table('event_messages')
+            ->where('event_id', $eventId)
+            ->count();
+
+        return response()->json([
+            'message' => 'A résztvevő kitiltása sikeres volt.',
+            'attending_count' => $attendingCount,
+            'not_attending_count' => $notAttendingCount,
+            'comment_count' => $commentCount,
+        ]);
+    }
+
+    // Chat engedélyezése vagy letiltása az eseményen
     public function handleChat(Request $request, int $eventId)
     {
         $user = $request->user();
@@ -792,7 +951,7 @@ class EventController extends Controller
         ]);
     }
 
-    //SZAKKÖR MÓDOSÍTÁS
+    // Ismétlődő esemény egy alkalmának módosítása vagy elmaradtként jelölése
     public function manageOccurrence(Request $request, int $eventId)
     {
         $user = $request->user();
@@ -806,7 +965,7 @@ class EventController extends Controller
             return response()->json(['message' => 'Az esemény nem található.'], 404);
         }
 
-        if ((int) $event->user_id !== (int) $user->id) {
+        if ($event->user_id != $user->id) {
             return response()->json(['message' => 'Csak a létrehozó módosíthatja az alkalmat.'], 403);
         }
 
@@ -846,6 +1005,7 @@ class EventController extends Controller
         ]);
     }
 
+    // Kedvenc jelölés be- és kikapcsolása az eseményen
     public function makeFavourite(Request $request, int $eventId)
     {
         $user = $request->user();
@@ -877,15 +1037,12 @@ class EventController extends Controller
             'updated_at' => now(),
         ]);
 
-        if ($newValue) {
-            $message = 'Esemény hozzáadva a kedvencekhez.';
-        } else {
-            $message = 'Esemény eltávolítva a kedvencek közül.';
-        }
+        $message = $newValue
+            ? 'Esemény hozzáadva a kedvencekhez.'
+            : 'Esemény eltávolítva a kedvencek közül.';
 
         return response()->json([
             'message' => $message,
         ]);
     }
 }
-//

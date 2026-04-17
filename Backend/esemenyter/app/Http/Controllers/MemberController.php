@@ -29,7 +29,7 @@ class MemberController extends Controller
         }
         $staff = User::join('staffs', 'users.id', '=', 'staffs.user_id')
             ->where('staffs.establishment_id', $establishmentId)
-            ->select('users.id', 'users.name', 'users.email', 'staffs.alias', 'staffs.created_at', 'staffs.updated_at')
+            ->select('users.id', 'users.name', 'users.email', 'staffs.id as staff_id', 'staffs.role', 'staffs.alias', 'staffs.created_at', 'staffs.updated_at')
             ->distinct()
             ->get();
 
@@ -97,9 +97,14 @@ class MemberController extends Controller
             ->pluck('user_id')
             ->toArray();
 
+        $toInsert = array_values(array_diff($userIds, $alreadyMember));
+        $alreadyExists = array_values(array_intersect($userIds, $alreadyMember));
 
-        $toInsert = array_diff($userIds, $alreadyMember);
-        $alreadyExists = array_intersect($userIds, $alreadyMember);
+        if ($this->wouldExceedClassCapacity($class, count($toInsert))) {
+            return response()->json([
+                'message' => 'Meghaladja a létszámhatárt.'
+            ], 422);
+        }
 
         foreach ($toInsert as $userId) {
             ClassStudent::create([
@@ -248,7 +253,7 @@ class MemberController extends Controller
             ->where('establishment_id', $establishmentId)
             ->delete();
 
-        $this->changeUsersCurrentEstablishmentAfterRemoval($userIds, $establishmentId);
+        $this->changeCurrentEstablishment($userIds, $establishmentId);
 
         return response()->json([
             'message' => 'Diák(ok) eltávolítva az intézményből!'
@@ -274,7 +279,7 @@ class MemberController extends Controller
             'user_id.*.exists' => 'A megadott felhasználó nem található.',
         ]);
 
-        $establishmentId = (int) $validated['establishment_id'];
+        $establishmentId = $validated['establishment_id'];
 
         if (!$this->isAdminEstablishment($authUser->id, $establishmentId)) {
             return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
@@ -288,7 +293,7 @@ class MemberController extends Controller
             ->values()
             ->toArray();
 
-        if (in_array((int) $authUser->id, $targetUserIds, true)) {
+        if (in_array($authUser->id, $targetUserIds, true)) {
             return response()->json([
                 'message' => 'Saját felhasználódat nem tudod eltávolítani az intézményből.'
             ], 422);
@@ -337,7 +342,7 @@ class MemberController extends Controller
             ->whereIn('user_id', $targetUserIds)
             ->delete();
 
-        $this->changeUsersCurrentEstablishmentAfterRemoval($targetUserIds, $establishmentId);
+        $this->changeCurrentEstablishment($targetUserIds, $establishmentId);
 
         return response()->json([
             'message' => 'Tanár(ok) eltávolítva az intézményből.',
@@ -394,8 +399,15 @@ class MemberController extends Controller
             return response()->json(['errors' => 'Az osztály nem tartozik az intézményhez!'], 400);
         }
 
-        $adds = $validated['add'] ?? [];
-        $removes = $validated['remove'] ?? [];
+        $adds = [];
+        if (array_key_exists('add', $validated)) {
+            $adds = $validated['add'];
+        }
+
+        $removes = [];
+        if (array_key_exists('remove', $validated)) {
+            $removes = $validated['remove'];
+        }
 
         // validate adds belong to establishment
         if (!empty($adds)) {
@@ -414,35 +426,69 @@ class MemberController extends Controller
             }
         }
 
-        DB::transaction(function () use ($adds, $removes, $classId) {
-            if (!empty($adds)) {
-                $userIds = Student::whereIn('id', $adds)->pluck('user_id')->toArray();
+        $addedUserIds = [];
 
-                $already = ClassStudent::where('class_id', $classId)->whereIn('user_id', $userIds)->pluck('user_id')->toArray();
-                $toInsert = array_diff($userIds, $already);
+        if (!empty($adds)) {
+            $userIds = Student::whereIn('id', $adds)->pluck('user_id')->toArray();
 
-                foreach ($toInsert as $userId) {
-                    ClassStudent::create(['user_id' => $userId, 'class_id' => $classId]);
-                }
+            $already = ClassStudent::where('class_id', $classId)
+                ->whereIn('user_id', $userIds)
+                ->pluck('user_id')
+                ->toArray();
 
-                if (!empty($toInsert)) {
-                    $class = ClassModel::find($classId);
-                    if ($class) {
-                        $this->retroactiveEventShow((int) $class->establishment_id, (int) $classId, $toInsert);
-                    }
-                }
+            $toInsert = array_values(array_diff($userIds, $already));
+
+            if ($this->wouldExceedClassCapacity($class, count($toInsert))) {
+                return response()->json([
+                    'message' => 'Meghaladja a létszámhatárt.'
+                ], 422);
             }
 
-            if (!empty($removes)) {
-                $userIdsToRemove = Student::whereIn('id', $removes)->pluck('user_id')->toArray();
-                ClassStudent::where('class_id', $classId)->whereIn('user_id', $userIdsToRemove)->delete();
+            foreach ($toInsert as $userId) {
+                ClassStudent::create(['user_id' => $userId, 'class_id' => $classId]);
             }
-        });
+
+            $addedUserIds = $toInsert;
+        }
+
+        if (!empty($removes)) {
+            $userIdsToRemove = Student::whereIn('id', $removes)->pluck('user_id')->toArray();
+            ClassStudent::where('class_id', $classId)->whereIn('user_id', $userIdsToRemove)->delete();
+        }
+
+        if (!empty($addedUserIds)) {
+            $class = ClassModel::find($classId);
+            if ($class) {
+                $this->retroactiveEventShow((int) $class->establishment_id, (int) $classId, $addedUserIds);
+            }
+        }
 
         return response()->json(['message' => 'Osztály tagság frissítve']);
     }
 
-    private function changeUsersCurrentEstablishmentAfterRemoval(array $userIds, int $removedEstablishmentId): void
+    private function wouldExceedClassCapacity(?ClassModel $class, int $newStudentCount): bool
+    {
+        if (!$class || $newStudentCount <= 0) {
+            return false;
+        }
+
+        $capacity = $this->resolveClassCapacity($class);
+        $currentStudentCount = ClassStudent::where('class_id', $class->id)->count();
+
+        return ($currentStudentCount + $newStudentCount) > $capacity;
+    }
+
+    private function resolveClassCapacity(ClassModel $class): int
+    {
+        $capacity = 0;
+        if ($class->capacity !== null) {
+            $capacity = (int) $class->capacity;
+        }
+
+        return $capacity > 0 ? $capacity : 30;
+    }
+
+    private function changeCurrentEstablishment(array $userIds, int $removedEstablishmentId): void
     {
         $normalizedUserIds = collect($userIds)
             ->map(function ($id) {
@@ -473,7 +519,10 @@ class MemberController extends Controller
                 ->orderBy('establishment_id')
                 ->value('establishment_id');
 
-            $nextEstablishmentId = $nextStaffEstablishmentId ?? $nextStudentEstablishmentId;
+            $nextEstablishmentId = $nextStudentEstablishmentId;
+            if ($nextStaffEstablishmentId !== null) {
+                $nextEstablishmentId = $nextStaffEstablishmentId;
+            }
 
             $targetUser->establishment_id = $nextEstablishmentId ? $nextEstablishmentId : null;
             $targetUser->save();

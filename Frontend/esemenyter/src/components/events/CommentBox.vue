@@ -52,8 +52,8 @@
           <i class='bx bx-message-square-detail'></i>
         </div>
         <div class="felhivas-szoveg">
-          <h3>{{ isFormal ? 'Szeretne hozzászólni?' : 'Szeretnél hozzászólni?' }}</h3>
-          <p>Jelentkezz be, hogy kommentelhess és csatlakozhass a beszélgetéshez!</p>
+          <h3>Szeretne hozzászólni?</h3>
+          <p>Jelentkezzen be, hogy kommentelhessen és csatlakozhasson a beszélgetéshez!</p>
         </div>
         <router-link to="/bejelentkezes" class="bejelentkezes-gomb">
           <i class='bx bx-log-in'></i>
@@ -93,7 +93,7 @@
                 </div>
               </div>
               <button
-                v-if="aktualisFelhasznalo && aktualisFelhasznalo.id === komment.user_id"
+                v-if="aktualisFelhasznalo && (aktualisFelhasznalo.id === komment.user_id || canModerateComments)"
                 @click="kommentTorles(komment.id)"
                 class="torles-gomb"
                 title="Komment törlése"
@@ -115,7 +115,7 @@
             <i class='bx bx-message-square-dots'></i>
           </div>
           <h4>Még nincsenek hozzászólások</h4>
-          <p>Legyél te az első, aki megosztja a gondolatait!</p>
+          <p>Legyen Ön az első, aki megosztja a gondolatait!</p>
         </div>
       </div>
     </div>
@@ -139,6 +139,10 @@ export default {
     aktualisFelhasznalo: {
       type: Object,
       default: null
+    },
+    canModerateComments: {
+      type: Boolean,
+      default: false
     }
   },
 

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="user-dashboard">
     <!-- HEADER -->
     <header class="main-header">
@@ -82,7 +82,7 @@
             </div>
             <h2>{{ welcomeText }}</h2>
             <p class="welcome-text">
-              Sikeresen beállítottad a profilodat. Most már teljes mértékben használhatod az EseményTér funkcióit.
+              Sikeresen beállította a profil ját. Most már teljes mértékben használhatja az EseményTér funkcióit.
             </p>
             <div class="role-indicator">
               <span class="role-label">Szerepköröd:</span>
@@ -105,7 +105,7 @@
                 <i class='bx bx-calendar-star'></i>
               </div>
               <h4>Események</h4>
-              <p>Böngéssz az események között, jelentkezz és vegyél részt</p>
+              <p>Böngésszen az események között, jelentkezzen és vegyen részt</p>
               <div class="card-footer">
                 <span class="btn-text">
                   Megtekintés <i class='bx bx-right-arrow-alt'></i>
@@ -118,7 +118,7 @@
                 <i class='bx bx-calendar-week'></i>
               </div>
               <h4>Naptár</h4>
-              <p>Tekintsd át havi nézetben az eseményeket és az ismétlődő alkalmakat</p>
+              <p>Tekintse át havi nézetben az eseményeket és az ismétlődő alkalmakat</p>
               <div class="card-footer">
                 <span class="btn-text">
                   Megnyitás <i class='bx bx-right-arrow-alt'></i>
@@ -132,7 +132,7 @@
                 <i class='bx bx-user-circle'></i>
               </div>
               <h4>Profilom</h4>
-              <p>Tekintsd meg és szerkeszd a profiladataidat</p>
+              <p>Tekintse meg és szerkessze profil adatait</p>
               <div class="card-footer">
                 <span class="btn-text">
                   Megnyitás <i class='bx bx-right-arrow-alt'></i>
@@ -251,7 +251,7 @@ export default {
     },
 
     navHubTitle() {
-      return this.isFormal ? 'Hová szeretne menni?' : 'Hová szeretnél menni?';
+      return 'Hová szeretne menni?';
     },
 
     helpTitle() {

@@ -44,7 +44,7 @@
                   :class="{ 'selected': selectedEventScope === 'global' }">
                 <input type="radio" v-model="selectedEventScope" value="global" hidden>
               <div class="option-content">
-                <i class='bx bx-world'></i>
+                <i class='bx bx-globe'></i>
                 <h4>Globális szintű esemény</h4>
                 <p>Több intézménybe is kiküldhető esemény</p>
                 <span class="permission-badge">Csak adminoknak</span>
@@ -171,7 +171,7 @@
                   </div>
 
                   <div v-else-if="!institutionClasses.length" class="class-target-state warning">
-                    Nem található osztály az intézményben. Kérlek hozz létre legalább egy osztályt.
+                    Nem található osztály az intézményben. Kérjük, hozzon létre legalább egy osztályt.
                   </div>
 
                   <div v-else class="class-target-grid">
@@ -517,7 +517,7 @@ export default {
         name: 'Kossuth Lajos Gimnázium',
         countyId: null
       },
-      userCountyId: 1,
+      userCountyId: null,
       institutionUserIds: [],
       institutionClasses: [],
       institutionGrades: [],
@@ -726,6 +726,9 @@ export default {
 
   watch: {
     selectedEventScope(newValue) {
+      const ownCountyId = Number(this.userCountyId)
+      const hasOwnCounty = Number.isFinite(ownCountyId) && ownCountyId > 0
+
       if (newValue === 'global') {
         this.selectedSchoolTargetGroup = 'teljes_iskola'
         this.selectedClassIds = []
@@ -736,8 +739,8 @@ export default {
         this.eventForm.recurrenceStartDate = ''
         this.eventForm.recurrenceUntil = ''
 
-        if (!this.selectedCountyIds.includes(this.userCountyId)) {
-          this.selectedCountyIds = [this.userCountyId]
+        if (hasOwnCounty && !this.selectedCountyIds.includes(ownCountyId)) {
+          this.selectedCountyIds = [ownCountyId]
           // selectedCountyIds watcher will call refreshGlobalCollabCount()
         } else {
           this.refreshGlobalCollabCount()
@@ -765,9 +768,12 @@ export default {
     },
 
     selectedCountyIds(newValue) {
-      if (this.selectedEventScope === 'global' && !newValue.includes(this.userCountyId)) {
+      const ownCountyId = Number(this.userCountyId)
+      const hasOwnCounty = Number.isFinite(ownCountyId) && ownCountyId > 0
+
+      if (this.selectedEventScope === 'global' && hasOwnCounty && !newValue.includes(ownCountyId)) {
         this.$nextTick(() => {
-          this.selectedCountyIds = [this.userCountyId, ...newValue]
+          this.selectedCountyIds = [ownCountyId, ...newValue]
         })
         return
       }
@@ -1022,6 +1028,11 @@ export default {
             this.userInstitution.id = backendInstitutionId
           }
 
+          const hasValidSavedInstitution = Number(savedInstitutionId || 0) > 0 && !!roleResponse?.data?.role
+          if (!hasValidSavedInstitution && backendInstitutionId > 0) {
+            this.userInstitution.id = backendInstitutionId
+          }
+
           if (mergedUser) {
             mergedUser = {
               ...mergedUser,
@@ -1220,10 +1231,16 @@ export default {
           ...this.userInstitution,
           id: Number(institution.id || institutionId),
           name: institution.title || institution.name || this.userInstitution.name,
-          countyId: Number(institution.region_id || this.userInstitution.countyId || 1)
+          countyId: Number(
+            institution.region_id ||
+            institution.regionId ||
+            institution.county_id ||
+            this.userInstitution.countyId ||
+            0
+          ) || null
         }
 
-        this.userCountyId = Number(this.userInstitution.countyId) || this.userCountyId
+        this.userCountyId = Number(this.userInstitution.countyId) || null
       } catch (error) {
         console.error('Intézmény betöltési hiba:', error)
       }
@@ -1410,7 +1427,7 @@ export default {
       const responses = await Promise.all(
         normalizedCountyIds.map(countyId =>
           axios.get(`${API_BASE}/establishments`, {
-            params: { region_id: countyId },
+            params: { region_id: countyId, include_all: 1 },
             headers: { Accept: 'application/json' }
           }).catch(() => ({ data: { data: [] } }))
         )
@@ -1609,7 +1626,7 @@ export default {
 
     async createEvent() {
       if (!this.isFormValid) {
-        toast.warning('Kérjük, töltsd ki az összes kötelező mezőt!')
+        toast.warning('Kérjük, töltse ki az összes kötelező mezőt!')
         return
       }
 
@@ -1624,7 +1641,7 @@ export default {
         const token = getToken()
 
         if (!token) {
-          toast.error('Lejárt munkamenet. Kérlek jelentkezz be újra!')
+          toast.error('Lejárt munkamenet. Kérjük, jelentkezzen be újra!')
           this.$router.push('/')
           return
         }

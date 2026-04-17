@@ -76,31 +76,7 @@
             <span>{{ userInitials }}</span>
           </div>
           <div class="profile-title">
-            <div v-if="!isEditingName" class="name-display-group">
-              <h1>{{ user.name }}</h1>
-              <button class="btn-icon-edit" @click="startEditingName" title="Név szerkesztése">
-                <i class='bx bx-edit-alt'></i>
-              </button>
-            </div>
-            <div v-else class="name-edit-group">
-              <input 
-                v-model="editName" 
-                type="text" 
-                class="form-control name-edit-input" 
-                @keyup.enter="saveName"
-                @keyup.esc="cancelEditingName"
-                ref="nameInput"
-              >
-              <div class="edit-actions">
-                <button class="btn-save-mini" @click="saveName" :disabled="isSavingName">
-                  <i v-if="isSavingName" class='bx bx-loader-alt bx-spin'></i>
-                  <i v-else class='bx bx-check'></i>
-                </button>
-                <button class="btn-cancel-mini" @click="cancelEditingName" :disabled="isSavingName">
-                  <i class='bx bx-x'></i>
-                </button>
-              </div>
-            </div>
+            <h1>{{ profileDisplayName }}</h1>
             <p class="profile-role" :class="user.role">
               <i :class="roleIcon"></i>
               {{ roleDisplayName }}
@@ -117,13 +93,46 @@
                 <h3><i class='bx bx-user'></i> Alapadatok</h3>
                 <div class="info-list">
                   <div class="info-item">
-                    <span class="info-label">Teljes név:</span>
-                    <span class="info-value">{{ user.name }}</span>
-                  </div>
-                  <div class="info-item">
                     <span class="info-label">Email cím:</span>
                     <span class="info-value">{{ user.email }}</span>
                   </div>
+
+                  <div class="info-item">
+                    <span class="info-label">Felhasználónév:</span>
+                    <div class="info-value-inline">
+                      <template v-if="!isEditingName">
+                        <span class="info-value">{{ user.name || 'Nincs megadva' }}</span>
+                        <button class="btn-icon-edit inline" @click="startEditingName" title="Felhasználónév szerkesztése">
+                          <i class='bx bx-edit-alt'></i>
+                        </button>
+                      </template>
+                      <div v-else class="name-edit-group inline">
+                        <input 
+                          v-model="editName" 
+                          type="text" 
+                          class="form-control name-edit-input" 
+                          @keyup.enter="saveName"
+                          @keyup.esc="cancelEditingName"
+                          ref="nameInput"
+                        >
+                        <div class="edit-actions">
+                          <button class="btn-save-mini" @click="saveName" :disabled="isSavingName">
+                            <i v-if="isSavingName" class='bx bx-loader-alt bx-spin'></i>
+                            <i v-else class='bx bx-check'></i>
+                          </button>
+                          <button class="btn-cancel-mini" @click="cancelEditingName" :disabled="isSavingName">
+                            <i class='bx bx-x'></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="info-item">
+                    <span class="info-label">Profil név:</span>
+                    <span class="info-value">{{ profileDisplayName }}</span>
+                  </div>
+
                   <div class="info-item" v-if="user.phone">
                     <span class="info-label">Telefonszám:</span>
                     <span class="info-value">{{ user.phone }}</span>
@@ -140,7 +149,7 @@
                 <h3><i class='bx bx-school'></i> Iskolai adatok</h3>
                 <div class="info-list">
                   <div class="info-item">
-                    <span class="info-label">Régió:</span>
+                    <span class="info-label">Vármegye:</span>
                     <span class="info-value">{{ user.region || 'Nincs megadva' }}</span>
                   </div>
                   <div class="info-item">
@@ -167,7 +176,7 @@
                 <h3><i class='bx bx-chalkboard'></i> Tanári adatok</h3>
                 <div class="info-list">
                   <div class="info-item">
-                    <span class="info-label">Régió:</span>
+                    <span class="info-label">Vármegye:</span>
                     <span class="info-value">{{ user.region || 'Nincs megadva' }}</span>
                   </div>
                   <div class="info-item">
@@ -202,7 +211,7 @@
                 <h3><i class='bx bx-building-house'></i> Intézmény adatok</h3>
                 <div class="info-list">
                   <div class="info-item">
-                    <span class="info-label">Régió:</span>
+                    <span class="info-label">Vármegye:</span>
                     <span class="info-value">{{ user.region || 'Nincs megadva' }}</span>
                   </div>
                   <div class="info-item">
@@ -243,10 +252,6 @@
                 <h3><i class='bx bx-info-circle'></i> Fiók információk</h3>
                 <div class="info-list">
                   <div class="info-item">
-                    <span class="info-label">Felhasználó azonosító:</span>
-                    <span class="info-value">#{{ user.id }}</span>
-                  </div>
-                  <div class="info-item">
                     <span class="info-label">Regisztráció dátuma:</span>
                     <span class="info-value">{{ formatDate(user.created_at) }}</span>
                   </div>
@@ -260,7 +265,7 @@
               <div class="info-card switcher-card">
                 <h3><i class='bx bx-transfer-alt'></i> Profilváltás</h3>
                 <div class="switcher-card-content">
-                  <p>Válts másik intézményi profilra, vagy indíts új csatlakozást tanárként, diákként, illetve hozz létre új intézményt.</p>
+                  <p>Váltson másik intézményi profilra, vagy indítson új csatlakozást tanárként, diákként, illetve hozzon létre új intézményt.</p>
                   <button class="btn-primary" type="button" @click="openEstablishmentSwitcher">
                     <i class='bx bx-transfer'></i>
                     Profilváltó megnyitása
@@ -359,6 +364,7 @@ export default {
       user: {
         id: null,
         name: '',
+        currentAlias: '',
         email: '',
         phone: '',
         birthdate: '',
@@ -399,9 +405,14 @@ export default {
   },
   
   computed: {
+    profileDisplayName() {
+      return (this.user.currentAlias || '').trim() || this.user.name || 'Felhasználó';
+    },
+
     userInitials() {
-      if (!this.user.name) return '??';
-      return this.user.name
+      const sourceName = this.profileDisplayName;
+      if (!sourceName) return '??';
+      return sourceName
         .split(' ')
         .map(word => word[0])
         .join('')
@@ -548,6 +559,7 @@ export default {
         if (currentEstablishment) {
           this.user.school = currentEstablishment.title || this.user.school;
           this.user.schoolId = currentEstablishment.id || this.user.schoolId;
+          this.user.currentAlias = (currentEstablishment.alias || '').trim();
           this.user.schoolAddress = currentEstablishment.address || this.user.schoolAddress;
           this.user.schoolEmail = currentEstablishment.email || this.user.schoolEmail;
           this.user.schoolPhone = currentEstablishment.phone || this.user.schoolPhone;
@@ -558,6 +570,7 @@ export default {
           await this.loadEstablishmentDetails(currentEstablishment.id);
           this.persistStoredUser({
             role: this.user.role,
+            currentAlias: this.user.currentAlias,
             school: this.user.school,
             schoolId: this.user.schoolId,
             establishment_id: this.user.schoolId,
@@ -716,6 +729,7 @@ export default {
         this.user.role = nextRole;
         this.user.schoolId = nextSchoolId;
         this.user.school = nextSchool;
+        this.user.currentAlias = (establishment.alias || '').trim();
         this.user.schoolAddress = payload.address || establishment.address || '';
         this.user.schoolEmail = payload.email || establishment.email || '';
         this.user.schoolPhone = payload.phone || establishment.phone || '';
@@ -727,6 +741,7 @@ export default {
 
         this.persistStoredUser({
           role: nextRole,
+          currentAlias: this.user.currentAlias,
           school: nextSchool,
           schoolId: nextSchoolId,
           establishment_id: nextSchoolId,
@@ -1024,7 +1039,7 @@ export default {
 
 .slide-fade-enter-from,
 .slide-fade-leave-to {
-  opacit: 0;
+  opacity: 0;
   color: #111827;
 }
 
@@ -1445,6 +1460,31 @@ export default {
   color: #111827;
   font-weight: 500;
   flex: 1;
+}
+
+.info-value-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-icon-edit.inline {
+  font-size: 16px;
+  padding: 2px;
+}
+
+.name-edit-group.inline {
+  margin-bottom: 0;
+  width: 100%;
+  gap: 8px;
+}
+
+.name-edit-group.inline .name-edit-input {
+  font-size: 14px;
+  font-weight: 500;
+  max-width: 260px;
 }
 
 .info-value a {

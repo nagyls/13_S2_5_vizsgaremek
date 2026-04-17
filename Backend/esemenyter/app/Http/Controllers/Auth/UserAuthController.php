@@ -14,8 +14,8 @@ class UserAuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => ['required', 'string', 'exists:users,email'],
-            'password' =>  ['required', 'string'],
+            'email' => 'required|string|exists:users,email',
+            'password' => 'required|string',
         ], [
             'email.exists' => 'Hibás Email!'
         ]);
@@ -50,7 +50,7 @@ class UserAuthController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => 'required|string|max:255',
         ]);
 
         $user = $request->user();

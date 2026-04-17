@@ -64,6 +64,14 @@
       <div class="container">
         <!-- Intézmény információ -->
         <div class="institution-info-card">
+          <button
+            v-if="institutionOwnerId === Number(user.id)"
+            class="institution-settings-trigger"
+            @click="openInstitutionSettingsModal"
+            title="Intézmény adatainak szerkesztése"
+          >
+            <i class='bx bx-cog'></i>
+          </button>
           <div class="institution-icon">
             <i class='bx bx-school'></i>
           </div>
@@ -97,6 +105,139 @@
             </div>
           </div>
         </div>
+
+        <transition name="modal">
+          <div v-if="showInstitutionSettingsModal" class="modal-overlay" @click.self="closeInstitutionSettingsModal">
+            <div class="modal-container institution-settings-modal">
+              <div class="modal-header">
+                <h3>
+                  <i class='bx bx-cog'></i>
+                  Intézmény beállítások
+                </h3>
+                <button class="modal-close" @click="closeInstitutionSettingsModal">
+                  <i class='bx bx-x'></i>
+                </button>
+              </div>
+
+              <div class="modal-body">
+                <div class="assignment-form">
+                  <div class="form-row institution-settings-grid">
+                    <div class="form-group institution-settings-field-full">
+                      <label>Intézmény neve</label>
+                      <input
+                        v-model.trim="institutionSettingsForm.title"
+                        type="text"
+                        class="form-control"
+                        maxlength="255"
+                        placeholder="Intézmény neve"
+                      >
+                    </div>
+
+                    <div class="form-group institution-settings-field-full">
+                      <label>Cím</label>
+                      <input
+                        v-model.trim="institutionSettingsForm.address"
+                        type="text"
+                        class="form-control"
+                        maxlength="255"
+                        placeholder="Intézmény címe"
+                      >
+                    </div>
+
+                    <div class="form-group">
+                      <label>Email</label>
+                      <input
+                        v-model.trim="institutionSettingsForm.email"
+                        type="email"
+                        class="form-control"
+                        maxlength="255"
+                        placeholder="intezmeny@pelda.hu"
+                      >
+                    </div>
+
+                    <div class="form-group">
+                      <label>Telefonszám</label>
+                      <input
+                        v-model.trim="institutionSettingsForm.phone"
+                        type="text"
+                        class="form-control"
+                        maxlength="32"
+                        placeholder="+36 ..."
+                      >
+                    </div>
+
+                    <div class="form-group institution-settings-field-full">
+                      <label>Weboldal</label>
+                      <input
+                        v-model.trim="institutionSettingsForm.website"
+                        type="url"
+                        class="form-control"
+                        maxlength="255"
+                        placeholder="https://..."
+                      >
+                    </div>
+
+                    <div class="form-group institution-settings-field-full">
+                      <label>Leírás</label>
+                      <textarea
+                        v-model.trim="institutionSettingsForm.description"
+                        class="form-control"
+                        rows="3"
+                        placeholder="Rövid leírás az intézményről"
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <div class="class-edit-divider"></div>
+
+                  <div class="ownership-transfer-section">
+                    <h4>
+                      <i class='bx bx-transfer'></i>
+                      Tulajdonjog átadása
+                    </h4>
+                    <p class="form-hint">
+                      Az átadás után ez a beállítási panel már nem lesz elérhető számodra tulajdonosként.
+                    </p>
+
+                    <div class="teacher-change-row">
+                      <select v-model="selectedNewOwnerUserId" class="form-select" :disabled="isTransferringOwnership">
+                        <option value="">-- Válassz új tulajdonost --</option>
+                        <option
+                          v-for="teacher in ownershipTransferCandidates"
+                          :key="teacher.id"
+                          :value="String(teacher.id)"
+                        >
+                          {{ getDisplayName(teacher) }} ({{ teacher.role === 'admin' ? 'admin' : 'tanár' }})
+                        </option>
+                      </select>
+                      <button
+                        class="btn-outline"
+                        @click="transferInstitutionOwnership"
+                        :disabled="!selectedNewOwnerUserId || isTransferringOwnership"
+                      >
+                        <i class='bx' :class="isTransferringOwnership ? 'bx-loader-circle bx-spin' : 'bx-share-alt'"></i>
+                        {{ isTransferringOwnership ? 'Átadás...' : 'Tulajdon átadása' }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div v-if="institutionSettingsError" class="error-message">
+                    <i class='bx bx-error-circle'></i>
+                    <span>{{ institutionSettingsError }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button class="btn-outline" @click="closeInstitutionSettingsModal" :disabled="isSavingInstitutionSettings || isTransferringOwnership">Bezárás</button>
+                <button class="btn-primary" @click="saveInstitutionSettings" :disabled="isSavingInstitutionSettings || isTransferringOwnership">
+                  <i class='bx bx-save'></i>
+                  {{ isSavingInstitutionSettings ? 'Mentés...' : 'Intézmény adatok mentése' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </transition>
 
         <div class="requests-section">
           <div class="section-header">
@@ -586,6 +727,7 @@
                 <div class="user-card-info">
                   <h4>{{ getDisplayName(teacher) }}</h4>
                   <p class="user-email">{{ teacher.email }}</p>
+                  <span v-if="teacher.role === 'admin'" class="role-badge-admin"><i class='bx bx-shield'></i> Admin</span>
                 </div>
               </div>
               <div class="user-card-body">
@@ -852,7 +994,7 @@
           <div class="modal-header">
             <h3>
               <i class='bx bx-edit'></i>
-              Tanár osztály módosítása
+              Módosítás
             </h3>
             <button class="modal-close" @click="closeEditTeacherClassModal">
               <i class='bx bx-x'></i>
@@ -903,12 +1045,25 @@
             </div>
           </div>
 
-          <div class="modal-footer">
-            <button class="btn-outline" @click="closeEditTeacherClassModal" :disabled="isUpdatingTeacherClass">Mégse</button>
-            <button class="btn-primary" @click="saveTeacherClassChange" :disabled="isUpdatingTeacherClass">
-              <i class='bx bx-save'></i>
-              {{ isUpdatingTeacherClass ? 'Mentés...' : 'Mentés' }}
+          <div class="modal-footer" style="justify-content: space-between;">
+            <button
+              v-if="institutionOwnerId === Number(user.id) && Number(selectedTeacherForClassEdit?.id) !== Number(user.id)"
+              class="btn-outline"
+              :class="selectedTeacherForClassEdit?.role === 'admin' ? 'btn-warning-outline' : 'btn-promote-outline'"
+              @click="toggleTeacherRole(selectedTeacherForClassEdit)"
+              :disabled="promotingTeacherIds.includes(Number(selectedTeacherForClassEdit?.id))"
+              style="margin-right: auto;"
+            >
+              <i :class="selectedTeacherForClassEdit?.role === 'admin' ? 'bx bx-shield-minus' : 'bx bx-shield-plus'"></i>
+              {{ selectedTeacherForClassEdit?.role === 'admin' ? 'Visszaminősítés tanárrá' : 'Jogosultság változtatása' }}
             </button>
+            <div style="display:flex; gap: 8px;">
+              <button class="btn-outline" @click="closeEditTeacherClassModal" :disabled="isUpdatingTeacherClass">Mégse</button>
+              <button class="btn-primary" @click="saveTeacherClassChange" :disabled="isUpdatingTeacherClass">
+                <i class='bx bx-save'></i>
+                {{ isUpdatingTeacherClass ? 'Mentés...' : 'Mentés' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -929,6 +1084,64 @@
           </div>
 
           <div class="modal-body" v-if="editingClass">
+            <div class="class-edit-section">
+              <h4 class="class-edit-section-title">
+                <i class='bx bx-pencil'></i>
+                Osztály adatai
+              </h4>
+
+              <div class="class-edit-form-grid">
+                <label class="class-edit-field">
+                  <span>Évfolyam</span>
+                  <input
+                    v-model.number="classEditForm.grade"
+                    type="number"
+                    min="1"
+                    max="100"
+                    class="form-select"
+                    :disabled="classEditIsSavingDetails"
+                  >
+                </label>
+
+                <label class="class-edit-field">
+                  <span>Osztály neve</span>
+                  <input
+                    v-model="classEditForm.name"
+                    type="text"
+                    maxlength="5"
+                    class="form-select"
+                    :disabled="classEditIsSavingDetails"
+                    @input="sanitizeClassEditNameInput"
+                  >
+                </label>
+
+                <label class="class-edit-field class-edit-field-full">
+                  <span>Max. létszám</span>
+                  <input
+                    v-model.number="classEditForm.capacity"
+                    type="number"
+                    min="1"
+                    max="200"
+                    class="form-select"
+                    :disabled="classEditIsSavingDetails"
+                  >
+                </label>
+              </div>
+
+              <div class="class-edit-actions-row">
+                <button
+                  class="btn-primary btn-sm"
+                  @click="saveClassDetails"
+                  :disabled="classEditIsSavingDetails"
+                >
+                  <i class='bx' :class="classEditIsSavingDetails ? 'bx-loader-circle bx-spin' : 'bx-save'"></i>
+                  {{ classEditIsSavingDetails ? 'Mentés...' : 'Osztály adatok mentése' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="class-edit-divider"></div>
+
             <!-- Osztályfőnök szekció -->
             <div class="class-edit-section">
               <h4 class="class-edit-section-title">
@@ -1082,7 +1295,11 @@ export default {
         id: null,
         name: '',
         address: '',
-        type: ''
+        type: '',
+        description: '',
+        website: '',
+        email: '',
+        phone: ''
       },
       stats: {
         totalStudents: 0,
@@ -1101,6 +1318,8 @@ export default {
       allUsers: [], // Összes felhasználó
       students: [], // Diákok
       teachers: [], // Tanárok
+      institutionOwnerId: null, // Az intézmény tulajdonosának user_id-je
+      promotingTeacherIds: [], // Folyamatban lévő szerepkörváltás
       classes: [], // Osztályok
       userRoles: {}, // Felhasználók szerepköreinek gyorsítótárazása
       
@@ -1137,6 +1356,20 @@ export default {
       editTeacherCurrentClassId: '',
       editTeacherClassError: '',
       isUpdatingTeacherClass: false,
+
+      showInstitutionSettingsModal: false,
+      isSavingInstitutionSettings: false,
+      isTransferringOwnership: false,
+      selectedNewOwnerUserId: '',
+      institutionSettingsError: '',
+      institutionSettingsForm: {
+        title: '',
+        address: '',
+        email: '',
+        phone: '',
+        website: '',
+        description: ''
+      },
       
       // Toast értesítések
       
@@ -1156,8 +1389,14 @@ export default {
       showClassEditModal: false,
       classEditLoading: false,
       editingClass: null,
+      classEditForm: {
+        name: '',
+        grade: null,
+        capacity: 30
+      },
       classEditMembers: [],
       classEditNewTeacherId: '',
+      classEditIsSavingDetails: false,
       classEditIsUpdatingTeacher: false,
       classEditAddStudentIds: [],
       classEditIsAddingStudents: false,
@@ -1185,6 +1424,10 @@ export default {
 
     pendingGlobalEventRequests() {
       return this.collabEvents.length;
+    },
+
+    ownershipTransferCandidates() {
+      return this.teachers.filter(teacher => Number(teacher?.id) !== Number(this.user?.id));
     },
 
     collabAvailableGrades() {
@@ -1374,6 +1617,12 @@ export default {
         .slice(0, 5);
     },
 
+    sanitizeClassEditNameInput() {
+      this.classEditForm.name = String(this.classEditForm.name || '')
+        .replace(/[^a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ]/g, '')
+        .slice(0, 5);
+    },
+
     toggleUserMenu() {
       this.showUserMenu = !this.showUserMenu;
     },
@@ -1546,8 +1795,13 @@ export default {
           id: institutionData.id || Number(institutionId),
           name: institutionData.name || institutionData.title || '',
           address: institutionData.address || '',
-          type: institutionData.type || ''
+          type: institutionData.type || '',
+          description: institutionData.description || '',
+          website: institutionData.website || '',
+          email: institutionData.email || '',
+          phone: institutionData.phone || ''
         };
+        this.institutionOwnerId = Number(institutionData.user_id) || null;
 
         const joinRequestAvailabilityResponse = await axios.get(
           `http://127.0.0.1:8000/api/establishment/${institutionId}/join-requests/availability`,
@@ -1616,6 +1870,118 @@ export default {
       } catch (error) {
         console.error('Hiba az adatok betöltésekor:', error);
         this.showNotification('Hiba történt az adatok betöltésekor', 'error');
+      }
+    },
+
+    openInstitutionSettingsModal() {
+      this.institutionSettingsError = '';
+      this.selectedNewOwnerUserId = '';
+      this.institutionSettingsForm = {
+        title: this.institution.name || '',
+        address: this.institution.address || '',
+        email: this.institution.email || '',
+        phone: this.institution.phone || '',
+        website: this.institution.website || '',
+        description: this.institution.description || ''
+      };
+      this.showInstitutionSettingsModal = true;
+    },
+
+    closeInstitutionSettingsModal() {
+      this.showInstitutionSettingsModal = false;
+      this.institutionSettingsError = '';
+      this.selectedNewOwnerUserId = '';
+    },
+
+    async saveInstitutionSettings() {
+      const establishmentId = Number(this.user?.institution_id);
+      const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token');
+
+      if (!establishmentId || !token) {
+        this.institutionSettingsError = 'Hiányzó hitelesítés vagy intézmény azonosító.';
+        return;
+      }
+
+      this.isSavingInstitutionSettings = true;
+      this.institutionSettingsError = '';
+
+      try {
+        const payload = {
+          title: (this.institutionSettingsForm.title || '').trim(),
+          address: (this.institutionSettingsForm.address || '').trim() || null,
+          email: (this.institutionSettingsForm.email || '').trim() || null,
+          phone: (this.institutionSettingsForm.phone || '').trim() || null,
+          website: (this.institutionSettingsForm.website || '').trim() || null,
+          description: (this.institutionSettingsForm.description || '').trim() || null,
+        };
+
+        await axios.patch(
+          `http://127.0.0.1:8000/api/establishment/${establishmentId}/details`,
+          payload,
+          { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
+        );
+
+        this.institution = {
+          ...this.institution,
+          name: payload.title,
+          address: payload.address || '',
+          email: payload.email || '',
+          phone: payload.phone || '',
+          website: payload.website || '',
+          description: payload.description || '',
+        };
+
+        this.showNotification('Intézmény adatok mentve.', 'success');
+      } catch (error) {
+        const msg = error?.response?.data?.message || 'Nem sikerült menteni az intézmény adatait.';
+        this.institutionSettingsError = msg;
+        this.showNotification(msg, 'error');
+      } finally {
+        this.isSavingInstitutionSettings = false;
+      }
+    },
+
+    async transferInstitutionOwnership() {
+      const establishmentId = Number(this.user?.institution_id);
+      const newOwnerUserId = Number(this.selectedNewOwnerUserId);
+      const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token');
+
+      if (!establishmentId || !newOwnerUserId || !token) {
+        this.institutionSettingsError = 'Hiányzó adat a tulajdon átadásához.';
+        return;
+      }
+
+      const targetTeacher = this.teachers.find(t => Number(t?.id) === newOwnerUserId);
+      const targetName = this.getDisplayName(targetTeacher || { name: `Felhasználó #${newOwnerUserId}` });
+
+      const confirmed = await this.askForConfirmation(
+        `Biztosan átadod a tulajdonjogot neki: ${targetName}? Ezután már nem te leszel a tulajdonos.`
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      this.isTransferringOwnership = true;
+      this.institutionSettingsError = '';
+
+      try {
+        await axios.patch(
+          `http://127.0.0.1:8000/api/establishment/${establishmentId}/ownership`,
+          { new_owner_user_id: newOwnerUserId },
+          { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
+        );
+
+        this.institutionOwnerId = newOwnerUserId;
+        await this.loadInstitutionUsers(establishmentId);
+
+        this.showNotification('Tulajdonjog sikeresen átadva.', 'success');
+        this.closeInstitutionSettingsModal();
+      } catch (error) {
+        const msg = error?.response?.data?.message || 'Nem sikerült átadni a tulajdonjogot.';
+        this.institutionSettingsError = msg;
+        this.showNotification(msg, 'error');
+      } finally {
+        this.isTransferringOwnership = false;
       }
     },
 
@@ -2005,6 +2371,11 @@ export default {
     // Osztály szerkesztése
     async editClass(classItem) {
       this.editingClass = { ...classItem };
+      this.classEditForm = {
+        name: String(classItem?.name || ''),
+        grade: Number(classItem?.grade) || null,
+        capacity: this.getClassCapacity(classItem)
+      };
       this.classEditNewTeacherId = String(classItem.user_id || '');
       this.classEditMembers = [];
       this.classEditAddStudentIds = [];
@@ -2016,10 +2387,85 @@ export default {
     closeClassEditModal() {
       this.showClassEditModal = false;
       this.editingClass = null;
+      this.classEditForm = {
+        name: '',
+        grade: null,
+        capacity: 30
+      };
       this.classEditMembers = [];
       this.classEditNewTeacherId = '';
       this.classEditAddStudentIds = [];
       this.classEditError = '';
+    },
+
+    async saveClassDetails() {
+      const establishmentId = Number(this.user?.institution_id);
+      const classId = Number(this.editingClass?.id);
+      const grade = Number(this.classEditForm.grade);
+      const capacity = Number(this.classEditForm.capacity);
+      const name = String(this.classEditForm.name || '').trim();
+
+      if (!name) {
+        this.classEditError = 'Az osztály neve kötelező.';
+        return;
+      }
+
+      if (!/^[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ]+$/.test(name)) {
+        this.classEditError = 'Az osztály neve csak betűket tartalmazhat.';
+        return;
+      }
+
+      if (!Number.isInteger(grade) || grade < 1 || grade > 100) {
+        this.classEditError = 'Az évfolyamnak 1 és 100 közötti egész számnak kell lennie.';
+        return;
+      }
+
+      if (!Number.isInteger(capacity) || capacity < 1 || capacity > 200) {
+        this.classEditError = 'A létszámnak 1 és 200 közötti egész számnak kell lennie.';
+        return;
+      }
+
+      try {
+        this.classEditIsSavingDetails = true;
+        this.classEditError = '';
+
+        const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token');
+
+        await axios.patch(
+          `http://127.0.0.1:8000/api/establishment/${establishmentId}/classes/${classId}`,
+          {
+            name,
+            grade,
+            capacity
+          },
+          { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
+        );
+
+        this.editingClass.name = name;
+        this.editingClass.grade = grade;
+        this.editingClass.capacity = capacity;
+
+        const localClass = this.classes.find(c => Number(c.id) === classId);
+        if (localClass) {
+          localClass.name = name;
+          localClass.grade = grade;
+          localClass.capacity = capacity;
+        }
+
+        await this.loadClasses(establishmentId);
+        await this.loadStudentClassAssignments(establishmentId);
+        this.updateStats();
+        this.showNotification('Osztály adatai sikeresen frissítve!', 'success');
+      } catch (error) {
+        const apiErrors = error?.response?.data?.errors;
+        const apiErrorText = apiErrors && typeof apiErrors === 'object'
+          ? Object.values(apiErrors).flat().join(' ')
+          : null;
+
+        this.classEditError = error?.response?.data?.message || apiErrorText || 'Nem sikerült frissíteni az osztály adatait.';
+      } finally {
+        this.classEditIsSavingDetails = false;
+      }
     },
 
     async loadClassEditMembers() {
@@ -2646,6 +3092,42 @@ export default {
       }
     },
 
+    async toggleTeacherRole(teacher) {
+      const staffId = Number(teacher?.staff_id)
+      const teacherUserId = Number(teacher?.id)
+      const establishmentId = Number(this.user?.institution_id)
+
+      if (!staffId || !establishmentId) {
+        this.showNotification('Hiányzó azonosító.', 'error')
+        return
+      }
+
+      const newRole = teacher.role === 'admin' ? 'teacher' : 'admin'
+      const roleLabel = newRole === 'admin' ? 'adminisztrátor' : 'tanár'
+      const confirmed = await this.askForConfirmation(
+        `Biztosan módosítod ${this.getDisplayName(teacher)} szerepkörét ${roleLabel}-ra?`
+      )
+      if (!confirmed) return
+
+      const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token')
+      this.promotingTeacherIds = [...this.promotingTeacherIds, teacherUserId]
+
+      try {
+        await axios.patch(
+          `http://127.0.0.1:8000/api/establishment/${establishmentId}/staff/${staffId}/role`,
+          { role: newRole },
+          { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } }
+        )
+        await this.loadInstitutionUsers(establishmentId)
+        this.showNotification(`Szerepkör sikeresen frissítve: ${roleLabel}.`, 'success')
+      } catch (error) {
+        const msg = error?.response?.data?.message || 'Hiba a szerepkör módosításakor.'
+        this.showNotification(msg, 'error')
+      } finally {
+        this.promotingTeacherIds = this.promotingTeacherIds.filter(id => id !== teacherUserId)
+      }
+    },
+
     async removeTeacherFromInstitution(teacher) {
       const teacherUserId = Number(teacher?.id);
       const establishmentId = Number(this.user?.institution_id);
@@ -3090,9 +3572,37 @@ export default {
   display: flex;
   align-items: center;
   gap: 30px;
+  position: relative;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.institution-settings-trigger {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.institution-settings-trigger i {
+  font-size: 20px;
+}
+
+.institution-settings-trigger:hover {
+  background: #4f46e5;
+  color: #ffffff;
+  border-color: #4f46e5;
 }
 
 .institution-icon {
@@ -3147,6 +3657,32 @@ export default {
 .stat-label {
   font-size: 14px;
   color: #6b7280;
+}
+
+.institution-settings-modal {
+  max-width: 700px;
+}
+
+.institution-settings-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.institution-settings-field-full {
+  grid-column: 1 / -1;
+}
+
+.ownership-transfer-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ownership-transfer-section h4 i {
+  color: #4f46e5;
 }
 
 /* Section headers */
@@ -3703,6 +4239,66 @@ export default {
   border-color: #dc2626;
 }
 
+.btn-icon.btn-promote {
+  color: #4f46e5;
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+.btn-icon.btn-promote:hover:not(:disabled) {
+  background: #4f46e5;
+  color: #ffffff;
+  border-color: #4f46e5;
+}
+
+.btn-icon.btn-warning {
+  color: #d97706;
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.btn-icon.btn-warning:hover:not(:disabled) {
+  background: #d97706;
+  color: #ffffff;
+  border-color: #d97706;
+}
+
+.btn-promote-outline {
+  color: #4f46e5;
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+.btn-promote-outline:hover:not(:disabled) {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.btn-warning-outline {
+  color: #d97706;
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.btn-warning-outline:hover:not(:disabled) {
+  background: #d97706;
+  color: #ffffff;
+}
+
+.role-badge-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eef2ff;
+  color: #4f46e5;
+  border: 1px solid #c7d2fe;
+  border-radius: 50px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
 .btn-icon:disabled {
   cursor: not-allowed;
   opacity: 0.6;
@@ -3962,7 +4558,9 @@ export default {
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
 }
 
@@ -4009,6 +4607,14 @@ export default {
 
 .modal-body {
   padding: 30px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.modal-header,
+.modal-footer {
+  flex-shrink: 0;
 }
 
 .user-summary {
@@ -4398,6 +5004,12 @@ export default {
   .institution-info-card {
     flex-direction: column;
     text-align: center;
+    padding-top: 56px;
+  }
+
+  .institution-settings-trigger {
+    top: 12px;
+    right: 12px;
   }
 
   .institution-stats {
@@ -4502,6 +5114,39 @@ export default {
   .modal-container {
     width: 95%;
     margin: 20px;
+    max-height: 92vh;
+  }
+
+  .modal-body {
+    padding: 18px;
+  }
+
+  .modal-header {
+    padding: 14px 18px;
+  }
+
+  .modal-footer {
+    padding: 14px 18px;
+  }
+
+  .class-edit-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .institution-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .class-edit-field-full {
+    grid-column: 1;
+  }
+
+  .teacher-change-row {
+    flex-direction: column;
+  }
+
+  .teacher-change-row .btn-sm {
+    width: 100%;
   }
 
   .toast-notification {
@@ -4597,6 +5242,34 @@ export default {
   margin-bottom: 8px;
 }
 
+.class-edit-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.class-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.class-edit-field span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.class-edit-field-full {
+  grid-column: 1 / -1;
+}
+
+.class-edit-actions-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .class-edit-section-title {
   display: flex;
   align-items: center;
@@ -4630,6 +5303,8 @@ export default {
   border: 1px solid #c7d2fe;
   border-radius: 50px;
   padding: 6px 14px 6px 6px;
+  color: #334155;
+  font-weight: 600;
 }
 
 .teacher-chip-avatar {

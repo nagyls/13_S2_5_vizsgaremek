@@ -8,7 +8,7 @@
 
         <h1>Elfelejtett jelszó</h1>
         <p class="intro-text">
-          Add meg a regisztrált email címedet, és küldünk egy linket az új jelszó beállításához.
+          Adja meg a regisztrált email címét, és küldünk egy linket az új jelszó beállításához.
         </p>
 
         <div class="input-box">
@@ -49,7 +49,7 @@ export default {
     async submitRequest() {
       const normalizedEmail = String(this.email || '').trim().toLowerCase()
       if (!normalizedEmail) {
-        toast.error('Add meg az email címet.')
+        toast.error('Adja meg az email címet.')
         return
       }
 

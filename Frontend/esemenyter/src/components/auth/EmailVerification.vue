@@ -14,7 +14,7 @@
               <i class='bx bx-loader-alt bx-spin'></i>
             </div>
             <h2>Email megerősítés folyamatban...</h2>
-            <p>Kérlek, várj, amíg megerősítjük az email címedet.</p>
+            <p>Kérjük, várjon, amíg megerősítjük az email címét.</p>
           </div>
 
           <!-- Sikeres megerősítés -->
@@ -23,7 +23,7 @@
               <i class='bx bx-check-circle'></i>
             </div>
             <h2>Email megerősítve!</h2>
-            <p>Az email címed sikeresen megerősítve lett. Most már teljes hozzáférésed van az EseményTérhez.</p>
+            <p>Az email cím sikeresen megerősítve lett. Most már teljes hozzáférése van az EseményTérhez.</p>
             <div class="card-actions">
               <button @click="goToDashboard" class="btn btn-primary">
                 <i class='bx bx-home'></i>
@@ -61,7 +61,7 @@
               <i class='bx bx-time-five'></i>
             </div>
             <h2>Megerősítési link lejárt</h2>
-            <p>A megerősítési link 24 óra múlva lejár. Kérjük, kérj új megerősítési emailt.</p>
+            <p>A megerősítési link 24 óra elteltével lejár. Kérjük, kérjen új megerősítési emailt.</p>
             <div class="card-actions">
               <button @click="requestNewEmail" class="btn btn-primary">
                 <i class='bx bx-mail-send'></i>
@@ -76,7 +76,7 @@
               <i class='bx bx-lock-alt'></i>
             </div>
             <h2>Bejelentkezés szükséges</h2>
-            <p>Az email megerősítéséhez be kell jelentkezned az account-ba, amelyhez az email tartozik.</p>
+            <p>Az email megerősítéséhez be kell jelentkeznie a fiókba, amelyhez az email tartozik.</p>
             <div class="card-actions">
               <button @click="goToLogin" class="btn btn-primary">
                 <i class='bx bx-log-in'></i>
@@ -91,8 +91,8 @@
               <i class='bx bx-mail-send'></i>
             </div>
             <h2>Email újraküldve!</h2>
-            <p>Az új megerősítési email sikeresen elküldtük az email címedre.</p>
-            <p class="info-text">Ha az email 5 percen belül nem érkezik meg, nézz a spam mappában.</p>
+            <p>Az új megerősítési email sikeresen elküldésre került az email címére.</p>
+            <p class="info-text">Ha az email 5 percen belül nem érkezik meg, nézzen a spam mappában.</p>
             <div class="card-actions">
               <button @click="goToLogin" class="btn btn-primary">
                 <i class='bx bx-arrow-back'></i>
@@ -210,13 +210,13 @@ export default {
           }
         } else {
           this.verificationStatus = 'error'
-          this.errorMessage = response?.data?.message || 'Hiba a megerősítéskor. Kérlek, próbáld újra.'
+          this.errorMessage = response?.data?.message || 'Hiba a megerősítéskor. Kérjük, próbálja újra.'
           toast.error(this.errorMessage)
         }
       } catch (error) {
         console.error('Email verifikációs hiba:', error)
         this.verificationStatus = 'error'
-        this.errorMessage = 'Hálózati hiba történt. Kérlek, próbáld újra később.'
+        this.errorMessage = 'Hálózati hiba történt. Kérjük, próbálja újra később.'
         toast.error(this.errorMessage)
       } finally {
         this.isVerifying = false

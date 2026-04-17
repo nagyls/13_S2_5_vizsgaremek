@@ -58,7 +58,7 @@
             </div>
             <h2>Válassz szerepkört</h2>
             <p class="section-subtitle">
-              {{ isFormal ? 'Az alábbi lehetőségek közül választhatja ki, hogyan szeretne részt venni az EseményTérben' : 'Az alábbi lehetőségek közül választhatod ki, hogyan szeretnél részt venni az EseményTérben' }}
+              Az alábbi lehetőségek közül választhatja ki, hogyan szeretne részt venni az EseményTérben
             </p>
           </div>
           
@@ -98,7 +98,7 @@
               </div>
               <h3>Tanár</h3>
               <p class="role-description">
-                Hozz létre eseményeket, indíts szavazásokat és koordináld az iskolád tevékenységeit.
+                Hozzon létre eseményeket, indítson szavazásokat és koordinálja az iskola tevékenységeit.
               </p>
               <ul class="role-features">
                 <li><i class='bx bx-check'></i> Események létrehozása</li>
@@ -154,7 +154,7 @@
                 </div>
               </div>
               <h3>Diák profil beállítása</h3>
-              <p>Néhány lépésben állítsd be profilodat a teljes funkcionalitás érdekében</p>
+              <p>Néhány lépésben állítsa be profil ját a teljes funkcionalitás érdekében</p>
             </div>
             
             <div class="wizard-content">
@@ -408,7 +408,7 @@
                 </div>
               </div>
               <h3>Tanár profil beállítása</h3>
-              <p>Néhány lépésben állítsd be profilodat a teljes funkcionalitás érdekében</p>
+              <p>Néhány lépésben állítsa be profilját a teljes funkcionalitás érdekében</p>
             </div>
             
             <div class="wizard-content">
@@ -1423,7 +1423,7 @@ export default {
 
         // Ha 401-es hiba (unauthorized), akkor dobjuk ki, DE NE HÍVJUK MEG A LOGOUT-OT!
         if (error.response && error.response.status === 401) {
-          toast.error('A munkamenet lejárt. Kérjük jelentkezz be újra.')
+          toast.error('A munkamenet lejárt. Kérjük, jelentkezzen be újra.')
 
           // Közvetlenül töröljük az adatokat
           localStorage.removeItem('esemenyter_user');
@@ -1511,7 +1511,7 @@ export default {
     nextStep() {
       if (this.currentStep === 1) {
         if (!this.selectedRegionId) {
-          toast.error('Kérjük válassz egy régiót!');
+          toast.error('Kérjük, válasszon egy régiót!');
           return;
         }
         this.loadDistrictsForSelectedRegion();
@@ -1519,7 +1519,7 @@ export default {
       }
       else if (this.currentStep === 2) {
         if (!this.selectedDistrictId) {
-          toast.error('Kérjük válassz egy járást!');
+          toast.error('Kérjük, válasszon egy járást!');
           return;
         }
         this.loadCitiesForSelectedDistrict();
@@ -1527,7 +1527,7 @@ export default {
       }
       else if (this.currentStep === 3) {
         if (!this.selectedCityId) {
-          toast.error('Kérjük válassz egy várost!');
+          toast.error('Kérjük, válasszon egy várost!');
           return;
         }
         this.loadSchoolsForSelectedCity();
@@ -1535,7 +1535,7 @@ export default {
       }
       else if (this.currentStep === 4) {
         if (!this.selectedSchoolId) {
-          toast.error('Kérjük válassz egy iskolát!');
+          toast.error('Kérjük, válasszon egy iskolát!');
           return;
         }
         this.currentStep = 5;
@@ -1562,7 +1562,7 @@ export default {
     teacherNextStep() {
       if (this.teacherCurrentStep === 1) {
         if (!this.teacherSelectedRegionId) {
-          toast.error('Kérjük válassz egy régiót!');
+          toast.error('Kérjük, válasszon egy régiót!');
           return;
         }
         this.loadTeacherDistrictsForSelectedRegion();
@@ -1570,7 +1570,7 @@ export default {
       }
       else if (this.teacherCurrentStep === 2) {
         if (!this.teacherSelectedDistrictId) {
-          toast.error('Kérjük válassz egy járást!');
+          toast.error('Kérjük, válasszon egy járást!');
           return;
         }
         this.loadTeacherCitiesForSelectedDistrict();
@@ -1578,7 +1578,7 @@ export default {
       }
       else if (this.teacherCurrentStep === 3) {
         if (!this.teacherSelectedCityId) {
-          toast.error('Kérjük válassz egy várost!');
+          toast.error('Kérjük, válasszon egy várost!');
           return;
         }
         this.loadTeacherSchoolsForSelectedCity();
@@ -1586,7 +1586,7 @@ export default {
       }
       else if (this.teacherCurrentStep === 4) {
         if (!this.teacherSelectedSchoolId) {
-          toast.error('Kérjük válassz egy iskolát!');
+          toast.error('Kérjük, válasszon egy iskolát!');
           return;
         }
         this.teacherCurrentStep = 5; // EZ VOLT 5, NEM 6!
@@ -1615,7 +1615,7 @@ export default {
     adminNextStep() {
       if (this.adminCurrentStep === 1) {
         if (!this.adminSelectedRegionId) {
-          toast.error('Kérjük válassz egy régiót!');
+          toast.error('Kérjük, válasszon egy régiót!');
           return;
         }
         this.loadAdminDistrictsForSelectedRegion();
@@ -1623,7 +1623,7 @@ export default {
       }
       else if (this.adminCurrentStep === 2) {
         if (!this.adminSelectedDistrictId) {
-          toast.error('Kérjük válassz egy járást!');
+          toast.error('Kérjük, válasszon egy járást!');
           return;
         }
         this.loadAdminCitiesForSelectedDistrict();
@@ -1631,7 +1631,7 @@ export default {
       }
       else if (this.adminCurrentStep === 3) {
         if (!this.adminSelectedCityId && !this.adminNewCityName) {
-          toast.error('Kérjük válassz egy várost vagy adj meg egy új várost!');
+          toast.error('Kérjük, válasszon egy várost vagy adjon meg egy új várost!');
           return;
         }
         this.adminCurrentStep = 4;

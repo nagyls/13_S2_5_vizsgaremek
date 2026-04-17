@@ -78,6 +78,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/events/{eventId}/favourite', [EventController::class, 'makeFavourite']);
     Route::patch('/events/{eventId}/occurrence', [EventController::class, 'manageOccurrence']);  //SZAKKÖR MÓDOSÍTÁS
     Route::patch('/events/{eventId}/chat', [EventController::class, 'handleChat']);  //CHAT MÓDOSÍTÁS
+    Route::get('/events/{eventId}/participants', [EventController::class, 'getParticipants']);
+    Route::delete('/events/{eventId}/participants/{userId}', [EventController::class, 'banParticipant']);
     Route::get('/events/{eventId}/poll', [PollController::class, 'getEventPoll']);
 
     //intézmény kezelés
@@ -87,6 +89,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('{establishmentId}/role', [EstablishmentController::class, 'getRole']); // felhasználó szerepének lekérdezése az aktuális intézményben
         Route::get('{establishmentId}/join-requests/availability', [EstablishmentController::class, 'getJoinRequestAvailability']);
         Route::patch('{establishmentId}/join-requests/availability', [EstablishmentController::class, 'updateJoinRequestAvailability']);
+        Route::patch('{establishmentId}/staff/{staffId}/role', [EstablishmentController::class, 'promoteStaff']);
+        Route::patch('{establishmentId}/details', [EstablishmentController::class, 'updateEstablishmentDetails']);
+        Route::patch('{establishmentId}/ownership', [EstablishmentController::class, 'transferOwnership']);
         Route::get('/mine', [EstablishmentController::class, 'getMyEstablishments']); //összes intézmény ahol a user tag
         Route::get('/{establishmentId}', [EstablishmentController::class, 'getEstablishmentbyId']); // id alapu keresés
 
