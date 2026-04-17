@@ -11,7 +11,7 @@ test('admin duplicate school fails', async ({ page }) => {
   const timestamp = Date.now();
   const email = `admin${timestamp}@gmail.com`;
   const password = 'Teszt123';
-  const duplicateSchoolName = 'PÉGÉ';
+  const duplicateSchoolName = 'Kiskunfélegyházi Teszt Technikum';
 
   await page.goto('http://localhost:5173/register');
 

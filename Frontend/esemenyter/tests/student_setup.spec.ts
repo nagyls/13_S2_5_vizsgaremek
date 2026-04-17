@@ -60,7 +60,7 @@ test('student setup successfully', async ({ page }) => {
   await page.click('button.btn-primary:has-text("Következő")');
 
   await page.waitForSelector('.suggestions-grid .suggestion-card');
-  await page.locator('.suggestion-card', { hasText: /PÉGÉ/i }).click();
+  await page.locator('.suggestion-card', { hasText: /PÉGÉ|Kiskunfélegyházi Teszt Technikum/i }).click();
   await page.click('button.btn-primary:has-text("Következő")');
 
   await expect(page.locator('.confirmation-card')).toBeVisible();
