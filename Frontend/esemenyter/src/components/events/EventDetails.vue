@@ -1,7 +1,7 @@
 ﻿<template>
   <div class="event-details">
     <div class="container">
-      <!-- Navigáció -->
+      <!-- Oldal navigációs sáv a visszalépéshez -->
       <div class="navigation">
         <button class="btn-back" @click="$router.back()">
           <i class='bx bx-arrow-back'></i>
@@ -9,7 +9,7 @@
         </button>
       </div>
 
-      <!-- Betöltés állapot -->
+      <!-- Betöltési állapot visszajelzése szimmetrikus kártyával -->
       <div v-if="isLoading" class="status-card loading">
         <div class="loader">
           <div class="spinner"></div>
@@ -18,7 +18,7 @@
         <p>Kérjük, várjon, amíg betöltjük az esemény részleteit</p>
       </div>
 
-      <!-- Hiba állapot -->
+      <!-- Hibaüzenet megjelenítése, ha az esemény nem található vagy hiba történt -->
       <div v-else-if="errorMessage" class="status-card error-state">
         <div class="error-icon">
           <i class='bx bx-error-circle'></i>
@@ -35,14 +35,15 @@
         </div>
       </div>
 
-      <!-- Esemény tartalom -->
+      <!-- Sikeres betöltés utáni tartalom megjelenítése -->
       <div v-else-if="eventData" class="event-content">
-        <!-- Hero szekció -->
+        <!-- Hero szekció: háttérkép (ha van), cím és főbb állapotjelzők -->
         <div class="hero-section">
+          <!-- Csak a szervező láthatja a szerkesztési beállításokat megnyitó gombot -->
           <button
             v-if="canManageOccurrence"
             class="event-manage-trigger"
-            @click="openEventManageModal"
+            @click="openEventManageDashboard"
             title="Esemény kezelése"
           >
             <i class='bx bx-cog'></i>
@@ -50,6 +51,7 @@
           <div class="hero-overlay"></div>
           <div class="hero-content">
             <div class="hero-badges">
+              <!-- Esemény típusa (helyi/globális) és státusza (aktív/lezárt) -->
               <span class="badge" :class="eventData.type">
                 <i class='bx' :class="eventData.type === 'local' ? 'bx-building' : 'bx-world'"></i>
                 {{ eventData.type === 'local' ? 'Helyi esemény' : 'Globális esemény' }}
@@ -60,6 +62,8 @@
               </span>
             </div>
             <h1 class="hero-title">{{ eventData.title }}</h1>
+            
+            <!-- Kedvencnek jelölés gomb bejelentkezett felhasználók számára -->
             <div v-if="!isReadOnlyMode" class="hero-actions">
               <button
                 v-if="currentUser"
@@ -74,11 +78,11 @@
           </div>
         </div>
 
-        <!-- Fő tartalom rács -->
+        <!-- Fő tartalom elrendezése két oszlopban (bal: részletek, jobb: időpont/statisztika) -->
         <div class="content-grid">
-          <!-- Bal oldali oszlop -->
+          <!-- Bal oldali oszlop: szervező, leírás, részletek, szavazások, galéria, kommentek -->
           <div class="left-column">
-            <!-- Szervező infok -->
+            <!-- Szervező információi kártya -->
             <div class="info-block">
               <div class="block-header">
                 <i class='bx bx-user'></i>
@@ -95,7 +99,7 @@
               </div>
             </div>
 
-            <!-- Leírás -->
+            <!-- Esemény rövid leírása -->
             <div class="info-block">
               <div class="block-header">
                 <i class='bx bx-detail'></i>
@@ -104,7 +108,7 @@
               <p class="description">{{ eventData.description }}</p>
             </div>
 
-            <!-- Részletes tartalom -->
+            <!-- Esemény bővebb tartalma (ha létezik) -->
             <div v-if="eventData.content" class="info-block details-block">
               <div class="block-header">
                 <i class='bx bx-file'></i>
@@ -113,6 +117,7 @@
               <div class="detailed-content">{{ eventData.content }}</div>
             </div>
 
+            <!-- Szavazás létrehozása szakasz (csak a szervezőnek) -->
             <div v-if="canCreatePoll" class="info-block poll-builder-block">
               <div class="block-header">
                 <i class='bx bx-bar-chart-alt-2'></i>
@@ -144,6 +149,7 @@
                   </div>
                 </div>
 
+                <!-- Dinamikusan hozzáadható szavazási opciók -->
                 <div class="poll-field">
                   <label>Opciók</label>
                   <div class="poll-option-inputs">
@@ -179,12 +185,14 @@
               </div>
             </div>
 
+            <!-- Meglévő szavazások listázása és leadási felület -->
             <div v-if="canViewPolls" class="info-block poll-results-block">
               <div class="block-header">
                 <i class='bx bx-poll'></i>
                 <h2>Szavazások</h2>
               </div>
-
+              
+              <!-- Szavazás állapota és adatai -->
               <div v-if="isPollLoading" class="poll-info-note">
                 <i class='bx bx-loader-circle bx-spin'></i>
                 Szavazások betöltése...
@@ -196,6 +204,7 @@
               </div>
 
               <div v-else class="poll-list">
+                <!-- Minden szavazáshoz egy külön panel -->
                 <div v-for="poll in polls" :key="poll.id" class="poll-panel">
                   <div class="poll-panel-header">
                     <div>
@@ -207,6 +216,7 @@
                       </div>
                     </div>
 
+                    <!-- Szervező lezárhatja a szavazást manuálisan is -->
                     <button
                       v-if="poll.can_manage && !poll.is_ended"
                       type="button"
@@ -219,6 +229,7 @@
                     </button>
                   </div>
 
+                  <!-- Szavazás statisztikái -->
                   <div class="poll-summary-grid">
                     <div class="poll-summary-item">
                       <span class="poll-summary-label">Indulás</span>
@@ -234,16 +245,7 @@
                     </div>
                   </div>
 
-                  <div v-if="!poll.is_started" class="poll-info-note">
-                    <i class='bx bx-time-five'></i>
-                    A szavazás még nem indult el.
-                  </div>
-
-                  <div v-else-if="poll.hidden_results && !poll.results_visible" class="poll-info-note">
-                    <i class='bx bx-lock-alt'></i>
-                    Az eredmények csak a szavazás lezárása után válnak láthatóvá.
-                  </div>
-
+                  <!-- Szavazási opciók megjelenítése gombokként -->
                   <div class="poll-option-list">
                     <button
                       v-for="option in poll.options"
@@ -262,6 +264,7 @@
                         <span v-if="Number(poll.selected_option_id) === Number(option.id)" class="poll-badge">A te szavazatod</span>
                       </div>
 
+                      <!-- Eredmények vizuális megjelenítése oszlopdiagrammal -->
                       <div v-if="poll.results_visible" class="poll-result-row">
                         <div class="poll-result-bar-track">
                           <div
@@ -277,6 +280,7 @@
                     </button>
                   </div>
 
+                  <!-- Szavazás elküldése gomb -->
                   <div v-if="poll.can_answer" class="poll-actions">
                     <button
                       class="btn btn-primary poll-submit-button"
@@ -287,12 +291,11 @@
                       {{ submittingPollVoteIds[poll.id] ? 'Szavazás...' : 'Szavazok' }}
                     </button>
                   </div>
-
+                  <!-- Egyéb visszajelzések (már szavazott, szavazás lezárult, stb.) -->
                   <div v-else-if="poll.has_answered" class="poll-info-note success">
                     <i class='bx bx-check-circle'></i>
                     Már leadtad a szavazatodat ehhez a szavazáshoz.
                   </div>
-
                   <div v-else-if="poll.is_ended" class="poll-info-note success">
                     <i class='bx bx-flag'></i>
                     Ez a szavazás lezárult.
@@ -301,18 +304,7 @@
               </div>
             </div>
 
-            <!-- Kép -->
-            <div v-if="eventData.image_url" class="info-block">
-              <div class="block-header">
-                <i class='bx bx-image'></i>
-                <h2>Galéria</h2>
-              </div>
-              <div class="image-container">
-                <img :src="eventData.image_url" :alt="eventData.title">
-              </div>
-            </div>
-
-            <!-- Komment szekció -->
+            <!-- Hozzászólások szekció (kommentdoboz és lista) -->
             <div v-if="canShowCommentSection" class="comment-section">
               <div class="comment-header">
                 <div class="header-left">
@@ -321,6 +313,7 @@
                 </div>
 
                 <div class="comment-header-right">
+                  <!-- Szervező itt is ki/be kapcsolhatja az adott esemény chat funkcióját -->
                   <button
                     v-if="canManageOccurrence"
                     class="comment-toggle-inline"
@@ -346,6 +339,7 @@
               />
             </div>
 
+            <!-- Placeholder a kommentek helyett, ha valamiért nem elérhető (pl nincs bejelentkezve) -->
             <div v-else-if="showCommentPlaceholder" class="comment-section comment-section-placeholder">
               <div class="comment-header">
                 <div class="header-left">
@@ -377,12 +371,11 @@
                 <p>{{ commentPlaceholderDescription }}</p>
               </div>
             </div>
-
           </div>
 
-          <!-- Jobb oldali oszlop -->
+          <!-- Jobb oldali oszlop: naptári adatok és részvételi visszajelzés -->
           <div class="right-column">
-            <!-- Dátum és idő -->
+            <!-- Esemény időpontjai -->
             <div class="info-card">
               <h3><i class='bx bx-calendar'></i> Időpontok</h3>
               <div class="date-list">
@@ -397,7 +390,7 @@
               </div>
             </div>
 
-            <!-- Statisztika -->
+            <!-- Részvételi statisztikák (igent/nemet mondók száma) -->
             <div class="info-card">
               <h3><i class='bx bx-stats'></i> Statisztika</h3>
               <div class="stats-grid">
@@ -422,7 +415,7 @@
               </div>
             </div>
 
-            <!-- Részvétel -->
+            <!-- Interaktív részvételi döntéshozó felület -->
             <div v-if="!isReadOnlyMode && eventData.status === 'open' && currentUser" class="info-card participation">
               <h3><i class='bx bx-check-shield'></i> Részvétel</h3>
               <p class="participation-description">Hogyan szeretne részt venni az eseményen?</p>
@@ -447,131 +440,16 @@
                 </button>
               </div>
             </div>
-
           </div>
         </div>
 
-        <transition name="fade">
-          <div v-if="showEventManageModal" class="manage-modal-overlay" @click.self="closeEventManageModal">
-            <div class="manage-modal-panel">
-              <div class="manage-modal-header">
-                <h3><i class='bx bx-cog'></i> Esemény kezelése</h3>
-                <button class="manage-modal-close" @click="closeEventManageModal">
-                  <i class='bx bx-x'></i>
-                </button>
-              </div>
-
-              <div class="manage-modal-body">
-                <div class="info-card participants-manager">
-                  <h3 class="participants-toggle" @click="participantsExpanded = !participantsExpanded">
-                    <span><i class='bx bx-group'></i> Résztvevők kezelése</span>
-                    <i class='bx' :class="participantsExpanded ? 'bx-chevron-up' : 'bx-chevron-down'"></i>
-                  </h3>
-
-                  <div v-show="participantsExpanded">
-                  <div v-if="isParticipantsLoading" class="participants-state loading">
-                    <i class='bx bx-loader-circle bx-spin'></i>
-                    <span>Résztvevők betöltése...</span>
-                  </div>
-
-                  <div v-else-if="!participants.length" class="participants-state empty">
-                    <i class='bx bx-info-circle'></i>
-                    <span>Még nincs aktív résztvevő az eseményen.</span>
-                  </div>
-
-                  <div v-else class="participants-list">
-                    <div v-for="participant in participants" :key="participant.user_id" class="participant-item">
-                      <div class="participant-meta">
-                        <div class="participant-name">{{ participant.alias || participant.name || 'Ismeretlen felhasználó' }}</div>
-                        <div class="participant-subline">{{ participant.email || 'Nincs email megadva' }}</div>
-                      </div>
-
-                      <button
-                        class="participant-ban-button"
-                        :disabled="Boolean(banningParticipantIds[participant.user_id])"
-                        @click="banParticipant(participant)"
-                      >
-                        <i class='bx' :class="banningParticipantIds[participant.user_id] ? 'bx-loader-circle bx-spin' : 'bx-block'"></i>
-                        {{ banningParticipantIds[participant.user_id] ? 'Tiltás...' : 'Tiltás' }}
-                      </button>
-                    </div>
-                  </div>
-                  </div>
-                </div>
-
-                <div class="info-card occurrence-manager">
-                  <h3><i class='bx bx-wrench'></i> Időpont módosítása</h3>
-                  <p class="participation-description">Létrehozóként módosíthatja az adott alkalom időpontját, vagy elmaradtként törölheti.</p>
-
-                  <div class="occurrence-form-grid">
-                    <label>
-                      Kezdés dátuma
-                      <input type="date" v-model="occurrenceForm.startDate" @input="updateOccurrenceStartDateTime" @change="updateOccurrenceStartDateTime">
-                    </label>
-                    <label>
-                      Kezdés időpontja
-                      <input
-                        :type="isFirefoxBrowser ? 'text' : 'time'"
-                        v-model="occurrenceForm.startTime"
-                        inputmode="numeric"
-                        placeholder="HH:MM"
-                        pattern="^([01]?\d|2[0-3]):[0-5]\d$"
-                        @input="updateOccurrenceStartDateTime"
-                        @change="updateOccurrenceStartDateTime"
-                        @blur="normalizeOccurrenceTime('startTime', updateOccurrenceStartDateTime)"
-                      >
-                    </label>
-                    <label>
-                      Befejezés dátuma
-                      <input type="date" v-model="occurrenceForm.endDate" @input="updateOccurrenceEndDateTime" @change="updateOccurrenceEndDateTime">
-                    </label>
-                    <label>
-                      Befejezés időpontja
-                      <input
-                        :type="isFirefoxBrowser ? 'text' : 'time'"
-                        v-model="occurrenceForm.endTime"
-                        inputmode="numeric"
-                        placeholder="HH:MM"
-                        pattern="^([01]?\d|2[0-3]):[0-5]\d$"
-                        @input="updateOccurrenceEndDateTime"
-                        @change="updateOccurrenceEndDateTime"
-                        @blur="normalizeOccurrenceTime('endTime', updateOccurrenceEndDateTime)"
-                      >
-                    </label>
-                  </div>
-
-                  <div class="occurrence-actions">
-                    <button
-                      class="answer-button attending"
-                      :disabled="isUpdatingOccurrence"
-                      @click="rescheduleOccurrence"
-                    >
-                      <i class='bx bx-time-five'></i>
-                      <div class="answer-content">
-                        <span class="answer-title">Időpont módosítása</span>
-                        <span class="answer-description">Az adott alkalom átütemezése</span>
-                      </div>
-                    </button>
-
-                    <button
-                      class="answer-button not-attending"
-                      :disabled="isUpdatingOccurrence"
-                      @click="cancelOccurrence"
-                    >
-                      <i class='bx bx-calendar-x'></i>
-                      <div class="answer-content">
-                        <span class="answer-title">Alkalom elmarad</span>
-                        <span class="answer-description">Az adott alkalom törlése</span>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </transition>
-
       </div>
+
+      <EventManage
+        v-if="showEventManageDashboard"
+        :event-id="eventId"
+        @close="closeEventManageDashboard"
+      />
     </div>
   </div>
 </template>
@@ -579,14 +457,16 @@
 <script>
 import axios from 'axios';
 import CommentBox from './CommentBox.vue';
+import EventManage from './EventManage.vue'
 import { toast } from '../../services/toast'
-import { API_BASE, getToken, getAuthHeaders } from '../../services/api'
+import { API_BASE, getToken, getAuthHeaders, getCurrentInstitutionId, normalizeEventStatus } from '../../services/api'
 
 export default {
   name: 'EventDetails',
   
   components: {
-    CommentBox
+    CommentBox,
+    EventManage
   },
   
   data() {
@@ -600,8 +480,10 @@ export default {
       attendingCount: 0,
       notAttendingCount: 0,
       favoriteCount: 0,
-      userParticipation: null,
+      userParticipation: null, // 'y', 'n' vagy null (még nem döntött)
       studentHasClass: null,
+      
+      // Szavazással kapcsolatos állapotok
       polls: [],
       isPollLoading: false,
       isCreatingPoll: false,
@@ -615,41 +497,30 @@ export default {
         hiddenResults: false,
         options: ['', '']
       },
+
+      // Szervezői funkciók és modális állapotok
       isTogglingChat: false,
-      isUpdatingOccurrence: false,
-      showEventManageModal: false,
-      participantsExpanded: true,
-      participantsExpanded: true,
-      isParticipantsLoading: false,
-      participants: [],
-      banningParticipantIds: {},
-      isFirefoxBrowser: false,
-      occurrenceForm: {
-        startDate: '',
-        startTime: '',
-        endDate: '',
-        endTime: '',
-        startDateTime: '',
-        endDateTime: ''
-      }
+      showEventManageDashboard: false
     }
   },
   
   async created() {
-    this.isFirefoxBrowser = typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent || '')
     await this.loadCurrentUser()
     await this.loadEvent()
   },
   
   computed: {
+    // Admin vagy tanár szerepkör esetén formálisabb nézet
     isFormal() {
       return this.currentUser?.role === 'admin' || this.currentUser?.role === 'teacher';
     },
 
+    // Csak megtekintő mód (pl. külső linkről érkezve)
     isReadOnlyMode() {
       return String(this.$route?.query?.readonly || '') === '1'
     },
 
+    // Megállapítja, hogy az aktuális felhasználó-e az esemény gazdája
     canManageOccurrence() {
       return !this.isReadOnlyMode && Number(this.currentUser?.id) > 0 && Number(this.eventData?.user_id) === Number(this.currentUser?.id)
     },
@@ -662,6 +533,7 @@ export default {
       return this.isEventCreator
     },
 
+    // Csak a szervező vagy a résztvevők láthatják a szavazásokat
     canViewPolls() {
       return this.isEventCreator || this.userParticipation === 'y'
     },
@@ -674,6 +546,7 @@ export default {
       return this.eventData?.chat_enabled !== false
     },
 
+    // Kommentelés feltételei: nem read-only + engedélyezett chat + bejelentkezett + részt vesz
     canShowCommentSection() {
       return !this.isReadOnlyMode
         && this.isEventChatEnabled
@@ -681,6 +554,7 @@ export default {
         && this.userParticipation === 'y'
     },
 
+    // Ha be van jelentkezve, de még nem döntött vagy tiltott a chat, placeholder jelenik meg
     showCommentPlaceholder() {
       return !this.isReadOnlyMode
         && Boolean(this.currentUser)
@@ -713,61 +587,18 @@ export default {
   },
   
   methods: {
-    openEventManageModal() {
-      this.showEventManageModal = true
+    openEventManageDashboard() {
+      this.showEventManageDashboard = true
     },
 
-    closeEventManageModal() {
-      this.showEventManageModal = false
+    closeEventManageDashboard() {
+      this.showEventManageDashboard = false
     },
 
-    backToEvents() {
-      this.$router.push('/events-list')
-    },
-
-    getCurrentInstitutionId() {
-      const storedInstitutionId =
-        localStorage.getItem('CurrentInstitution') ||
-        sessionStorage.getItem('CurrentInstitution') ||
-        this.currentUser?.institution_id ||
-        this.currentUser?.establishment_id
-
-      const institutionId = Number(storedInstitutionId)
-      return Number.isFinite(institutionId) && institutionId > 0 ? institutionId : null
-    },
-
-    normalizeEventStatus(status) {
-      const normalized = String(status || '').toLowerCase()
-
-      if (normalized === 'ongoing' || normalized === 'open' || normalized === 'upcoming') {
-        return 'open'
-      }
-
-      if (normalized === 'ended' || normalized === 'closed') {
-        return 'closed'
-      }
-
-      return 'open'
-    },
-
-    normalizeEvent(event) {
-      const rawChatEnabled = event?.chat_enabled
-      const chatEnabled = rawChatEnabled === undefined || rawChatEnabled === null
-        ? true
-        : !(rawChatEnabled === false || rawChatEnabled === 0 || rawChatEnabled === '0')
-
-      return {
-        ...event,
-        status: this.normalizeEventStatus(event?.status),
-        creator_name: event?.creator_name || event?.creator?.name || event?.user?.name || 'Ismeretlen szervező',
-        participants: Number(event?.participants || event?.participant_count || 0),
-        favorites: Number(event?.favorites || event?.favorite_count || 0),
-        comment_count: Number(event?.comment_count || event?.comments_count || 0),
-        isFavorite: Boolean(event?.isFavorite || event?.is_favorite || event?.is_favourite),
-        chat_enabled: chatEnabled
-      }
-    },
-
+    /**
+     * Esemény betöltése az API-ról. 
+     * Tartalmazza a statisztikák, szavazások és résztvevők lekérését is.
+     */
     async loadEvent() {
       try {
         this.isLoading = true
@@ -780,76 +611,103 @@ export default {
         }
         
         this.eventData = foundEvent
-        this.splitDateTimeParts(foundEvent.start_date, 'start')
-        this.splitDateTimeParts(foundEvent.end_date, 'end')
+        
+        // Párhuzamos adatlekérés a hatékonyság érdekében
         await Promise.all([
           this.loadStats(),
           this.loadParticipationStatus(),
-          this.loadPolls(),
-          this.loadParticipants()
+          this.loadPolls()
         ])
       } catch (error) {
         console.error('Hiba az esemény betöltésekor:', error)
-        this.errorMessage = 'Nem sikerült betölteni az esemény adatait. Kérjük, próbálja újra később.'
+        this.errorMessage = 'Nem sikerült betölteni az esemény adatait.'
       } finally {
         this.isLoading = false
       }
     },
     
+    /**
+     * Esemény keresése több végponton (intézményi vs globális/meghívott)
+     */
     async fetchEvent(eventId) {
       const token = getToken()
-      const institutionId = this.getCurrentInstitutionId()
+      const institutionId = getCurrentInstitutionId(this.currentUser)
 
-      if (!token || !institutionId) {
-        return null
-      }
+      if (!token || !institutionId) return null
 
+      // Próbálkozás az intézményi eseményekkel
       const endpoint = `${API_BASE}/establishment/${institutionId}/events`
       const response = await axios.get(endpoint, {
         headers: getAuthHeaders(token),
         validateStatus: (status) => status >= 200 && status < 600
       })
 
-      if (response.status >= 400) {
-        return null
+      if (response.status < 400) {
+        const events = Array.isArray(response.data) ? response.data : (response.data?.events || [])
+        const found = events.find(item => Number(item?.id) === Number(eventId))
+        if (found) return this.normalizeEvent(found)
       }
 
-      const payload = response.data
-      const events = Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload?.events)
-          ? payload.events
-          : []
+      // Fallback: Ha nem intézményi, lehet, hogy egy külső/globális esemény, amihez hozzáférésünk van
+      const collabResponse = await axios.get(`${API_BASE}/establishment/${institutionId}/event-access`, {
+        headers: getAuthHeaders(token),
+        validateStatus: (status) => status >= 200 && status < 600
+      })
 
-      const foundEvent = events.find(item => Number(item?.id) === Number(eventId))
-      if (foundEvent) {
-        return this.normalizeEvent(foundEvent)
+      if (collabResponse.status < 400) {
+        const collabEvents = Array.isArray(collabResponse.data) ? collabResponse.data : (collabResponse.data?.events || [])
+        const foundCollab = collabEvents.find(item => Number(item?.id) === Number(eventId))
+        return foundCollab ? this.normalizeEvent(foundCollab) : null
       }
 
-      // Fallback: admin meghívott globális események az event-access végpontról.
-      const collabResponse = await axios.get(
-        `${API_BASE}/establishment/${institutionId}/event-access`,
-        {
-          headers: getAuthHeaders(token),
-          validateStatus: (status) => status >= 200 && status < 600
-        }
-      )
+      return null
+    },
 
-      if (collabResponse.status >= 400) {
-        return null
+    normalizeEvent(event) {
+      if (!event) return null
+      return {
+        ...event,
+        id: Number(event.id),
+        status: normalizeEventStatus(event.status),
+        is_recurring: Boolean(event.is_recurring),
+        creator_name: event.creator_name || event.creator?.name || event.user?.name || 'Ismeretlen szervező'
       }
-
-      const collabPayload = collabResponse.data
-      const collabEvents = Array.isArray(collabPayload)
-        ? collabPayload
-        : Array.isArray(collabPayload?.events)
-          ? collabPayload.events
-          : []
-
-      const foundCollabEvent = collabEvents.find(item => Number(item?.id) === Number(eventId))
-      return foundCollabEvent ? this.normalizeEvent(foundCollabEvent) : null
     },
     
+    /**
+     * Szavazások betöltése az eseményhez
+     */
+    async loadPolls() {
+      this.polls = []
+      this.selectedPollOptionIds = {}
+
+      const token = getToken()
+      const eventId = Number(this.eventData?.id || this.eventId)
+
+      if (!token || !eventId || !this.currentUser) return
+
+      this.isPollLoading = true
+      try {
+        const response = await axios.get(`${API_BASE}/events/${eventId}/poll`, {
+          headers: getAuthHeaders(token),
+          validateStatus: (status) => status >= 200 && status < 600
+        })
+
+        if (response.status === 200) {
+          this.polls = Array.isArray(response.data?.polls) ? response.data.polls : []
+          // Már leadott szavazatok előre kijelölése a felületen
+          this.selectedPollOptionIds = this.polls.reduce((carry, poll) => {
+            if (poll?.selected_option_id) carry[poll.id] = Number(poll.selected_option_id)
+            return carry
+          }, {})
+        }
+      } catch (error) {
+        console.error('Hiba a szavazás betöltésekor:', error)
+      } finally {
+        this.isPollLoading = false
+      }
+    },
+
     async loadCurrentUser() {
       const savedUserRaw =
         localStorage.getItem('esemenyter_user') ||
@@ -936,110 +794,6 @@ export default {
         console.error('Hiba a szavazás betöltésekor:', error)
       } finally {
         this.isPollLoading = false
-      }
-    },
-
-    async loadParticipants() {
-      if (!this.isEventCreator) {
-        this.participants = []
-        return
-      }
-
-      const token = getToken()
-      const eventId = Number(this.eventData?.id || this.eventId)
-
-      if (!token || !eventId) {
-        this.participants = []
-        return
-      }
-
-      this.isParticipantsLoading = true
-
-      try {
-        const response = await axios.get(`${API_BASE}/events/${eventId}/participants`, {
-          headers: getAuthHeaders(token),
-          validateStatus: (status) => status >= 200 && status < 600
-        })
-
-        if (response.status >= 400) {
-          this.participants = []
-          return
-        }
-
-        this.participants = Array.isArray(response?.data?.participants) ? response.data.participants : []
-      } catch (error) {
-        console.error('Hiba a résztvevők betöltésekor:', error)
-        this.participants = []
-      } finally {
-        this.isParticipantsLoading = false
-      }
-    },
-
-    async banParticipant(participant) {
-      const participantId = Number(participant?.user_id)
-      const eventId = Number(this.eventData?.id || this.eventId)
-
-      if (!participantId || !eventId) {
-        return
-      }
-
-      const confirmed = await toast.confirm(
-        `Biztosan ki szeretné tiltani ${participant?.alias || participant?.name || 'a felhasználót'} az eseményből?`,
-        {
-          confirmText: 'Tiltás',
-          cancelText: 'Mégse'
-        }
-      )
-
-      if (!confirmed) {
-        return
-      }
-
-      const token = getToken()
-      if (!token) {
-        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
-        return
-      }
-
-      this.banningParticipantIds = {
-        ...this.banningParticipantIds,
-        [participantId]: true
-      }
-
-      try {
-        const response = await axios.delete(`${API_BASE}/events/${eventId}/participants/${participantId}`, {
-          headers: getAuthHeaders(token),
-          validateStatus: (status) => status >= 200 && status < 600
-        })
-
-        if (response.status >= 400) {
-          const message = response?.data?.message || 'Nem sikerült kitiltani a résztvevőt.'
-          this.showMessage(message, 'error')
-          return
-        }
-
-        this.participants = this.participants.filter(item => Number(item.user_id) !== participantId)
-        this.attendingCount = Number(response?.data?.attending_count || this.attendingCount)
-        this.notAttendingCount = Number(response?.data?.not_attending_count || this.notAttendingCount)
-        this.commentCount = Number(response?.data?.comment_count || this.commentCount)
-
-        if (this.eventData) {
-          this.eventData.attending_count = this.attendingCount
-          this.eventData.not_attending_count = this.notAttendingCount
-          this.eventData.participant_count = this.attendingCount
-          this.eventData.participants = this.attendingCount
-          this.eventData.comment_count = this.commentCount
-        }
-
-        this.showMessage(response?.data?.message || 'Résztvevő sikeresen kitiltva.', 'success')
-      } catch (error) {
-        console.error('Hiba a résztvevő kitiltásakor:', error)
-        this.showMessage('Hiba történt a résztvevő kitiltásakor.', 'error')
-      } finally {
-        this.banningParticipantIds = {
-          ...this.banningParticipantIds,
-          [participantId]: false
-        }
       }
     },
 
@@ -1353,7 +1107,6 @@ export default {
         }
 
         await this.loadPolls()
-        await this.loadParticipants()
       } catch (error) {
         console.error('Hiba a részvétel mentésekor:', error)
         this.showMessage('Hiba történt a részvétel mentésekor.', 'error')
@@ -1560,242 +1313,6 @@ export default {
         this.showMessage('Hiba történt a kommentelés állapot mentésekor.', 'error')
       } finally {
         this.isTogglingChat = false
-      }
-    },
-
-
-
-    toDateTimeLocalValue(dateString) {
-      if (!dateString) {
-        return ''
-      }
-
-      const normalized = String(dateString).trim().replace(' ', 'T')
-      const match = normalized.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/)
-
-      if (!match) {
-        return ''
-      }
-
-      return `${match[1]}T${match[2]}`
-    },
-
-    splitDateTimeParts(dateTimeString, type) {
-      if (!dateTimeString) {
-        if (type === 'start') {
-          this.occurrenceForm.startDate = ''
-          this.occurrenceForm.startTime = ''
-        } else {
-          this.occurrenceForm.endDate = ''
-          this.occurrenceForm.endTime = ''
-        }
-        return
-      }
-
-      const normalized = String(dateTimeString).trim().replace(' ', 'T')
-      const match = normalized.match(/^(\d{4}-\d{2}-\d{2})T?(\d{2}:\d{2})/)
-
-      if (!match) {
-        return
-      }
-
-      const date = match[1]
-      const time = match[2]
-
-      if (type === 'start') {
-        this.occurrenceForm.startDate = date
-        this.occurrenceForm.startTime = time
-      } else {
-        this.occurrenceForm.endDate = date
-        this.occurrenceForm.endTime = time
-      }
-    },
-
-    combineDateAndTime(date, time) {
-      const normalizedTime = this.normalizeTimeValue(time)
-
-      if (!date || !normalizedTime) {
-        return ''
-      }
-      return `${date}T${normalizedTime}`
-    },
-
-    normalizeTimeValue(timeValue) {
-      if (!timeValue) {
-        return ''
-      }
-
-      const raw = String(timeValue).trim().replace(/\./g, ':')
-      if (raw === '') {
-        return ''
-      }
-
-      let hours
-      let minutes
-
-      const compactMatch = raw.match(/^(\d{1,2})(\d{2})$/)
-      if (compactMatch) {
-        hours = Number(compactMatch[1])
-        minutes = Number(compactMatch[2])
-      } else {
-        const separatedMatch = raw.match(/^(\d{1,2}):(\d{1,2})$/)
-        if (!separatedMatch) {
-          return ''
-        }
-        hours = Number(separatedMatch[1])
-        minutes = Number(separatedMatch[2])
-      }
-
-      if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-        return ''
-      }
-
-      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
-    },
-
-    normalizeOccurrenceTime(fieldName, afterNormalize) {
-      const normalized = this.normalizeTimeValue(this.occurrenceForm[fieldName])
-      this.occurrenceForm[fieldName] = normalized
-
-      if (typeof afterNormalize === 'function') {
-        afterNormalize.call(this)
-      }
-    },
-
-    updateOccurrenceStartDateTime() {
-      this.occurrenceForm.startDateTime = this.combineDateAndTime(
-        this.occurrenceForm.startDate,
-        this.occurrenceForm.startTime
-      )
-    },
-
-    updateOccurrenceEndDateTime() {
-      let endDate = this.occurrenceForm.endDate
-      const startDate = this.occurrenceForm.startDate
-      const endTime = this.occurrenceForm.endTime
-
-      if (endDate && startDate && new Date(`${endDate}T${endTime || '00:00'}`) < new Date(`${startDate}T${this.occurrenceForm.startTime || '00:00'}`)) {
-        endDate = startDate
-        this.occurrenceForm.endDate = endDate
-      }
-
-      this.occurrenceForm.endDateTime = this.combineDateAndTime(endDate, endTime)
-    },
-
-    async rescheduleOccurrence() {
-      if (this.isReadOnlyMode) {
-        this.showMessage('Csak megtekintés módban az alkalom nem módosítható.', 'warning')
-        return
-      }
-
-      if (!this.canManageOccurrence) {
-        this.showMessage('Csak a létrehozó módosíthatja ezt az alkalmat.', 'warning')
-        return
-      }
-
-      if (!this.occurrenceForm.startDate || !this.occurrenceForm.startTime || !this.occurrenceForm.endDate || !this.occurrenceForm.endTime) {
-        this.showMessage('Add meg az új kezdési és befejezési időpontot.', 'warning')
-        return
-      }
-
-      const startDateTime = this.combineDateAndTime(this.occurrenceForm.startDate, this.occurrenceForm.startTime)
-      const endDateTime = this.combineDateAndTime(this.occurrenceForm.endDate, this.occurrenceForm.endTime)
-
-      if (new Date(startDateTime) >= new Date(endDateTime)) {
-        this.showMessage('A befejezés legyen későbbi, mint a kezdés.', 'warning')
-        return
-      }
-
-      const token = getToken()
-      if (!token) {
-        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
-        return
-      }
-
-      this.isUpdatingOccurrence = true
-
-      try {
-        const response = await axios.patch(
-          `${API_BASE}/events/${this.eventId}/occurrence`,
-          {
-            action: 'reschedule',
-            start_date: startDateTime,
-            end_date: endDateTime
-          },
-          {
-            headers: getAuthHeaders(token, true),
-            validateStatus: (status) => status >= 200 && status < 600
-          }
-        )
-
-        if (response.status >= 400) {
-          const message = response?.data?.message || 'Nem sikerült átütemezni az alkalmat.'
-          this.showMessage(message, 'error')
-          return
-        }
-
-        this.showMessage(response?.data?.message || 'Alkalom időpontja módosítva.', 'success')
-        await this.loadEvent()
-      } catch (error) {
-        console.error('Átütemezési hiba:', error)
-        this.showMessage('Hiba történt az alkalom módosításakor.', 'error')
-      } finally {
-        this.isUpdatingOccurrence = false
-      }
-    },
-
-    async cancelOccurrence() {
-      if (this.isReadOnlyMode) {
-        this.showMessage('Csak megtekintés módban az alkalom nem törölhető.', 'warning')
-        return
-      }
-
-      if (!this.canManageOccurrence) {
-        this.showMessage('Csak a létrehozó törölheti ezt az alkalmat.', 'warning')
-        return
-      }
-
-      const confirmCancel = await toast.confirm('Biztosan elmaradtként jelölöd ezt az alkalmat?', {
-        confirmText: 'Igen, elmarad',
-        cancelText: 'Mégse'
-      })
-      if (!confirmCancel) {
-        return
-      }
-
-      const token = getToken()
-      if (!token) {
-        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
-        return
-      }
-
-      this.isUpdatingOccurrence = true
-
-      try {
-        const response = await axios.patch(
-          `${API_BASE}/events/${this.eventId}/occurrence`,
-          { action: 'cancel' },
-          {
-            headers: getAuthHeaders(token, true),
-            validateStatus: (status) => status >= 200 && status < 600
-          }
-        )
-
-        if (response.status >= 400) {
-          const message = response?.data?.message || 'Nem sikerült elmaradtként jelölni az alkalmat.'
-          this.showMessage(message, 'error')
-          return
-        }
-
-        this.showMessage(response?.data?.message || 'Az alkalom elmaradtként jelölve.', 'success')
-        setTimeout(() => {
-          this.$router.push('/events-list')
-        }, 900)
-      } catch (error) {
-        console.error('Alkalom törlési hiba:', error)
-        this.showMessage('Hiba történt az alkalom törlésekor.', 'error')
-      } finally {
-        this.isUpdatingOccurrence = false
       }
     },
     
@@ -2084,77 +1601,6 @@ export default {
   gap: 1rem;
 }
 
-.manage-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  background: rgba(2, 6, 23, 0.7);
-  backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.manage-modal-panel {
-  width: min(980px, 100%);
-  max-height: 90vh;
-  background: #f3f5ff;
-  border-radius: 22px;
-  overflow: hidden;
-  box-shadow: 0 25px 60px rgba(2, 6, 23, 0.4);
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  display: flex;
-  flex-direction: column;
-}
-
-.manage-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.25rem;
-  background: linear-gradient(90deg, #1e293b, #334155);
-  color: #fff;
-}
-
-.manage-modal-header h3 {
-  margin: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  font-size: 1.05rem;
-}
-
-.manage-modal-close {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.manage-modal-close i {
-  font-size: 1.2rem;
-}
-
-.manage-modal-body {
-  padding: 1rem;
-  overflow-y: auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.manage-modal-body .info-card {
-  margin: 0;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-}
-
 .icon-button {
   display: inline-flex;
   align-items: center;
@@ -2194,102 +1640,6 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-.participants-manager {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.participants-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  user-select: none;
-  margin-bottom: 0;
-}
-.participants-toggle:hover {
-  opacity: 0.8;
-}
-
-.participants-state {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 0.85rem;
-  border-radius: 12px;
-  font-size: 0.95rem;
-}
-
-.participants-state.loading {
-  background: #edf2ff;
-  color: #3949ab;
-}
-
-.participants-state.empty {
-  background: #f8fafc;
-  color: #4a5568;
-}
-
-.participants-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  max-height: 260px;
-  overflow-y: auto;
-  padding-right: 0.2rem;
-}
-
-.participant-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.65rem 0.75rem;
-  border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-}
-
-.participant-meta {
-  min-width: 0;
-}
-
-.participant-name {
-  font-weight: 700;
-  color: #1a202c;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.participant-subline {
-  color: #718096;
-  font-size: 0.85rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.participant-ban-button {
-  border: none;
-  border-radius: 10px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: #fff;
-  background: #e53e3e;
-  cursor: pointer;
-}
-
-.participant-ban-button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
 }
 
 .poll-field {
@@ -2733,23 +2083,6 @@ export default {
   min-height: 140px;
 }
 
-/* Kép */
-.image-container {
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.image-container img {
-  width: 100%;
-  height: auto;
-  display: block;
-  transition: transform 0.5s;
-}
-
-.image-container:hover img {
-  transform: scale(1.05);
-}
-
 /* Jobb oszlop */
 .right-column {
   display: flex;
@@ -2871,33 +2204,6 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-.occurrence-manager .occurrence-form-grid {
-  display: grid;
-  gap: 0.8rem;
-  margin-bottom: 0.9rem;
-}
-
-.occurrence-manager .occurrence-form-grid label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  color: #475569;
-  font-size: 0.86rem;
-  font-weight: 600;
-}
-
-.occurrence-manager .occurrence-form-grid input {
-  border: 1px solid #dbe3f0;
-  border-radius: 10px;
-  padding: 0.6rem 0.75rem;
-  font-size: 0.92rem;
-}
-
-.occurrence-manager .occurrence-actions {
-  display: grid;
-  gap: 0.7rem;
 }
 
 .poll-checkbox-grid {
@@ -3228,15 +2534,6 @@ export default {
     width: 100%;
     justify-content: space-between;
     flex-wrap: wrap;
-  }
-
-  .manage-modal-panel {
-    max-height: 94vh;
-  }
-
-  .manage-modal-body {
-    grid-template-columns: 1fr;
-    padding: 0.75rem;
   }
 }
 

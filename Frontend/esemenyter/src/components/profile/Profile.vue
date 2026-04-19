@@ -13,6 +13,7 @@
             </div>
           </div>
           
+          <!-- Lenyíló felület a profilkép alatt -->
           <div class="user-profile">
             <div class="user-avatar" @click="toggleUserMenu">
               <div class="avatar-circle">
@@ -449,6 +450,7 @@ export default {
   },
   
   methods: {
+    // Felhasználónév szerkesztésének indítása és fókuszálás az input mezőre
     startEditingName() {
       this.editName = this.user.name;
       this.isEditingName = true;
@@ -464,6 +466,7 @@ export default {
       this.editName = '';
     },
 
+    // A módosított felhasználónév mentése a backend felé
     async saveName() {
       if (!this.editName.trim() || this.editName === this.user.name) {
         this.cancelEditingName();
@@ -479,6 +482,7 @@ export default {
         );
 
         this.user.name = this.editName;
+        // Lokális tároló frissítése, hogy frissítés után is megmaradjon a név
         this.persistStoredUser({ 
           name: this.editName,
           name_updated_at: response.data.user.name_updated_at 
@@ -494,6 +498,7 @@ export default {
       }
     },
 
+    // Kezdeti felhasználói adatok betöltése a helyi tárolóból (localStorage/sessionStorage)
     loadUserData() {
       const savedUser =
         localStorage.getItem('esemenyter_user') ||
@@ -511,6 +516,7 @@ export default {
       }
     },
     
+    // Friss adatok lekérése a szerverről
     async loadUserFromBackend() {
       try {
         const token = getToken();
@@ -539,6 +545,7 @@ export default {
       }
     },
 
+    // A felhasználóhoz tartozó intézmények lekérése a profilváltáshoz
     async loadEstablishments() {
       const token = getToken();
 
@@ -557,6 +564,7 @@ export default {
 
         const currentEstablishment = this.establishments.find(item => item.is_current) || null;
         if (currentEstablishment) {
+          // Itt frissítjük az aktuális intézmény adatait a felületen
           this.user.school = currentEstablishment.title || this.user.school;
           this.user.schoolId = currentEstablishment.id || this.user.schoolId;
           this.user.currentAlias = (currentEstablishment.alias || '').trim();
@@ -653,6 +661,7 @@ export default {
       }
     },
 
+    // Adott intézmény részletes adatainak lekérése (helyszín, elérhetőség)
     async loadEstablishmentDetails(establishmentId) {
       const numericEstablishmentId = Number(establishmentId);
       if (!Number.isFinite(numericEstablishmentId) || numericEstablishmentId <= 0) {
@@ -674,6 +683,7 @@ export default {
           return;
         }
 
+        // Adatok frissítése az objektumban és a lokális tárolóban
         this.user.region = details.region_name || '';
         this.user.district = details.inner_region_name || '';
         this.user.city = details.settlement_name || '';
@@ -700,6 +710,7 @@ export default {
       }
     },
 
+    // Aktív intézmény váltása a listából választva
     async switchEstablishment(establishment) {
       if (!establishment || establishment.is_current || this.isSwitchingEstablishment) {
         return;
@@ -714,6 +725,7 @@ export default {
       this.isSwitchingEstablishment = true;
 
       try {
+        // Backend hívás az aktív intézmény átállításához
         const response = await axios.patch(
           `${API_BASE}/establishment/switch`,
           { establishment_id: establishment.id },
@@ -725,6 +737,7 @@ export default {
         const nextSchoolId = Number(payload.establishment_id || establishment.id) || null;
         const nextSchool = payload.title || establishment.title || '';
 
+        // Új adatok mentése a lokális állapotba és tárolókba
         this.saveCurrentInstitution(nextSchoolId);
         this.user.role = nextRole;
         this.user.schoolId = nextSchoolId;
@@ -734,6 +747,8 @@ export default {
         this.user.schoolEmail = payload.email || establishment.email || '';
         this.user.schoolPhone = payload.phone || establishment.phone || '';
         this.user.schoolWebsite = payload.website || establishment.website || '';
+        
+        // Frissítjük a listát, hogy az új legyen kijelölve 'Jelenlegi'-nek
         this.establishments = this.establishments.map(item => ({
           ...item,
           is_current: Number(item.id) === Number(nextSchoolId)

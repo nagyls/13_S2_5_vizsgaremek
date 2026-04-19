@@ -35,8 +35,14 @@ import logo2 from '../../assets/logo2.svg'
 import { API_BASE } from '../../services/api'
 
 export default {
+  /**
+   * Elfelejtett jelszó oldal komponense visszaállító email kéréséhez.
+   */
   name: 'ForgotPassword',
 
+  /**
+   * A jelszó-visszaállító kérő űrlap lokális állapota.
+   */
   data() {
     return {
       email: '',
@@ -46,6 +52,9 @@ export default {
   },
 
   methods: {
+    /**
+     * Jelszó-visszaállító email kérés beküldése validációval és hibakezeléssel.
+     */
     async submitRequest() {
       const normalizedEmail = String(this.email || '').trim().toLowerCase()
       if (!normalizedEmail) {
@@ -78,6 +87,7 @@ export default {
 }
 </script>
 
+/* ForgotPassword komponens stílusai */
 <style scoped>
 * {
   box-sizing: border-box;

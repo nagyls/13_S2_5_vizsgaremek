@@ -999,6 +999,9 @@ import logo2 from '../../assets/logo2.svg';
 export default {
   name: 'Dashboard',
   
+  /**
+   * A dashboard komponens teljes lokális állapota.
+   */
   data() {
     return {
       logo2,
@@ -1125,6 +1128,9 @@ export default {
     }
   },
   
+  /**
+   * Származtatott állapotok és szűrt listák a varázsló nézetekhez.
+   */
   computed: {
     userInitials() {
       if (!this.user.name) return '??'
@@ -1336,6 +1342,9 @@ export default {
   },
   
   methods: {
+    /**
+     * Bejelentkezési token ellenőrzése és felhasználói adatok betöltésének indítása.
+     */
     checkLoginStatus() {
       const token =
         localStorage.getItem('esemenyter_token') ||
@@ -1351,6 +1360,9 @@ export default {
       this.fetchUserData(token);
     },
     
+    /**
+     * Aktuális felhasználói profil lekérése a backendről, majd lokális állapot frissítése.
+     */
     async fetchUserData(token) {
       try {
         const response = await axios.get('http://127.0.0.1:8000/api/user', {
@@ -1441,6 +1453,9 @@ export default {
       }
     },
 
+    /**
+     * Intézményi szerepkör lekérése és mentése a felhasználói állapotba.
+     */
     async fetchAndSaveRole(token) {
       try {
         const institutionId = Number(
@@ -1470,10 +1485,16 @@ export default {
       }
     },
     
+    /**
+     * Felhasználói menü nyitása/zárása.
+     */
     toggleUserMenu() {
       this.showUserMenu = !this.showUserMenu;
     },
 
+    /**
+     * Logó kattintás kezelése, szerepkörválasztó módban visszalépéssel.
+     */
     handleLogoClick() {
       if (this.forceRoleSelection) {
         this.exitRoleSelection();
@@ -1483,7 +1504,9 @@ export default {
       this.$router.push('/dashboard');
     },
     
-    // Diák beállítás
+    /**
+     * Diák beállítási folyamat indítása és alaphelyzetbe állítása.
+     */
     setupStudent() {
       this.selectedRole = 'student';
       this.currentStep = 1;
@@ -1491,7 +1514,9 @@ export default {
       this.studentAlias = this.user.name || '';
     },
     
-    // Tanár beállítás
+    /**
+     * Tanár beállítási folyamat indítása és alaphelyzetbe állítása.
+     */
     setupTeacher() {
       this.selectedRole = 'teacher';
       this.teacherCurrentStep = 1;
@@ -1499,7 +1524,9 @@ export default {
       this.teacherAlias = this.user.name || '';
     },
     
-    // Admin beállítás
+    /**
+     * Admin beállítási folyamat indítása és alaphelyzetbe állítása.
+     */
     setupAdmin() {
       this.selectedRole = 'admin';
       this.adminCurrentStep = 1;
@@ -1507,7 +1534,9 @@ export default {
       this.adminAlias = this.user.name || '';
     },
     
-    // Diák lépésenkénti navigáció
+    /**
+     * Diák varázsló következő lépésének kezelése és végső mentés indítása.
+     */
     nextStep() {
       if (this.currentStep === 1) {
         if (!this.selectedRegionId) {
@@ -1545,6 +1574,9 @@ export default {
       }
     },
     
+    /**
+     * Diák wizard visszalépésének kezelése.
+     */
     prevStep() {
       if (this.currentStep > 1) {
         this.currentStep--;
@@ -1559,6 +1591,9 @@ export default {
       }
     },
     
+    /**
+     * Tanár wizard következő lépésének kezelése és végső mentés indítása.
+     */
     teacherNextStep() {
       if (this.teacherCurrentStep === 1) {
         if (!this.teacherSelectedRegionId) {
@@ -1589,14 +1624,17 @@ export default {
           toast.error('Kérjük, válasszon egy iskolát!');
           return;
         }
-        this.teacherCurrentStep = 5; // EZ VOLT 5, NEM 6!
+        this.teacherCurrentStep = 5;
       }
-      else if (this.teacherCurrentStep === 5) { // EZ VOLT 5, NEM 6!
+      else if (this.teacherCurrentStep === 5) {
         // Itt történik a profil mentése
         this.completeTeacherProfileSetup();
       }
     },
     
+    /**
+     * Tanár wizard visszalépésének kezelése.
+     */
     teacherPrevStep() {
       if (this.teacherCurrentStep > 1) {
         this.teacherCurrentStep--;
@@ -1611,7 +1649,9 @@ export default {
       }
     },
     
-    // Admin lépésenkénti navigáció
+    /**
+     * Admin wizard következő lépésének kezelése és végső mentés indítása.
+     */
     adminNextStep() {
       if (this.adminCurrentStep === 1) {
         if (!this.adminSelectedRegionId) {
@@ -1648,6 +1688,9 @@ export default {
       }
     },
     
+    /**
+     * Admin wizard visszalépésének kezelése.
+     */
     adminPrevStep() {
       if (this.adminCurrentStep > 1) {
         this.adminCurrentStep--;
@@ -1662,6 +1705,9 @@ export default {
       }
     },
 
+    /**
+     * Szerepkörválasztó nézet bezárása és visszatérés profil oldalra.
+     */
     exitRoleSelection() {
       this.forceRoleSelection = false;
       this.selectedRole = '';
@@ -1674,7 +1720,9 @@ export default {
       this.$router.push('/profile');
     },
     
-    // Iskola form validálása
+    /**
+     * Iskolaregisztrációs űrlap kötelező mezőinek validálása.
+     */
     validateSchoolForm() {
       this.schoolFormErrors = {};
       let isValid = true;
@@ -1697,7 +1745,9 @@ export default {
       return isValid;
     },
     
-    // Osztály kiválasztása
+    /**
+     * Tanított osztály kiválasztásának váltása.
+     */
     toggleClassSelection(classId) {
       const index = this.selectedClasses.indexOf(classId);
       if (index === -1) {
@@ -1707,7 +1757,9 @@ export default {
       }
     },
     
-    // Osztály eltávolítása
+    /**
+     * Tanított osztály eltávolítása a kijelölt listából.
+     */
     removeClass(classId) {
       const index = this.selectedClasses.indexOf(classId);
       if (index !== -1) {
@@ -1715,13 +1767,17 @@ export default {
       }
     },
     
-    // Osztály nevének lekérdezése
+    /**
+     * Osztálynév lekérdezése az osztály azonosítója alapján.
+     */
     getClassName(classId) {
       const classItem = this.schoolClasses.find(c => c.id === classId);
       return classItem ? classItem.name : '';
     },
     
-    // Reset metódusok
+    /**
+     * Diák beállítási űrlap és kiválasztások alaphelyzetbe állítása.
+     */
     resetStudentSetup() {
       this.selectedRegionId = null;
       this.selectedDistrictId = null;
@@ -1737,6 +1793,9 @@ export default {
       this.studentAlias = this.user.name || '';
     },
     
+    /**
+     * Tanár beállítási űrlap és kiválasztások alaphelyzetbe állítása.
+     */
     resetTeacherSetup() {
       this.teacherSelectedRegionId = null;
       this.teacherSelectedDistrictId = null;
@@ -1761,6 +1820,9 @@ export default {
       this.teacherAlias = this.user.name || '';
     },
     
+    /**
+     * Admin beállítási űrlap és kiválasztások alaphelyzetbe állítása.
+     */
     resetAdminSetup() {
       this.adminSelectedRegionId = null;
       this.adminSelectedDistrictId = null;
@@ -1791,7 +1853,9 @@ export default {
       this.adminAlias = this.user.name || '';
     },
     
-    // Diák adatbetöltők
+    /**
+     * Diák folyamathoz tartozó járások betöltése a kiválasztott régió alapján.
+     */
     loadDistrictsForSelectedRegion() {
       axios.get('http://127.0.0.1:8000/api/innerregions/all', {
         params: { region_id: this.selectedRegionId }
@@ -1806,6 +1870,9 @@ export default {
       });
     },
     
+    /**
+     * Diák folyamathoz tartozó városok betöltése a kiválasztott járás alapján.
+     */
     loadCitiesForSelectedDistrict() {
       axios.get('http://127.0.0.1:8000/api/settlements/all', {
         params: { inner_region_id: this.selectedDistrictId }
@@ -1820,6 +1887,9 @@ export default {
       });
     },
     
+    /**
+     * Diák folyamathoz tartozó intézmények betöltése a kiválasztott város alapján.
+     */
     loadSchoolsForSelectedCity() {
       axios.get('http://127.0.0.1:8000/api/establishments', {
         params: {
@@ -1837,7 +1907,9 @@ export default {
       });
     },
 
-    // Tanár adatbetöltők
+    /**
+     * Tanár folyamathoz tartozó járások betöltése a kiválasztott régió alapján.
+     */
     loadTeacherDistrictsForSelectedRegion() {
       axios.get('http://127.0.0.1:8000/api/innerregions/all', {
         params: { region_id: this.teacherSelectedRegionId }
@@ -1852,6 +1924,9 @@ export default {
       });
     },
 
+    /**
+     * Tanár folyamathoz tartozó városok betöltése a kiválasztott járás alapján.
+     */
     loadTeacherCitiesForSelectedDistrict() {
       axios.get('http://127.0.0.1:8000/api/settlements/all', {
         params: {
@@ -1867,6 +1942,9 @@ export default {
       });
     },
 
+    /**
+     * Tanár folyamathoz tartozó intézmények betöltése a kiválasztott város alapján.
+     */
     loadTeacherSchoolsForSelectedCity() {
       axios.get('http://127.0.0.1:8000/api/establishments', {
         params: {
@@ -1883,7 +1961,9 @@ export default {
       });
     },
 
-    // Admin adatbetöltők
+    /**
+     * Admin folyamathoz tartozó járások betöltése a kiválasztott régió alapján.
+     */
     loadAdminDistrictsForSelectedRegion() {
       axios.get('http://127.0.0.1:8000/api/innerregions/all', {
         params: { region_id: this.adminSelectedRegionId }
@@ -1898,6 +1978,9 @@ export default {
       });
     },
     
+    /**
+     * Admin folyamathoz tartozó városok betöltése a kiválasztott járás alapján.
+     */
     loadAdminCitiesForSelectedDistrict() {
       axios.get('http://127.0.0.1:8000/api/settlements/all', {
         params: { inner_region_id: this.adminSelectedDistrictId }
@@ -1912,52 +1995,87 @@ export default {
       });
     },
     
-    // Kiválasztó metódusok
+    /**
+     * Régió kiválasztása diák folyamatban.
+     */
     selectRegion(region) {
       this.selectedRegionId = region.id;
     },
     
+    /**
+     * Járás kiválasztása diák folyamatban.
+     */
     selectDistrict(district) {
       this.selectedDistrictId = district.id;
     },
     
+    /**
+     * Város kiválasztása diák folyamatban.
+     */
     selectCity(city) {
       this.selectedCityId = city.id;
     },
     
+    /**
+     * Iskola kiválasztása diák folyamatban.
+     */
     selectSchool(school) {
       this.selectedSchoolId = school.id;
     },
     
+    /**
+     * Régió kiválasztása tanár folyamatban.
+     */
     teacherSelectRegion(region) {
       this.teacherSelectedRegionId = region.id;
     },
     
+    /**
+     * Járás kiválasztása tanár folyamatban.
+     */
     teacherSelectDistrict(district) {
       this.teacherSelectedDistrictId = district.id;
     },
     
+    /**
+     * Város kiválasztása tanár folyamatban.
+     */
     teacherSelectCity(city) {
       this.teacherSelectedCityId = city.id;
     },
     
+    /**
+     * Iskola kiválasztása tanár folyamatban.
+     */
     teacherSelectSchool(school) {
       this.teacherSelectedSchoolId = school.id;
     },
     
+    /**
+     * Régió kiválasztása admin folyamatban.
+     */
     adminSelectRegion(region) {
       this.adminSelectedRegionId = region.id;
     },
     
+    /**
+     * Járás kiválasztása admin folyamatban.
+     */
     adminSelectDistrict(district) {
       this.adminSelectedDistrictId = district.id;
     },
     
+    /**
+     * Város kiválasztása admin folyamatban.
+     */
     adminSelectCity(city) {
       this.adminSelectedCityId = city.id;
       this.adminNewCityName = '';
     },
     
+    /**
+     * Intézményi csatlakozási kérelem beküldése a kiválasztott szerepkörrel.
+     */
     async submitInstitutionRequest(establishmentId, role, aliasValue = '') {
       const token =
         localStorage.getItem('esemenyter_token') ||
@@ -1986,6 +2104,9 @@ export default {
       );
     },
 
+    /**
+     * Aktuális intézmény azonosító mentése az aktív tárhelybe.
+     */
     saveCurrentInstitution(institutionId) {
       const numericInstitutionId = Number(institutionId);
 
@@ -2003,6 +2124,9 @@ export default {
       localStorage.removeItem('CurrentInstitution');
     },
 
+    /**
+     * Felhasználói szerepkör lekérése adott intézményen belül.
+     */
     async fetchRoleForInstitution(establishmentId) {
       const token =
         localStorage.getItem('esemenyter_token') ||
@@ -2027,6 +2151,9 @@ export default {
       }
     },
 
+    /**
+     * Már meglévő intézményi tagság kezelése és megfelelő átirányítás.
+     */
     async handleAlreadyMember(establishmentId, fallbackRole, fallbackSchoolTitle) {
       const role = await this.fetchRoleForInstitution(establishmentId);
       const nextRole = role || fallbackRole || this.user.role || '';
@@ -2051,7 +2178,9 @@ export default {
       this.$router.push('/user-dashboard');
     },
 
-    // Profil befejező metódusok
+    /**
+     * Diák profilbeállítás véglegesítése és csatlakozási kérelem létrehozása.
+     */
     async completeStudentProfileSetup() {
       try {
         await this.submitInstitutionRequest(this.selectedSchoolId, 'student', this.studentAlias);
@@ -2093,6 +2222,9 @@ export default {
       this.$router.push('/pending-approval');
     },
     
+    /**
+     * Tanár profilbeállítás véglegesítése és csatlakozási kérelem létrehozása.
+     */
     async completeTeacherProfileSetup() {
       try {
         await this.submitInstitutionRequest(this.teacherSelectedSchoolId, 'teacher', this.teacherAlias);
@@ -2141,6 +2273,9 @@ export default {
       this.$router.push('/pending-approval');
     },
     
+    /**
+     * Admin profilbeállítás véglegesítése és intézmény regisztrálása.
+     */
     completeAdminProfileSetup() {
       // Dupla kattintás megakadályozása
       if (this.isSubmittingAdmin) return;
@@ -2253,6 +2388,9 @@ export default {
       });
     },
     
+    /**
+     * Felhasználói adatok mentése localStorage vagy sessionStorage tárhelybe.
+     */
     saveUserData() {
 
       const tokenLocal = localStorage.getItem('esemenyter_token');
@@ -2284,16 +2422,28 @@ export default {
       }
     },
     
+    /**
+     * Navigáció az eseménylista oldalra.
+     */
     goToEvents() {
       this.$router.push('/events-list');
     },
+    /**
+     * Navigáció a profil oldalra.
+     */
     goToProfile() {
       this.$router.push('/profile');
     },
+    /**
+     * Navigáció az intézményi dashboard oldalra.
+     */
     goToInstitutionDashboard() {
       this.$router.push('/institution-dashboard');
     },
     
+    /**
+     * Kijelentkezés, lokális adatok törlése és visszairányítás a kezdőoldalra.
+     */
     logout() {
 
       // 🔥 TELJES TAKARÍTÁS
@@ -2321,20 +2471,32 @@ export default {
       });
     },
     
+    /**
+     * Oldal tetejére történő gördülékeny visszagörgetés.
+     */
     scrollToTop() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     
+    /**
+     * Görgetésfigyelés a lebegő vissza gomb megjelenítéséhez.
+     */
     handleScroll() {
       this.showScrollTop = window.scrollY > 300;
     },
 
+    /**
+     * Dokumentum kattintás kezelése a felhasználói menü automatikus bezárásához.
+     */
     handleDocumentClick(event) {
       if (!event.target.closest('.user-profile')) {
         this.showUserMenu = false;
       }
     },
     
+    /**
+     * Régiók betöltése a kiválasztó varázslókhoz.
+     */
     loadRegions() {
       axios.get('http://127.0.0.1:8000/api/regions/all')
         .then(res => {
@@ -2370,6 +2532,7 @@ export default {
 }
 </script>
 
+/* Dashboard komponens stílusai */
 <style scoped>
 .dashboard {
   box-sizing: border-box;

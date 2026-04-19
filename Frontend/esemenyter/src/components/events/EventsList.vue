@@ -330,7 +330,7 @@
 <script>
 import axios from 'axios';
 import logo2 from '../../assets/logo2.svg';
-import { API_BASE, getToken, getAuthHeaders, clearAuthStorage } from '../../services/api';
+import { API_BASE, getToken, getAuthHeaders, clearAuthStorage, getCurrentInstitutionId, normalizeEventStatus } from '../../services/api';
 import toast from '../../services/toast';
 
 export default {
@@ -528,7 +528,7 @@ export default {
     },
 
     async resolveCurrentInstitutionTitle() {
-      const institutionId = this.getCurrentInstitutionId();
+      const institutionId = getCurrentInstitutionId(this.currentUser);
       if (!institutionId) {
         this.currentInstitutionTitle = '';
         return;
@@ -586,37 +586,9 @@ export default {
       }
     },
 
-    getCurrentInstitutionId() {
-      const storedInstitutionId =
-        localStorage.getItem('CurrentInstitution') ||
-        sessionStorage.getItem('CurrentInstitution') ||
-        this.currentUser?.institution_id ||
-        this.currentUser?.establishment_id;
-
-      const institutionId = Number(storedInstitutionId);
-      return Number.isFinite(institutionId) && institutionId > 0 ? institutionId : null;
-    },
-
-    normalizeEventStatus(status) {
-      const normalized = String(status || '').toLowerCase();
-
-      if (normalized === 'ongoing' || normalized === 'open') {
-        return 'open';
-      }
-
-      if (normalized === 'ended' || normalized === 'closed') {
-        return 'closed';
-      }
-
-      if (normalized === 'upcoming') {
-        return 'open';
-      }
-
-      return 'open';
-    },
-
+    // Előkészíti az esemény objektumot a listában való megjelenítésre (típuskonverziók, alapértelmezett értékek)
     normalizeEventForList(event) {
-      const normalizedStatus = this.normalizeEventStatus(event?.status);
+      const normalizedStatus = normalizeEventStatus(event?.status);
       const creatorName =
         event?.creator_name ||
         event?.creator?.name ||
@@ -643,6 +615,7 @@ export default {
       return Boolean(this.favouriteLoadingById[eventId]);
     },
 
+    // Kedvenc állapot váltása a szerveren és a helyi állapot frissítése
     async toggleFavourite(event) {
       if (!event?.id || this.isFavouriteLoading(event.id)) {
         return;
@@ -675,17 +648,24 @@ export default {
       }
     },
 
+    /**
+     * Összevonja az ismétlődő eseményeket egyetlen kártyává a listában.
+     * Kiválasztja a legrelevánsabb alkalmat (éppen zajló > legközelebbi > legutóbbi).
+     * Ezzel elkerüljük az átláthatatlan listát, ahol ugyanaz az esemény 50-szer szerepelt.
+     */
     collapseRecurringSeries(events) {
       const now = Date.now();
       const groupedRecurring = new Map();
       const standalone = [];
 
+      // Megkeressük azokat az ID-kat, amik valahol szülőként szerepelnek
       const parentIds = new Set(
         events
           .map(item => Number(item?.recurrence_parent_event_id || 0))
           .filter(id => id > 0)
       );
 
+      // Segédfüggvény a dátumok biztonságos időbélyeggé alakításához
       const toTimestamp = (value) => {
         if (!value) return Number.NaN;
         const normalized = String(value).trim().replace(' ', 'T');
@@ -693,6 +673,7 @@ export default {
         return Number.isNaN(parsed) ? Number.NaN : parsed;
       };
 
+      // Egyedi kulcs generálása olyan ismétlődő eseményeknek, amiknek nincs explicit szülő-gyerek kapcsolata (legacy adatok)
       const buildRecurringFallbackKey = (event) => {
         const startValue = String(event?.start_date || '');
         const timeMatch = startValue.match(/(\d{2}:\d{2})/);
@@ -708,6 +689,7 @@ export default {
         ].join('|');
       };
 
+      // Szétválogatás: ami nem ismétlődő, az standalone; ami igen, azt csoportosítjuk
       events.forEach((event) => {
         if (!event?.is_recurring) {
           standalone.push(event);
@@ -721,10 +703,10 @@ export default {
         if (parentEventId > 0) {
           seriesKey = `parent:${parentEventId}`;
         } else if (currentEventId > 0 && parentIds.has(currentEventId)) {
-          // Root occurrence of a known series: group with its children.
+          // Ha ez a rekord a szülője egy ismert sorozatnak, akkor vele csoportosítjuk a gyerekeket.
           seriesKey = `parent:${currentEventId}`;
         } else {
-          // Fallback for legacy/orphan records without parent links.
+          // Ha nincs szülő link, de ismétlődő, akkor a torzsadatok alapján próbáljuk csoportosítani.
           seriesKey = `fallback:${buildRecurringFallbackKey(event)}`;
         }
 
@@ -735,6 +717,7 @@ export default {
         groupedRecurring.get(seriesKey).push(event);
       });
 
+      // Minden csoportból kiválasztjuk az egyetlen "reprezentatív" alkalmat a listába
       const recurringRepresentatives = Array.from(groupedRecurring.values()).map((seriesEvents) => {
         const validEvents = seriesEvents.filter((item) => {
           return !Number.isNaN(toTimestamp(item?.start_date));
@@ -744,6 +727,7 @@ export default {
           return seriesEvents[0];
         }
 
+        // 1. Elsőbbséget élvez a jelenleg is tartó esemény
         const ongoing = validEvents
           .filter((item) => {
             const startAt = toTimestamp(item?.start_date);
@@ -757,6 +741,7 @@ export default {
           return ongoing[0];
         }
 
+        // 2. Ha nincs zajló, akkor a legközelebbi jövőbeli következik
         const upcoming = validEvents
           .filter(item => toTimestamp(item.start_date) >= now)
           .sort((a, b) => toTimestamp(a.start_date) - toTimestamp(b.start_date));
@@ -765,6 +750,7 @@ export default {
           return upcoming[0];
         }
 
+        // 3. Ha minden alkalom a múltban van már, akkor a legutolsót választjuk
         const latestPast = validEvents
           .sort((a, b) => toTimestamp(b.start_date) - toTimestamp(a.start_date));
 
@@ -774,12 +760,14 @@ export default {
       return [...standalone, ...recurringRepresentatives];
     },
 
+    // Események lekérése az API-ból, szűréssel és sorbarendezéssel
     async fetchEventsFromApi() {
       const token = getToken();
 
-      const institutionId = this.getCurrentInstitutionId();
+      const institutionId = getCurrentInstitutionId(this.currentUser);
       const normalizedInstitutionId = Number(institutionId);
 
+      // Érvényes intézmény azonosító nélkül nem tudunk listát mutatni
       if (!Number.isFinite(normalizedInstitutionId) || normalizedInstitutionId <= 0) {
         return [];
       }
@@ -788,11 +776,11 @@ export default {
 
       const response = await axios.get(endpoint, {
         headers: getAuthHeaders(token),
-        // Itt helyben kezeljuk a hibakat, hogy ne triggerelodjon globalis kijelentkeztetes.
+        // A hibák helyi kezelése a globális interceptor elkerülése miatt (pl. 403-as kezeléshez)
         validateStatus: (status) => status >= 200 && status < 600
       });
 
-      // Ha 403 (Forbidden) a hibakód, azt jelenti hogy a diák már nem tagja az intézménynek
+      // Speciális kezelés: ha 403 (Forbidden), a diák már nem tagja az iskolának
       if (response.status === 403) {
         await this.handleUnauthorizedInstitution();
         return [];
@@ -802,19 +790,23 @@ export default {
 
       const { data } = response;
 
+      // Különböző backend válaszformátumok (tömb vagy objektum) támogatása
       const incomingEvents = Array.isArray(data)
         ? data
         : Array.isArray(data?.events)
           ? data.events
           : [];
 
+      // Adatok egységesítése és kedvencek jelenlétének ellenőrzése
       const normalizedEvents = incomingEvents
         .map((event) => this.normalizeEventForList(event));
 
       this.hasFavouriteEventsInInstitution = normalizedEvents.some(event => Boolean(event?.is_favourite));
 
+      // Ismétlődések csoportosítása/összevonása
       const collapsedEvents = this.collapseRecurringSeries(normalizedEvents);
 
+      // Végleges szűrés és sorrendezés (kedvencek előre, majd az időpont szerint)
       return collapsedEvents
         .filter(event => {
           if (this.filters.type && event.type !== this.filters.type) return false;
@@ -823,14 +815,15 @@ export default {
           return true;
         })
         .sort((a, b) => {
+          // A kedvencek szinte kötelezően a lista elejére kerülnek
           const favouriteDiff = Number(Boolean(b.is_favourite)) - Number(Boolean(a.is_favourite));
           if (favouriteDiff !== 0) {
             return favouriteDiff;
           }
 
+          // Dátum szerinti rendezés a beállítás alapján
           switch (this.filters.sorting) {
             case 'oldest':
-              return new Date(a.start_date) - new Date(b.start_date);
             case 'start_date':
               return new Date(a.start_date) - new Date(b.start_date);
             case 'newest':
@@ -911,7 +904,7 @@ export default {
 </script>
 
 <style scoped>
-/* Alap stílusok (EventDetails-ből átvéve) */
+/* Alapoldali stílus és háttér (az EventDetails komponenshez hasonlóan) */
 .events-page {
   width: 100%;
   min-height: 100vh;
@@ -926,7 +919,7 @@ export default {
   padding: 2rem;
 }
 
-/* Fejléc (EventDetails-ből) */
+/* Fix fejléc stílus Blur (üveghatás) effekttel */
 .events-header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -944,6 +937,7 @@ export default {
   gap: 20px;
 }
 
+/* Logó és cím elrendezése */
 .logo-title {
   display: flex;
   align-items: center;
@@ -999,6 +993,7 @@ export default {
   line-height: 1.2;
 }
 
+/* Felhasználói profil és legördülő menü */
 .user-profile {
   position: relative;
 }
@@ -1047,6 +1042,7 @@ export default {
   font-size: 14px;
 }
 
+/* Szerepkör alapú jelvények színei */
 .role-badge {
   display: inline-block;
   padding: 4px 12px;
@@ -1289,7 +1285,7 @@ export default {
   box-shadow: 0 14px 28px rgba(34, 197, 94, 0.45);
 }
 
-/* Statisztika kártyák (EventDetails-ből) */
+/* Statisztika kártyák (EventDetails-ből) - Összegző adatok megjelenítése */
 .stats-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1345,7 +1341,7 @@ export default {
   color: #718096;
 }
 
-/* Szűrők rész (EventDetails stílusban) */
+/* Szűrők rész (EventDetails stílusban) - Keresés és kategóriák */
 .filters-section {
   background: white;
   border-radius: 24px;
@@ -1418,6 +1414,7 @@ export default {
   color: white;
 }
 
+/* Szűrők sorba rendezése és csoportosítása */
 .filter-row {
   display: flex;
   flex-direction: row;
@@ -1469,6 +1466,7 @@ export default {
   font-size: 0.9rem;
 }
 
+/* Választható chipek (státusz, típus) tárolója */
 .chip-container {
   display: flex;
   gap: 0.4rem;

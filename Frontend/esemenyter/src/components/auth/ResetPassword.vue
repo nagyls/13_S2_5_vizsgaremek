@@ -51,8 +51,14 @@ import logo2 from '../../assets/logo2.svg'
 import { API_BASE, clearAuthStorage } from '../../services/api'
 
 export default {
+  /**
+   * Jelszó-visszaállító nézet a tokenes link alapján.
+   */
   name: 'ResetPassword',
 
+  /**
+   * A jelszó-visszaállítási űrlap lokális állapota.
+   */
   data() {
     return {
       token: '',
@@ -66,20 +72,32 @@ export default {
     }
   },
 
+  /**
+   * Token és email előtöltése az URL query paraméterekből.
+   */
   created() {
     this.token = String(this.$route.query.token || '')
     this.email = String(this.$route.query.email || '')
   },
 
   methods: {
+    /**
+     * Új jelszó mező láthatóságának váltása.
+     */
     togglePassword() {
       this.showPassword = !this.showPassword
     },
 
+    /**
+     * Jelszó megerősítés mező láthatóságának váltása.
+     */
     togglePasswordConfirmation() {
       this.showPasswordConfirmation = !this.showPasswordConfirmation
     },
 
+    /**
+     * Jelszó-visszaállítás beküldése validációval és sikeres átirányítással.
+     */
     async submitReset() {
       if (!this.token || !this.email) {
         toast.error('A visszaállító link érvénytelen.')
@@ -119,6 +137,7 @@ export default {
 }
 </script>
 
+<!-- ResetPassword komponens stílusai -->
 <style scoped>
 * {
   box-sizing: border-box;

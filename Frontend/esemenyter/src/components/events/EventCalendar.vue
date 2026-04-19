@@ -1,9 +1,10 @@
 <template>
   <div class="event-calendar">
-    <!-- HEADER -->
+    <!-- FŐ OLDALFEJLÉC ÉS NAVIGÁCIÓ -->
     <header class="main-header">
       <div class="container">
         <div class="header-content">
+          <!-- Logó és visszatérés a vezérlőpultra -->
           <div class="logo-section" @click="$router.push('/user-dashboard')">
             <div class="logo-icon">
               <img :src="logo2" alt="EseményTér logó" class="logo-image">
@@ -14,6 +15,7 @@
             </div>
           </div>
           
+          <!-- Felhasználói profil és lenyíló menü -->
           <div class="user-profile">
             <div class="user-avatar" @click="toggleUserMenu">
               <div class="avatar-circle">
@@ -36,13 +38,22 @@
                   </div>
                 </div>
                 <div class="menu-items">
-                  <router-link to="/profile" class="menu-item">
-                    <i class='bx bx-user'></i>
-                    <span>Profilom</span>
+                  <!-- Admin jogosultságú linkek -->
+                  <router-link
+                    v-if="currentUser?.role === 'admin'"
+                    to="/institution-dashboard"
+                    class="menu-item"
+                  >
+                    <i class='bx bx-building-house'></i>
+                    <span>Intézményvezetői felület</span>
                   </router-link>
                   <router-link to="/events-list" class="menu-item">
                     <i class='bx bx-calendar-event'></i>
                     <span>Események listája</span>
+                  </router-link>
+                  <router-link to="/profile" class="menu-item">
+                    <i class='bx bx-user'></i>
+                    <span>Profilom</span>
                   </router-link>
                   <router-link to="/user-dashboard" class="menu-item">
                     <i class='bx bx-home'></i>
@@ -61,17 +72,17 @@
       </div>
     </header>
 
-    <!-- MAIN CONTENT -->
+    <!-- FŐ TARTALMI RÉSZ -->
     <main class="main-content">
       <div class="container">
-        <!-- Calendar Header -->
+        <!-- Naptár fejléce: Cím és műveleti gombok -->
         <div class="calendar-header">
           <div class="header-title">
             <h1>
               <i class='bx bx-calendar'></i>
               Eseménynaptár
             </h1>
-            <p>A heti ismétlődő és egyszeri események egy helyen</p>
+            <p>A heti ismétlődő és egyszeri események egy helyen láthatóak havi nézetben</p>
             <div class="today-badge">
               <i class='bx bx-calendar-alt'></i>
               <span>{{ todayLabel }}</span>
@@ -83,6 +94,7 @@
               <i class='bx bx-list-ul'></i>
               Lista nézet
             </router-link>
+            <!-- Létrehozás gomb csak jogosultaknak (admin, tanár, int.vez) -->
             <router-link 
               v-if="canCreateEvent" 
               to="/event-creator" 
@@ -94,7 +106,7 @@
           </div>
         </div>
 
-        <!-- Month Navigation -->
+        <!-- Hónap váltó navigáció -->
         <div class="month-navigation">
           <button @click="changeMonth(-1)" class="nav-btn prev">
             <i class='bx bx-chevron-left'></i>
@@ -119,9 +131,9 @@
           <p>Naptár betöltése...</p>
         </div>
 
-        <!-- Calendar Grid -->
+        <!-- Naptári rács megjelenítése -->
         <div v-else class="calendar-container">
-          <!-- Weekdays -->
+          <!-- Napok nevei fejrész (Hétfő-Vasárnap) -->
           <div class="weekdays-grid">
             <div 
               v-for="day in weekdays" 
@@ -132,7 +144,7 @@
             </div>
           </div>
 
-          <!-- Calendar Days -->
+          <!-- Aktuális havi rács (napok és események) -->
           <div class="calendar-grid">
             <div
               v-for="dayCell in monthCells"
@@ -146,12 +158,13 @@
               <div class="day-number">{{ dayCell.dayNumber }}</div>
               
               <div class="day-events">
+                <!-- Esemény kártyák (maximum 3 látszik egyszerre) -->
                 <router-link
                   v-for="event in dayCell.events.slice(0, 3)"
-                  :key="event.id"
+                  :key="`${event.id}-${event.calendar_role}`"
                   :to="`/esemenyek/${event.id}`"
                   class="event-chip"
-                  :class="[event.type, { cancelled: isCancelled(event) }]"
+                  :class="[event.type, event.calendar_role, { cancelled: isCancelled(event) }]"
                 >
                   <span class="event-time">{{ formatTimeRange(event) }}</span>
                   <span class="event-title">
@@ -159,6 +172,7 @@
                   </span>
                 </router-link>
                 
+                <!-- További események jelzése -->
                 <div v-if="dayCell.events.length > 3" class="more-events">
                   <i class='bx bx-dots-horizontal-rounded'></i>
                   <span>+{{ dayCell.events.length - 3 }} további</span>
@@ -191,7 +205,7 @@
 <script>
 import axios from 'axios'
 import logo2 from '../../assets/logo2.svg'
-import { API_BASE, getToken } from '../../services/api'
+import { API_BASE, getToken, getCurrentInstitutionId } from '../../services/api'
 
 export default {
   name: 'EventCalendar',
@@ -210,6 +224,9 @@ export default {
   },
 
   computed: {
+    /**
+     * Felhasználó monogramjának generálása
+     */
     userInitials() {
       const name = this.currentUser?.name || ''
       return name
@@ -220,6 +237,9 @@ export default {
         .substring(0, 2)
     },
 
+    /**
+     * Szerepkör magyar megnevezése
+     */
     roleDisplayName() {
       const roles = {
         'student': 'Diák',
@@ -231,11 +251,17 @@ export default {
       return roles[role] || role
     },
 
+    /**
+     * Esemény létrehozási jogosultság ellenőrzése
+     */
     canCreateEvent() {
       const role = String(this.currentUser?.role || '').toLowerCase()
       return role === 'teacher' || role === 'admin' || role === 'institution_manager'
     },
 
+    /**
+     * Aktuális hónap magyar címe (pl. 2024. május)
+     */
     monthTitle() {
       return this.currentMonth.toLocaleDateString('hu-HU', {
         year: 'numeric',
@@ -243,6 +269,9 @@ export default {
       })
     },
 
+    /**
+     * Mai naptár-fejléc szöveg
+     */
     todayLabel() {
       return new Date().toLocaleDateString('hu-HU', {
         year: 'numeric',
@@ -251,40 +280,78 @@ export default {
       })
     },
 
+    /**
+     * Események csoportosítása dátum szerint a naptárhoz.
+     * Kezeli a több napos eseményeket és a különböző dátum formátumokat.
+     */
     eventsByDate() {
       return this.events.reduce((acc, event) => {
-        const parts = this.extractDateTimeParts(event.start_date)
-        if (!parts) return acc
+        if (!event.start_date) return acc
 
-        const key = `${parts.year}-${parts.month}-${parts.day}`
-        if (!acc[key]) acc[key] = []
-        acc[key].push(event)
+        // Dátum kulcs kinyerése (YYYY-MM-DD)
+        const getISOKey = (dateStr) => {
+          if (!dateStr) return null
+          const match = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/)
+          if (!match) return null
+          const [, y, m, d] = match
+          return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+        }
+
+        const startKey = getISOKey(event.start_date)
+        const endKey = getISOKey(event.end_date)
+
+        // Kezdő dátumhoz rendelés
+        if (startKey) {
+          if (!acc[startKey]) acc[startKey] = []
+          acc[startKey].push({ ...event, calendar_role: 'start' })
+        }
+
+        // Több napos esemény esetén a záró naphoz is hozzárendeljük
+        if (endKey && endKey !== startKey) {
+          if (!acc[endKey]) acc[endKey] = []
+          acc[endKey].push({ ...event, calendar_role: 'end' })
+        }
+
         return acc
       }, {})
     },
 
+    /**
+     * Naptári rács (cellák) generálása
+     * Kiszámolja a kezdő hétfőt és záró vasárnapot a teljes nézethez.
+     */
     monthCells() {
-      const monthStart = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth(), 1)
-      const monthEnd = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() + 1, 0)
+      const year = this.currentMonth.getFullYear()
+      const month = this.currentMonth.getMonth()
+      const startOfMonth = new Date(year, month, 1)
+      const endOfMonth = new Date(year, month + 1, 0)
 
-      // Hétfő az első nap (magyar formátum)
-      let startWeekday = monthStart.getDay()
-      startWeekday = startWeekday === 0 ? 6 : startWeekday - 1
-      
-      const gridStart = new Date(monthStart)
-      gridStart.setDate(monthStart.getDate() - startWeekday)
+      // Hétfőre állítás (az előző hónap utolsó napjait is belevesszük, ha szükséges)
+      const startDay = startOfMonth.getDay()
+      const startDiff = startDay === 0 ? 6 : startDay - 1
 
-      let endWeekday = monthEnd.getDay()
-      endWeekday = endWeekday === 0 ? 6 : endWeekday - 1
-      
-      const gridEnd = new Date(monthEnd)
-      gridEnd.setDate(monthEnd.getDate() + (6 - endWeekday))
+      // Vasárnapra bővítjük a hónap végét a teljes hét érdekében
+      const endDay = endOfMonth.getDay()
+      const endDiff = endDay === 0 ? 0 : 7 - endDay
 
+      const calendarStart = new Date(year, month, 1 - startDiff)
+      const calendarEnd = new Date(endOfMonth.getFullYear(), endOfMonth.getMonth(), endOfMonth.getDate() + endDiff)
       const cells = []
-      const cursor = new Date(gridStart)
+      
+      const todayDate = new Date()
+      const todayKey = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`
 
-      while (cursor <= gridEnd) {
-        const key = this.toDateKey(cursor)
+      let i = 0
+      while (true) {
+        const d = new Date(calendarStart.getFullYear(), calendarStart.getMonth(), calendarStart.getDate() + i)
+        if (d > calendarEnd) break
+        
+        const y = d.getFullYear()
+        const m = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        const key = `${y}-${m}-${day}`
+        
+        // Események rendezése időpont szerint a cellán belül
         const dayEvents = (this.eventsByDate[key] || []).slice().sort((a, b) => {
           const left = this.extractDateTimeParts(a.start_date)
           const right = this.extractDateTimeParts(b.start_date)
@@ -295,13 +362,13 @@ export default {
 
         cells.push({
           key,
-          dayNumber: cursor.getDate(),
-          isCurrentMonth: cursor.getMonth() === this.currentMonth.getMonth(),
-          isToday: key === this.toDateKey(new Date()),
+          dayNumber: d.getDate(),
+          isCurrentMonth: d.getMonth() === month,
+          isToday: key === todayKey,
           events: dayEvents
         })
 
-        cursor.setDate(cursor.getDate() + 1)
+        i += 1
       }
 
       return cells
@@ -319,6 +386,9 @@ export default {
   },
 
   methods: {
+    /**
+     * Dátum és idő részek kinyerése stringből (Regex alapú normalizálás)
+     */
     extractDateTimeParts(value) {
       if (typeof value !== 'string') return null
 
@@ -333,69 +403,48 @@ export default {
       return { year, month, day, hour, minute, second }
     },
 
-    parseEventDateTime(value) {
-      if (value instanceof Date) return value
-      if (typeof value !== 'string') return new Date(NaN)
-
-      const localMatch = this.extractDateTimeParts(value)
-      if (localMatch) {
-        const { year: y, month: m, day: d, hour: hh, minute: mm, second: ss = '00' } = localMatch
-        return new Date(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm), Number(ss))
-      }
-
-      return new Date(value)
-    },
-
-    toDateKey(dateValue) {
-      const date = this.parseEventDateTime(dateValue)
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const day = String(date.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
-    },
-
+    /**
+     * Idő formázása (HH:mm)
+     */
     formatTime(dateValue) {
-      const parts = this.extractDateTimeParts(dateValue)
-      if (parts) {
-        return `${parts.hour}:${parts.minute}`
-      }
-
-      const date = new Date(dateValue)
-      if (Number.isNaN(date.getTime())) return '--:--'
-
+      const date = dateValue instanceof Date ? dateValue : new Date(dateValue.replace(' ', 'T'))
+      if (isNaN(date.getTime())) return '--:--'
       return date.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
     },
 
+    /**
+     * Esemény időtartamának formázása megjelenítéshez
+     */
     formatTimeRange(event) {
       const start = this.formatTime(event?.start_date)
       const end = this.formatTime(event?.end_date)
 
-      if (!end || end === '--:--') {
-        return start
+      // Ha egy több napos esemény záró napján vagyunk (befejezési nap)
+      if (event.calendar_role === 'end') {
+        return `Befejezés: ${end}`
       }
 
-      return `${start} - ${end}`
+      // Kezdő napon vagy egynapos eseménynél kiírjuk a kezdést (a kép alapján "Kezdés: HH:mm")
+      return `Kezdés: ${start}`
     },
 
+    /**
+     * Törölt esemény állapotának ellenőrzése
+     */
     isCancelled(event) {
       return Boolean(event?.cancelled_at)
     },
 
+    /**
+     * Hónap váltása (+1 vagy -1)
+     */
     changeMonth(step) {
       this.currentMonth = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() + step, 1)
     },
 
-    getCurrentInstitutionId() {
-      const savedInstitutionId =
-        localStorage.getItem('CurrentInstitution') ||
-        sessionStorage.getItem('CurrentInstitution') ||
-        this.currentUser?.institution_id ||
-        this.currentUser?.establishment_id
-
-      const institutionId = Number(savedInstitutionId)
-      return Number.isFinite(institutionId) && institutionId > 0 ? institutionId : null
-    },
-
+    /**
+     * Felhasználói adatok betöltése local/session storage-ból
+     */
     async loadCurrentUser() {
       const savedUser = localStorage.getItem('esemenyter_user') || sessionStorage.getItem('esemenyter_user')
       if (!savedUser) return
@@ -407,12 +456,15 @@ export default {
       }
     },
 
+    /**
+     * Események lehívása az API-tól az aktuális intézményhez
+     */
     async loadEvents() {
       this.isLoading = true
 
       try {
         const token = getToken()
-        const institutionId = this.getCurrentInstitutionId()
+        const institutionId = getCurrentInstitutionId(this.currentUser)
 
         if (!institutionId) {
           this.events = []
@@ -441,6 +493,7 @@ export default {
             ? response.data.events
             : []
 
+        // Adatok normalizálása és tárolása
         this.events = incomingEvents.map(event => ({
           ...event,
           id: Number(event.id),
@@ -448,24 +501,16 @@ export default {
           type: event.type || 'local'
         }))
       } catch (error) {
+        console.error('Naptár események betöltési hiba:', error)
         this.events = []
       } finally {
         this.isLoading = false
       }
     },
 
-    toggleUserMenu() {
-      this.showUserMenu = !this.showUserMenu
-    },
-
-    scrollToTop() {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    },
-
-    handleScroll() {
-      this.showScrollTop = window.scrollY > 300
-    },
-
+    /**
+     * Kijelentkezés folyamata (Token törlés és API hívás)
+     */
     async logout() {
       try {
         const token = getToken()
@@ -473,7 +518,7 @@ export default {
           headers: { Authorization: `Bearer ${token}` }
         })
       } catch (error) {
-        console.error('Logout error:', error)
+        console.error('Logout hiba:', error)
       } finally {
         localStorage.clear()
         sessionStorage.clear()
@@ -486,7 +531,9 @@ export default {
 </script>
 
 <style scoped>
-/* ===== ALAP STÍLUSOK ===== */
+/* ==========================================================================
+   ALAP STÍLUSOK ÉS GLOBÁLIS BEÁLLÍTÁSOK
+   ========================================================================== */
 * {
   margin: 0;
   padding: 0;
@@ -506,7 +553,9 @@ export default {
   padding: 0 24px;
 }
 
-/* ===== HEADER ===== */
+/* ==========================================================================
+   FEJLÉC ÉS NAVIGÁCIÓS SZEKCIÓ
+   ========================================================================== */
 .main-header {
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(10px);
@@ -571,7 +620,9 @@ export default {
   color: #64748b;
 }
 
-/* ===== USER PROFIL ===== */
+/* ==========================================================================
+   FELHASZNÁLÓI PROFIL ÉS LENYÍLÓ MENÜ
+   ========================================================================== */
 .user-profile {
   position: relative;
 }
@@ -737,7 +788,9 @@ export default {
   padding: 32px 0 48px;
 }
 
-/* ===== CALENDAR HEADER ===== */
+/* ==========================================================================
+   NAPTÁR FEJLÉC ÉS VEZÉRLÉS (VEZÉRLŐPULT)
+   ========================================================================== */
 .calendar-header {
   display: flex;
   justify-content: space-between;
@@ -887,7 +940,9 @@ export default {
   font-size: 16px;
 }
 
-/* ===== CALENDAR ===== */
+/* ==========================================================================
+   NAPTÁRI RÁCS ÉS NAPOK MEGJELENÍTÉSE
+   ========================================================================== */
 .calendar-container {
   background: white;
   border-radius: 24px;
@@ -898,7 +953,7 @@ export default {
 
 .weekdays-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   background: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -918,7 +973,12 @@ export default {
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.weekday-cell,
+.calendar-day {
+  min-width: 0;
 }
 
 .calendar-day {
@@ -928,6 +988,8 @@ export default {
   border-bottom: 1px solid #e2e8f0;
   transition: all 0.2s ease;
   background: white;
+  display: flex;
+  flex-direction: column;
 }
 
 .calendar-day:hover {
@@ -949,6 +1011,7 @@ export default {
   line-height: 32px;
   text-align: center;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .calendar-day.today .day-number {
@@ -968,6 +1031,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex-grow: 1;
 }
 
 .event-chip {
@@ -981,7 +1045,20 @@ export default {
   text-decoration: none;
   transition: all 0.2s ease;
   cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.event-title {
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+  color: #1e293b;
+}
+
+.event-chip.global .event-title {
+  color: #92400e;
 }
 
 .event-chip:hover {
@@ -995,6 +1072,23 @@ export default {
 
 .event-chip.global:hover {
   background: #fde68a;
+}
+
+.event-chip.end {
+  background: #fee2e2;
+  border-left: 3px solid #ef4444;
+}
+
+.event-chip.end:hover {
+  background: #fecaca;
+}
+
+.event-chip.end .event-time {
+  color: #b91c1c;
+}
+
+.event-chip.end .event-title {
+  color: #7f1d1d;
 }
 
 .event-time {
@@ -1051,7 +1145,9 @@ export default {
   color: #4f46e5;
 }
 
-/* ===== EMPTY STATE ===== */
+/* ==========================================================================
+   INTERAKTÍV ELEMEK (ÜRES ÁLLAPOT, FAB, RESPONSIVE)
+   ========================================================================== */
 .empty-state {
   text-align: center;
   padding: 80px 20px;

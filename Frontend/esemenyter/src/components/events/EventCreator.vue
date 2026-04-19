@@ -8,6 +8,11 @@
       <div class="creator-header">
         <h1><i class='bx bx-calendar-plus'></i> Új esemény létrehozása</h1>
         <p class="subtitle">{{ roleMessage }}</p>
+        <div class="header-badges">
+          <span class="header-badge"><i class='bx bx-shield-quarter'></i> Jogosultságvezérelt</span>
+          <span class="header-badge"><i class='bx bx-layer'></i> 5 lépéses felület</span>
+          <span class="header-badge"><i class='bx bx-wand'></i> Modern eseménylétrehozás</span>
+        </div>
       </div>
 
       <div v-if="!hasPermission" class="no-permission">
@@ -23,6 +28,7 @@
 
       <!-- JOGOSULT FELHASZNÁLÓ FORMJA -->
       <div v-else class="creator-content">
+        <!-- Lépésjelző navigáció (Stepper) -->
         <div class="stepper-nav">
           <div class="steps">
             <div v-for="step in steps" :key="step.number" 
@@ -34,11 +40,11 @@
           </div>
         </div>
 
-        <!-- 1. ESEMÉNY SZINTJÉNEK KIVÁLASZTÁSA -->
+        <!-- 1. ESEMÉNY SZINTJÉNEK KIVÁLASZTÁSA (Globális vagy Iskolai) -->
         <div v-if="currentStep === 1" class="form-section">
           <h3><i class='bx bx-layer'></i> 1. Esemény szintjének kiválasztása</h3>
           <div class="type-selection">
-            <!-- Globális opció - csak adminoknak -->
+            <!-- Globális opció - Csak adminisztrátori jogosultsággal jelenik meg -->
               <label v-if="userRole === 'admin'" 
                    class="type-option" 
                   :class="{ 'selected': selectedEventScope === 'global' }">
@@ -46,23 +52,24 @@
               <div class="option-content">
                 <i class='bx bx-globe'></i>
                 <h4>Globális szintű esemény</h4>
-                <p>Több intézménybe is kiküldhető esemény</p>
+                <p>Több intézménybe is kiküldhető vármegyei alapú esemény</p>
                 <span class="permission-badge">Csak adminoknak</span>
               </div>
             </label>
 
-            <!-- Iskolai opció - minden jogosultnak -->
+            <!-- Iskolai opció - Tanároknak és adminoknak is elérhető -->
             <label class="type-option" 
               :class="{ 'selected': selectedEventScope === 'school' }">
                 <input type="radio" v-model="selectedEventScope" value="school" hidden>
               <div class="option-content">
                 <i class='bx bx-building'></i>
                 <h4>Iskolai szintű esemény</h4>
-                <p>Saját intézményeden belüli esemény</p>
+                <p>Saját intézményeden belüli esemény, ismétlődés lehetőséggel</p>
               </div>
             </label>
           </div>
 
+          <!-- Információs blokk az ismétlődő eseményekről -->
           <div class="recurrence-guide">
             <i class='bx bx-info-circle'></i>
             <span>
@@ -73,11 +80,12 @@
           </div>
         </div>
 
-        <!-- 2. GLOBÁLIS ESEMÉNY - MEGYÉK KIVÁLASZTÁSA -->
+        <!-- 2. GLOBÁLIS ESEMÉNY - VÁRMEGYÉK KIVÁLASZTÁSA -->
         <div v-if="currentStep === 2 && selectedEventScope === 'global'" class="form-section global-county-section">
           <h3><i class='bx bx-map'></i> 2/A. Vármegyék kiválasztása</h3>
-          <p class="selection-description">Válaszd ki, mely vármegyék iskolái kapják meg az eseményt</p>
+          <p class="selection-description">Válaszd ki, mely vármegyék iskolái kapják meg az eseményt. A saját vármegyéd automatikusan kijelölésre kerül.</p>
           
+          <!-- Vármegye választó lista görgethető felülettel -->
           <div class="county-list">
             <div v-for="county in counties" 
                  :key="county.id" 
@@ -96,11 +104,11 @@
                 <span class="county-name">
                   {{ county.name }}
                   <span v-if="county.id === userCountyId" class="own-county-badge">
-                    (saját vármegye - kötelező)
+                    (kötelező saját vármegye)
                   </span>
                 </span>
               </label>
-              <span class="school-count">{{ county.schoolCount }} iskola</span>
+              <span class="school-count">{{ county.schoolCount }} rögzített intézmény</span>
             </div>
           </div>
 
@@ -123,15 +131,16 @@
           <span>Következő: célcsoport beállítása a saját intézményeden belül</span>
         </div>
 
-        <!-- 2. CÉLCSOPORT KIVÁLASZTÁSA -->
+        <!-- 3. CÉLCSOPORT MEGHATÁROZÁSA (Saját intézményen belül) -->
         <div v-if="currentStep === 3" class="form-section" :class="{ 'global-target-section': selectedEventScope === 'global' }">
           <h3><i class='bx bx-target-lock'></i> 3. Célcsoport kiválasztása</h3>
 
+          <!-- Globális esemény esetén külön tájékoztató -->
           <div v-if="selectedEventScope === 'global'" class="scope-notice">
             <i class='bx bx-info-circle'></i>
             <span>
-              Ez a célcsoport kiválasztás csak a saját iskoládra vonatkozik. A globális esemény miatt a saját intézményed
-              automatikusan érintett, itt azt állítod be, hogy a saját iskoládon belül kik lássák az eseményt.
+              Ez a beállítás határozza meg, hogy a saját iskolád diákjai közül kik lássák az eseményt.
+              A globális esemény minden választott vármegyei iskolába eljut, de ott intézményi szintű lesz a szűrés.
             </span>
           </div>
           
@@ -147,6 +156,8 @@
                   <h4>{{ target.label }}</h4>
                   <p>{{ target.description }}</p>
                 </div>
+
+                <!-- Osztály-szintű célzás -->
                 <div
                   v-if="selectedSchoolTargetGroup === target.value && target.value === 'osztaly_szintu'"
                   class="target-selector-panel"
@@ -199,6 +210,7 @@
                   </div>
                 </div>
 
+                <!-- Évfolyam-szintű célzás -->
                 <div
                   v-if="selectedSchoolTargetGroup === target.value && target.value === 'evfolyam_szintu'"
                   class="target-selector-panel"
@@ -259,26 +271,28 @@
           </div>
         </div>
 
-        <!-- 3. ESEMÉNY ADATAI (közös rész) -->
+        <!-- 4. ESEMÉNY RÉSZLETES ADATAI -->
         <div v-if="currentStep === 4" class="form-section">
           <h3><i class='bx bx-edit'></i> 4. Esemény adatai</h3>
           <div v-if="selectedEventScope === 'school'" class="recurrence-guide compact">
             <i class='bx bx-repeat'></i>
-            <span>Itt kapcsolhatod be az ismétlődést a "Heti ismétlődő esemény" opcióval.</span>
+            <span>Ebben a lépésben konfigurálhatja az egyszeri vagy a heti rendszerességű időpontokat.</span>
           </div>
           <div class="event-form">
             <div class="form-group">
-              <label>Cím *</label>
-              <input v-model="eventForm.title" placeholder="Esemény címe" required>
+              <label>Esemény neve *</label>
+              <input v-model="eventForm.title" placeholder="Pl: Iskolai sportnap" required>
             </div>
             <div class="form-group">
-              <label>Leírás *</label>
-              <textarea v-model="eventForm.description" placeholder="Részletes leírás" required></textarea>
+              <label>Rövid leírás *</label>
+              <textarea v-model="eventForm.description" placeholder="Az esemény lényege pár mondatban" required></textarea>
             </div>
             <div class="form-group">
-              <label>Tartalom (opcionális)</label>
-              <textarea v-model="eventForm.content" placeholder="Bővebb tartalom, instrukciók"></textarea>
+              <label>Részletes tartalom (opcionális)</label>
+              <textarea v-model="eventForm.content" placeholder="Minden egyéb fontos információ, instrukciók"></textarea>
             </div>
+
+            <!-- IDŐPONTOK: Csak akkor látszik, ha NEM ismétlődő az esemény -->
             <div class="form-row" v-if="!(selectedEventScope === 'school' && eventForm.isRecurring)">
               <div class="form-group">
                 <label>Kezdés dátuma *</label>
@@ -293,6 +307,7 @@
               </div>
               <div class="form-group">
                 <label>Kezdés időpontja *</label>
+                <!-- Firefox alatt sima text inputot használunk a megbízhatóság érdekében -->
                 <input
                   :type="isFirefoxBrowser ? 'text' : 'time'"
                   v-model="eventForm.startTime"
@@ -335,14 +350,18 @@
               </div>
             </div>
 
+            <!-- ISMÉTLŐDÉS KAPCSOLÓ: Globális eseménynél nem elérhető -->
             <div v-if="selectedEventScope === 'school'" class="form-group recurrence-toggle">
               <label class="checkbox-label">
                 <input type="checkbox" v-model="eventForm.isRecurring">
-                <span>Heti ismétlődő esemény (pl. szakkör)</span>
+                <span class="checkbox-copy">
+                  <span class="checkbox-title">Heti ismétlődő esemény</span>
+                  <span class="checkbox-description">Kapcsolja be rendszeres alkalmak (pl. minden keddi szakkör) esetén.</span>
+                </span>
               </label>
-              <p class="field-help">Bekapcsolás esetén a rendszer heti alkalmakat hoz létre, és a részvétel alkalmonként külön indul.</p>
             </div>
 
+            <!-- Heti ismétlődő esemény beállításai -->
             <div v-if="selectedEventScope === 'school' && eventForm.isRecurring" class="recurrence-flow">
               <div class="recurrence-step">
                 <label>1. Melyik nap legyen az esemény? *</label>
@@ -402,7 +421,7 @@
           </div>
         </div>
 
-        <!-- 4. ÁTTEKINTÉS -->
+        <!-- 5. ÁTTEKINTÉS ÉS MENTÉS -->
         <div v-if="currentStep === 5" class="form-section">
           <h3><i class='bx bx-check-circle'></i> 5. Áttekintés</h3>
           <div class="summary">
@@ -445,6 +464,8 @@
             <div class="summary-item">
               <strong>Cím:</strong> {{ eventForm.title || '(nincs megadva)' }}
             </div>
+
+            <!-- Ismétlődő esemény összegzése -->
             <template v-if="selectedEventScope === 'school' && eventForm.isRecurring">
               <div class="summary-item">
                 <strong>Nap:</strong> {{ getWeekdayLabel(eventForm.recurrenceWeekday) }}
@@ -465,6 +486,8 @@
                 <strong>Ismétlődés:</strong> Hetente, {{ formatDateTime(eventForm.recurrenceUntil + 'T00:00') }} dátumig
               </div>
             </template>
+
+            <!-- Egyszeri esemény összegzése -->
             <template v-else>
               <div class="summary-item">
                 <strong>Kezdés:</strong> {{ formatDateTime(eventForm.startDateTime) }}
@@ -476,6 +499,7 @@
           </div>
         </div>
 
+        <!-- Navigációs gombok -->
         <div class="form-actions">
           <button @click="previousStep" :disabled="currentStep === 1" class="btn btn-secondary">
             <i class='bx bx-chevron-left'></i> Előző
@@ -505,9 +529,7 @@ export default {
   name: 'EsemenyKeszito',
 
   data() {
-    const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-    const nowMin = now.toISOString().slice(0, 16)
-    const [defaultDate, defaultTime] = nowMin.split('T')
+    const today = new Date().toISOString().slice(0, 10)
 
     return {
       userRole: 'student',
@@ -528,8 +550,8 @@ export default {
       currentStep: 1,
       isSubmitting: false,
       isFirefoxBrowser: false,
-      todayMin: new Date().toISOString().slice(0, 10),
-      nowMin,
+      todayMin: today,
+      nowMin: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16),
       selectedEventScope: 'school',
       selectedCountyIds: [],
       globalCollabCount: 0,
@@ -543,10 +565,10 @@ export default {
         content: '',
         startDateTime: '',
         endDateTime: '',
-        startDate: defaultDate,
-        startTime: defaultTime,
-        endDate: defaultDate,
-        endTime: defaultTime,
+        startDate: today,
+        startTime: '',
+        endDate: '',
+        endTime: '',
         isRecurring: false,
         recurrenceWeekday: '1',
         recurrenceStartTime: '',
@@ -726,9 +748,11 @@ export default {
 
   watch: {
     selectedEventScope(newValue) {
+      // Saját vármegye azonosítása az inicializált adatokból
       const ownCountyId = Number(this.userCountyId)
       const hasOwnCounty = Number.isFinite(ownCountyId) && ownCountyId > 0
 
+      // Globális hatókör esetén bizonyos adatok alaphelyzetbe állítása
       if (newValue === 'global') {
         this.selectedSchoolTargetGroup = 'teljes_iskola'
         this.selectedClassIds = []
@@ -739,9 +763,10 @@ export default {
         this.eventForm.recurrenceStartDate = ''
         this.eventForm.recurrenceUntil = ''
 
+        // Globálisnál kötelező a saját vármegyének is benne lennie
         if (hasOwnCounty && !this.selectedCountyIds.includes(ownCountyId)) {
           this.selectedCountyIds = [ownCountyId]
-          // selectedCountyIds watcher will call refreshGlobalCollabCount()
+          // A selectedCountyIds watcher majd meghívja az ellenőrzést
         } else {
           this.refreshGlobalCollabCount()
         }
@@ -755,6 +780,7 @@ export default {
         return
       }
 
+      // Iskolai hatókör esetén osztály szintű kiválasztás az alapértelmezett
       this.selectedSchoolTargetGroup = 'osztaly_szintu'
       this.globalCollabCount = 0
       this.globalCollabIds = []
@@ -767,10 +793,12 @@ export default {
       }
     },
 
+    // Vármegye választó figyelése
     selectedCountyIds(newValue) {
       const ownCountyId = Number(this.userCountyId)
       const hasOwnCounty = Number.isFinite(ownCountyId) && ownCountyId > 0
 
+      // Globális mód esetén mindig legyen benne a saját vármegyénk
       if (this.selectedEventScope === 'global' && hasOwnCounty && !newValue.includes(ownCountyId)) {
         this.$nextTick(() => {
           this.selectedCountyIds = [ownCountyId, ...newValue]
@@ -816,8 +844,10 @@ export default {
       this.selectedGradeIds = this.selectedGradeIds.filter(gradeId => validIds.has(gradeId))
     },
 
+    // Ismétlődés állapotának kezelése
     'eventForm.isRecurring'(newValue) {
       if (newValue) {
+        // Ha ismétlődő, nincs egyedi befejező dátum
         this.eventForm.endDateTime = ''
         this.eventForm.endDate = ''
         this.eventForm.endTime = ''
@@ -825,12 +855,14 @@ export default {
           this.eventForm.recurrenceStartDate = this.todayMin.slice(0, 10)
         }
       } else {
+        // Ürítés kikapcsoláskor
         this.eventForm.recurrenceStartTime = ''
         this.eventForm.recurrenceStartDate = ''
         this.eventForm.recurrenceUntil = ''
       }
     },
 
+    // Lépések közti váltásnál adatok betöltése
     currentStep(newValue) {
       if (newValue === 3 && (this.selectedEventScope === 'school' || this.selectedEventScope === 'global')) {
         if (!this.institutionClasses.length) {
@@ -844,11 +876,13 @@ export default {
   },
 
   created() {
+    // Firefox specifikus viselkedés detektálása (idő bevitel miatt)
     this.isFirefoxBrowser = typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent || '')
     this.initialize()
   },
 
   methods: {
+    // Kollaboráló intézmények számának frissítése (Globális esetén)
     async refreshGlobalCollabCount() {
       if (this.selectedEventScope !== 'global') {
         this.globalCollabCount = 0
@@ -879,12 +913,17 @@ export default {
       }
     },
 
+    // Numerikus lista normalizálása
     normalizeNumericList(values) {
       return Array.from(
         new Set((values || []).map(value => Number(value)).filter(Number.isFinite))
       )
     },
 
+    /**
+     * Idő érték normalizálása (HH:mm formátumra)
+     * Firefox és egyéb böngészők közötti inkonzisztencia leküzdésére.
+     */
     normalizeTimeValue(timeValue) {
       if (!timeValue) {
         return ''
@@ -898,6 +937,7 @@ export default {
       let hours
       let minutes
 
+      // Kompakt formátum kezelése (pl. 0800 -> 08:00)
       const compactMatch = raw.match(/^(\d{1,2})(\d{2})$/)
       if (compactMatch) {
         hours = Number(compactMatch[1])
@@ -1299,7 +1339,9 @@ export default {
       const className = String(classItem?.name || '').trim()
 
       if (Number.isFinite(grade) && className) {
-        return `${grade}.${className}`
+        // Ha az osztály nevében már benne van az évfolyam, nem írjuk ki mégegyszer
+        const startsWithGrade = className.startsWith(`${grade}.`) || className.startsWith(`${grade}`)
+        return startsWithGrade ? className : `${grade}.${className}`
       }
 
       return className || `Osztály #${classItem?.id ?? '?'}`
@@ -1389,6 +1431,7 @@ export default {
       return this.normalizeNumericList(this.institutionUserIds)
     },
 
+    // Vármegyék letöltése és formázása
     async loadCounties() {
       try {
         const response = await axios.get(`${API_BASE}/regions/all`, {
@@ -1403,13 +1446,14 @@ export default {
           return
         }
 
+        // Adatok egységesítése (név, iskola szám)
         this.countiesList = apiCounties.map(county => ({
           id: Number(county.id),
           name: county.title || county.name || county.nev || `Vármegye #${county.id}`,
           schoolCount: Number(county.iskolakSzama || county.schools_count || 0)
         }))
       } catch (error) {
-        console.error('Megyék betöltési hiba:', error)
+        console.error('Vármegyék betöltési hiba:', error)
       }
     },
 
@@ -1624,6 +1668,11 @@ export default {
       this.currentStep--
     },
 
+    /**
+     * Esemény létrehozása (API hívás)
+     * Összeállítja a komplex payload-ot a hatókör (iskolai/globális) 
+     * és az ismétlődés adatai alapján.
+     */
     async createEvent() {
       if (!this.isFormValid) {
         toast.warning('Kérjük, töltse ki az összes kötelező mezőt!')
@@ -1639,7 +1688,6 @@ export default {
 
       try {
         const token = getToken()
-
         if (!token) {
           toast.error('Lejárt munkamenet. Kérjük, jelentkezzen be újra!')
           this.$router.push('/')
@@ -1652,13 +1700,9 @@ export default {
           return
         }
 
+        // Felhasználók betöltése, ha még nincsenek meg
         if (!this.institutionUserIds.length) {
           await this.loadInstitutionUsers()
-        }
-
-        if (!this.institutionUserIds.length) {
-          toast.error('Nem sikerült betölteni az intézmény felhasználóit.')
-          return
         }
 
         const resolvedStartDateTime =
@@ -1671,6 +1715,7 @@ export default {
             ? this.buildRecurringEndDateTime()
             : this.eventForm.endDateTime
 
+        // Alapadatok összeállítása
         const payload = {
           title: this.eventForm.title,
           description: this.eventForm.description,
@@ -1681,73 +1726,35 @@ export default {
           establishment_id: establishmentId
         }
 
+        // Globális specifikus adatok
         if (this.selectedEventScope === 'global') {
-          const collabEstablishmentIds = this.globalCollabIds
-
-          if (!collabEstablishmentIds.length) {
-            toast.warning('A kiválasztott vármegyékből nem találtunk más intézményt. Válassz további vármegyét.')
-            return
-          }
-
-          payload.collab_establishment_ids = collabEstablishmentIds
-
-          payload.target_group = this.selectedSchoolTargetGroup
-
-          if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
-            payload.selected_class_ids = this.normalizeNumericList(this.selectedClassIds)
-          }
-
-          if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
-            payload.selected_grade_ids = this.normalizeNumericList(this.selectedGradeIds)
-          }
-
-          if (this.eventForm.isRecurring) {
-            payload.is_recurring = true
-            payload.recurrence_frequency = 'weekly'
-            payload.recurrence_until = this.eventForm.recurrenceUntil
-          }
-
-          await this.loadInstitutionClasses()
-          await this.loadInstitutionGrades()
-
-          const localTargetUserIds = await this.resolveLocalTargetUserIds(token)
-
-          if (!localTargetUserIds.length) {
-            toast.warning('A kiválasztott célcsoporthoz nem találtunk címzett felhasználót.')
-            return
-          }
-
-          payload.users = localTargetUserIds
-        } else {
-          payload.target_group = this.selectedSchoolTargetGroup
-
-          if (this.eventForm.isRecurring) {
-            payload.is_recurring = true
-            payload.recurrence_frequency = 'weekly'
-            payload.recurrence_until = this.eventForm.recurrenceUntil
-          }
-
-          if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
-            payload.selected_class_ids = this.normalizeNumericList(this.selectedClassIds)
-          }
-
-          if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
-            payload.selected_grade_ids = this.normalizeNumericList(this.selectedGradeIds)
-          }
-
-          await this.loadInstitutionClasses()
-          await this.loadInstitutionGrades()
-
-          const localTargetUserIds = await this.resolveLocalTargetUserIds(token)
-
-          if (!localTargetUserIds.length) {
-            toast.warning('A kiválasztott célcsoporthoz nem találtunk címzett felhasználót.')
-            return
-          }
-
-          payload.users = localTargetUserIds
+          payload.collab_establishment_ids = this.globalCollabIds
         }
 
+        // Célcsoport adatok (mindkét típusnál)
+        payload.target_group = this.selectedSchoolTargetGroup
+
+        if (this.eventForm.isRecurring) {
+          payload.is_recurring = true
+          payload.recurrence_frequency = 'weekly'
+          payload.recurrence_until = this.eventForm.recurrenceUntil
+        }
+
+        if (this.selectedSchoolTargetGroup === 'osztaly_szintu') {
+          payload.selected_class_ids = this.normalizeNumericList(this.selectedClassIds)
+        } else if (this.selectedSchoolTargetGroup === 'evfolyam_szintu') {
+          payload.selected_grade_ids = this.normalizeNumericList(this.selectedGradeIds)
+        }
+
+        // Címzettek meghatározása a választott célcsoport alapján
+        const localTargetUserIds = await this.resolveLocalTargetUserIds(token)
+        if (!localTargetUserIds.length) {
+          toast.warning('A kiválasztott célcsoporthoz nem találtunk címzett felhasználót.')
+          return
+        }
+        payload.users = localTargetUserIds
+
+        // API mentés
         await axios.post(`${API_BASE}/establishment/events`, payload, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1779,66 +1786,68 @@ export default {
 }
 </script>
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
+/* ==========================================================================
+   ALAPVETŐ OLDALSTRUKTÚRA ÉS LAYOUT
+   ========================================================================== */
 .event-creator-page {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  font-family: 'Manrope', sans-serif;
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   box-sizing: border-box;
   width: 100%;
   overflow-x: hidden;
-  padding: 20px;
+  padding: 24px 20px;
 }
 
 .back-button {
   position: absolute;
-  top: 24px;
-  left: 24px;
+  top: 20px;
+  left: 20px;
   background: white;
+  color: #1e293b;
   border: 1px solid #e2e8f0;
-  padding: 10px 18px;
-  border-radius: 12px;
+  padding: 11px 18px;
+  border-radius: 999px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 500;
-  color: #1e293b;
   z-index: 100;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transition: all 0.2s ease;
-  max-width: 120px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  max-width: 130px;
   white-space: nowrap;
   font-size: 14px;
 }
 
 .back-button:hover {
   background: #f8fafc;
-  transform: translateX(-3px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: translateX(-3px) translateY(-1px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
 }
 
 .event-creator-wrapper {
-  max-width: 1000px;
+  max-width: 1140px;
   width: 100%;
   background: white;
   border-radius: 32px;
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  margin: 60px 20px 20px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+  margin: 62px auto 20px;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
 }
 
 .creator-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 32px 40px;
+  padding: 36px 44px;
   text-align: center;
   box-sizing: border-box;
   position: relative;
@@ -1874,16 +1883,42 @@ export default {
 }
 
 .subtitle {
-  opacity: 0.8;
+  opacity: 0.82;
   font-size: 15px;
   font-weight: 400;
   position: relative;
 }
 
+.header-badges {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.header-badge i {
+  font-size: 16px;
+}
+
 .creator-content {
-  padding: 32px 40px;
+  padding: 34px 40px 40px;
   box-sizing: border-box;
-  background: white;
+  background: #ffffff;
 }
 
 .no-permission {
@@ -1897,6 +1932,7 @@ export default {
   background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
   border-radius: 24px;
   border: 1px solid #fecaca;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
   box-sizing: border-box;
 }
 
@@ -1920,29 +1956,36 @@ export default {
 }
 
 .stepper-nav {
-  margin-bottom: 32px;
+  margin-bottom: 30px;
 }
 
+/* ==========================================================================
+   STEPPER (LÉPTETŐ) ESZTÉTIKA
+   ========================================================================== */
 .steps {
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: relative;
   gap: 8px;
-  padding: 0 20px;
+  padding: 12px 14px;
+  border-radius: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
 }
 
 .steps::before {
   content: '';
   position: absolute;
-  top: 18px;
-  left: 60px;
-  right: 60px;
+  top: 32px;
+  left: 88px;
+  right: 88px;
   height: 2px;
   background: #e2e8f0;
   z-index: 1;
 }
 
+/* STEPPER LÉPÉSEK EGYEDI STÍLUSAI */
 .step {
   display: flex;
   flex-direction: column;
@@ -1951,7 +1994,6 @@ export default {
   position: relative;
   z-index: 2;
   flex: 1;
-  background: white;
   padding: 0 10px;
 }
 
@@ -1968,21 +2010,21 @@ export default {
   font-size: 16px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 2px solid #e2e8f0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04);
 }
 
 .step.active .step-number {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border-color: #667eea;
+  border-color: transparent;
   transform: scale(1.1);
-  box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.35);
+  box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.28);
 }
 
 .step.completed .step-number {
   background: #10b981;
   color: white;
-  border-color: #10b981;
+  border-color: transparent;
 }
 
 .step-label {
@@ -2002,17 +2044,23 @@ export default {
   font-weight: 600;
 }
 
+/* ==========================================================================
+   FORM SZEKCIÓK ÉS KOMPONENSEK
+   ========================================================================== */
 .form-section {
-  margin-bottom: 32px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 28px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
   box-sizing: border-box;
 }
 
 .form-section:last-child {
   border-bottom: none;
   margin-bottom: 0;
-  padding-bottom: 0;
+  padding-bottom: 24px;
 }
 
 .form-section h3 {
@@ -2034,6 +2082,9 @@ export default {
   border-radius: 12px;
 }
 
+/* ==========================================================================
+   VÁLASZTÓ OPCIÓK (TÍPUS ÉS CÉLCSOPORT)
+   ========================================================================== */
 .type-selection, .target-group-options {
   display: grid;
   grid-template-columns: 1fr;
@@ -2086,7 +2137,7 @@ export default {
 .type-option.selected, .target-group-option.selected {
   border-color: #667eea;
   background: linear-gradient(135deg, #eef2ff 0%, #ede9fe 100%);
-  box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.16);
 }
 
 .target-group-option {
@@ -2129,7 +2180,9 @@ export default {
   margin-bottom: 12px;
 }
 
-/* Új stílusok a globális megye választóhoz */
+/* ==========================================================================
+   VÁRMEGYE VÁLASZTÓ LISTA (GLOBÁLIS MÓD)
+   ========================================================================== */
 .county-list {
   max-height: 450px;
   overflow-y: auto;
@@ -2319,7 +2372,7 @@ export default {
 }
 
 .target-selector-panel {
-  border-top: 1px solid rgba(99, 102, 241, 0.2);
+  border-top: 1px solid rgba(99, 102, 241, 0.18);
   padding-top: 18px;
 }
 
@@ -2522,23 +2575,48 @@ export default {
 }
 
 .recurrence-toggle {
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
 }
 
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 0;
+  cursor: pointer;
 }
 
 .checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: #667eea;
+  margin-top: 2px;
+}
+
+.checkbox-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checkbox-title {
+  color: #1e293b;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.checkbox-description {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
 }
 
 .field-help {
@@ -2615,7 +2693,9 @@ export default {
   color: #475569;
 }
 
-/* gombok */
+/* ==========================================================================
+   FORM MŰVELETEK (GOMBOK ÉS INTERAKCIÓK)
+   ========================================================================== */
 .form-actions {
   display: flex;
   justify-content: space-between;
@@ -2624,12 +2704,16 @@ export default {
   padding-top: 24px;
   border-top: 1px solid #e2e8f0;
   box-sizing: border-box;
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.96) 24%, rgba(255, 255, 255, 0.98) 100%);
+  z-index: 5;
 }
 
 .btn {
   padding: 14px 28px;
   border: none;
-  border-radius: 16px;
+  border-radius: 999px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -2645,15 +2729,15 @@ export default {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
   color: white;
-  box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 10px 20px rgba(79, 70, 229, 0.18);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5b6ee8 0%, #6b43a0 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #6d28d9 100%);
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 14px 28px rgba(79, 70, 229, 0.24);
 }
 
 .btn-secondary {
@@ -2670,13 +2754,13 @@ export default {
 .btn-success {
   background: linear-gradient(135deg, #10b981, #059669);
   color: white;
-  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.18);
 }
 
 .btn-success:hover:not(:disabled) {
   background: #059669;
   transform: translateY(-2px);
-  box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 14px 28px rgba(16, 185, 129, 0.24);
 }
 
 .btn:disabled {
@@ -2687,6 +2771,9 @@ export default {
 }
 
 /* Reszponzív kiegészítések */
+/* ==========================================================================
+   RESPONSIVE DESIGN (REASZPONSZÍV MEGJELENÉS)
+   ========================================================================== */
 @media (max-width: 768px) {
   .event-creator-page {
     padding: 12px;
@@ -2699,7 +2786,7 @@ export default {
   }
   
   .creator-header {
-    padding: 24px;
+    padding: 24px 20px;
   }
   
   .creator-header h1 {
@@ -2713,9 +2800,18 @@ export default {
   .subtitle {
     font-size: 13px;
   }
+
+  .header-badges {
+    gap: 8px;
+  }
+
+  .header-badge {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
   
   .creator-content {
-    padding: 24px;
+    padding: 24px 18px 28px;
   }
 
   .steps {
@@ -2758,6 +2854,11 @@ export default {
   
   .form-section h3 {
     font-size: 18px;
+  }
+
+  .form-section {
+    padding: 20px;
+    border-radius: 20px;
   }
   
   .option-content i {
@@ -2807,9 +2908,11 @@ export default {
   .form-actions {
     flex-direction: row;
     gap: 12px;
+    padding-top: 18px;
   }
 }
 
+/* MOBIL ESZKÖZÖK FINOMHANGOLÁSA */
 @media (max-width: 480px) {
   .event-creator-page {
     padding: 8px;
@@ -2828,7 +2931,7 @@ export default {
   }
   
   .creator-header {
-    padding: 20px;
+    padding: 20px 16px;
   }
   
   .creator-header h1 {
@@ -2845,7 +2948,7 @@ export default {
   }
   
   .creator-content {
-    padding: 20px;
+    padding: 20px 14px 24px;
   }
 
   .steps {
@@ -2956,6 +3059,15 @@ export default {
     width: 100%;
     padding: 14px;
   }
+
+  .form-section {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .summary {
+    padding: 18px;
+  }
 }
 
 @media (min-width: 769px) {
@@ -2975,11 +3087,11 @@ export default {
 
 @media (min-width: 1024px) {
   .event-creator-wrapper {
-    max-width: 1000px;
+    max-width: 1180px;
   }
   
   .creator-content {
-    padding: 40px;
+    padding: 40px 44px 44px;
   }
 }
 
@@ -2997,6 +3109,22 @@ export default {
 
 .form-section {
   animation: fadeInUp 0.4s ease-out;
+}
+
+.form-section:nth-of-type(2) {
+  animation-delay: 0.03s;
+}
+
+.form-section:nth-of-type(3) {
+  animation-delay: 0.06s;
+}
+
+.form-section:nth-of-type(4) {
+  animation-delay: 0.09s;
+}
+
+.form-section:nth-of-type(5) {
+  animation-delay: 0.12s;
 }
 
 /* Modern scrollbar */

@@ -16,10 +16,14 @@
 
 <script>
 export default {
+  /**
+   * Elutasított csatlakozási kérelem visszajelző nézet.
+   */
   name: 'ApprovalRejected',
 };
 </script>
 
+<!-- ApprovalRejected komponens stílusai -->
 <style scoped>
 .rejection-container {
   display: flex;

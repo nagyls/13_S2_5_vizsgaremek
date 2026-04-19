@@ -10,6 +10,7 @@ import MainPage from '../components/home/MainPage.vue'
 import EventCreator from '@/components/events/EventCreator.vue'
 import CommentBox from '@/components/events/CommentBox.vue'
 import EventDetails from '@/components/events/EventDetails.vue'
+import EventManage from '@/components/events/EventManage.vue'
 import EventsList from '@/components/events/EventsList.vue'
 import EventCalendar from '@/components/events/EventCalendar.vue'
 import Dashboard from '@/components/dashboard/Dashboard.vue'
@@ -81,6 +82,13 @@ const routes = [
     component: EventDetails,
     meta: { title: 'Esemény részletei' },
     props: true  // Opcionális: átadja a paramétereket props-ként
+  },
+  {
+    path: '/esemenyek/:id/kezeles',
+    name: 'event-manage',
+    component: EventManage,
+    meta: { title: 'Esemény kezelése' },
+    props: true
   },
   {
     path: '/comment-box',

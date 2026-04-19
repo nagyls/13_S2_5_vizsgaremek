@@ -184,27 +184,32 @@ export default {
   data() {
     return {
       logo2,
-      showScrollTop: false
+      showScrollTop: false // Vezérli a "vissza a tetejére" gomb láthatóságát
     }
   },
   
   methods: {
+    // Navigáció a bejelentkezési oldalra
     goToLogin() {
       this.$router.push('/login')
     },
     
+    // Navigáció a regisztrációs oldalra
     goToRegister() {
       this.$router.push('/register')
     },
     
+    // Simán görget a funkciók (Miért válassz minket?) szekcióhoz
     scrollToFeatures() {
       this.$refs.featuresSection?.scrollIntoView({ behavior: 'smooth' })
     },
     
+    // Simán visszagörget az oldal tetejére
     scrollToTop() {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     
+    // Figyeli a görgetést és bizonyos távolság után megjeleníti a segédgombot
     handleScroll() {
       this.showScrollTop = window.scrollY > 300
     }
@@ -213,14 +218,15 @@ export default {
   mounted() {
     window.addEventListener('scroll', this.handleScroll)
 
+    // Ha a felhasználó már be van jelentkezve, automatikusan irányítsuk a dashboardra
     const token = getToken()
-
     if (token && this.$route.path !== '/dashboard') {
       this.$router.push('/dashboard')
     }
   },
   
   beforeUnmount() {
+    // Eseményfigyelő eltávolítása a memóriaszivárgás megelőzése érdekében
     window.removeEventListener('scroll', this.handleScroll)
   }
 }
@@ -241,10 +247,10 @@ export default {
   padding: 0 20px;
 }
 
-/* FEJLÉC */
+/* FEJLÉC ÉS LOGÓ SZEKCIÓ */
 .main-header {
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px); /* Üveghatású elmosódás */
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   padding: 16px 0;
   position: sticky;
@@ -270,6 +276,7 @@ export default {
   opacity: 0.8;
 }
 
+/* Logó ikon doboza árnyékkal */
 .logo-icon {
   width: 50px;
   height: 50px;
@@ -289,6 +296,7 @@ export default {
   display: block;
 }
 
+/* Színátmenetes weboldal cím */
 .logo-text h1 {
   margin: 0;
   font-size: 24px;
@@ -306,7 +314,7 @@ export default {
   font-weight: 500;
 }
 
-/* Navigációs gombok */
+/* Navigációs gombok stílusa */
 .nav-buttons {
   display: flex;
   gap: 12px;
@@ -349,7 +357,7 @@ export default {
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
-/* ÜDVÖZLŐ SZEKCIÓ */
+/* FŐ ÜDVÖZLŐ (HERO) SZEKCIÓ */
 .welcome-section {
   padding: 80px 0;
 }
@@ -361,6 +369,7 @@ export default {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
 }
 
+/* Kétoszlopos elrendezés: szöveg és lebegő kártyák */
 .hero-content {
   display: grid;
   grid-template-columns: 1fr 1fr;

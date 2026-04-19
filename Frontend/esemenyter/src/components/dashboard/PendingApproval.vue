@@ -122,6 +122,13 @@
 </template>
 
 <script>
+/**
+ * PENDING APPROVAL KOMPONENS
+ * Ez a komponens jelenik meg, amikor a felhasználó regisztrált egy intézménybe,
+ * de a jelentkezése még elbírálás alatt áll (pending státusz).
+ * Tartalmaz egy automata lekérdező mechanizmust (polling), ami 15 másodpercenként
+ * ellenőrzi a jóváhagyás állapotát a szerveren.
+ */
 import axios from 'axios';
 
 export default {
@@ -129,6 +136,7 @@ export default {
   
   data() {
     return {
+      // Felhasználói adatok struktúrája
       user: {
         id: null,
         name: '',
@@ -137,13 +145,16 @@ export default {
         school: '',
         schoolId: null
       },
-      showUserMenu: false,
-      showScrollTop: false,
-      statusPollingId: null
+      showUserMenu: false, // Felhasználói menü láthatósága
+      showScrollTop: false, // "Vissza a tetejére" gomb láthatósága
+      statusPollingId: null // Az időzítő azonosítója a státusz ellenőrzéshez
     }
   },
   
   computed: {
+    /**
+     * Felhasználói monogram előállítása a névből (pl. "Gipsz Jakab" -> "GJ")
+     */
     userInitials() {
       if (!this.user.name) return '??';
       return this.user.name
@@ -154,6 +165,9 @@ export default {
         .substring(0, 2);
     },
     
+    /**
+     * Szerepkörök magyar megnevezésének leképezése
+     */
     roleDisplayName() {
       const roles = {
         'student': 'Diák',
@@ -164,6 +178,10 @@ export default {
   },
   
   methods: {
+    /**
+     * Megkísérli feloldani az intézmény azonosítóját különböző forrásokból
+     * (adatmodell, localStorage vagy sessionStorage)
+     */
     resolveInstitutionId() {
       const fromUser = Number(this.user.schoolId || this.user.institution_id);
       if (Number.isFinite(fromUser) && fromUser > 0) {
@@ -182,6 +200,10 @@ export default {
       return null;
     },
 
+    /**
+     * Frissíti a mentett felhasználói állapotot minden tárolóban
+     * @param {Object} updates - A módosítani kívánt mezők objektuma
+     */
     updateStoredUserState(updates) {
       const storages = [localStorage, sessionStorage];
 
@@ -201,12 +223,18 @@ export default {
       });
     },
 
+    /**
+     * Segédmetódus a függőben lévő állapot jelzőjének frissítéséhez
+     */
     updateStoredPendingState(nextPendingApproval) {
       this.updateStoredUserState({
         pendingApproval: Boolean(nextPendingApproval)
       });
     },
 
+    /**
+     * Lekéri a felhasználó véglegesített szerepkörét az intézményben a jóváhagyás után
+     */
     async resolveApprovedRole(institutionId, token) {
       if (!institutionId || !token) {
         return '';
@@ -227,6 +255,11 @@ export default {
       }
     },
 
+    /**
+     * Ellenőrzi a kérelem aktuális státuszát API híváson keresztül.
+     * Ha a státusz 'accepted', átirányít a dashboardra.
+     * Ha 'rejected', átirányít az elutasító oldalra.
+     */
     async checkRequestStatus() {
       const token =
         localStorage.getItem('esemenyter_token') ||
@@ -245,6 +278,7 @@ export default {
 
         const status = response?.data?.status || '';
 
+        // Sikeres jóváhagyás kezelése
         if (status === 'accepted') {
           const approvedRole = await this.resolveApprovedRole(institutionId, token);
           const nextRole = approvedRole || this.user.role || this.user.requestedRole || '';
@@ -263,6 +297,7 @@ export default {
           return;
         }
 
+        // Elutasított kérelem kezelése
         if (status === 'rejected') {
           this.updateStoredUserState({
             pendingApproval: false,
@@ -272,6 +307,7 @@ export default {
           return;
         }
 
+        // Ha nincs kérelem (pl. törölve lett időközben)
         if (status === 'none') {
           this.updateStoredUserState({
             pendingApproval: false,
@@ -284,6 +320,9 @@ export default {
       }
     },
 
+    /**
+     * Betölti a bejelentkezett felhasználó adatait a perzisztens tárolóból
+     */
     loadUserData() {
       const savedUser =
         localStorage.getItem('esemenyter_user') ||
@@ -324,12 +363,18 @@ export default {
       this.showScrollTop = window.scrollY > 300;
     },
 
+    /**
+     * Kattintás eseménykezelő a felhasználói menü bezárásához, ha kívülre kattintanak
+     */
     handleDocumentClick(event) {
       if (!event.target.closest('.user-profile')) {
         this.showUserMenu = false;
       }
     },
     
+    /**
+     * Kijelentkezési folyamat: API hívás és helyi tárolók teljes ürítése
+     */
     logout() {
       axios.delete('http://127.0.0.1:8000/api/logout')
         .finally(() => {
@@ -371,7 +416,9 @@ export default {
 </script>
 
 <style scoped>
-/* ===== ALAP STÍLUSOK ===== */
+/* ============================================================
+   ALAP STÍLUSOK ÉS KONSTRUKCIÓ
+   ============================================================ */
 * {
   margin: 0;
   padding: 0;
@@ -391,7 +438,9 @@ export default {
   padding: 0 20px;
 }
 
-/* ===== HEADER ===== */
+/* ============================================================
+   FŐ FEJLÉC (HEADER)
+   ============================================================ */
 .main-header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -458,7 +507,9 @@ export default {
   font-weight: 500;
 }
 
-/* ===== USER PROFIL ===== */
+/* ============================================================
+   FELHASZNÁLÓI PROFIL ÉS AVATAR
+   ============================================================ */
 .user-profile {
   position: relative;
 }
@@ -507,7 +558,9 @@ export default {
   box-shadow: 0 0 0 2px white;
 }
 
-/* ===== USER MENÜ ===== */
+/* ============================================================
+   FELHASZNÁLÓI MENÜ (DROPDOWN)
+   ============================================================ */
 .user-menu {
   position: absolute;
   top: calc(100% + 10px);
@@ -604,7 +657,9 @@ export default {
   background: #fee2e2;
 }
 
-/* ===== ANIMÁCIÓK ===== */
+/* ============================================================
+   ANIMÁCIÓK
+   ============================================================ */
 .slide-fade-enter-active,
 .slide-fade-leave-active {
   transition: all 0.3s ease;
@@ -616,7 +671,9 @@ export default {
   transform: translateY(-10px);
 }
 
-/* ===== MAIN CONTENT ===== */
+/* ============================================================
+   FŐ TARTALMI EGYSÉG (MAIN)
+   ============================================================ */
 .main-content {
   padding: 80px 0;
   min-height: calc(100vh - 80px);
@@ -624,7 +681,9 @@ export default {
   align-items: center;
 }
 
-/* ===== PENDING CARD ===== */
+/* ============================================================
+   VÁRAKOZÓ KÁRTYA (PENDING CARD)
+   ============================================================ */
 .pending-card {
   background: white;
   border-radius: 32px;
@@ -704,7 +763,9 @@ export default {
   font-weight: 600;
 }
 
-/* ===== INFO BOX ===== */
+/* ============================================================
+   INFORMÁCIÓS DOBOZ (INFO BOX)
+   ============================================================ */
 .info-box {
   background: #f0f9ff;
   border-radius: 16px;
@@ -732,7 +793,9 @@ export default {
   line-height: 1.6;
 }
 
-/* ===== STATUS INDICATOR ===== */
+/* ============================================================
+   FOLYAMATJELZŐ (STATUS INDICATOR)
+   ============================================================ */
 .status-indicator {
   margin: 40px 0;
   position: relative;
@@ -810,7 +873,9 @@ export default {
   font-weight: 600;
 }
 
-/* ===== INFO MESSAGE ===== */
+/* ============================================================
+   ÜZENET SZEKCIÓ (INFO MESSAGE)
+   ============================================================ */
 .info-message {
   display: flex;
   align-items: center;
@@ -837,7 +902,9 @@ export default {
   line-height: 1.5;
 }
 
-/* ===== ACTION BUTTONS ===== */
+/* ============================================================
+   MŰVELETI GOMBOK (ACTION BUTTONS)
+   ============================================================ */
 .action-buttons {
   display: flex;
   gap: 16px;
@@ -873,7 +940,9 @@ export default {
   font-size: 20px;
 }
 
-/* ===== FLOATING ACTION BUTTON ===== */
+/* ============================================================
+   ÚSZÓ AKCIÓGOMB (FAB)
+   ============================================================ */
 .fab {
   position: fixed;
   bottom: 30px;
@@ -899,7 +968,9 @@ export default {
   box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
 }
 
-/* ===== RESPONZÍV ===== */
+/* ============================================================
+   RESPONSIVE DESIGN (MOBIL ÉS TABLET)
+   ============================================================ */
 @media (max-width: 768px) {
   .main-header {
     padding: 12px 0;

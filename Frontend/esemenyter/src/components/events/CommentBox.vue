@@ -1,11 +1,13 @@
 <template>
   <div class="komment-box">
-    <!-- Bejelentkezett felhasználó számára komment írás -->
+    <!-- HOZZÁSZÓLÁS ÍRÁSA SZEKCIÓ (Csak bejelentkezett felhasználóknak) -->
     <div v-if="aktualisFelhasznalo" class="komment-iras">
       <div class="komment-iras-tarolo">
+        <!-- Felhasználó monogramja -->
         <div class="felhasznalo-avatar">
           <span class="avatar-betuk">{{ felhasznaloInitial }}</span>
         </div>
+        <!-- Szövegbeviteli mező és vezérlők -->
         <div class="komment-input-tarolo">
           <textarea
             v-model="kommentSzoveg"
@@ -18,6 +20,7 @@
           ></textarea>
           
           <div class="komment-input-footer">
+            <!-- Karakterek számlálása és validáció visszajelzés -->
             <div class="karakter-info">
               <div class="karakter-szamlalo" :class="{ 'hataron-tul': kommentSzoveg.length > 500 }">
                 <i class='bx bx-text'></i>
@@ -29,6 +32,7 @@
               </div>
             </div>
             
+            <!-- Küldés gomb betöltési állapottal -->
             <button
               @click="kommentKuldes"
               :disabled="!kommentSzoveg.trim() || betoltesKozben || kommentSzoveg.length > 500"
@@ -45,7 +49,7 @@
       </div>
     </div>
 
-    <!-- Nem bejelentkezett felhasználó -->
+    <!-- BEJELENTKEZÉSI FELHÍVÁS (Ha nincs bejelentkezve) -->
     <div v-else class="bejelentkezes-felhivas">
       <div class="felhivas-tartalom">
         <div class="felhivas-ikon">
@@ -62,9 +66,10 @@
       </div>
     </div>
 
-    <!-- Kommentek lista -->
+    <!-- HOZZÁSZÓLÁSOK LISTÁJA -->
     <div class="komment-lista">
       <div v-if="osszesKomment.length > 0" class="kommentek">
+        <!-- Lista fejléce statisztikával -->
         <div class="lista-fejlec">
           <div class="fejlec-bal">
             <i class='bx bx-message-dots'></i>
@@ -72,10 +77,11 @@
           </div>
           <div class="komment-szamlalo">
             <span>{{ osszesKomment.length }}</span>
-            <span>{{ osszesKomment.length === 1 ? 'komment' : 'komment' }}</span>
+            <span>{{ osszesKomment.length === 1 ? 'hozzászólás' : 'hozzászólás' }}</span>
           </div>
         </div>
 
+        <!-- Egyéni hozzászólás kártyák -->
         <div v-for="komment in rendezettKommentek" :key="komment.id" class="komment-kartya">
           <div class="komment-kartya-tartalom">
             <div class="komment-fejlec">
@@ -85,13 +91,14 @@
                 </div>
                 <div class="szerzo-info">
                   <span class="szerzo-nev">{{ komment.username || 'Felhasználó' }}</span>
-                  <span class="szerzo-badge" v-if="komment.user_id === aktualisFelhasznalo?.id">Te</span>
+                  <span class="szerzo-badge" v-if="komment.user_id === aktualisFelhasznalo?.id">Saját</span>
                   <span class="komment-datum">
                     <i class='bx bx-time'></i>
                     {{ formatDatum(komment.created_at) }}
                   </span>
                 </div>
               </div>
+              <!-- Törlés gomb (Saját komment vagy moderátori jog esetén) -->
               <button
                 v-if="aktualisFelhasznalo && (aktualisFelhasznalo.id === komment.user_id || canModerateComments)"
                 @click="kommentTorles(komment.id)"
@@ -101,6 +108,7 @@
                 <i class='bx bx-trash'></i>
               </button>
             </div>
+            <!-- A hozzászólás szöveges tartalma -->
             <div class="komment-tartalom">
               <p>{{ komment.content }}</p>
             </div>
@@ -108,14 +116,14 @@
         </div>
       </div>
 
-      <!-- Nincs komment -->
+      <!-- ÜRES ÁLLAPOT (Ha még nincs komment) -->
       <div v-else class="nincs-komment">
         <div class="nincs-tartalom">
           <div class="nincs-ikon">
             <i class='bx bx-message-square-dots'></i>
           </div>
           <h4>Még nincsenek hozzászólások</h4>
-          <p>Legyen Ön az első, aki megosztja a gondolatait!</p>
+          <p>Legyen Ön az első, aki megosztja a gondolatait az eseményről!</p>
         </div>
       </div>
     </div>
@@ -128,18 +136,26 @@ import axios from 'axios'
 import { toast } from '../../services/toast'
 import { API_BASE, getToken, getAuthHeaders } from '../../services/api'
 
+/**
+ * KommentBox komponens
+ * Feladata: Egy adott eseményhez tartozó hozzászólások megjelenítése, írása és törlése.
+ * Tartalmazza a karakterkorlát kezelést, moderációs lehetőségeket és relatív időformázást.
+ */
 export default {
   name: 'KommentBox',
 
   props: {
+    // Az esemény egyedi azonosítója
     esemenyId: {
       type: Number,
       required: true
     },
+    // A jelenleg bejelentkezett felhasználó adatai
     aktualisFelhasznalo: {
       type: Object,
       default: null
     },
+    // Van-e joga a felhasználónak mások kommentjeit törölni (pl. szervező/admin)
     canModerateComments: {
       type: Boolean,
       default: false
@@ -148,23 +164,33 @@ export default {
 
   data() {
     return {
-      osszesKomment: [],
-      kommentSzoveg: '',
-      betoltesKozben: false
+      osszesKomment: [],       // Az eseményhez tartozó összes hozzászólás
+      kommentSzoveg: '',       // Az éppen írt komment tartalma
+      betoltesKozben: false    // API kérések folyamatban létét jelzi
     }
   },
 
   computed: {
+    /**
+     * Meghatározza, hogy a felhasználó formális szerepkörrel rendelkezik-e.
+     */
     isFormal() {
       const user = this.$store?.state?.user || {};
       return user.role === 'admin' || user.role === 'teacher';
     },
+
+    /**
+     * Visszaadja a bejelentkezett felhasználó nevének első betűjét az avatarhoz.
+     */
     felhasznaloInitial() {
       if (!this.aktualisFelhasznalo) return '?'
       const nev = this.aktualisFelhasznalo.name || this.aktualisFelhasznalo.username || 'Felhasználó'
       return nev.charAt(0).toUpperCase()
     },
 
+    /**
+     * Időrendben (legfrissebb elől) rendezi a kommenteket.
+     */
     rendezettKommentek() {
       return [...this.osszesKomment].sort((a, b) => 
         new Date(b.created_at) - new Date(a.created_at)
@@ -177,57 +203,76 @@ export default {
   },
 
   watch: {
+    /**
+     * Ha megváltozik az esemény azonosítója, újratöltjük a kommenteket.
+     */
     esemenyId() {
       this.kommentekBetoltese()
     }
   },
 
   methods: {
+    /**
+     * Visszaadja egy tetszőleges név első betűjét.
+     */
     getInitials(name) {
       if (!name) return '?'
       return name.charAt(0).toUpperCase()
     },
 
+    /**
+     * Lekéri és beállítja a komponens állapotába a kommenteket.
+     */
     async kommentekBetoltese() {
       try {
         this.betoltesKozben = true
         this.osszesKomment = await this.kommentekLekerese(this.esemenyId)
       } catch (hiba) {
         console.error('Hiba a kommentek betöltésekor:', hiba)
-        toast.error('Nem sikerült betölteni a kommenteket.')
+        toast.error('Nem sikerült betölteni a hozzászólásokat.')
       } finally {
         this.betoltesKozben = false
       }
     },
 
+    /**
+     * API kérés a kommentek listázására.
+     */
     async kommentekLekerese(esemenyId) {
       const token = getToken()
       const response = await axios.get(`${API_BASE}/events/${esemenyId}/comments`, {
         headers: getAuthHeaders(token)
       })
       const kommentek = response.data.data || []
+      // Felhasználónév normalizálása
       return kommentek.map(k => ({
         ...k,
-        username: k.user?.name || 'Ismeretlen'
+        username: k.user?.name || 'Ismeretlen felhasználó'
       }))
     },
 
+    /**
+     * Enter lenyomásakor küldi a kommentet (Shift+Enter esetén sortörés).
+     */
     enterGombLeutes(esemeny) {
       if (!esemeny.shiftKey) {
         this.kommentKuldes()
       }
     },
 
+    /**
+     * Új hozzászólás küldésének logikája és validációja.
+     */
     async kommentKuldes() {
       const tisztitottSzoveg = this.kommentSzoveg.trim()
 
       if (tisztitottSzoveg === '') {
-        toast.warning('A komment nem lehet üres!')
+        toast.warning('A hozzászólás nem lehet üres!')
         return
       }
 
       if (tisztitottSzoveg.length > 500) {
-        toast.warning('A komment maximum 500 karakter hosszú lehet!')
+        toast.warning('A hozzászólás maximum 500 karakter hosszú lehet!')
         return
       }
 
@@ -236,10 +281,7 @@ export default {
 
         const ujKomment = {
           event_id: this.esemenyId,
-          user_id: this.aktualisFelhasznalo.id,
-          username: this.aktualisFelhasznalo.name || this.aktualisFelhasznalo.username,
-          content: tisztitottSzoveg,
-          created_at: new Date().toISOString()
+          content: tisztitottSzoveg
         }
 
         const mentettKomment = await this.kommentMentese(ujKomment)
@@ -248,16 +290,19 @@ export default {
           this.osszesKomment.push(mentettKomment)
           this.kommentSzoveg = ''
           this.$emit('komment-sikeres', mentettKomment)
-          toast.success('Komment sikeresen elküldve!')
+          toast.success('Hozzászólás sikeresen elküldve!')
         }
       } catch (hiba) {
         console.error('Hiba a komment mentésekor:', hiba)
-        toast.error('Hiba történt a komment küldésekor. Próbáld újra!')
+        toast.error('Hiba történt a küldés során. Kérjük, próbálja újra!')
       } finally {
         this.betoltesKozben = false
       }
     },
 
+    /**
+     * API kérés a komment elmentésére.
+     */
     async kommentMentese(komment) {
       const token = getToken()
       const response = await axios.post(`${API_BASE}/events/comments`, {
@@ -266,21 +311,27 @@ export default {
       }, {
         headers: getAuthHeaders(token)
       })
+      
+      // A válasz kiegészítése a megjelenítéshez szükséges adatokkal
       return {
         ...response.data,
-        username: this.aktualisFelhasznalo?.name || this.aktualisFelhasznalo?.username || 'Felhasználó'
+        id: response.data.id || Date.now(), // Fallback ID ha a szerver nem küldené
+        user_id: this.aktualisFelhasznalo.id,
+        username: this.aktualisFelhasznalo?.name || this.aktualisFelhasznalo?.username || 'Felhasználó',
+        created_at: new Date().toISOString()
       }
     },
 
+    /**
+     * Meglévő hozzászólás törlése (megerősítő kérdéssel).
+     */
     async kommentTorles(kommentId) {
-      const confirmed = await toast.confirm('Biztosan törölni szeretnéd ezt a kommentet?', {
+      const confirmed = await toast.confirm('Biztosan törölni szeretné ezt a hozzászólást?', {
         cancelText: 'Mégse',
-        confirmText: 'Igen'
+        confirmText: 'Törlés'
       })
 
-      if (!confirmed) {
-        return
-      }
+      if (!confirmed) return
 
       try {
         const token = getToken()
@@ -288,28 +339,36 @@ export default {
           headers: getAuthHeaders(token)
         })
         this.osszesKomment = this.osszesKomment.filter(k => k.id !== kommentId)
-        toast.success('Komment törölve.')
+        toast.success('Hozzászólás törölve.')
       } catch (hiba) {
         console.error('Hiba a komment törlésekor:', hiba)
-        toast.error('Nem sikerült törölni a kommentet.')
+        toast.error('Nem sikerült törölni a hozzászólást.')
       }
     },
 
+    /**
+     * Dátum formázása emberileg olvasható, relatív formátumra.
+     * Példa: "Most", "5 perce", "2 órája", vagy fix dátum.
+     */
     formatDatum(datumString) {
       const datum = new Date(datumString)
       const most = new Date()
       const kulonbseg = most - datum
 
+      // Percek kezelése
       const percek = Math.floor(kulonbseg / 60000)
       if (percek < 1) return 'Most'
       if (percek < 60) return `${percek} perce`
 
+      // Órák kezelése
       const orak = Math.floor(percek / 60)
       if (orak < 24) return `${orak} órája`
 
+      // Napok kezelése
       const napok = Math.floor(orak / 24)
       if (napok < 7) return `${napok} napja`
 
+      // Régebbi dátumok esetén fix formátum
       return datum.toLocaleDateString('hu-HU', {
         year: 'numeric',
         month: 'short',
@@ -323,13 +382,17 @@ export default {
 </script>
 
 <style scoped>
-/* Alap stílusok */
+/* ============================================================
+   KOMMENT RENDSZER ALAP STÍLUSOK
+   ============================================================ */
 .komment-box {
   width: 100%;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Komment írás szekció */
+/* ============================================================
+   KOMMENT ÍRÁS SZEKCIÓ
+   ============================================================ */
 .komment-iras {
   margin-bottom: 2.5rem;
 }
@@ -484,7 +547,9 @@ export default {
   gap: 0.5rem;
 }
 
-/* Bejelentkezés felhívás */
+/* ============================================================
+   BEJELENTKEZÉS FELHÍVÁS (VENDÉGEKNEK)
+   ============================================================ */
 .bejelentkezes-felhivas {
   background: linear-gradient(135deg, #f8f9fe, #f1f4ff);
   border-radius: 24px;
@@ -537,7 +602,9 @@ export default {
   box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
-/* Komment lista */
+/* ============================================================
+   KOMMENT LISTA ÉS FEJLÉC
+   ============================================================ */
 .komment-lista {
   margin-top: 1rem;
 }
@@ -588,7 +655,9 @@ export default {
   text-align: center;
 }
 
-/* Komment kártyák */
+/* ============================================================
+   KOMMENT KÁRTYÁK STÍLUSAI
+   ============================================================ */
 .komment-kartya {
   margin-bottom: 1rem;
   animation: slideIn 0.3s ease-out;
@@ -711,7 +780,9 @@ export default {
   white-space: pre-line;
 }
 
-/* Nincs komment */
+/* ============================================================
+   ÜRES ÁLLAPOT
+   ============================================================ */
 .nincs-komment {
   text-align: center;
   padding: 3rem 1.5rem;
@@ -737,7 +808,9 @@ export default {
   color: #718096;
 }
 
-/* Responsive design */
+/* ============================================================
+   RESPONSIVE DESIGN (MOBIL NÉZET)
+   ============================================================ */
 @media (max-width: 768px) {
   .komment-iras-tarolo {
     flex-direction: column;
