@@ -416,14 +416,18 @@ export default {
 }
 
 .felhasznalo-avatar {
-  flex-shrink: 0;
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px;
+  min-height: 48px;
+  flex: 0 0 48px !important;
 }
 
 .avatar-betuk {
-  width: 48px;
-  height: 48px;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 16px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -704,7 +708,11 @@ export default {
 }
 
 .szerzo-avatar {
-  flex-shrink: 0;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px;
+  min-height: 40px;
+  flex: 0 0 40px !important;
 }
 
 .szerzo-avatar .avatar-betuk {

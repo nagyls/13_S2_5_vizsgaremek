@@ -47,8 +47,11 @@ body {
 .teacher-chip-avatar {
   position: relative !important;
   display: inline-flex !important;
+  flex-shrink: 0 !important;
   align-items: center !important;
   justify-content: center !important;
+  box-sizing: border-box !important;
+  aspect-ratio: 1 / 1 !important;
   border-radius: 999px !important;
   background: radial-gradient(circle at 35% 30%, #5f83ff 0%, #3f63e8 48%, #2e46b8 100%) !important;
   border: 2px solid rgba(130, 165, 255, 0.82) !important;
