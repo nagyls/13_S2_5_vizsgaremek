@@ -2532,14 +2532,16 @@ export default {
 }
 </script>
 
-/* Dashboard komponens stílusai */
 <style scoped>
 .dashboard {
   box-sizing: border-box;
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
   width: 100%;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background:
+    radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.15), transparent 100%),
+    radial-gradient(circle at 85% 70%, rgba(255, 255, 255, 0.1), transparent 38%),
+    linear-gradient(135deg, #0a0f1c 0%, #1e3a5f 50%, #0a0f1c 100%);
 }
 
 .container {
@@ -2550,7 +2552,7 @@ export default {
 
 /* FEJLÉC */
 .main-header {
-  background: rgba(255, 255, 255, 0.95);
+  background: linear-gradient(180deg, rgba(8, 14, 30, 0.86) 0%, rgba(11, 20, 42, 0.78) 100%);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   padding: 16px 0;
@@ -2786,12 +2788,12 @@ export default {
   font-size: 36px;
   font-weight: 700;
   margin-bottom: 16px;
-  color: #111827;
+  color: white;
 }
 
 .section-subtitle {
   font-size: 18px;
-  color: #6b7280;
+  color: #b7bac0;
   max-width: 600px;
   margin: 0 auto;
 }

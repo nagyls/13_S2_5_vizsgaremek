@@ -427,7 +427,10 @@ export default {
 
 .pending-approval {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background:
+    radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.15), transparent 100%),
+    radial-gradient(circle at 85% 70%, rgba(255, 255, 255, 0.1), transparent 38%),
+    linear-gradient(135deg, #0a0f1c 0%, #1e3a5f 50%, #0a0f1c 100%);
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   width: 100%;
 }
@@ -442,7 +445,7 @@ export default {
    FŐ FEJLÉC (HEADER)
    ============================================================ */
 .main-header {
-  background: rgba(255, 255, 255, 0.95);
+  background: linear-gradient(180deg, rgba(8, 14, 30, 0.86) 0%, rgba(11, 20, 42, 0.78) 100%);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   padding: 16px 0;

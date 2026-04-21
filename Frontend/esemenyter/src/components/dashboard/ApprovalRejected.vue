@@ -30,7 +30,10 @@ export default {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background:
+    radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.15), transparent 100%),
+    radial-gradient(circle at 85% 70%, rgba(255, 255, 255, 0.1), transparent 38%),
+    linear-gradient(135deg, #0a0f1c 0%, #1e3a5f 50%, #0a0f1c 100%);
   font-family: 'Inter', sans-serif;
   padding: 20px;
 }

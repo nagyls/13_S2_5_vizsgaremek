@@ -5,7 +5,7 @@
       <div class="navigation">
         <button class="btn-back" @click="$router.back()">
           <i class='bx bx-arrow-back'></i>
-          <span><-- Vissza</span>
+          <span>Vissza</span>
         </button>
       </div>
 
@@ -1390,7 +1390,10 @@ export default {
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background:
+    radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.15), transparent 100%),
+    radial-gradient(circle at 85% 70%, rgba(255, 255, 255, 0.1), transparent 38%),
+    linear-gradient(135deg, #0a0f1c 0%, #1e3a5f 50%, #0a0f1c 100%);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -1508,7 +1511,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.3));
+  background: linear-gradient(150deg, #5873eb, rgba(0,0,0,0.4));
 }
 
 .hero-content {

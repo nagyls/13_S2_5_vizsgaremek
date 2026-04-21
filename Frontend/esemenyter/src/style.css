@@ -10,3 +10,178 @@ body {
   place-items: initial !important;
   overflow-x: hidden;
 }
+
+.user-profile {
+  position: relative !important;
+}
+
+.user-avatar {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  padding: 5px 10px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(165, 190, 255, 0.35) !important;
+  background: linear-gradient(145deg, rgba(125, 157, 255, 0.14), rgba(255, 255, 255, 0.05)) !important;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.12), 0 10px 22px rgba(10, 25, 80, 0.35) !important;
+  backdrop-filter: blur(2px);
+}
+
+.user-avatar:hover {
+  border-color: rgba(177, 203, 255, 0.6) !important;
+  background: linear-gradient(145deg, rgba(126, 160, 255, 0.22), rgba(255, 255, 255, 0.09)) !important;
+}
+
+/* Unified avatar style across the application */
+.avatar-circle,
+.profile-avatar,
+.profile-avatar-large,
+.user-avatar-small,
+.user-avatar-medium,
+.user-avatar-large,
+.felhasznalo-avatar,
+.szerzo-avatar,
+.member-avatar,
+.teacher-chip-avatar {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  background: radial-gradient(circle at 35% 30%, #5f83ff 0%, #3f63e8 48%, #2e46b8 100%) !important;
+  border: 2px solid rgba(130, 165, 255, 0.82) !important;
+  box-shadow: 0 0 0 2px rgba(77, 120, 255, 0.22), inset 0 1px 3px rgba(255, 255, 255, 0.3), 0 10px 24px rgba(15, 45, 134, 0.42) !important;
+  color: #eef3ff !important;
+  overflow: visible !important;
+}
+
+.avatar-circle {
+  width: 42px !important;
+  height: 42px !important;
+}
+
+.profile-avatar {
+  width: 44px !important;
+  height: 44px !important;
+}
+
+.profile-avatar-large,
+.user-avatar-large {
+  width: 76px !important;
+  height: 76px !important;
+}
+
+.user-avatar-medium,
+.member-avatar,
+.teacher-chip-avatar,
+.felhasznalo-avatar,
+.szerzo-avatar {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.user-avatar-small {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.avatar-circle span,
+.profile-avatar span,
+.profile-avatar-large span,
+.user-avatar-small span,
+.user-avatar-medium span,
+.user-avatar-large span,
+.felhasznalo-avatar span,
+.szerzo-avatar span,
+.member-avatar,
+.teacher-chip-avatar {
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  color: #f5f8ff !important;
+  text-transform: uppercase !important;
+}
+
+.user-avatar-small span {
+  font-size: 0.72rem !important;
+}
+
+.avatar-circle span,
+.profile-avatar span,
+.user-avatar-medium span,
+.felhasznalo-avatar span,
+.szerzo-avatar span,
+.member-avatar,
+.teacher-chip-avatar {
+  font-size: 0.86rem !important;
+}
+
+.profile-avatar-large span,
+.user-avatar-large span {
+  font-size: 1.25rem !important;
+}
+
+.avatar-circle::before,
+.profile-avatar::before,
+.profile-avatar-large::before,
+.user-avatar-small::before,
+.user-avatar-medium::before,
+.user-avatar-large::before,
+.felhasznalo-avatar::before,
+.szerzo-avatar::before,
+.member-avatar::before,
+.teacher-chip-avatar::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: inherit;
+  border: 1.6px solid rgba(131, 167, 255, 0.55);
+  box-shadow: 0 0 10px rgba(84, 127, 255, 0.28);
+  pointer-events: none;
+}
+
+/* Remove status dot from all data-display avatars */
+.profile-avatar::after,
+.profile-avatar-large::after,
+.user-avatar-small::after,
+.user-avatar-medium::after,
+.user-avatar-large::after,
+.felhasznalo-avatar::after,
+.szerzo-avatar::after,
+.member-avatar::after,
+.teacher-chip-avatar::after {
+  display: none !important;
+}
+
+/* Green status dot only on header avatar-circle */
+.user-avatar .avatar-circle::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #37f2a2 0%, #12b56b 72%, #0b8f53 100%);
+  border: 1.5px solid #0f1a38;
+  box-shadow: 0 0 0 1px rgba(49, 201, 132, 0.35), 0 0 12px rgba(20, 188, 108, 0.65);
+}
+
+.avatar-circle .status-dot,
+.profile-avatar .status-dot,
+.profile-avatar-large .status-dot,
+.user-avatar .status-dot,
+.user-avatar-small .status-dot,
+.user-avatar-medium .status-dot,
+.user-avatar-large .status-dot,
+.felhasznalo-avatar .status-dot,
+.szerzo-avatar .status-dot,
+.member-avatar .status-dot,
+.teacher-chip-avatar .status-dot {
+  display: none !important;
+}
+
+.user-avatar .user-status {
+  display: none !important;
+}

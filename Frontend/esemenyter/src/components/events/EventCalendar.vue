@@ -418,9 +418,11 @@ export default {
     formatTimeRange(event) {
       const start = this.formatTime(event?.start_date)
       const end = this.formatTime(event?.end_date)
+      const status = String(event?.status || '').toLowerCase()
 
-      // Ha egy több napos esemény záró napján vagyunk (befejezési nap)
-      if (event.calendar_role === 'end') {
+      // Több napos esemény záró napján, illetve lezárt eseménynél
+      // mindig a befejezési idő legyen hangsúlyos.
+      if (event.calendar_role === 'end' || status === 'ended' || status === 'closed') {
         return `Befejezés: ${end}`
       }
 
@@ -542,7 +544,10 @@ export default {
 
 .event-calendar {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #eef2f6 100%);
+  background:
+    radial-gradient(circle at 12% 14%, rgba(88, 115, 235, 0.22), transparent 36%),
+    radial-gradient(circle at 88% 24%, rgba(56, 189, 248, 0.1), transparent 30%),
+    linear-gradient(135deg, #0a0f1c 0%, #1a3558 52%, #0f203d 100%);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   width: 100%;
 }
@@ -557,14 +562,14 @@ export default {
    FEJLÉC ÉS NAVIGÁCIÓS SZEKCIÓ
    ========================================================================== */
 .main-header {
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(10, 15, 28, 0.74);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
   padding: 16px 0;
   position: sticky;
   top: 0;
   z-index: 1000;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.36);
 }
 
 .header-content {
@@ -582,7 +587,7 @@ export default {
 }
 
 .logo-section:hover {
-  opacity: 0.8;
+  opacity: 0.92;
 }
 
 .logo-icon {
@@ -592,8 +597,9 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.32);
   overflow: hidden;
 }
 
@@ -608,7 +614,7 @@ export default {
   margin: 0;
   font-size: 22px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 55%, #c4b5fd 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -617,7 +623,7 @@ export default {
 .site-subtitle {
   margin: 0;
   font-size: 12px;
-  color: #64748b;
+  color: rgba(226, 232, 240, 0.9);
 }
 
 /* ==========================================================================
@@ -630,12 +636,20 @@ export default {
 .user-avatar {
   cursor: pointer;
   position: relative;
+  padding: 4px;
+  border-radius: 999px;
+  transition: background 0.25s ease;
+}
+
+.user-avatar:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .avatar-circle {
   width: 44px;
   height: 44px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -644,7 +658,7 @@ export default {
   font-weight: 600;
   font-size: 16px;
   transition: transform 0.3s ease;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
 }
 
 .user-avatar:hover .avatar-circle {
@@ -661,7 +675,7 @@ export default {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid rgba(10, 15, 28, 0.9);
 }
 
 .status-dot.online {
@@ -806,17 +820,17 @@ export default {
   gap: 12px;
   font-size: 32px;
   font-weight: 700;
-  color: #1e293b;
+  color: #f8fafc;
   margin: 0 0 8px 0;
 }
 
 .header-title h1 i {
-  color: #4f46e5;
+  color: #93c5fd;
   font-size: 36px;
 }
 
 .header-title p {
-  color: #64748b;
+  color: rgba(226, 232, 240, 0.92);
   margin: 0 0 12px 0;
   font-size: 16px;
 }
@@ -826,14 +840,15 @@ export default {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 50px;
   font-size: 14px;
-  color: #334155;
+  color: #e2e8f0;
 }
 
 .today-badge i {
-  color: #4f46e5;
+  color: #bfdbfe;
   font-size: 18px;
 }
 

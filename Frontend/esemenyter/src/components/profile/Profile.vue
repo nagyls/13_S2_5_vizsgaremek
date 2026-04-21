@@ -15,7 +15,7 @@
           
           <!-- Lenyíló felület a profilkép alatt -->
           <div class="user-profile">
-            <div class="user-avatar" @click="toggleUserMenu">
+            <div class="user-avatar" @click.stop="toggleUserMenu">
               <div class="avatar-circle">
                 <span>{{ userInitials }}</span>
               </div>
@@ -25,7 +25,7 @@
             </div>
             
             <transition name="slide-fade">
-              <div v-if="showUserMenu" class="user-menu">
+              <div v-if="showUserMenu" class="user-menu" @click.stop>
                 <div class="menu-header">
                   <div class="menu-user-info">
                     <h4>{{ user.name }}</h4>
@@ -843,7 +843,10 @@ export default {
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
   width: 100%;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background:
+    radial-gradient(circle at 12% 14%, rgba(88, 115, 235, 0.22), transparent 36%),
+    radial-gradient(circle at 88% 24%, rgba(56, 189, 248, 0.1), transparent 30%),
+    linear-gradient(135deg, #0a0f1c 0%, #1a3558 52%, #0f203d 100%);
 }
 
 .container {
@@ -854,13 +857,14 @@ export default {
 
 /* FEJLÉC */
 .main-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 16px 0;
+  background: rgba(10, 15, 28, 0.74);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+  padding: 10px 0;
   position: sticky;
   top: 0;
   z-index: 1000;
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.36);
 }
 
 .header-content {
@@ -872,24 +876,25 @@ export default {
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   cursor: pointer;
   transition: opacity 0.3s;
 }
 
 .logo-section:hover {
-  opacity: 0.8;
+  opacity: 0.92;
 }
 
 .logo-icon {
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.32);
   overflow: hidden;
 }
 
@@ -904,7 +909,7 @@ export default {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 55%, #c4b5fd 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -913,7 +918,7 @@ export default {
 .site-subtitle {
   margin: 0;
   font-size: 14px;
-  color: #64748b;
+  color: rgba(226, 232, 240, 0.9);
   font-weight: 500;
 }
 
@@ -923,43 +928,54 @@ export default {
 }
 
 .user-avatar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
-  position: relative;
+  padding: 5px 12px;
+  border-radius: 50px;
+  border: 1px solid rgba(191, 219, 254, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.user-avatar:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(191, 219, 254, 0.52);
 }
 
 .avatar-circle {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #7f8eff, #5f75eb 60%, #4a66dc 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 16px;
-  transition: transform 0.3s ease;
-}
-
-.user-avatar:hover .avatar-circle {
-  transform: scale(1.05);
+  font-size: 14px;
+  box-shadow: 0 8px 18px rgba(79, 112, 241, 0.38);
+  border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .user-status {
-  position: absolute;
-  bottom: 0;
-  right: 0;
+  position: relative;
 }
 
 .status-dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   border: 2px solid white;
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
 }
 
 .status-dot.online {
   background: #10b981;
+  box-shadow: 0 0 0 2px white;
 }
 
 /* Felhasználó menü */

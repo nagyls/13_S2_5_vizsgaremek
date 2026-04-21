@@ -549,7 +549,10 @@ export default {
 
 .user-dashboard {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background:
+    radial-gradient(circle at 12% 14%, rgba(88, 115, 235, 0.22), transparent 36%),
+    radial-gradient(circle at 88% 24%, rgba(56, 189, 248, 0.1), transparent 30%),
+    linear-gradient(135deg, #0a0f1c 0%, #1a3558 52%, #0f203d 100%);
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   width: 100%;
 }
@@ -564,7 +567,7 @@ export default {
    FŐ FEJLÉC (HEADER)
    ============================================================ */
 .main-header {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(10, 15, 28, 0.74);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   padding: 16px 0;
@@ -578,6 +581,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  
 }
 
 /* Logó szekció stílusa */
@@ -932,7 +936,7 @@ export default {
   gap: 10px;
   font-size: 28px;
   font-weight: 600;
-  color: #111827;
+  color: white;
   margin-bottom: 40px;
 }
 
@@ -1066,7 +1070,7 @@ export default {
 .info-content h4 {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: white;
   margin-bottom: 4px;
 }
 

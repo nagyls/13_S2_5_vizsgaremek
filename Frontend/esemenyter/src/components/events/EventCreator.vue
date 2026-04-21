@@ -1792,7 +1792,10 @@ export default {
    ALAPVETŐ OLDALSTRUKTÚRA ÉS LAYOUT
    ========================================================================== */
 .event-creator-page {
-  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  background:
+    radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.15), transparent 100%),
+    radial-gradient(circle at 85% 70%, rgba(255, 255, 255, 0.1), transparent 38%),
+    linear-gradient(135deg, #0a0f1c 0%, #1e3a5f 50%, #0a0f1c 100%);
   font-family: 'Manrope', sans-serif;
   min-height: 100vh;
   display: flex;
@@ -1845,13 +1848,18 @@ export default {
 }
 
 .creator-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(45deg, #1a202c, #2d3748);
   color: white;
   padding: 36px 44px;
   text-align: center;
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
+}
+
+.creator-header > * {
+  position: relative;
+  z-index: 1;
 }
 
 .creator-header::before {
@@ -1861,7 +1869,9 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.16), transparent 30%),
+    linear-gradient(150deg, rgba(88, 115, 235, 0.92), rgba(0, 0, 0, 0.26));
   pointer-events: none;
 }
 
@@ -1874,7 +1884,7 @@ export default {
   gap: 12px;
   font-weight: 700;
   letter-spacing: -0.5px;
-  position: relative;
+  text-shadow: 0 2px 10px rgba(15, 23, 42, 0.35);
 }
 
 .creator-header h1 i {
@@ -1883,10 +1893,11 @@ export default {
 }
 
 .subtitle {
-  opacity: 0.82;
+  opacity: 0.96;
   font-size: 15px;
-  font-weight: 400;
-  position: relative;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.98);
+  text-shadow: 0 1px 8px rgba(15, 23, 42, 0.3);
 }
 
 .header-badges {
@@ -1903,12 +1914,13 @@ export default {
   gap: 8px;
   padding: 9px 14px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  color: rgba(255, 255, 255, 0.98);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.2px;
+  text-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
 }
 
 .header-badge i {

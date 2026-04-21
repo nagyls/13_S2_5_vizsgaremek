@@ -3547,7 +3547,7 @@ export default {
 /* Fő elrendezés és háttér */
 .institution-dashboard {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(to top, #5873eb, rgba(0,0,0,0.4));
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   width: 100%;
 }
@@ -3561,9 +3561,10 @@ export default {
 
 /* Header stílusok */
 .main-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(180deg, rgba(8, 14, 30, 0.92) 0%, rgba(11, 20, 42, 0.82) 100%);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.22);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -3595,8 +3596,9 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(148, 163, 184, 0.08));
+  border: 1px solid rgba(191, 219, 254, 0.28);
+  box-shadow: 0 10px 20px rgba(2, 6, 23, 0.28);
   overflow: hidden;
 }
 
@@ -3616,17 +3618,15 @@ export default {
 .site-title {
   font-size: 24px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #f8fafc;
+  text-shadow: 0 2px 10px rgba(15, 23, 42, 0.42);
   margin: 0;
 }
 
 .site-subtitle {
   margin: 0;
   font-size: 14px;
-  color: #64748b;
+  color: rgba(226, 232, 240, 0.84);
   font-weight: 500;
 }
 
@@ -3642,17 +3642,20 @@ export default {
   cursor: pointer;
   padding: 5px 10px;
   border-radius: 50px;
-  transition: background 0.3s ease;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(191, 219, 254, 0.24);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .user-avatar:hover {
-  background: #f3f4f6;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(191, 219, 254, 0.42);
 }
 
 .avatar-circle {
   width: 45px;
   height: 45px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -3660,7 +3663,7 @@ export default {
   color: white;
   font-weight: 600;
   font-size: 18px;
-  box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.4);
 }
 
 .user-status {
@@ -3671,7 +3674,7 @@ export default {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid rgba(8, 14, 30, 0.92);
   position: absolute;
   bottom: 2px;
   right: 2px;
@@ -3679,7 +3682,7 @@ export default {
 
 .status-dot.online {
   background: #10b981;
-  box-shadow: 0 0 0 2px white;
+  box-shadow: 0 0 0 2px rgba(8, 14, 30, 0.92);
 }
 
 /* Felhasználói legördülő menü */

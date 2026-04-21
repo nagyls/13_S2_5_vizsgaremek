@@ -909,7 +909,11 @@ export default {
   width: 100%;
   min-height: 100vh;
   overflow-x: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background:
+    radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.15), transparent 100%),
+    radial-gradient(circle at 85% 70%, rgba(255, 255, 255, 0.1), transparent 38%),
+    linear-gradient(135deg, #0a0f1c 0%, #1e3a5f 50%, #0a0f1c 100%);
+  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -921,33 +925,43 @@ export default {
 
 /* Fix fejléc stílus Blur (üveghatás) effekttel */
 .events-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 16px 0;
-  position: relative;
+  background: linear-gradient(180deg, rgba(8, 14, 30, 0.86) 0%, rgba(11, 20, 42, 0.78) 100%);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 4px 0;
+  position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.22);
 }
 
 .header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 /* Logó és cím elrendezése */
 .logo-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   cursor: pointer;
-  transition: opacity 0.3s ease;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .logo-title:hover {
-  opacity: 0.8;
+  background: rgba(255, 255, 255, 0.11);
+  transform: translateY(-1px);
 }
 
 .logo-icon {
@@ -957,8 +971,9 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(148, 163, 184, 0.08));
+  border: 1px solid rgba(191, 219, 254, 0.35);
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.28);
   overflow: hidden;
 }
 
@@ -971,12 +986,11 @@ export default {
 
 .site-title {
   margin: 0;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #f8fafc;
+  letter-spacing: -0.2px;
+  text-shadow: 0 2px 10px rgba(15, 23, 42, 0.42);
 }
 
 .logo-text {
@@ -987,8 +1001,8 @@ export default {
 
 .site-subtitle {
   margin: 0;
-  font-size: 14px;
-  color: #64748b;
+  font-size: 12px;
+  color: rgba(226, 232, 240, 0.84);
   font-weight: 500;
   line-height: 1.2;
 }
@@ -1001,15 +1015,18 @@ export default {
 .user-avatar {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
   cursor: pointer;
-  padding: 5px 10px;
+  padding: 5px 12px;
   border-radius: 50px;
-  transition: background 0.3s ease;
+  border: 1px solid rgba(191, 219, 254, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .user-avatar:hover {
-  background: #f3f4f6;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(191, 219, 254, 0.52);
 }
 
 .user-menu {
@@ -1138,17 +1155,18 @@ export default {
 }
 
 .avatar-circle {
-  width: 45px;
-  height: 45px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #7f8eff, #5f75eb 60%, #4a66dc 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 18px;
-  box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+  font-size: 14px;
+  box-shadow: 0 8px 18px rgba(79, 112, 241, 0.38);
+  border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .user-status {
@@ -1156,13 +1174,13 @@ export default {
 }
 
 .status-dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   border: 2px solid white;
   position: absolute;
-  bottom: 2px;
-  right: 2px;
+  bottom: 1px;
+  right: 1px;
 }
 
 .status-dot.online {
@@ -1188,7 +1206,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.4));
+  background: linear-gradient(150deg, #5873eb, rgba(0,0,0,0.4));
 }
 
 .hero-content {
@@ -1861,7 +1879,7 @@ export default {
 
 @media (max-width: 768px) {
   .main-header {
-    padding: 12px 0;
+    padding: 4px 0;
   }
 
   .container {
@@ -1970,7 +1988,7 @@ export default {
 
 @media (max-width: 480px) {
   .main-header {
-    padding: 8px 0;
+    padding: 4px 0;
   }
 
   .container {
