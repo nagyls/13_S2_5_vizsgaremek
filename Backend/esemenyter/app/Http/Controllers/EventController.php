@@ -971,17 +971,22 @@ class EventController extends Controller
         }
 
         $validated = $request->validate([
-            'action' => 'required|in:reschedule,cancel',
+            'action' => 'required|in:reschedule,cancel,update_details',
             'start_date' => 'nullable|required_if:action,reschedule|date',
             'end_date' => 'nullable|required_if:action,reschedule|date|after:start_date',
+            'description' => 'nullable|required_if:action,update_details|string',
+            'content' => 'nullable|string',
         ], [
             'action.required' => 'A művelet megadása kötelező.',
-            'action.in' => 'A művelet csak reschedule vagy cancel lehet.',
+            'action.in' => 'A művelet csak reschedule, cancel vagy update_details lehet.',
             'start_date.required_if' => 'Áthelyezésnél új kezdési időpont szükséges.',
             'start_date.date' => 'A kezdési időpont érvénytelen.',
             'end_date.required_if' => 'Áthelyezésnél új befejezési időpont szükséges.',
             'end_date.date' => 'A befejezési időpont érvénytelen.',
             'end_date.after' => 'A befejezésnek későbbinek kell lennie, mint a kezdés.',
+            'description.required_if' => 'A leírás megadása kötelező a részletek frissítéséhez.',
+            'description.string' => 'A leírásnak szövegnek kell lennie.',
+            'content.string' => 'A jegyzetnek szövegnek kell lennie.',
         ]);
 
         if ($validated['action'] === 'cancel') {
@@ -991,6 +996,19 @@ class EventController extends Controller
 
             return response()->json([
                 'message' => 'Az alkalom elmaradtként jelölve.',
+            ]);
+        }
+
+        if ($validated['action'] === 'update_details') {
+            $event->description = trim((string) ($validated['description'] ?? ''));
+            $event->content = array_key_exists('content', $validated)
+                ? trim((string) ($validated['content'] ?? ''))
+                : $event->content;
+            $event->save();
+
+            return response()->json([
+                'message' => 'Az esemény leírása és jegyzete frissítve.',
+                'event' => $event,
             ]);
         }
 

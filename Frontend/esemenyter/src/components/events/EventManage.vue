@@ -64,58 +64,104 @@
 
           <!-- Időpont átütemezése vagy az alkalom törlése (elmaradás jelzése) -->
           <div class="info-card occurrence-manager">
-            <h3><i class='bx bx-wrench'></i> Időpont módosítása</h3>
-            <p class="description">Létrehozóként módosíthatja az adott alkalom időpontját, vagy elmaradtként törölheti.</p>
+            <h3 class="section-toggle" @click="occurrenceExpanded = !occurrenceExpanded">
+              <span><i class='bx bx-wrench'></i> Időpont módosítása</span>
+              <i class='bx' :class="occurrenceExpanded ? 'bx-chevron-up' : 'bx-chevron-down'"></i>
+            </h3>
 
-            <div class="occurrence-form-grid">
-              <label>
-                Kezdés dátuma
-                <input type="date" v-model="occurrenceForm.startDate" @input="updateOccurrenceStartDateTime" @change="updateOccurrenceStartDateTime">
-              </label>
-              <label>
-                Kezdés időpontja
-                <input
-                  :type="isFirefoxBrowser ? 'text' : 'time'"
-                  v-model="occurrenceForm.startTime"
-                  inputmode="numeric"
-                  placeholder="HH:MM"
-                  pattern="^([01]?\d|2[0-3]):[0-5]\d$"
-                  @input="updateOccurrenceStartDateTime"
-                  @change="updateOccurrenceStartDateTime"
-                  @blur="normalizeOccurrenceTime('startTime', updateOccurrenceStartDateTime)"
-                >
-              </label>
-              <label>
-                Befejezés dátuma
-                <input type="date" v-model="occurrenceForm.endDate" @input="updateOccurrenceEndDateTime" @change="updateOccurrenceEndDateTime">
-              </label>
-              <label>
-                Befejezés időpontja
-                <input
-                  :type="isFirefoxBrowser ? 'text' : 'time'"
-                  v-model="occurrenceForm.endTime"
-                  inputmode="numeric"
-                  placeholder="HH:MM"
-                  pattern="^([01]?\d|2[0-3]):[0-5]\d$"
-                  @input="updateOccurrenceEndDateTime"
-                  @change="updateOccurrenceEndDateTime"
-                  @blur="normalizeOccurrenceTime('endTime', updateOccurrenceEndDateTime)"
-                >
-              </label>
+            <div v-show="occurrenceExpanded">
+              <p class="description">Létrehozóként módosíthatja az adott alkalom időpontját, vagy elmaradtként törölheti.</p>
+
+              <div class="occurrence-form-grid">
+                <label>
+                  Kezdés dátuma
+                  <input type="date" v-model="occurrenceForm.startDate" @input="updateOccurrenceStartDateTime" @change="updateOccurrenceStartDateTime">
+                </label>
+                <label>
+                  Kezdés időpontja
+                  <input
+                    :type="isFirefoxBrowser ? 'text' : 'time'"
+                    v-model="occurrenceForm.startTime"
+                    inputmode="numeric"
+                    placeholder="HH:MM"
+                    pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                    @input="updateOccurrenceStartDateTime"
+                    @change="updateOccurrenceStartDateTime"
+                    @blur="normalizeOccurrenceTime('startTime', updateOccurrenceStartDateTime)"
+                  >
+                </label>
+                <label>
+                  Befejezés dátuma
+                  <input type="date" v-model="occurrenceForm.endDate" @input="updateOccurrenceEndDateTime" @change="updateOccurrenceEndDateTime">
+                </label>
+                <label>
+                  Befejezés időpontja
+                  <input
+                    :type="isFirefoxBrowser ? 'text' : 'time'"
+                    v-model="occurrenceForm.endTime"
+                    inputmode="numeric"
+                    placeholder="HH:MM"
+                    pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+                    @input="updateOccurrenceEndDateTime"
+                    @change="updateOccurrenceEndDateTime"
+                    @blur="normalizeOccurrenceTime('endTime', updateOccurrenceEndDateTime)"
+                  >
+                </label>
+              </div>
+
+              <div class="occurrence-actions">
+                <!-- Átütemezés végrehajtása -->
+                <button class="action-btn attending" :disabled="isUpdatingOccurrence" @click="rescheduleOccurrence">
+                  <i class='bx bx-time-five'></i>
+                  <span>Időpont módosítása</span>
+                </button>
+
+                <!-- Alkam elmaradtként jelölése -->
+                <button class="action-btn not-attending" :disabled="isUpdatingOccurrence" @click="cancelOccurrence">
+                  <i class='bx bx-calendar-x'></i>
+                  <span>Alkalom elmarad</span>
+                </button>
+              </div>
             </div>
+          </div>
 
-            <div class="occurrence-actions">
-              <!-- Átütemezés végrehajtása -->
-              <button class="action-btn attending" :disabled="isUpdatingOccurrence" @click="rescheduleOccurrence">
-                <i class='bx bx-time-five'></i>
-                <span>Időpont módosítása</span>
-              </button>
+          <div class="info-card details-manager">
+            <h3 class="section-toggle" @click="detailsExpanded = !detailsExpanded">
+              <span><i class='bx bx-edit-alt'></i> Leírás és jegyzet módosítása</span>
+              <i class='bx' :class="detailsExpanded ? 'bx-chevron-up' : 'bx-chevron-down'"></i>
+            </h3>
 
-              <!-- Alkam elmaradtként jelölése -->
-              <button class="action-btn not-attending" :disabled="isUpdatingOccurrence" @click="cancelOccurrence">
-                <i class='bx bx-calendar-x'></i>
-                <span>Alkalom elmarad</span>
-              </button>
+            <div v-show="detailsExpanded">
+              <p class="description">Itt tudod frissíteni az esemény leírását és a részletes jegyzetet.</p>
+
+              <div class="details-form-grid">
+                <label>
+                  Leírás
+                  <textarea
+                    v-model="detailsForm.description"
+                    rows="3"
+                    maxlength="2000"
+                    placeholder="Rövid leírás az eseményről"
+                  ></textarea>
+                </label>
+
+                <label>
+                  Jegyzet (részletek)
+                  <textarea
+                    v-model="detailsForm.content"
+                    rows="5"
+                    maxlength="5000"
+                    placeholder="Kiegészítő információk, jegyzetek"
+                  ></textarea>
+                </label>
+              </div>
+
+              <div class="details-actions">
+                <button class="action-btn attending" :disabled="isUpdatingDetails" @click="updateEventDetails">
+                  <i class='bx' :class="isUpdatingDetails ? 'bx-loader-circle bx-spin' : 'bx-save'"></i>
+                  <span>{{ isUpdatingDetails ? 'Mentés...' : 'Leírás és jegyzet mentése' }}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -154,10 +200,13 @@ export default {
       isLoading: true,
       errorMessage: '',
       participantsExpanded: true,
+      occurrenceExpanded: true,
+      detailsExpanded: true,
       isParticipantsLoading: false,
       participants: [],
       banningParticipantIds: {},
       isUpdatingOccurrence: false,
+      isUpdatingDetails: false,
       isFirefoxBrowser: false,
       occurrenceForm: {
         startDate: '',
@@ -166,6 +215,10 @@ export default {
         endTime: '',
         startDateTime: '',
         endDateTime: ''
+      },
+      detailsForm: {
+        description: '',
+        content: ''
       }
     }
   },
@@ -237,6 +290,8 @@ export default {
         this.eventData = foundEvent
         this.splitDateTimeParts(foundEvent.start_date, 'start')
         this.splitDateTimeParts(foundEvent.end_date, 'end')
+        this.detailsForm.description = String(foundEvent.description || '')
+        this.detailsForm.content = String(foundEvent.content || '')
       } catch (error) {
         this.errorMessage = 'Nem sikerült betölteni az esemény adatait.'
       } finally {
@@ -562,6 +617,63 @@ export default {
       }
     },
 
+    /**
+     * Esemény szöveges mezőinek frissítése (leírás + jegyzet)
+     */
+    async updateEventDetails() {
+      if (!this.canManageOccurrence) {
+        this.showMessage('Csak a létrehozó módosíthatja az esemény szöveges adatait.', 'warning')
+        return
+      }
+
+      const description = String(this.detailsForm.description || '').trim()
+      const content = String(this.detailsForm.content || '').trim()
+
+      if (!description) {
+        this.showMessage('A leírás mező nem lehet üres.', 'warning')
+        return
+      }
+
+      const token = getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      this.isUpdatingDetails = true
+
+      try {
+        const response = await axios.patch(
+          `${API_BASE}/events/${this.resolvedEventId}/occurrence`,
+          {
+            action: 'update_details',
+            description,
+            content: content || null
+          },
+          {
+            headers: getAuthHeaders(token, true),
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          this.showMessage(response?.data?.message || 'Nem sikerült menteni a leírást és jegyzetet.', 'error')
+          return
+        }
+
+        this.eventData = {
+          ...this.eventData,
+          description,
+          content
+        }
+        this.showMessage(response?.data?.message || 'Leírás és jegyzet frissítve.', 'success')
+      } catch (error) {
+        this.showMessage('Hiba történt a leírás és jegyzet mentésekor.', 'error')
+      } finally {
+        this.isUpdatingDetails = false
+      }
+    },
+
     showMessage(message, type = 'success') {
       const normalizedType = String(type || '').toLowerCase()
 
@@ -603,7 +715,7 @@ export default {
 
 /* A kezelőpanel külső burka (görgethető terület) */
 .manage-panel-shell {
-  width: min(1100px, 100%);
+  width: min(1320px, 100%);
   max-height: 92vh;
   overflow: auto;
   border-radius: 24px;
@@ -679,11 +791,10 @@ export default {
 
 /* Tartalmi rész elrendezése (grid) */
 .manage-body {
-  padding: 1rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
-  align-items: start;
 }
 
 /* Általános kártya dizájn (fehér háttér, árnyék) */
@@ -693,6 +804,19 @@ export default {
   padding: 1.25rem;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
   border: 1px solid #dbe3f0;
+  width: 100%;
+}
+
+.occurrence-manager {
+  order: 1;
+}
+
+.details-manager {
+  order: 2;
+}
+
+.participants-manager {
+  order: 3;
 }
 
 .description {
@@ -714,6 +838,19 @@ export default {
   cursor: pointer;
   user-select: none;
   margin-bottom: 0.5rem;
+}
+
+.section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 0.5rem;
+}
+
+.section-toggle i {
+  color: #64748b;
 }
 
 .participants-toggle i {
@@ -743,10 +880,10 @@ export default {
 .participants-list {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  max-height: 360px;
+  gap: 0.45rem;
+  max-height: 340px;
   overflow-y: auto;
-  padding-right: 0.2rem;
+  padding-right: 0.15rem;
 }
 
 .participant-item {
@@ -754,8 +891,8 @@ export default {
   justify-content: space-between;
   gap: 0.75rem;
   align-items: center;
-  padding: 0.65rem 0.75rem;
-  border-radius: 12px;
+  padding: 0.42rem 0.6rem;
+  border-radius: 10px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
 }
@@ -767,6 +904,7 @@ export default {
 .participant-name {
   font-weight: 700;
   color: #1a202c;
+  font-size: 0.92rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -774,7 +912,7 @@ export default {
 
 .participant-subline {
   color: #718096;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -782,9 +920,9 @@ export default {
 
 .participant-ban-button {
   border: none;
-  border-radius: 10px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.85rem;
+  border-radius: 8px;
+  padding: 0.35rem 0.58rem;
+  font-size: 0.78rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -802,6 +940,7 @@ export default {
 /* Időpont módosító űrlap elemei */
 .occurrence-form-grid {
   display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
   gap: 0.8rem;
   margin-bottom: 0.9rem;
 }
@@ -828,6 +967,43 @@ export default {
   outline: none;
   border-color: #818cf8;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
+
+.details-form-grid {
+  display: grid;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.details-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  color: #475569;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.details-form-grid textarea {
+  border: 1px solid #dbe3f0;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.92rem;
+  color: #1e293b;
+  background: #ffffff;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.details-form-grid textarea:focus {
+  outline: none;
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
+
+.details-actions {
+  display: grid;
+  gap: 0.7rem;
 }
 
 /* Műveleti gombok (módosítás / elmaradás) */
@@ -900,7 +1076,7 @@ export default {
 
 /* Reszponzív nézet: mobil eszközökön egy oszlopba rendeződik */
 @media (max-width: 900px) {
-  .manage-body {
+  .occurrence-form-grid {
     grid-template-columns: 1fr;
   }
 }
