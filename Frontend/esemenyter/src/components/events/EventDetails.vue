@@ -117,188 +117,159 @@
               <div class="detailed-content">{{ eventData.content }}</div>
             </div>
 
-            <!-- Szavazás létrehozása szakasz (csak a szervezőnek) -->
-            <div v-if="canCreatePoll" class="info-block poll-builder-block">
+            <div class="info-block message-wall-block">
               <div class="block-header">
-                <i class='bx bx-bar-chart-alt-2'></i>
-                <h2>Szavazás létrehozása</h2>
+                <i class='bx bx-notepad'></i>
+                <h2>Üzenőfal</h2>
+                <button
+                  v-if="canCreatePoll"
+                  type="button"
+                  class="wall-create-poll-button"
+                  @click="openPollCreateModal"
+                >
+                  <i class='bx bx-bar-chart-alt-2'></i>
+                  Szavazás létrehozása
+                </button>
               </div>
 
-              <div class="poll-form">
-                <div class="poll-field">
-                  <label for="poll-title">Kérdés</label>
-                  <input id="poll-title" v-model="pollForm.title" type="text" maxlength="255" placeholder="Pl. Melyik időpont legyen megfelelő?">
-                </div>
-
-                <div class="poll-settings-wrapper">
-                  <div class="poll-checkbox-grid">
-                    <label class="poll-checkbox-field">
-                      <input v-model="pollForm.isTimed" type="checkbox" @change="handlePollTimingChange">
-                      <span>Időzített szavazás</span>
-                    </label>
-
-                    <label class="poll-checkbox-field">
-                      <input v-model="pollForm.hiddenResults" type="checkbox">
-                      <span>Eredmények csak lezárás után látszanak</span>
-                    </label>
-                  </div>
-
-                  <div v-if="pollForm.isTimed" class="poll-field poll-deadline-field">
-                    <label>Lezárás napja</label>
-                    <input v-model="pollForm.deadline" type="date">
-                  </div>
-                </div>
-
-                <!-- Dinamikusan hozzáadható szavazási opciók -->
-                <div class="poll-field">
-                  <label>Opciók</label>
-                  <div class="poll-option-inputs">
-                    <div v-for="(option, index) in pollForm.options" :key="`poll-option-${index}`" class="poll-option-input-row">
-                      <input
-                        v-model="pollForm.options[index]"
-                        type="text"
-                        maxlength="255"
-                        :placeholder="`Opció ${index + 1}`"
-                      >
-                      <button
-                        type="button"
-                        class="poll-option-remove"
-                        :disabled="pollForm.options.length <= 2"
-                        @click="removePollOptionField(index)"
-                      >
-                        <i class='bx bx-trash'></i>
-                      </button>
-                    </div>
-                  </div>
-                  <button type="button" class="poll-option-add" :disabled="pollForm.options.length >= 10" @click="addPollOptionField">
-                    <i class='bx bx-plus'></i>
-                    Opció hozzáadása
-                  </button>
-                </div>
-
-                <div class="poll-actions">
-                  <button class="btn btn-primary poll-submit-button" :disabled="isCreatingPoll" @click="createPoll">
-                    <i class='bx' :class="isCreatingPoll ? 'bx-loader-circle bx-spin' : 'bx-check-circle'"></i>
-                    {{ isCreatingPoll ? 'Létrehozás...' : 'Szavazás létrehozása' }}
+              <div v-if="canWriteWall" class="message-wall-composer">
+                <textarea
+                  v-model="wallMessageText"
+                  rows="2"
+                  maxlength="1000"
+                  :disabled="isWallPosting"
+                  placeholder="Írj ki fontos üzenetet az esemény résztvevőinek..."
+                ></textarea>
+                <div class="message-wall-actions">
+                  <span>{{ wallMessageText.length }}/1000</span>
+                  <button
+                    class="btn btn-primary"
+                    :disabled="!wallMessageText.trim() || isWallPosting"
+                    @click="submitWallMessage"
+                  >
+                    <i class='bx' :class="isWallPosting ? 'bx-loader-circle bx-spin' : 'bx-send'"></i>
+                    {{ isWallPosting ? 'Küldés...' : 'Kiírás az üzenőfalra' }}
                   </button>
                 </div>
               </div>
-            </div>
 
-            <!-- Meglévő szavazások listázása és leadási felület -->
-            <div v-if="canViewPolls" class="info-block poll-results-block">
-              <div class="block-header">
-                <i class='bx bx-poll'></i>
-                <h2>Szavazások</h2>
-              </div>
-              
-              <!-- Szavazás állapota és adatai -->
-              <div v-if="isPollLoading" class="poll-info-note">
-                <i class='bx bx-loader-circle bx-spin'></i>
-                Szavazások betöltése...
-              </div>
+              <div class="message-wall-scroll">
+                <div v-if="isWallLoading" class="poll-info-note">
+                  <i class='bx bx-loader-circle bx-spin'></i>
+                  Üzenőfal betöltése...
+                </div>
 
-              <div v-else-if="!polls.length" class="poll-info-note">
-                <i class='bx bx-info-circle'></i>
-                Ehhez az eseményhez még nincs szavazás.
-              </div>
-
-              <div v-else class="poll-list">
-                <!-- Minden szavazáshoz egy külön panel -->
-                <div v-for="poll in polls" :key="poll.id" class="poll-panel">
-                  <div class="poll-panel-header">
-                    <div>
-                      <div class="poll-question">{{ poll.title }}</div>
-                      <div class="poll-meta-row">
-                        <span class="poll-pill">{{ getPollStateLabel(poll) }}</span>
-                        <span v-if="poll.is_timed" class="poll-pill muted">Időzített</span>
-                        <span v-if="poll.hidden_results" class="poll-pill muted">Rejtett eredmény</span>
-                      </div>
-                    </div>
-
-                    <!-- Szervező lezárhatja a szavazást manuálisan is -->
-                    <button
-                      v-if="poll.can_manage && !poll.is_ended"
-                      type="button"
-                      class="poll-stop-button"
-                      :disabled="Boolean(stoppingPollIds[poll.id])"
-                      @click="stopPoll(poll)"
-                    >
-                      <i class='bx' :class="stoppingPollIds[poll.id] ? 'bx-loader-circle bx-spin' : 'bx-stop-circle'"></i>
-                      {{ stoppingPollIds[poll.id] ? 'Lezárás...' : 'Szavazás lezárása' }}
-                    </button>
+                <div v-else>
+                  <div v-if="!wallTimelineItems.length" class="poll-info-note">
+                    <i class='bx bx-info-circle'></i>
+                    Még nincs tartalom az üzenőfalon.
                   </div>
 
-                  <!-- Szavazás statisztikái -->
-                  <div class="poll-summary-grid">
-                    <div class="poll-summary-item">
-                      <span class="poll-summary-label">Indulás</span>
-                      <span>{{ formatPollCalendarDate(poll.start_date) }}</span>
-                    </div>
-                    <div class="poll-summary-item">
-                      <span class="poll-summary-label">Lezárás</span>
-                      <span>{{ poll.is_timed ? formatPollCalendarDate(poll.deadline) : 'Kézi lezárás' }}</span>
-                    </div>
-                    <div class="poll-summary-item">
-                      <span class="poll-summary-label">Összes szavazat</span>
-                      <span>{{ poll.results_visible ? (poll.total_votes || 0) : 'Rejtve' }}</span>
-                    </div>
-                  </div>
-
-                  <!-- Szavazási opciók megjelenítése gombokként -->
-                  <div class="poll-option-list">
-                    <button
-                      v-for="option in poll.options"
-                      :key="option.id"
-                      type="button"
-                      class="poll-option-card"
-                      :class="{
-                        selected: Number(selectedPollOptionIds[poll.id]) === Number(option.id),
-                        voted: Number(poll.selected_option_id) === Number(option.id)
-                      }"
-                      :disabled="!poll.can_answer || Boolean(submittingPollVoteIds[poll.id])"
-                      @click="selectedPollOptionIds = { ...selectedPollOptionIds, [poll.id]: Number(option.id) }"
+                  <div v-else class="wall-timeline-list">
+                    <div
+                      v-for="item in wallTimelineItems"
+                      :key="`${item.type}-${item.id}`"
+                      class="wall-timeline-item"
                     >
-                      <div class="poll-option-header">
-                        <span class="poll-option-title">{{ option.title }}</span>
-                        <span v-if="Number(poll.selected_option_id) === Number(option.id)" class="poll-badge">A te szavazatod</span>
-                      </div>
-
-                      <!-- Eredmények vizuális megjelenítése oszlopdiagrammal -->
-                      <div v-if="poll.results_visible" class="poll-result-row">
-                        <div class="poll-result-bar-track">
-                          <div
-                            class="poll-result-bar-fill"
-                            :style="{ width: `${getPollResultPercentage(poll, option.id)}%` }"
-                          ></div>
+                      <article v-if="item.type === 'message'" class="wall-message-item">
+                        <div class="wall-message-header">
+                          <strong>{{ item.user?.name || item.username || 'Szervező' }}</strong>
+                          <span>{{ formatWallDate(item.created_at) }}</span>
                         </div>
-                        <div class="poll-result-meta">
-                          <span>{{ getPollResultVotes(poll, option.id) }} szavazat</span>
-                          <span>{{ getPollResultPercentage(poll, option.id) }}%</span>
+                        <p>{{ item.content }}</p>
+                      </article>
+
+                      <div v-else class="poll-panel">
+                        <div class="poll-panel-header">
+                          <div>
+                            <div class="poll-question">{{ item.title }}</div>
+                            <div class="poll-meta-row">
+                              <span class="poll-pill">{{ getPollStateLabel(item) }}</span>
+                              <span v-if="item.is_timed" class="poll-pill muted">Időzített</span>
+                              <span v-if="item.hidden_results" class="poll-pill muted">Rejtett eredmény</span>
+                            </div>
+                          </div>
+
+                          <button
+                            v-if="item.can_manage && !item.is_ended"
+                            type="button"
+                            class="poll-stop-button"
+                            :disabled="Boolean(stoppingPollIds[item.id])"
+                            @click="stopPoll(item)"
+                          >
+                            <i class='bx' :class="stoppingPollIds[item.id] ? 'bx-loader-circle bx-spin' : 'bx-stop-circle'"></i>
+                            {{ stoppingPollIds[item.id] ? 'Lezárás...' : 'Szavazás lezárása' }}
+                          </button>
+                        </div>
+
+                        <div class="poll-summary-grid">
+                          <div class="poll-summary-item">
+                            <span class="poll-summary-label">Indulás</span>
+                            <span>{{ formatPollCalendarDate(item.start_date) }}</span>
+                          </div>
+                          <div class="poll-summary-item">
+                            <span class="poll-summary-label">Lezárás</span>
+                            <span>{{ item.is_timed ? formatPollCalendarDate(item.deadline) : 'Kézi lezárás' }}</span>
+                          </div>
+                          <div class="poll-summary-item">
+                            <span class="poll-summary-label">Összes szavazat</span>
+                            <span>{{ item.results_visible ? (item.total_votes || 0) : 'Rejtve' }}</span>
+                          </div>
+                        </div>
+
+                        <div class="poll-option-list">
+                          <button
+                            v-for="option in item.options"
+                            :key="option.id"
+                            type="button"
+                            class="poll-option-card"
+                            :class="{
+                              selected: Number(selectedPollOptionIds[item.id]) === Number(option.id),
+                              voted: Number(item.selected_option_id) === Number(option.id)
+                            }"
+                            :disabled="!item.can_answer || Boolean(submittingPollVoteIds[item.id])"
+                            @click="selectedPollOptionIds = { ...selectedPollOptionIds, [item.id]: Number(option.id) }"
+                          >
+                            <div class="poll-option-header">
+                              <span class="poll-option-title">{{ option.title }}</span>
+                              <span v-if="Number(item.selected_option_id) === Number(option.id)" class="poll-badge">A te szavazatod</span>
+                            </div>
+
+                            <div v-if="item.results_visible" class="poll-result-row">
+                              <div class="poll-result-bar-track">
+                                <div
+                                  class="poll-result-bar-fill"
+                                  :style="{ width: `${getPollResultPercentage(item, option.id)}%` }"
+                                ></div>
+                              </div>
+                              <div class="poll-result-meta">
+                                <span>{{ getPollResultVotes(item, option.id) }} szavazat</span>
+                                <span>{{ getPollResultPercentage(item, option.id) }}%</span>
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+
+                        <div v-if="item.can_answer" class="poll-actions">
+                          <button
+                            class="btn btn-primary poll-submit-button"
+                            :disabled="!selectedPollOptionIds[item.id] || Boolean(submittingPollVoteIds[item.id])"
+                            @click="submitPollVote(item)"
+                          >
+                            <i class='bx' :class="submittingPollVoteIds[item.id] ? 'bx-loader-circle bx-spin' : 'bx-send'"></i>
+                            {{ submittingPollVoteIds[item.id] ? 'Szavazás...' : 'Szavazok' }}
+                          </button>
+                        </div>
+                        <div v-else-if="item.has_answered" class="poll-info-note success">
+                          <i class='bx bx-check-circle'></i>
+                          Már leadtad a szavazatodat ehhez a szavazáshoz.
+                        </div>
+                        <div v-else-if="item.is_ended" class="poll-info-note success">
+                          <i class='bx bx-flag'></i>
+                          Ez a szavazás lezárult.
                         </div>
                       </div>
-                    </button>
-                  </div>
-
-                  <!-- Szavazás elküldése gomb -->
-                  <div v-if="poll.can_answer" class="poll-actions">
-                    <button
-                      class="btn btn-primary poll-submit-button"
-                      :disabled="!selectedPollOptionIds[poll.id] || Boolean(submittingPollVoteIds[poll.id])"
-                      @click="submitPollVote(poll)"
-                    >
-                      <i class='bx' :class="submittingPollVoteIds[poll.id] ? 'bx-loader-circle bx-spin' : 'bx-send'"></i>
-                      {{ submittingPollVoteIds[poll.id] ? 'Szavazás...' : 'Szavazok' }}
-                    </button>
-                  </div>
-                  <!-- Egyéb visszajelzések (már szavazott, szavazás lezárult, stb.) -->
-                  <div v-else-if="poll.has_answered" class="poll-info-note success">
-                    <i class='bx bx-check-circle'></i>
-                    Már leadtad a szavazatodat ehhez a szavazáshoz.
-                  </div>
-                  <div v-else-if="poll.is_ended" class="poll-info-note success">
-                    <i class='bx bx-flag'></i>
-                    Ez a szavazás lezárult.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -450,6 +421,83 @@
         :event-id="eventId"
         @close="closeEventManageDashboard"
       />
+
+      <div
+        v-if="showPollCreateModal"
+        class="poll-create-modal-overlay"
+        @click.self="closePollCreateModal"
+      >
+        <div class="poll-create-modal-card">
+          <div class="poll-create-modal-header">
+            <h3>Szavazás létrehozása</h3>
+            <button type="button" class="poll-create-modal-close" @click="closePollCreateModal">
+              <i class='bx bx-x'></i>
+            </button>
+          </div>
+
+          <div class="poll-form">
+            <div class="poll-field">
+              <label for="poll-title-modal">Kérdés</label>
+              <input id="poll-title-modal" v-model="pollForm.title" type="text" maxlength="255" placeholder="Pl. Melyik időpont legyen megfelelő?">
+            </div>
+
+            <div class="poll-settings-wrapper">
+              <div class="poll-checkbox-grid">
+                <label class="poll-checkbox-field">
+                  <input v-model="pollForm.isTimed" type="checkbox" @change="handlePollTimingChange">
+                  <span>Időzített szavazás</span>
+                </label>
+
+                <label class="poll-checkbox-field">
+                  <input v-model="pollForm.hiddenResults" type="checkbox">
+                  <span>Eredmények csak lezárás után látszanak</span>
+                </label>
+              </div>
+
+              <div v-if="pollForm.isTimed" class="poll-field poll-deadline-field">
+                <label>Lezárás napja</label>
+                <input v-model="pollForm.deadline" type="date">
+              </div>
+            </div>
+
+            <div class="poll-field">
+              <label>Opciók</label>
+              <div class="poll-option-inputs">
+                <div v-for="(option, index) in pollForm.options" :key="`poll-option-modal-${index}`" class="poll-option-input-row">
+                  <input
+                    v-model="pollForm.options[index]"
+                    type="text"
+                    maxlength="255"
+                    :placeholder="`Opció ${index + 1}`"
+                  >
+                  <button
+                    type="button"
+                    class="poll-option-remove"
+                    :disabled="pollForm.options.length <= 2"
+                    @click="removePollOptionField(index)"
+                  >
+                    <i class='bx bx-trash'></i>
+                  </button>
+                </div>
+              </div>
+              <button type="button" class="poll-option-add" :disabled="pollForm.options.length >= 10" @click="addPollOptionField">
+                <i class='bx bx-plus'></i>
+                Opció hozzáadása
+              </button>
+            </div>
+
+            <div class="poll-actions">
+              <button type="button" class="btn btn-secondary" :disabled="isCreatingPoll" @click="closePollCreateModal">
+                Mégse
+              </button>
+              <button class="btn btn-primary poll-submit-button" :disabled="isCreatingPoll" @click="createPoll">
+                <i class='bx' :class="isCreatingPoll ? 'bx-loader-circle bx-spin' : 'bx-check-circle'"></i>
+                {{ isCreatingPoll ? 'Létrehozás...' : 'Szavazás létrehozása' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -498,9 +546,16 @@ export default {
         options: ['', '']
       },
 
+      // Üzenőfal állapotok
+      wallMessages: [],
+      isWallLoading: false,
+      wallMessageText: '',
+      isWallPosting: false,
+
       // Szervezői funkciók és modális állapotok
       isTogglingChat: false,
-      showEventManageDashboard: false
+      showEventManageDashboard: false,
+      showPollCreateModal: false
     }
   },
   
@@ -530,6 +585,10 @@ export default {
     },
 
     canCreatePoll() {
+      return this.isEventCreator
+    },
+
+    canWriteWall() {
       return this.isEventCreator
     },
 
@@ -583,6 +642,27 @@ export default {
       }
 
       return 'Kommentelni csak akkor tudsz, ha a részvételnél a Részvétel opciót választod.'
+    },
+
+    wallTimelineItems() {
+      const messageItems = Array.isArray(this.wallMessages)
+        ? this.wallMessages.map(item => ({ ...item, type: 'message' }))
+        : []
+
+      const pollItems = Array.isArray(this.polls)
+        ? this.polls.map(item => ({ ...item, type: 'poll' }))
+        : []
+
+      return [...messageItems, ...pollItems].sort((a, b) => {
+        const timeA = this.toTimestamp(a?.created_at)
+        const timeB = this.toTimestamp(b?.created_at)
+
+        if (timeA !== timeB) {
+          return timeA - timeB
+        }
+
+        return Number(a?.id || 0) - Number(b?.id || 0)
+      })
     }
   },
   
@@ -593,6 +673,31 @@ export default {
 
     closeEventManageDashboard() {
       this.showEventManageDashboard = false
+    },
+
+    openPollCreateModal() {
+      if (!this.canCreatePoll) {
+        return
+      }
+
+      this.showPollCreateModal = true
+    },
+
+    closePollCreateModal() {
+      if (this.isCreatingPoll) {
+        return
+      }
+
+      this.showPollCreateModal = false
+    },
+
+    toTimestamp(dateValue) {
+      if (!dateValue) {
+        return 0
+      }
+
+      const timestamp = new Date(dateValue).getTime()
+      return Number.isFinite(timestamp) ? timestamp : 0
     },
 
     /**
@@ -616,7 +721,8 @@ export default {
         await Promise.all([
           this.loadStats(),
           this.loadParticipationStatus(),
-          this.loadPolls()
+          this.loadPolls(),
+          this.loadWallMessages()
         ])
       } catch (error) {
         console.error('Hiba az esemény betöltésekor:', error)
@@ -674,37 +780,91 @@ export default {
       }
     },
     
-    /**
-     * Szavazások betöltése az eseményhez
-     */
-    async loadPolls() {
-      this.polls = []
-      this.selectedPollOptionIds = {}
+    async loadWallMessages() {
+      this.wallMessages = []
 
       const token = getToken()
       const eventId = Number(this.eventData?.id || this.eventId)
 
-      if (!token || !eventId || !this.currentUser) return
+      if (!token || !eventId || !this.currentUser) {
+        return
+      }
 
-      this.isPollLoading = true
+      this.isWallLoading = true
+
       try {
-        const response = await axios.get(`${API_BASE}/events/${eventId}/poll`, {
+        const response = await axios.get(`${API_BASE}/events/${eventId}/comments`, {
+          params: { important: 1, per_page: 100 },
           headers: getAuthHeaders(token),
           validateStatus: (status) => status >= 200 && status < 600
         })
 
-        if (response.status === 200) {
-          this.polls = Array.isArray(response.data?.polls) ? response.data.polls : []
-          // Már leadott szavazatok előre kijelölése a felületen
-          this.selectedPollOptionIds = this.polls.reduce((carry, poll) => {
-            if (poll?.selected_option_id) carry[poll.id] = Number(poll.selected_option_id)
-            return carry
-          }, {})
+        if (response.status === 403 || response.status === 404) {
+          this.wallMessages = []
+          return
         }
+
+        if (response.status >= 400) {
+          throw new Error(response?.data?.error || 'Nem sikerült betölteni az üzenőfalat.')
+        }
+
+        const items = Array.isArray(response?.data?.data) ? response.data.data : []
+        this.wallMessages = items
       } catch (error) {
-        console.error('Hiba a szavazás betöltésekor:', error)
+        console.error('Hiba az üzenőfal betöltésekor:', error)
       } finally {
-        this.isPollLoading = false
+        this.isWallLoading = false
+      }
+    },
+
+    async submitWallMessage() {
+      if (!this.canWriteWall) {
+        this.showMessage('Csak az esemény létrehozója írhat az üzenőfalra.', 'warning')
+        return
+      }
+
+      const content = String(this.wallMessageText || '').trim()
+      if (!content) {
+        this.showMessage('Az üzenet nem lehet üres.', 'warning')
+        return
+      }
+
+      const token = getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      this.isWallPosting = true
+
+      try {
+        const response = await axios.post(
+          `${API_BASE}/events/comments`,
+          {
+            event_id: Number(this.eventData?.id || this.eventId),
+            content,
+            is_important: true
+          },
+          {
+            headers: getAuthHeaders(token, true),
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          const message = response?.data?.error || response?.data?.message || 'Nem sikerült közzétenni az üzenetet.'
+          this.showMessage(message, 'error')
+          return
+        }
+
+        this.wallMessageText = ''
+        this.showMessage('Üzenet közzétéve az üzenőfalon.', 'success')
+        await this.loadWallMessages()
+      } catch (error) {
+        console.error('Hiba az üzenőfal üzenet küldése közben:', error)
+        this.showMessage('Hiba történt az üzenet közzétételekor.', 'error')
+      } finally {
+        this.isWallPosting = false
       }
     },
 
@@ -881,8 +1041,9 @@ export default {
         }
 
         this.resetPollForm()
+        this.showPollCreateModal = false
         this.showMessage(response?.data?.message || 'Szavazás sikeresen létrehozva.', 'success')
-        await this.loadPolls()
+        await Promise.all([this.loadPolls(), this.loadWallMessages()])
       } catch (error) {
         console.error('Szavazás létrehozási hiba:', error)
         this.showMessage('Hiba történt a szavazás létrehozásakor.', 'error')
@@ -1047,6 +1208,14 @@ export default {
         month: 'long',
         day: 'numeric'
       })
+    },
+
+    formatWallDate(dateString) {
+      if (!dateString) {
+        return 'Nincs dátum'
+      }
+
+      return this.formatDate(dateString)
     },
     
     async submitParticipation(answer) {
@@ -1746,6 +1915,130 @@ export default {
   cursor: not-allowed;
 }
 
+.message-wall-block {
+  overflow: hidden;
+}
+
+.message-wall-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+}
+
+.message-wall-composer textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 76px;
+  max-height: 180px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.message-wall-composer textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.message-wall-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.message-wall-actions span {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.wall-create-poll-button {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wall-create-poll-button:hover {
+  background: #eef2ff;
+  border-color: #a5b4fc;
+}
+
+.message-wall-scroll {
+  max-height: 34rem;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+}
+
+.wall-message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.wall-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.wall-timeline-item {
+  width: 100%;
+}
+
+.wall-message-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 0.8rem 0.9rem;
+}
+
+.wall-message-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.wall-message-header strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.wall-message-header span {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.wall-message-item p {
+  margin: 0;
+  color: #1e293b;
+  white-space: pre-wrap;
+}
+
+.wall-poll-list {
+  margin-top: 1rem;
+}
+
+.wall-poll-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 0.65rem;
+}
+
 .poll-panel {
   display: flex;
   flex-direction: column;
@@ -1763,6 +2056,12 @@ export default {
   max-height: 34rem;
   overflow-y: auto;
   padding-right: 0.35rem;
+}
+
+.message-wall-scroll .poll-list {
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .poll-results-block {
@@ -1958,9 +2257,70 @@ export default {
   color: #2f855a;
 }
 
+.poll-create-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.poll-create-modal-card {
+  width: min(820px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 18px;
+  padding: 1rem;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
+}
+
+.poll-create-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+
+.poll-create-modal-header h3 {
+  margin: 0;
+  color: #1e293b;
+}
+
+.poll-create-modal-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.poll-create-modal-close:hover {
+  background: #f8fafc;
+}
+
 @media (max-width: 768px) {
   .poll-panel-header {
     flex-direction: column;
+  }
+
+  .wall-create-poll-button {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+    margin-top: 0.6rem;
+  }
+
+  .message-wall-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .poll-stop-button,

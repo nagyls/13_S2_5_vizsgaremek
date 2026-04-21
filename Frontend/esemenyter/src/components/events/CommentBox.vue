@@ -241,6 +241,7 @@ export default {
     async kommentekLekerese(esemenyId) {
       const token = getToken()
       const response = await axios.get(`${API_BASE}/events/${esemenyId}/comments`, {
+        params: { important: 0 },
         headers: getAuthHeaders(token)
       })
       const kommentek = response.data.data || []
@@ -307,7 +308,8 @@ export default {
       const token = getToken()
       const response = await axios.post(`${API_BASE}/events/comments`, {
         event_id: komment.event_id,
-        content: komment.content
+        content: komment.content,
+        is_important: false
       }, {
         headers: getAuthHeaders(token)
       })

@@ -8,7 +8,6 @@ use App\Models\PollOption;
 use App\Models\PollAnswer;
 use App\Models\Event;
 use App\Models\EventShown;
-use Illuminate\Support\Facades\DB;
 
 class PollController extends Controller
 {
@@ -41,7 +40,9 @@ class PollController extends Controller
             $hasOptedIn = true;
         }
 
-        if (!$isCreator && !$hasOptedIn) {
+        $canView = $isCreator || $eventview !== null;
+
+        if (!$canView) {
             return response()->json(['message' => 'nem jogosult!'], 403);
         }
 
@@ -121,7 +122,7 @@ class PollController extends Controller
             return response()->json(['message' => 'Legalább 2 különböző opció szükséges.'], 422);
         }
 
-        DB::transaction(function () use ($user, $validated, $uniqueOptions) {
+        Poll::query()->getConnection()->transaction(function () use ($user, $validated, $uniqueOptions) {
             // Határidő csak időzített szavazásnál értelmezett
             $deadline = null;
             if ($validated['is_timed']) {

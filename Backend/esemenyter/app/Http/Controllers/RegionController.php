@@ -7,19 +7,19 @@ use App\Http\Controllers\Controller;
 use App\Models\Region;
 use App\Models\InnerRegion;
 use App\Models\Settlement;
+use App\Models\Establishment;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class RegionController extends Controller
 {
     // Intézményszám lekérdezése régiónként
     private function getSchoolCountsByRegion(): \Illuminate\Support\Collection
     {
-        return DB::table('establishments')
+        return Establishment::query()
             ->join('settlements', 'settlements.id', '=', 'establishments.settlement_id')
             ->join('inner_regions', 'inner_regions.id', '=', 'settlements.inner_region_id')
-            ->select('inner_regions.region_id', DB::raw('COUNT(establishments.id) as cnt'))
+            ->selectRaw('inner_regions.region_id, COUNT(establishments.id) as cnt')
             ->groupBy('inner_regions.region_id')
             ->pluck('cnt', 'inner_regions.region_id');
     }

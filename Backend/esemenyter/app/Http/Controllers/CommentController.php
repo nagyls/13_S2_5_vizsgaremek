@@ -9,6 +9,22 @@ use App\Models\Event;
 
 class CommentController extends Controller
 {
+    protected function isTruthy($value): bool
+    {
+        return in_array($value, [true, 1, '1', 'true', 'on', 'yes'], true);
+    }
+
+    protected function canAccessEvent(Event $event, int $userId): bool
+    {
+        if ($event->user_id == $userId) {
+            return true;
+        }
+
+        return EventShown::where('event_id', $event->id)
+            ->where('user_id', $userId)
+            ->exists();
+    }
+
     // Esemény kommentjeinek lapozható lekérdezése
     public function getComments(Request $request, $eventId)
     {
@@ -21,8 +37,16 @@ class CommentController extends Controller
             return response()->json(['error' => 'Not found'], 404);
         }
 
+        $importantOnly = $this->isTruthy($request->query('important'));
+
+        if ($importantOnly) {
+            if (!$this->canAccessEvent($event, $user->id)) {
+                return response()->json(['error' => 'Forbidden'], 403);
+            }
+        }
+
         $eventview = EventShown::where('event_id', $eventId)->where('user_id', $user->id)->first();
-        if (!$eventview || $eventview->answer !== 'y' || !$event->chat_enabled) {
+        if (!$importantOnly && (!$eventview || $eventview->answer !== 'y' || !$event->chat_enabled)) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
         // A lekérdezés méretét korlátozzuk, hogy ne legyen túl nagy.
@@ -34,6 +58,7 @@ class CommentController extends Controller
         }
 
         $comments = EventMessage::where('event_id', $eventId)
+            ->where('is_important', $importantOnly)
             ->with('user')
             ->paginate($perPage);
 
@@ -49,13 +74,18 @@ class CommentController extends Controller
         $request->validate([
             'event_id' => 'required|exists:events,id',
             'content' => 'required|string|max:1000',
+            'is_important' => 'sometimes|boolean',
         ], [
             'event_id.required' => 'Az event_id mező kötelező.',
             'event_id.exists' => 'Az event_id mezőnek egy létező esemény ID-nek kell lennie.',
             'content.required' => 'A content mező kötelező.',
             'content.string' => 'A content mezőnek szöveges értéknek kell lennie.',
             'content.max' => 'A content mező nem lehet hosszabb 1000 karakternél.',
+            'is_important.boolean' => 'Az is_important mező értéke csak igaz vagy hamis lehet.',
         ]);
+
+        $isImportant = $this->isTruthy($request->input('is_important', false));
+
         $event = Event::find($request->event_id);
         if (!$event) {
             return response()->json(['error' => 'Not found'], 404);
@@ -65,15 +95,22 @@ class CommentController extends Controller
             return response()->json(['error' => 'Az esemény lezárult, ezért már nem lehet kommentelni.'], 422);
         }
 
-        $eventview = EventShown::where('event_id', $request->event_id)->where('user_id', $user->id)->first();
-        if (!$eventview || $eventview->answer !== 'y' || !$event->chat_enabled) {
-            return response()->json(['error' => 'Hozzáférés megtagadva'], 403);
+        if ($isImportant) {
+            if ($event->user_id != $user->id) {
+                return response()->json(['error' => 'Csak az esemény létrehozója írhat az üzenőfalra.'], 403);
+            }
+        } else {
+            $eventview = EventShown::where('event_id', $request->event_id)->where('user_id', $user->id)->first();
+            if (!$eventview || $eventview->answer !== 'y' || !$event->chat_enabled) {
+                return response()->json(['error' => 'Hozzáférés megtagadva'], 403);
+            }
         }
 
         $comment = EventMessage::create([
             'event_id' => $request->event_id,
             'user_id' => $user->id,
             'content' => $request->input('content'),
+            'is_important' => $isImportant,
         ]);
         return response()->json($comment, 201);
     }

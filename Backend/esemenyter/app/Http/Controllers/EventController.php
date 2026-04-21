@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\EventShown;
 use App\Models\EventRequest;
+use App\Models\EventMessage;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use App\Models\ClassModel;
 use Illuminate\Support\Facades\DB;
@@ -170,7 +172,7 @@ class EventController extends Controller
                 return response()->json(['message' => 'nem jogosult'], 403);
             }
 
-            $event = DB::transaction(function () use ($user, $validated, $users, $isRecurring, $targetGroup) {
+            $event = Event::query()->getConnection()->transaction(function () use ($user, $validated, $users, $isRecurring, $targetGroup) {
                 if ($targetGroup === 'osztaly_szintu') {
                     $targetClassIdsSource = [];
                     if (array_key_exists('selected_class_ids', $validated)) {
@@ -272,7 +274,7 @@ class EventController extends Controller
                 return response()->json(['message' => 'nem jogosult'], 403);
             }
 
-            $event = DB::transaction(function () use ($user, $validated, $users, $collabIds, $targetGroup) {
+            $event = Event::query()->getConnection()->transaction(function () use ($user, $validated, $users, $collabIds, $targetGroup) {
                 if ($targetGroup === 'osztaly_szintu') {
                     $targetClassIdsSource = [];
                     if (array_key_exists('selected_class_ids', $validated)) {
@@ -443,7 +445,7 @@ class EventController extends Controller
 
         $eventId = $validated['event_id'];
 
-        DB::transaction(function () use ($validated, $establishmentId, $eventId) {
+        Event::query()->getConnection()->transaction(function () use ($validated, $establishmentId, $eventId) {
             //kérelem törlése
             EventRequest::where('event_id', $eventId)
                 ->where('establishment_id', $establishmentId)
@@ -503,7 +505,7 @@ class EventController extends Controller
             ->get();
 
         if ($events->isNotEmpty()) {
-            $creatorNames = DB::table('users')
+            $creatorNames = User::query()
                 ->whereIn('id', $events->pluck('user_id')->filter()->unique()->values())
                 ->pluck('name', 'id');
 
@@ -554,7 +556,7 @@ class EventController extends Controller
             ->get();
 
         if ($events->isNotEmpty()) {
-            $creatorNames = DB::table('users')
+            $creatorNames = User::query()
                 ->whereIn('id', $events->pluck('user_id')->filter()->unique()->values())
                 ->pluck('name', 'id');
 
@@ -590,25 +592,25 @@ class EventController extends Controller
         $commentCountsByEvent = collect();
 
         if (!empty($eventIds)) {
-            $feedbackStatsByEvent = DB::table('event_shows')
-                ->select(
-                    'event_id',
-                    DB::raw("SUM(CASE WHEN answer = 'y' THEN 1 ELSE 0 END) as attending_count"),
-                    DB::raw("SUM(CASE WHEN answer = 'n' THEN 1 ELSE 0 END) as not_attending_count")
-                )
+            $feedbackStatsByEvent = EventShown::query()
+                ->select('event_id')
+                ->selectRaw("SUM(CASE WHEN answer = 'y' THEN 1 ELSE 0 END) as attending_count")
+                ->selectRaw("SUM(CASE WHEN answer = 'n' THEN 1 ELSE 0 END) as not_attending_count")
                 ->whereIn('event_id', $eventIds)
                 ->groupBy('event_id')
                 ->get()
                 ->keyBy('event_id');
 
-            $userFeedbackByEvent = DB::table('event_shows')
+            $userFeedbackByEvent = EventShown::query()
                 ->whereIn('event_id', $eventIds)
                 ->where('user_id', $user->id)
                 ->pluck('answer', 'event_id');
 
-            $commentCountsByEvent = DB::table('event_messages')
-                ->select('event_id', DB::raw('COUNT(*) as comment_count'))
+            $commentCountsByEvent = EventMessage::query()
+                ->select('event_id')
+                ->selectRaw('COUNT(*) as comment_count')
                 ->whereIn('event_id', $eventIds)
+                ->where('is_important', false)
                 ->groupBy('event_id')
                 ->get()
                 ->keyBy('event_id');
@@ -778,24 +780,22 @@ class EventController extends Controller
             return response()->json(['message' => 'nem jogosult'], 403);
         }
 
-        DB::table('event_shows')->updateOrInsert(
+        EventShown::updateOrCreate(
             [
                 'event_id' => $eventId,
                 'user_id' => $user->id,
             ],
             [
                 'answer' => $validated['answer'],
-                'updated_at' => now(),
-                'created_at' => now(),
             ]
         );
 
-        $attendingCount = DB::table('event_shows')
+        $attendingCount = EventShown::query()
             ->where('event_id', $eventId)
             ->where('answer', 'y')
             ->count();
 
-        $notAttendingCount = DB::table('event_shows')
+        $notAttendingCount = EventShown::query()
             ->where('event_id', $eventId)
             ->where('answer', 'n')
             ->count();
@@ -844,9 +844,9 @@ class EventController extends Controller
                 'users.name',
                 'users.email',
                 'event_shows.answer',
-                'event_shows.updated_at',
-                DB::raw('COALESCE(students.alias, staffs.alias) as alias')
+                'event_shows.updated_at'
             )
+            ->selectRaw('COALESCE(students.alias, staffs.alias) as alias')
             ->orderBy('users.name')
             ->get();
 
@@ -877,7 +877,7 @@ class EventController extends Controller
             return response()->json(['message' => 'A létrehozó nem tiltható ki az eseményből.'], 422);
         }
 
-        $wasParticipant = DB::table('event_shows')
+        $wasParticipant = EventShown::query()
             ->where('event_id', $eventId)
             ->where('user_id', $userId)
             ->where('answer', 'y')
@@ -887,28 +887,29 @@ class EventController extends Controller
             return response()->json(['message' => 'A felhasználó nem aktív résztvevő.'], 404);
         }
 
-        DB::table('event_shows')
+        EventShown::query()
             ->where('event_id', $eventId)
             ->where('user_id', $userId)
             ->delete();
 
-        DB::table('event_messages')
+        EventMessage::query()
             ->where('event_id', $eventId)
             ->where('user_id', $userId)
             ->delete();
 
-        $attendingCount = DB::table('event_shows')
+        $attendingCount = EventShown::query()
             ->where('event_id', $eventId)
             ->where('answer', 'y')
             ->count();
 
-        $notAttendingCount = DB::table('event_shows')
+        $notAttendingCount = EventShown::query()
             ->where('event_id', $eventId)
             ->where('answer', 'n')
             ->count();
 
-        $commentCount = DB::table('event_messages')
+        $commentCount = EventMessage::query()
             ->where('event_id', $eventId)
+            ->where('is_important', false)
             ->count();
 
         return response()->json([
