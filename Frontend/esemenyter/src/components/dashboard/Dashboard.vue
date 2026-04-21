@@ -2602,7 +2602,10 @@ export default {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.site-title {
+  background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 55%, #c4b5fd 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -2675,19 +2678,20 @@ export default {
 
 .menu-header {
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(150deg, #5873eb, rgb(0 0 0));
 }
 
 .menu-user-info h4 {
   margin: 0 0 5px 0;
   font-size: 18px;
+  color: #e4e2e2;
 }
 
 .user-email {
   margin: 0;
   font-size: 14px;
   opacity: 0.9;
+  color: #b8b8b8;
 }
 
 .role-badge {
@@ -2710,8 +2714,8 @@ export default {
 }
 
 .role-badge.admin {
-  background: rgba(139, 92, 246, 0.2);
-  color: #8b5cf6;
+  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
 }
 
 .menu-items {

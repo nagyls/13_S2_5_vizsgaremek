@@ -17,7 +17,7 @@
           
           <!-- Felhasználói profil és lenyíló menü -->
           <div class="user-profile">
-            <div class="user-avatar" @click="toggleUserMenu">
+            <div class="user-avatar" @click.stop="toggleUserMenu">
               <div class="avatar-circle">
                 <span>{{ userInitials }}</span>
               </div>
@@ -49,7 +49,7 @@
                   </router-link>
                   <router-link to="/events-list" class="menu-item">
                     <i class='bx bx-calendar-event'></i>
-                    <span>Események listája</span>
+                    <span>Események</span>
                   </router-link>
                   <router-link to="/profile" class="menu-item">
                     <i class='bx bx-user'></i>
@@ -378,14 +378,52 @@ export default {
   async created() {
     await this.loadCurrentUser()
     await this.loadEvents()
+  },
+
+  mounted() {
     window.addEventListener('scroll', this.handleScroll)
+    document.addEventListener('click', this.handleDocumentClick)
   },
 
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll)
+    document.removeEventListener('click', this.handleDocumentClick)
   },
 
   methods: {
+    /**
+     * Felhasználói menü nyitása/zárása
+     */
+    toggleUserMenu() {
+      this.showUserMenu = !this.showUserMenu
+    },
+
+    /**
+     * Lenyíló menü bezárása külső kattintásra
+     */
+    handleDocumentClick(event) {
+      const profile = this.$el?.querySelector('.user-profile')
+      if (!profile) return
+
+      if (!profile.contains(event.target)) {
+        this.showUserMenu = false
+      }
+    },
+
+    /**
+     * Vissza a tetejére gomb megjelenítése görgetés alapján
+     */
+    handleScroll() {
+      this.showScrollTop = window.scrollY > 300
+    },
+
+    /**
+     * Sima visszagörgetés az oldal tetejére
+     */
+    scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    },
+
     /**
      * Dátum és idő részek kinyerése stringből (Regex alapú normalizálás)
      */
@@ -525,6 +563,7 @@ export default {
         localStorage.clear()
         sessionStorage.clear()
         delete axios.defaults.headers.common['Authorization']
+        this.showUserMenu = false
         this.$router.push('/')
       }
     }
@@ -697,7 +736,7 @@ export default {
 
 .menu-header {
   padding: 20px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(150deg, #5873eb, rgb(0 0 0));
   color: white;
 }
 
@@ -705,12 +744,14 @@ export default {
   margin: 0 0 5px 0;
   font-size: 16px;
   font-weight: 600;
+  color: #e4e2e2;
 }
 
 .user-email {
   margin: 0;
   font-size: 12px;
   opacity: 0.9;
+  color: #b8b8b8;
 }
 
 .role-badge {
@@ -734,8 +775,8 @@ export default {
 
 .role-badge.admin,
 .role-badge.institution_manager {
-  background: rgba(139, 92, 246, 0.2);
-  color: #8b5cf6;
+  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
 }
 
 .menu-items {

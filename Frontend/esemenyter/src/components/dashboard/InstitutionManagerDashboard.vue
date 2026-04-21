@@ -3700,19 +3700,19 @@ export default {
 
 .menu-header {
   padding: 20px;
-  background: linear-gradient(135deg, #667eea10, #764ba210);
+  background: linear-gradient(150deg, #5873eb, rgb(0 0 0));
   border-bottom: 1px solid #e5e7eb;
 }
 
 .menu-user-info h4 {
   margin: 0 0 5px 0;
-  color: #374151;
+  color: #e4e2e2;
   font-size: 16px;
 }
 
 .user-email {
   margin: 0;
-  color: #6b7280;
+  color: #b8b8b8;
   font-size: 14px;
 }
 

@@ -383,7 +383,7 @@ export default {
       const roles = {
         'student': 'Diák',
         'teacher': 'Tanár',
-        'admin': 'Admin'
+        'admin': 'Adminisztrátor'
       };
       return roles[this.normalizedRole] || 'Vendég';
     },
@@ -988,7 +988,10 @@ export default {
   margin: 0;
   font-size: 20px;
   font-weight: 700;
-  color: #f8fafc;
+  background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 55%, #c4b5fd 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   letter-spacing: -0.2px;
   text-shadow: 0 2px 10px rgba(15, 23, 42, 0.42);
 }
@@ -1043,19 +1046,19 @@ export default {
 
 .menu-header {
   padding: 20px;
-  background: linear-gradient(135deg, #667eea10, #764ba210);
+  background: linear-gradient(150deg, #5873eb, rgb(0 0 0));
   border-bottom: 1px solid #e5e7eb;
 }
 
 .menu-user-info h4 {
   margin: 0 0 5px 0;
-  color: #374151;
+  color: #e4e2e2;
   font-size: 16px;
 }
 
 .user-email {
   margin: 0;
-  color: #6b7280;
+  color: #b8b8b8;
   font-size: 14px;
 }
 
@@ -1085,8 +1088,8 @@ export default {
 }
 
 .role-badge.admin {
-  background: rgba(139, 92, 246, 0.2);
-  color: #8b5cf6;
+  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
 }
 
 .menu-items {

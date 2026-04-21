@@ -993,19 +993,21 @@ export default {
 
 .menu-header {
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(150deg, #5873eb, rgb(0 0 0));
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .menu-user-info h4 {
   margin: 0 0 5px 0;
   font-size: 18px;
+  color: #e4e2e2;
 }
 
 .user-email {
   margin: 0;
   font-size: 14px;
   opacity: 0.9;
+  color: #b8b8b8;
 }
 
 .role-badge {
@@ -1015,8 +1017,14 @@ export default {
   font-size: 12px;
   font-weight: 600;
   margin-top: 10px;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.role-badge.admin,
+.role-badge.institution_manager {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
 }
 
 .menu-items {
@@ -1218,8 +1226,13 @@ export default {
 }
 
 .profile-role.admin {
-  background: rgba(139, 92, 246, 0.1);
-  color: #8b5cf6;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.profile-role.institution_manager {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
 }
 
 .profile-role i {
@@ -1413,8 +1426,13 @@ export default {
 }
 
 .establishment-role.admin {
-  background: rgba(99, 102, 241, 0.12);
-  color: #4f46e5;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.establishment-role.institution_manager {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
 }
 
 .current-establishment-badge {

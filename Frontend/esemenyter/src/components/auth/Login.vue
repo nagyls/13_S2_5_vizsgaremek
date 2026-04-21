@@ -16,7 +16,7 @@
                 </div>
                 <div class="remember-forgot">
                     <label>
-                        <input type="checkbox" v-model="rememberMe" />Emlékezzen rám
+                        <input type="checkbox" v-model="rememberMe" />Emlékezz rám
                     </label>
                     <router-link to="/forgot-password" class="forgot-link">Elfelejtett jelszó?</router-link>
                 </div>
