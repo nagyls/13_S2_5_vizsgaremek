@@ -200,6 +200,29 @@ class MemberController extends Controller
         ]);
     }
 
+    public function hasClassMembership(Request $request, int $establishmentId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 401);
+        }
+
+        if (!$this->isMemberEstablishment($user->id, $establishmentId)) {
+            return response()->json(['message' => 'Nem Felhatalmazott!'], 403);
+        }
+
+        $hasClassMembership = ClassStudent::query()
+            ->join('classes', 'class_students.class_id', '=', 'classes.id')
+            ->where('class_students.user_id', $user->id)
+            ->where('classes.establishment_id', $establishmentId)
+            ->exists();
+
+        return response()->json([
+            'has_class_membership' => $hasClassMembership,
+        ]);
+    }
+
     public function removeStudents(Request $request)
     {
         $user = $request->user();

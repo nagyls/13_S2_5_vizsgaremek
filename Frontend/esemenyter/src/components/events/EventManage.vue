@@ -38,7 +38,7 @@
 
               <div v-else-if="!participants.length" class="participants-state empty">
                 <i class='bx bx-info-circle'></i>
-                <span>Még nincs aktív résztvevő az eseményen.</span>
+                <span>Nincs meghívott a címhez az eseményen.</span>
               </div>
 
               <div v-else class="participants-list">
@@ -48,14 +48,65 @@
                     <div class="participant-subline">{{ participant.email || 'Nincs email megadva' }}</div>
                   </div>
 
+                  <!-- Részvételi státusz jelvény -->
+                  <div class="participation-status" :class="getInviteeStatus(participant).class">
+                    <i class='bx' :class="getInviteeStatus(participant).icon"></i>
+                    <span>{{ getInviteeStatus(participant).text }}</span>
+                  </div>
+
                   <!-- Résztvevő kitiltása az eseményről -->
                   <button
+                    v-if="!isBannedParticipant(participant)"
                     class="participant-ban-button"
                     :disabled="Boolean(banningParticipantIds[participant.user_id])"
                     @click="banParticipant(participant)"
                   >
                     <i class='bx' :class="banningParticipantIds[participant.user_id] ? 'bx-loader-circle bx-spin' : 'bx-block'"></i>
                     {{ banningParticipantIds[participant.user_id] ? 'Tiltás...' : 'Tiltás' }}
+                  </button>
+
+                  <div v-else class="participant-banned-label">Kitiltva</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-card banned-manager">
+            <h3 class="participants-toggle" @click="bannedExpanded = !bannedExpanded">
+              <span><i class='bx bx-block'></i> Letiltott személyek</span>
+              <i class='bx' :class="bannedExpanded ? 'bx-chevron-up' : 'bx-chevron-down'"></i>
+            </h3>
+
+            <div v-show="bannedExpanded">
+              <div v-if="isParticipantsLoading" class="participants-state loading">
+                <i class='bx bx-loader-circle bx-spin'></i>
+                <span>Letiltottak betöltése...</span>
+              </div>
+
+              <div v-else-if="!bannedParticipants.length" class="participants-state empty">
+                <i class='bx bx-info-circle'></i>
+                <span>Nincs letiltott személy ennél az eseménynél.</span>
+              </div>
+
+              <div v-else class="participants-list">
+                <div v-for="participant in bannedParticipants" :key="`banned-${participant.user_id}`" class="participant-item">
+                  <div class="participant-meta">
+                    <div class="participant-name">{{ participant.alias || participant.name || 'Ismeretlen felhasználó' }}</div>
+                    <div class="participant-subline">{{ participant.email || 'Nincs email megadva' }}</div>
+                  </div>
+
+                  <div class="participation-status status-banned">
+                    <i class='bx bx-block'></i>
+                    <span>Kitiltva</span>
+                  </div>
+
+                  <button
+                    class="participant-unban-button"
+                    :disabled="Boolean(unbanningParticipantIds[participant.user_id])"
+                    @click="unbanParticipant(participant)"
+                  >
+                    <i class='bx' :class="unbanningParticipantIds[participant.user_id] ? 'bx-loader-circle bx-spin' : 'bx-lock-open-alt'"></i>
+                    {{ unbanningParticipantIds[participant.user_id] ? 'Feloldás...' : 'Feloldás' }}
                   </button>
                 </div>
               </div>
@@ -205,9 +256,11 @@ export default {
       isParticipantsLoading: false,
       participants: [],
       banningParticipantIds: {},
+      unbanningParticipantIds: {},
       isUpdatingOccurrence: false,
       isUpdatingDetails: false,
       isFirefoxBrowser: false,
+      bannedExpanded: true,
       occurrenceForm: {
         startDate: '',
         startTime: '',
@@ -230,6 +283,10 @@ export default {
 
     canManageOccurrence() {
       return Number(this.currentUser?.id) > 0 && Number(this.eventData?.user_id) === Number(this.currentUser?.id)
+    },
+
+    bannedParticipants() {
+      return this.participants.filter(participant => this.isBannedParticipant(participant))
     }
   },
 
@@ -346,7 +403,7 @@ export default {
     },
 
     /**
-     * Résztvevők listájának lekérése az adott eseményhez
+     * Az eseményre meghívott összes személy listájának lekérése (részvételi státusszal)
      */
     async loadParticipants() {
       const token = getToken()
@@ -360,7 +417,7 @@ export default {
       this.isParticipantsLoading = true
 
       try {
-        const response = await axios.get(`${API_BASE}/events/${eventId}/participants`, {
+        const response = await axios.get(`${API_BASE}/events/${eventId}/invitees`, {
           headers: getAuthHeaders(token),
           validateStatus: (status) => status >= 200 && status < 600
         })
@@ -370,12 +427,37 @@ export default {
           return
         }
 
-        this.participants = Array.isArray(response?.data?.participants) ? response.data.participants : []
+        this.participants = Array.isArray(response?.data?.invitees) ? response.data.invitees : []
       } catch (error) {
         this.participants = []
       } finally {
         this.isParticipantsLoading = false
       }
+    },
+
+    /**
+     * Részvételi státusz szövegének és stílusának meghatározása
+     */
+    getParticipationStatus(answer) {
+      if (answer === 'y') {
+        return { text: 'Részt vesz', class: 'status-attending', icon: 'bx-check-circle' }
+      }
+      if (answer === 'n') {
+        return { text: 'Nem vesz részt', class: 'status-not-attending', icon: 'bx-x-circle' }
+      }
+      return { text: 'Még nem döntött', class: 'status-undecided', icon: 'bx-help-circle' }
+    },
+
+    isBannedParticipant(participant) {
+      return Boolean(participant?.banned_at)
+    },
+
+    getInviteeStatus(participant) {
+      if (this.isBannedParticipant(participant)) {
+        return { text: 'Kitiltva', class: 'status-banned', icon: 'bx-block' }
+      }
+
+      return this.getParticipationStatus(participant?.answer)
     },
 
     /**
@@ -412,12 +494,59 @@ export default {
           return
         }
 
-        this.participants = this.participants.filter(item => Number(item.user_id) !== participantId)
         this.showMessage(response?.data?.message || 'Résztvevő sikeresen kitiltva.', 'success')
+        await this.loadParticipants()
       } catch (error) {
         this.showMessage('Hiba történt a résztvevő kitiltásakor.', 'error')
       } finally {
         this.banningParticipantIds = { ...this.banningParticipantIds, [participantId]: false }
+      }
+    },
+
+    /**
+     * Kitiltás feloldása egy korábban letiltott résztvevőnél
+     */
+    async unbanParticipant(participant) {
+      const participantId = Number(participant?.user_id)
+      const eventId = Number(this.eventData?.id || this.resolvedEventId)
+      if (!participantId || !eventId) return
+
+      const confirmed = await toast.confirm(
+        `Feloldod ${participant?.alias || participant?.name || 'a felhasználó'} tiltását?`,
+        { confirmText: 'Feloldás', cancelText: 'Mégse' }
+      )
+
+      if (!confirmed) return
+
+      const token = getToken()
+      if (!token) {
+        this.showMessage('A művelethez bejelentkezés szükséges.', 'warning')
+        return
+      }
+
+      this.unbanningParticipantIds = { ...this.unbanningParticipantIds, [participantId]: true }
+
+      try {
+        const response = await axios.patch(
+          `${API_BASE}/events/${eventId}/participants/${participantId}/unban`,
+          {},
+          {
+            headers: getAuthHeaders(token),
+            validateStatus: (status) => status >= 200 && status < 600
+          }
+        )
+
+        if (response.status >= 400) {
+          this.showMessage(response?.data?.message || 'Nem sikerült feloldani a tiltást.', 'error')
+          return
+        }
+
+        this.showMessage(response?.data?.message || 'Tiltás feloldva.', 'success')
+        await this.loadParticipants()
+      } catch (error) {
+        this.showMessage('Hiba történt a tiltás feloldásakor.', 'error')
+      } finally {
+        this.unbanningParticipantIds = { ...this.unbanningParticipantIds, [participantId]: false }
       }
     },
 
@@ -819,6 +948,10 @@ export default {
   order: 3;
 }
 
+.banned-manager {
+  order: 4;
+}
+
 .description {
   color: #64748b;
   margin-top: 0;
@@ -889,12 +1022,13 @@ export default {
 .participant-item {
   display: flex;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.6rem;
   align-items: center;
-  padding: 0.42rem 0.6rem;
+  padding: 0.5rem 0.6rem;
   border-radius: 10px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
+  flex-wrap: wrap;
 }
 
 .participant-meta {
@@ -918,6 +1052,43 @@ export default {
   text-overflow: ellipsis;
 }
 
+/* Részvételi státusz jelvény */
+.participation-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.participation-status i {
+  font-size: 0.9rem;
+}
+
+.participation-status.status-attending {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.participation-status.status-not-attending {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.participation-status.status-undecided {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.participation-status.status-banned {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .participant-ban-button {
   border: none;
   border-radius: 8px;
@@ -933,6 +1104,34 @@ export default {
 }
 
 .participant-ban-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.participant-banned-label {
+  padding: 0.35rem 0.58rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.participant-unban-button {
+  border: none;
+  border-radius: 8px;
+  padding: 0.35rem 0.58rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #fff;
+  background: #2563eb;
+  cursor: pointer;
+}
+
+.participant-unban-button:disabled {
   opacity: 0.65;
   cursor: not-allowed;
 }

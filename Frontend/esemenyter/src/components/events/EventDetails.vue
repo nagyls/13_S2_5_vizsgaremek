@@ -1324,45 +1324,19 @@ export default {
           return false
         }
 
-        const classesResponse = await fetch(`${API_BASE}/establishment/${institutionId}/classes`, {
+        const membershipResponse = await fetch(`${API_BASE}/establishment/${institutionId}/members/me/has-class`, {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json'
           }
         })
 
-        if (!classesResponse.ok) {
+        if (!membershipResponse.ok) {
           return false
         }
 
-        const classesPayload = await classesResponse.json()
-        const classes = Array.isArray(classesPayload?.data) ? classesPayload.data : []
-
-        for (const classItem of classes) {
-          const membersResponse = await fetch(
-            `${API_BASE}/establishment/${institutionId}/classes/${classItem.id}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: 'application/json'
-              }
-            }
-          )
-
-          if (!membersResponse.ok) {
-            continue
-          }
-
-          const membersPayload = await membersResponse.json()
-          const members = Array.isArray(membersPayload?.data) ? membersPayload.data : []
-          const belongsToClass = members.some(member => Number(member?.id) === Number(this.currentUser.id))
-
-          if (belongsToClass) {
-            return true
-          }
-        }
-
-        return false
+        const membershipPayload = await membershipResponse.json()
+        return Boolean(membershipPayload?.has_class_membership)
       } catch (error) {
         console.error('Hiba az osztály tagság ellenőrzése során:', error)
         return false
