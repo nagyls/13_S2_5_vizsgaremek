@@ -50,6 +50,9 @@ class DatabaseSeeder extends Seeder
             namePrefix: 'Szeged'
         );
 
+        // Teszt felhasználó: tesztgmail1@gmail.com (role nélküli user)
+        $this->createUser('Teszt Felhasználó', 'tesztgmail1@gmail.com');
+
         $this->seedSchoolScenario(
             adminUserId: $adminKiskunId,
             settlementId: $kiskunSettlementId,
@@ -359,7 +362,7 @@ class DatabaseSeeder extends Seeder
 
         DB::table('classes')->insert([
             'user_id' => null,
-            'name' => '9.B',
+            'name' => 'B',
             'grade' => 9,
             'capacity' => 30,
             'establishment_id' => $establishmentId,
@@ -369,7 +372,7 @@ class DatabaseSeeder extends Seeder
 
         $fullClassId = (int) DB::table('classes')->insertGetId([
             'user_id' => $teacherUserIds[0],
-            'name' => '10.A',
+            'name' => 'A',
             'grade' => 10,
             'capacity' => 30,
             'establishment_id' => $establishmentId,

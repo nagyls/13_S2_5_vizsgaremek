@@ -22,6 +22,7 @@ class CommentController extends Controller
 
         return EventShown::where('event_id', $event->id)
             ->where('user_id', $userId)
+            ->whereNull('banned_at')
             ->exists();
     }
 
@@ -46,7 +47,7 @@ class CommentController extends Controller
         }
 
         $eventview = EventShown::where('event_id', $eventId)->where('user_id', $user->id)->first();
-        if (!$importantOnly && (!$eventview || $eventview->answer !== 'y' || !$event->chat_enabled)) {
+        if (!$importantOnly && (!$eventview || $eventview->banned_at !== null || $eventview->answer !== 'y' || !$event->chat_enabled)) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
         // A lekérdezés méretét korlátozzuk, hogy ne legyen túl nagy.
@@ -101,7 +102,7 @@ class CommentController extends Controller
             }
         } else {
             $eventview = EventShown::where('event_id', $request->event_id)->where('user_id', $user->id)->first();
-            if (!$eventview || $eventview->answer !== 'y' || !$event->chat_enabled) {
+            if (!$eventview || $eventview->banned_at !== null || $eventview->answer !== 'y' || !$event->chat_enabled) {
                 return response()->json(['error' => 'Hozzáférés megtagadva'], 403);
             }
         }
