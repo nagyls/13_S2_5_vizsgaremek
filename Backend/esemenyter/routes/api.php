@@ -79,7 +79,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/events/{eventId}/occurrence', [EventController::class, 'manageOccurrence']);  //SZAKKÖR MÓDOSÍTÁS
     Route::patch('/events/{eventId}/chat', [EventController::class, 'handleChat']);  //CHAT MÓDOSÍTÁS
     Route::get('/events/{eventId}/participants', [EventController::class, 'getParticipants']);
+    Route::get('/events/{eventId}/invitees', [EventController::class, 'getAllEventInvitees']);
     Route::delete('/events/{eventId}/participants/{userId}', [EventController::class, 'banParticipant']);
+    Route::patch('/events/{eventId}/participants/{userId}/unban', [EventController::class, 'unbanParticipant']);
     Route::get('/events/{eventId}/poll', [PollController::class, 'getEventPoll']);
 
     //intézmény kezelés
@@ -97,6 +99,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('{establishmentId}/members/students', [MemberController::class, 'getStudents']);
         Route::get('{establishmentId}/members/staff', [MemberController::class, 'getStaff']);
+        Route::get('{establishmentId}/members/me/has-class', [MemberController::class, 'hasClassMembership']);
         //kollaborácios események
         Route::get('/{establishmentId}/event-access', [EventController::class, 'getCollabEvents']);
         Route::patch('/{establishmentId}/event-access', [EventController::class, 'handleCollabEvents']);

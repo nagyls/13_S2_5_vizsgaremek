@@ -86,8 +86,14 @@ import logo2 from '../../assets/logo2.svg';
 import { API_BASE, clearAuthStorage } from '../../services/api'
 
 export default {
+    /**
+     * Regisztrációs oldal komponense email-verifikációs visszajelző modal ablakkal.
+     */
     name: 'Register',
     
+    /**
+     * A regisztrációs űrlap és UI állapotok lokális adatai.
+     */
     data() {
         return {
             username: "",
@@ -103,7 +109,13 @@ export default {
         };
     },
     
+    /**
+     * Jelszóerősséghez tartozó származtatott értékek.
+     */
     computed: {
+        /**
+         * Jelszó erősségének százalékos értéke egyszerű szabályok alapján.
+         */
         passwordStrength() {
             let strength = 0;
             const password = this.jelszo;
@@ -118,12 +130,18 @@ export default {
             return Math.min(100, strength);
         },
         
+        /**
+         * Jelszóerősséghez tartozó vizuális osztálynév.
+         */
         passwordStrengthClass() {
             if (this.passwordStrength < 40) return 'weak';
             if (this.passwordStrength < 70) return 'medium';
             return 'strong';
         },
         
+        /**
+         * Jelszóerősség szöveges címkéje.
+         */
         passwordStrengthText() {
             if (this.passwordStrength < 40) return 'Gyenge';
             if (this.passwordStrength < 70) return 'Közepes';
@@ -132,6 +150,9 @@ export default {
     },
     
     methods: {
+        /**
+         * Regisztráció beküldése validációval és sikeres verifikációs visszajelzéssel.
+         */
         async register() {
             if (this.jelszo !== this.jelszo_meg) {
                 toast.error("A jelszavak nem egyeznek!");
@@ -171,11 +192,17 @@ export default {
             }
         },
 
+        /**
+         * Verifikációs modal bezárása és navigáció a bejelentkezési oldalra.
+         */
         goToLogin() {
             this.showVerificationPopup = false;
             this.$router.push('/login');
         },
 
+        /**
+         * Backend hibák felhasználóbarát magyar üzenetre fordítása.
+         */
         translateRegisterError(err) {
             const rawMessage = err.response?.data?.message || err.response?.data?.error;
             const validationErrors = err.response?.data?.errors;
@@ -207,6 +234,9 @@ export default {
         }
     },
     
+    /**
+     * Bejelentkezett, már verifikált felhasználó átirányítása dashboardra.
+     */
     mounted() {
         const savedUser = localStorage.getItem('esemenyter_user');
         if (savedUser) {
@@ -223,6 +253,7 @@ export default {
 }
 </script>
 
+/* Registrate komponens stílusai */
 <style scoped>
 * {
     box-sizing: border-box;
@@ -688,7 +719,7 @@ export default {
     }
 }
 
-/* Logo */
+/* Logó szekció */
 .logo-icon {
     display: flex;
     justify-content: center;

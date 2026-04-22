@@ -121,6 +121,7 @@ export default {
   position: relative;
 }
 
+/* Visszalépés gomb */
 .back-btn {
   position: fixed;
   top: 20px;
@@ -150,6 +151,7 @@ export default {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
+/* Áttetsző üvegkártya (glassmorphism) hatás az adattartalomnak */
 .privacy-wrapper {
   max-width: 1000px;
   width: 100%;
@@ -164,6 +166,7 @@ export default {
   animation: fadeIn 0.6s ease-out;
 }
 
+/* Beúsztató animáció a kártya megjelenésekor */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -237,9 +240,10 @@ export default {
   padding: 20px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
-  border-left: 4px solid #fff;
+  border-left: 4px solid #fff; /* Megkülönböztető sáv a bevezetőnek */
 }
 
+/* Kiemelt információk (pl. email) keretezése */
 .highlight {
   font-size: 18px;
   padding: 15px;
@@ -258,6 +262,7 @@ export default {
   border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* Reszponzív nézetek mobil eszközökre */
 @media (max-width: 768px) {
   .privacy-wrapper {
     padding: 30px 20px;

@@ -83,6 +83,7 @@ export default {
   position: relative;
 }
 
+/* Fixált pozíciójú visszalépés gomb üveg-hatással */
 .back-btn {
   position: fixed;
   top: 20px;
@@ -112,6 +113,7 @@ export default {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
+/* Központi tartalom-kártya áttetsző háttérrel és elmosással */
 .aszf-wrapper {
   max-width: 1000px;
   width: 100%;
@@ -126,6 +128,7 @@ export default {
   animation: fadeIn 0.6s ease-out;
 }
 
+/* Megjelenési animáció a kártyához */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -199,7 +202,7 @@ export default {
   padding: 20px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
-  border-left: 4px solid #fff;
+  border-left: 4px solid #fff; /* Fehér hangsúlyozó sáv a bevezetésnek */
 }
 
 .last-update {
@@ -211,6 +214,7 @@ export default {
   border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* Kisebb képernyőkre vonatkozó igazítások */
 @media (max-width: 768px) {
   .aszf-wrapper {
     padding: 30px 20px;

@@ -126,8 +126,14 @@ import { API_BASE, getToken, getAuthHeaders } from '../../services/api'
 import logo2 from '../../assets/logo2.svg'
 
 export default {
+  /**
+   * Email megerősítési folyamat állapotait kezelő komponens.
+   */
   name: 'EmailVerification',
 
+  /**
+   * A verifikációs nézet lokális állapota.
+   */
   data() {
     return {
       isVerifying: false,
@@ -137,11 +143,17 @@ export default {
     }
   },
 
+  /**
+   * Komponens indulásakor elindítja az email ellenőrzési folyamatot.
+   */
   async created() {
     await this.verifyEmail()
   },
 
   methods: {
+    /**
+     * Email megerősítési állapot ellenőrzése route paraméterek és API válasz alapján.
+     */
     async verifyEmail() {
       const status = String(this.$route.query.status || '')
       const id = this.$route.params.id
@@ -223,6 +235,9 @@ export default {
       }
     },
 
+    /**
+     * Új megerősítő email kérése az aktuális bejelentkezett felhasználóhoz.
+     */
     async requestNewEmail() {
       const token = getToken()
       if (!token) {
@@ -261,14 +276,23 @@ export default {
       }
     },
 
+    /**
+     * Navigáció a bejelentkezési oldalra.
+     */
     goToLogin() {
       this.$router.push('/login')
     },
 
+    /**
+     * Navigáció a fő dashboard oldalra.
+     */
     goToDashboard() {
       this.$router.push('/dashboard')
     },
 
+    /**
+     * Nézet állapot alaphelyzetbe állítása újraküldéshez.
+     */
     resetStatus() {
       this.verificationStatus = null
       this.errorMessage = ''
@@ -278,7 +302,8 @@ export default {
 </script>
 
 <style scoped>
-/* ===== ALAP STÍLUSOK ===== */
+/* ===== EmailVerification komponens stílusai ===== */
+/* ===== Alap stílusok ===== */
 * {
   margin: 0;
   padding: 0;
@@ -312,7 +337,7 @@ export default {
   padding: 0 20px;
 }
 
-/* ===== MAIN CONTENT ===== */
+/* ===== Fő tartalom ===== */
 .main-content {
   display: flex;
   align-items: center;
@@ -327,7 +352,7 @@ export default {
   margin: 0 auto;
 }
 
-/* ===== VERIFICATION CARD ===== */
+/* ===== Verifikációs kártya ===== */
 .verification-card {
   background: white;
   border-radius: 32px;
@@ -348,7 +373,7 @@ export default {
   }
 }
 
-/* Card Icons */
+/* Kártya ikonok */
 .card-icon {
   font-size: 80px;
   margin-bottom: 24px;
@@ -375,7 +400,7 @@ export default {
   color: #3b82f6;
 }
 
-/* Loading animation */
+/* Betöltési animáció */
 .loading-icon i {
   animation: spin 1s linear infinite;
 }
@@ -389,7 +414,7 @@ export default {
   }
 }
 
-/* Card Typography */
+/* Kártya tipográfia */
 .verification-card h2 {
   font-size: 28px;
   font-weight: 700;
@@ -422,7 +447,7 @@ export default {
   color: #991b1b;
 }
 
-/* Card Actions */
+/* Kártya műveletek */
 .card-actions {
   display: flex;
   gap: 12px;
@@ -431,7 +456,7 @@ export default {
   flex-wrap: wrap;
 }
 
-/* Buttons */
+/* Gombok */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -469,7 +494,7 @@ export default {
   transform: translateY(-2px);
 }
 
-/* ===== SUCCESS CARD ===== */
+/* ===== Sikeres kártya ===== */
 .verification-card.success .card-icon i {
   animation: pulse 0.5s ease-in-out;
 }
@@ -483,22 +508,22 @@ export default {
   }
 }
 
-/* ===== WARNING CARD ===== */
+/* ===== Figyelmeztető kártya ===== */
 .verification-card.warning .card-icon i {
   animation: pulse 0.5s ease-in-out;
 }
 
-/* ===== ERROR CARD ===== */
+/* ===== Hibakártya ===== */
 .verification-card.error .card-icon i {
   animation: pulse 0.5s ease-in-out;
 }
 
-/* ===== LOADING CARD ===== */
+/* ===== Betöltési kártya ===== */
 .verification-card.loading .card-icon i {
   animation: spin 1s linear infinite;
 }
 
-/* ===== RESPONSIVE ===== */
+/* ===== Reszponzív stílusok ===== */
 @media (max-width: 640px) {
   .container {
     padding: 0 16px;

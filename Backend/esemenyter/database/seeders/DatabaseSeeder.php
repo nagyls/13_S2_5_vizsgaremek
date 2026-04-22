@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class DatabaseSeeder extends Seeder
@@ -48,6 +49,9 @@ class DatabaseSeeder extends Seeder
             establishmentDescription: 'Teszt adatokkal feltöltött szegedi gimnázium.',
             namePrefix: 'Szeged'
         );
+
+        // Teszt felhasználó: tesztgmail1@gmail.com (role nélküli user)
+        $this->createUser('Teszt Felhasználó', 'tesztgmail1@gmail.com');
 
         $this->seedSchoolScenario(
             adminUserId: $adminKiskunId,
@@ -247,6 +251,17 @@ class DatabaseSeeder extends Seeder
         string $establishmentDescription,
         string $namePrefix
     ): void {
+        $year = (int) now()->year;
+        $localStart = Carbon::create($year, 5, 7, 9, 0, 0);
+        $localEnd = Carbon::create($year, 5, 7, 10, 0, 0);
+        $globalStart = Carbon::create($year, 5, 12, 11, 0, 0);
+        $globalEnd = Carbon::create($year, 5, 12, 12, 0, 0);
+        $openStart = Carbon::create($year, 5, 19, 10, 0, 0);
+        $openEnd = Carbon::create($year, 5, 19, 11, 30, 0);
+        $weeklyStart = Carbon::create($year, 5, 5, 8, 30, 0);
+        $weeklyEnd = Carbon::create($year, 5, 5, 9, 30, 0);
+        $weeklyUntil = Carbon::create($year, 5, 26, 23, 59, 59);
+
         $establishmentId = (int) DB::table('establishments')->insertGetId([
             'title' => $establishmentTitle,
             'description' => $establishmentDescription,
@@ -347,7 +362,7 @@ class DatabaseSeeder extends Seeder
 
         DB::table('classes')->insert([
             'user_id' => null,
-            'name' => '9.B',
+            'name' => 'B',
             'grade' => 9,
             'capacity' => 30,
             'establishment_id' => $establishmentId,
@@ -357,7 +372,7 @@ class DatabaseSeeder extends Seeder
 
         $fullClassId = (int) DB::table('classes')->insertGetId([
             'user_id' => $teacherUserIds[0],
-            'name' => '10.A',
+            'name' => 'A',
             'grade' => 10,
             'capacity' => 30,
             'establishment_id' => $establishmentId,
@@ -385,13 +400,82 @@ class DatabaseSeeder extends Seeder
             'description' => 'Egész iskolára kiterjedő teszt esemény.',
             'content' => 'Seeder által létrehozott minta esemény.',
             'user_id' => $adminUserId,
-            'start_date' => now()->subDays(4),
-            'end_date' => now()->subDays(3),
+            'start_date' => $localStart,
+            'end_date' => $localEnd,
             'status' => 'ended',
             'cancelled_at' => null,
             'is_recurring' => false,
             'recurrence_frequency' => null,
             'recurrence_until' => null,
+            'recurrence_parent_event_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $globalEventId = (int) DB::table('events')->insertGetId([
+            'type' => 'global',
+            'target_group' => 'teljes_iskola',
+            'target_class_ids' => null,
+            'target_grade_ids' => null,
+            'establishment_id' => $establishmentId,
+            'title' => $namePrefix . ' Globális esemény',
+            'chat_enabled' => false,
+            'description' => 'Globális típusú teszt esemény.',
+            'content' => 'Seeder által létrehozott globális minta esemény.',
+            'user_id' => $adminUserId,
+            'start_date' => $globalStart,
+            'end_date' => $globalEnd,
+            'status' => 'ended',
+            'cancelled_at' => null,
+            'is_recurring' => false,
+            'recurrence_frequency' => null,
+            'recurrence_until' => null,
+            'recurrence_parent_event_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $openEventId = (int) DB::table('events')->insertGetId([
+            'type' => 'local',
+            'target_group' => 'teljes_iskola',
+            'target_class_ids' => null,
+            'target_grade_ids' => null,
+            'establishment_id' => $establishmentId,
+            'title' => $namePrefix . ' Nyitott esemény',
+            'chat_enabled' => true,
+            'description' => 'Jelenleg futó nyitott teszt esemény.',
+            'content' => 'Seeder által létrehozott nyitott minta esemény.',
+            'user_id' => $adminUserId,
+            'start_date' => $openStart,
+            'end_date' => $openEnd,
+            'status' => 'ongoing',
+            'cancelled_at' => null,
+            'is_recurring' => false,
+            'recurrence_frequency' => null,
+            'recurrence_until' => null,
+            'recurrence_parent_event_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $weeklyEventId = (int) DB::table('events')->insertGetId([
+            'type' => 'local',
+            'target_group' => 'evfolyam_szintu',
+            'target_class_ids' => null,
+            'target_grade_ids' => json_encode([10]),
+            'establishment_id' => $establishmentId,
+            'title' => $namePrefix . ' Heti esemény',
+            'chat_enabled' => true,
+            'description' => 'Hetente ismétlődő teszt esemény.',
+            'content' => 'Seeder által létrehozott heti minta esemény.',
+            'user_id' => $adminUserId,
+            'start_date' => $weeklyStart,
+            'end_date' => $weeklyEnd,
+            'status' => 'upcoming',
+            'cancelled_at' => null,
+            'is_recurring' => true,
+            'recurrence_frequency' => 'weekly',
+            'recurrence_until' => $weeklyUntil,
             'recurrence_parent_event_id' => null,
             'created_at' => now(),
             'updated_at' => now(),
@@ -418,6 +502,41 @@ class DatabaseSeeder extends Seeder
                 'updated_at' => now(),
             ]);
         }
+
+        $visibleUserIds = array_merge([$adminUserId], $teacherUserIds, $studentUserIds);
+        foreach ($visibleUserIds as $index => $userId) {
+            DB::table('event_shows')->insert([
+                'is_favourite' => $index % 3 === 0,
+                'event_id' => $globalEventId,
+                'user_id' => $userId,
+                'answer' => $index % 2 === 0 ? 'y' : 'n',
+                'establishment_id' => $establishmentId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::table('event_shows')->insert([
+                'is_favourite' => false,
+                'event_id' => $openEventId,
+                'user_id' => $userId,
+                'answer' => 'NA',
+                'establishment_id' => $establishmentId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::table('event_shows')->insert([
+                'is_favourite' => $index % 4 === 0,
+                'event_id' => $weeklyEventId,
+                'user_id' => $userId,
+                'answer' => 'NA',
+                'establishment_id' => $establishmentId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $this->seedWeeklyOccurrencesFromParent($weeklyEventId, $establishmentId, $visibleUserIds);
 
         for ($i = 0; $i < 3; $i++) {
             DB::table('event_messages')->insert([
@@ -463,6 +582,17 @@ class DatabaseSeeder extends Seeder
 
     private function seedGenericData(int $szegedSettlementId, int $kiskunSettlementId): void
     {
+        $year = (int) now()->year;
+        $genericLocalStart = Carbon::create($year, 5, 8, 9, 15, 0);
+        $genericLocalEnd = Carbon::create($year, 5, 8, 10, 15, 0);
+        $genericGlobalStart = Carbon::create($year, 5, 13, 13, 0, 0);
+        $genericGlobalEnd = Carbon::create($year, 5, 13, 14, 0, 0);
+        $genericOpenStart = Carbon::create($year, 5, 19, 14, 0, 0);
+        $genericOpenEnd = Carbon::create($year, 5, 19, 15, 0, 0);
+        $genericWeeklyStart = Carbon::create($year, 5, 6, 10, 30, 0);
+        $genericWeeklyEnd = Carbon::create($year, 5, 6, 11, 30, 0);
+        $genericWeeklyUntil = Carbon::create($year, 5, 27, 23, 59, 59);
+
         $genericAdminId = $this->createUser('Generic Teszt Admin', 'generic.admin@example.com');
 
         $genericEstablishmentId = (int) DB::table('establishments')->insertGetId([
@@ -563,8 +693,8 @@ class DatabaseSeeder extends Seeder
             'description' => 'Osztályszintű tesztesemény.',
             'content' => 'Osztályra célzott teszt tartalom.',
             'user_id' => $genericAdminId,
-            'start_date' => now()->addDays(1),
-            'end_date' => now()->addDays(1)->addHours(2),
+            'start_date' => $genericLocalStart,
+            'end_date' => $genericLocalEnd,
             'status' => 'upcoming',
             'cancelled_at' => null,
             'is_recurring' => false,
@@ -586,13 +716,59 @@ class DatabaseSeeder extends Seeder
             'description' => 'Globális teszt esemény.',
             'content' => 'Globális eseménytartalom.',
             'user_id' => $genericAdminId,
-            'start_date' => now()->subDays(1),
-            'end_date' => now()->subHours(3),
+            'start_date' => $genericGlobalStart,
+            'end_date' => $genericGlobalEnd,
             'status' => 'ended',
             'cancelled_at' => null,
             'is_recurring' => false,
             'recurrence_frequency' => null,
             'recurrence_until' => null,
+            'recurrence_parent_event_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $openEventId = (int) DB::table('events')->insertGetId([
+            'type' => 'local',
+            'target_group' => 'teljes_iskola',
+            'target_class_ids' => null,
+            'target_grade_ids' => null,
+            'establishment_id' => $genericEstablishmentId,
+            'title' => 'Generic Nyitott Esemény',
+            'chat_enabled' => true,
+            'description' => 'Jelenleg is futó nyitott teszt esemény.',
+            'content' => 'Nyitott esemény minta tartalom.',
+            'user_id' => $genericAdminId,
+            'start_date' => $genericOpenStart,
+            'end_date' => $genericOpenEnd,
+            'status' => 'ongoing',
+            'cancelled_at' => null,
+            'is_recurring' => false,
+            'recurrence_frequency' => null,
+            'recurrence_until' => null,
+            'recurrence_parent_event_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $weeklyEventId = (int) DB::table('events')->insertGetId([
+            'type' => 'local',
+            'target_group' => 'evfolyam_szintu',
+            'target_class_ids' => null,
+            'target_grade_ids' => json_encode([11]),
+            'establishment_id' => $genericEstablishmentId,
+            'title' => 'Generic Heti Esemény',
+            'chat_enabled' => true,
+            'description' => 'Hetente ismétlődő teszt esemény.',
+            'content' => 'Heti esemény minta tartalom.',
+            'user_id' => $genericAdminId,
+            'start_date' => $genericWeeklyStart,
+            'end_date' => $genericWeeklyEnd,
+            'status' => 'upcoming',
+            'cancelled_at' => null,
+            'is_recurring' => true,
+            'recurrence_frequency' => 'weekly',
+            'recurrence_until' => $genericWeeklyUntil,
             'recurrence_parent_event_id' => null,
             'created_at' => now(),
             'updated_at' => now(),
@@ -609,7 +785,29 @@ class DatabaseSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            DB::table('event_shows')->insert([
+                'is_favourite' => false,
+                'event_id' => $openEventId,
+                'user_id' => $userId,
+                'answer' => 'NA',
+                'establishment_id' => $genericEstablishmentId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::table('event_shows')->insert([
+                'is_favourite' => $idx % 4 === 0,
+                'event_id' => $weeklyEventId,
+                'user_id' => $userId,
+                'answer' => 'NA',
+                'establishment_id' => $genericEstablishmentId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
+
+        $this->seedWeeklyOccurrencesFromParent($weeklyEventId, $genericEstablishmentId, $visibleUsers);
 
         DB::table('event_messages')->insert([
             [
@@ -632,8 +830,8 @@ class DatabaseSeeder extends Seeder
             'event_id' => $localEventId,
             'title' => 'Generic Nyitott Szavazás',
             'user_id' => $genericAdminId,
-            'start_date' => now()->toDateString(),
-            'deadline' => now()->addDays(5)->toDateString(),
+            'start_date' => $genericLocalStart->copy()->toDateString(),
+            'deadline' => $genericLocalStart->copy()->addDays(5)->toDateString(),
             'is_timed' => true,
             'hidden_results' => true,
             'is_active' => true,
@@ -725,5 +923,176 @@ class DatabaseSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        $secondLocalStart = Carbon::create($year, 5, 9, 8, 45, 0);
+        $secondLocalEnd = Carbon::create($year, 5, 9, 9, 45, 0);
+        $secondGlobalStart = Carbon::create($year, 5, 14, 12, 15, 0);
+        $secondGlobalEnd = Carbon::create($year, 5, 14, 13, 15, 0);
+        $secondOpenStart = Carbon::create($year, 5, 19, 16, 0, 0);
+        $secondOpenEnd = Carbon::create($year, 5, 19, 17, 0, 0);
+        $secondWeeklyStart = Carbon::create($year, 5, 7, 9, 45, 0);
+        $secondWeeklyEnd = Carbon::create($year, 5, 7, 10, 45, 0);
+        $secondWeeklyUntil = Carbon::create($year, 5, 28, 23, 59, 59);
+
+        $secondEndedLocalEventId = (int) DB::table('events')->insertGetId([
+            'type' => 'local',
+            'target_group' => 'teljes_iskola',
+            'target_class_ids' => null,
+            'target_grade_ids' => null,
+            'establishment_id' => $secondGenericEstablishmentId,
+            'title' => 'Generic 2 Lezárt Helyi Esemény',
+            'chat_enabled' => true,
+            'description' => 'Második intézmény lezárt helyi teszteseménye.',
+            'content' => 'Második intézmény helyi lezárt minta esemény.',
+            'user_id' => $anotherGenericAdminId,
+            'start_date' => $secondLocalStart,
+            'end_date' => $secondLocalEnd,
+            'status' => 'ended',
+            'cancelled_at' => null,
+            'is_recurring' => false,
+            'recurrence_frequency' => null,
+            'recurrence_until' => null,
+            'recurrence_parent_event_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $secondGlobalEventId = (int) DB::table('events')->insertGetId([
+            'type' => 'global',
+            'target_group' => 'teljes_iskola',
+            'target_class_ids' => null,
+            'target_grade_ids' => null,
+            'establishment_id' => $secondGenericEstablishmentId,
+            'title' => 'Generic 2 Globális Esemény',
+            'chat_enabled' => false,
+            'description' => 'Második intézmény globális teszteseménye.',
+            'content' => 'Második intézmény globális minta esemény.',
+            'user_id' => $anotherGenericAdminId,
+            'start_date' => $secondGlobalStart,
+            'end_date' => $secondGlobalEnd,
+            'status' => 'ended',
+            'cancelled_at' => null,
+            'is_recurring' => false,
+            'recurrence_frequency' => null,
+            'recurrence_until' => null,
+            'recurrence_parent_event_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $secondOpenEventId = (int) DB::table('events')->insertGetId([
+            'type' => 'local',
+            'target_group' => 'teljes_iskola',
+            'target_class_ids' => null,
+            'target_grade_ids' => null,
+            'establishment_id' => $secondGenericEstablishmentId,
+            'title' => 'Generic 2 Nyitott Esemény',
+            'chat_enabled' => true,
+            'description' => 'Második intézmény jelenleg futó eseménye.',
+            'content' => 'Második intézmény nyitott minta esemény.',
+            'user_id' => $anotherGenericAdminId,
+            'start_date' => $secondOpenStart,
+            'end_date' => $secondOpenEnd,
+            'status' => 'ongoing',
+            'cancelled_at' => null,
+            'is_recurring' => false,
+            'recurrence_frequency' => null,
+            'recurrence_until' => null,
+            'recurrence_parent_event_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $secondWeeklyEventId = (int) DB::table('events')->insertGetId([
+            'type' => 'local',
+            'target_group' => 'teljes_iskola',
+            'target_class_ids' => null,
+            'target_grade_ids' => null,
+            'establishment_id' => $secondGenericEstablishmentId,
+            'title' => 'Generic 2 Heti Esemény',
+            'chat_enabled' => true,
+            'description' => 'Második intézmény heti ismétlődő eseménye.',
+            'content' => 'Második intézmény heti minta esemény.',
+            'user_id' => $anotherGenericAdminId,
+            'start_date' => $secondWeeklyStart,
+            'end_date' => $secondWeeklyEnd,
+            'status' => 'upcoming',
+            'cancelled_at' => null,
+            'is_recurring' => true,
+            'recurrence_frequency' => 'weekly',
+            'recurrence_until' => $secondWeeklyUntil,
+            'recurrence_parent_event_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        foreach ([$secondEndedLocalEventId, $secondGlobalEventId, $secondOpenEventId, $secondWeeklyEventId] as $secondEventId) {
+            DB::table('event_shows')->insert([
+                'is_favourite' => false,
+                'event_id' => $secondEventId,
+                'user_id' => $anotherGenericAdminId,
+                'answer' => 'NA',
+                'establishment_id' => $secondGenericEstablishmentId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $this->seedWeeklyOccurrencesFromParent($secondWeeklyEventId, $secondGenericEstablishmentId, [$anotherGenericAdminId]);
+    }
+
+    private function seedWeeklyOccurrencesFromParent(int $parentEventId, int $establishmentId, array $visibleUserIds): void
+    {
+        $parent = DB::table('events')->where('id', $parentEventId)->first();
+        if (!$parent) {
+            return;
+        }
+
+        $startDate = Carbon::parse((string) $parent->start_date);
+        $endDate = Carbon::parse((string) $parent->end_date);
+        $untilDate = Carbon::parse((string) $parent->recurrence_until)->endOfDay();
+
+        $nextStart = $startDate->copy()->addWeek();
+        $nextEnd = $endDate->copy()->addWeek();
+
+        while ($nextStart->lte($untilDate)) {
+            $occurrenceId = (int) DB::table('events')->insertGetId([
+                'type' => $parent->type,
+                'target_group' => $parent->target_group,
+                'target_class_ids' => $parent->target_class_ids,
+                'target_grade_ids' => $parent->target_grade_ids,
+                'establishment_id' => $establishmentId,
+                'title' => $parent->title,
+                'chat_enabled' => $parent->chat_enabled,
+                'description' => $parent->description,
+                'content' => $parent->content,
+                'user_id' => $parent->user_id,
+                'start_date' => $nextStart->copy(),
+                'end_date' => $nextEnd->copy(),
+                'status' => $parent->status,
+                'cancelled_at' => null,
+                'is_recurring' => true,
+                'recurrence_frequency' => 'weekly',
+                'recurrence_until' => $parent->recurrence_until,
+                'recurrence_parent_event_id' => $parentEventId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            foreach ($visibleUserIds as $userId) {
+                DB::table('event_shows')->insert([
+                    'is_favourite' => false,
+                    'event_id' => $occurrenceId,
+                    'user_id' => $userId,
+                    'answer' => 'NA',
+                    'establishment_id' => $establishmentId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            $nextStart->addWeek();
+            $nextEnd->addWeek();
+        }
     }
 }

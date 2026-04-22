@@ -13,6 +13,7 @@ class EventShown extends Model
         'event_id',
         'user_id',
         'answer',
+        'banned_at',
         'establishment_id',
     ];
     const UPDATED_AT = null;

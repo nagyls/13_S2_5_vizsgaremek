@@ -13,8 +13,9 @@
             </div>
           </div>
           
+          <!-- Lenyíló felület a profilkép alatt -->
           <div class="user-profile">
-            <div class="user-avatar" @click="toggleUserMenu">
+            <div class="user-avatar" @click.stop="toggleUserMenu">
               <div class="avatar-circle">
                 <span>{{ userInitials }}</span>
               </div>
@@ -24,7 +25,7 @@
             </div>
             
             <transition name="slide-fade">
-              <div v-if="showUserMenu" class="user-menu">
+              <div v-if="showUserMenu" class="user-menu" @click.stop>
                 <div class="menu-header">
                   <div class="menu-user-info">
                     <h4>{{ user.name }}</h4>
@@ -449,6 +450,7 @@ export default {
   },
   
   methods: {
+    // Felhasználónév szerkesztésének indítása és fókuszálás az input mezőre
     startEditingName() {
       this.editName = this.user.name;
       this.isEditingName = true;
@@ -464,6 +466,7 @@ export default {
       this.editName = '';
     },
 
+    // A módosított felhasználónév mentése a backend felé
     async saveName() {
       if (!this.editName.trim() || this.editName === this.user.name) {
         this.cancelEditingName();
@@ -479,6 +482,7 @@ export default {
         );
 
         this.user.name = this.editName;
+        // Lokális tároló frissítése, hogy frissítés után is megmaradjon a név
         this.persistStoredUser({ 
           name: this.editName,
           name_updated_at: response.data.user.name_updated_at 
@@ -494,6 +498,7 @@ export default {
       }
     },
 
+    // Kezdeti felhasználói adatok betöltése a helyi tárolóból (localStorage/sessionStorage)
     loadUserData() {
       const savedUser =
         localStorage.getItem('esemenyter_user') ||
@@ -511,6 +516,7 @@ export default {
       }
     },
     
+    // Friss adatok lekérése a szerverről
     async loadUserFromBackend() {
       try {
         const token = getToken();
@@ -539,6 +545,7 @@ export default {
       }
     },
 
+    // A felhasználóhoz tartozó intézmények lekérése a profilváltáshoz
     async loadEstablishments() {
       const token = getToken();
 
@@ -557,6 +564,7 @@ export default {
 
         const currentEstablishment = this.establishments.find(item => item.is_current) || null;
         if (currentEstablishment) {
+          // Itt frissítjük az aktuális intézmény adatait a felületen
           this.user.school = currentEstablishment.title || this.user.school;
           this.user.schoolId = currentEstablishment.id || this.user.schoolId;
           this.user.currentAlias = (currentEstablishment.alias || '').trim();
@@ -653,6 +661,7 @@ export default {
       }
     },
 
+    // Adott intézmény részletes adatainak lekérése (helyszín, elérhetőség)
     async loadEstablishmentDetails(establishmentId) {
       const numericEstablishmentId = Number(establishmentId);
       if (!Number.isFinite(numericEstablishmentId) || numericEstablishmentId <= 0) {
@@ -674,6 +683,7 @@ export default {
           return;
         }
 
+        // Adatok frissítése az objektumban és a lokális tárolóban
         this.user.region = details.region_name || '';
         this.user.district = details.inner_region_name || '';
         this.user.city = details.settlement_name || '';
@@ -700,6 +710,7 @@ export default {
       }
     },
 
+    // Aktív intézmény váltása a listából választva
     async switchEstablishment(establishment) {
       if (!establishment || establishment.is_current || this.isSwitchingEstablishment) {
         return;
@@ -714,6 +725,7 @@ export default {
       this.isSwitchingEstablishment = true;
 
       try {
+        // Backend hívás az aktív intézmény átállításához
         const response = await axios.patch(
           `${API_BASE}/establishment/switch`,
           { establishment_id: establishment.id },
@@ -725,6 +737,7 @@ export default {
         const nextSchoolId = Number(payload.establishment_id || establishment.id) || null;
         const nextSchool = payload.title || establishment.title || '';
 
+        // Új adatok mentése a lokális állapotba és tárolókba
         this.saveCurrentInstitution(nextSchoolId);
         this.user.role = nextRole;
         this.user.schoolId = nextSchoolId;
@@ -734,6 +747,8 @@ export default {
         this.user.schoolEmail = payload.email || establishment.email || '';
         this.user.schoolPhone = payload.phone || establishment.phone || '';
         this.user.schoolWebsite = payload.website || establishment.website || '';
+        
+        // Frissítjük a listát, hogy az új legyen kijelölve 'Jelenlegi'-nek
         this.establishments = this.establishments.map(item => ({
           ...item,
           is_current: Number(item.id) === Number(nextSchoolId)
@@ -828,7 +843,10 @@ export default {
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
   width: 100%;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background:
+    radial-gradient(circle at 12% 14%, rgba(88, 115, 235, 0.22), transparent 36%),
+    radial-gradient(circle at 88% 24%, rgba(56, 189, 248, 0.1), transparent 30%),
+    linear-gradient(135deg, #0a0f1c 0%, #1a3558 52%, #0f203d 100%);
 }
 
 .container {
@@ -839,13 +857,14 @@ export default {
 
 /* FEJLÉC */
 .main-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  padding: 16px 0;
+  background: rgba(10, 15, 28, 0.74);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+  padding: 10px 0;
   position: sticky;
   top: 0;
   z-index: 1000;
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.36);
 }
 
 .header-content {
@@ -857,24 +876,25 @@ export default {
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   cursor: pointer;
   transition: opacity 0.3s;
 }
 
 .logo-section:hover {
-  opacity: 0.8;
+  opacity: 0.92;
 }
 
 .logo-icon {
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.32);
   overflow: hidden;
 }
 
@@ -889,7 +909,7 @@ export default {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 55%, #c4b5fd 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -898,7 +918,7 @@ export default {
 .site-subtitle {
   margin: 0;
   font-size: 14px;
-  color: #64748b;
+  color: rgba(226, 232, 240, 0.9);
   font-weight: 500;
 }
 
@@ -908,43 +928,54 @@ export default {
 }
 
 .user-avatar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
-  position: relative;
+  padding: 5px 12px;
+  border-radius: 50px;
+  border: 1px solid rgba(191, 219, 254, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.user-avatar:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(191, 219, 254, 0.52);
 }
 
 .avatar-circle {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #7f8eff, #5f75eb 60%, #4a66dc 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 16px;
-  transition: transform 0.3s ease;
-}
-
-.user-avatar:hover .avatar-circle {
-  transform: scale(1.05);
+  font-size: 14px;
+  box-shadow: 0 8px 18px rgba(79, 112, 241, 0.38);
+  border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .user-status {
-  position: absolute;
-  bottom: 0;
-  right: 0;
+  position: relative;
 }
 
 .status-dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   border: 2px solid white;
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
 }
 
 .status-dot.online {
   background: #10b981;
+  box-shadow: 0 0 0 2px white;
 }
 
 /* Felhasználó menü */
@@ -962,19 +993,21 @@ export default {
 
 .menu-header {
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(150deg, #5873eb, rgb(0 0 0));
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .menu-user-info h4 {
   margin: 0 0 5px 0;
   font-size: 18px;
+  color: #e4e2e2;
 }
 
 .user-email {
   margin: 0;
   font-size: 14px;
   opacity: 0.9;
+  color: #b8b8b8;
 }
 
 .role-badge {
@@ -984,8 +1017,14 @@ export default {
   font-size: 12px;
   font-weight: 600;
   margin-top: 10px;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.role-badge.admin,
+.role-badge.institution_manager {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
 }
 
 .menu-items {
@@ -1187,8 +1226,13 @@ export default {
 }
 
 .profile-role.admin {
-  background: rgba(139, 92, 246, 0.1);
-  color: #8b5cf6;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.profile-role.institution_manager {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
 }
 
 .profile-role i {
@@ -1382,8 +1426,13 @@ export default {
 }
 
 .establishment-role.admin {
-  background: rgba(99, 102, 241, 0.12);
-  color: #4f46e5;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.establishment-role.institution_manager {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
 }
 
 .current-establishment-badge {

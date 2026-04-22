@@ -1281,9 +1281,13 @@ import logo2 from '../../assets/logo2.svg';
 export default {
   name: 'InstitutionManagerDashboard',
   
+  /**
+   * Komponens belső állapota
+   */
   data() {
     return {
       logo2,
+      // Bejelentkezett felhasználó adatai
       user: {
         id: null,
         name: '',
@@ -1291,6 +1295,7 @@ export default {
         institution_id: null,
         role: 'admin'
       },
+      // Intézmény adatai
       institution: {
         id: null,
         name: '',
@@ -1301,11 +1306,13 @@ export default {
         email: '',
         phone: ''
       },
+      // Statisztikai adatok
       stats: {
         totalStudents: 0,
         totalTeachers: 0,
         totalClasses: 0
       },
+      // Globális/Kollaborációs esemény meghívások
       collabEvents: [],
       isLoadingCollabEvents: false,
       processingCollabEventId: null,
@@ -1314,6 +1321,7 @@ export default {
       collabTargetGroup: 'teljes_iskola',
       collabSelectedGradeIds: [],
       collabTargetModalError: '',
+      // Csatlakozási kérelmek és felhasználók
       establishmentRequests: [], // Összes kérelem a táblából
       allUsers: [], // Összes felhasználó
       students: [], // Diákok
@@ -1328,7 +1336,7 @@ export default {
       showUserMenu: false,
       showScrollTop: false,
       
-      // Keresés
+      // Keresés és szűrés
       searchQuery: '',
       acceptsJoinRequests: true,
       isUpdatingJoinRequestAvailability: false,
@@ -1336,7 +1344,7 @@ export default {
       selectedRequestIds: [],
       isBulkProcessingRequests: false,
       
-      // Modal állapotok
+      // Modal ablakok állapota
       showAssignmentModal: false,
       selectedRequest: null,
       selectedClassId: '',
@@ -1371,8 +1379,6 @@ export default {
         description: ''
       },
       
-      // Toast értesítések
-      
       // Új osztály létrehozása
       newClass: {
         name: '',
@@ -1385,7 +1391,7 @@ export default {
       isDeletingClassId: null,
       availableGrades: [9, 10, 11, 12, 13],
 
-      // Osztály szerkesztő modal
+      // Osztály szerkesztő modal adatai
       showClassEditModal: false,
       classEditLoading: false,
       editingClass: null,
@@ -1408,6 +1414,9 @@ export default {
   },
   
   computed: {
+    /**
+     * Felhasználói monogram előállítása
+     */
     userInitials() {
       return this.user.name
         .split(' ')
@@ -1417,19 +1426,30 @@ export default {
         .substring(0, 2);
     },
     
-    // Összes függőben lévő kérelem
+    /**
+     * Összes függőben lévő kérelem száma
+     */
     totalPendingRequests() {
       return this.establishmentRequests.length;
     },
 
+    /**
+     * Függőben lévő globális meghívások száma
+     */
     pendingGlobalEventRequests() {
       return this.collabEvents.length;
     },
 
+    /**
+     * Tulajdonjog átadására jelölhető tanárok (mindenki, kivéve az aktuális felhasználót)
+     */
     ownershipTransferCandidates() {
       return this.teachers.filter(teacher => Number(teacher?.id) !== Number(this.user?.id));
     },
 
+    /**
+     * Az intézményben elérhető évfolyamok listája (egyedi értékek)
+     */
     collabAvailableGrades() {
       return Array.from(new Set(
         this.classes
@@ -1438,24 +1458,32 @@ export default {
       )).sort((left, right) => left - right);
     },
 
-    // Az osztályban még nem szereplő diákok (szerkesztő modalhoz)
+    /**
+     * Az osztályban még nem szereplő diákok szűrése a szerkesztő modalhoz
+     */
     classEditStudentsNotInClass() {
       if (!this.editingClass) return [];
       const memberUserIds = new Set(this.classEditMembers.map(m => Number(m.id)));
       return this.students.filter(s => !memberUserIds.has(Number(s.id)));
     },
     
-    // Diák kérelmek
+    /**
+     * Függőben lévő diák kérelmek
+     */
     pendingStudentRequests() {
       return this.establishmentRequests.filter(req => req.role === 'student');
     },
     
-    // Tanár kérelmek
+    /**
+     * Függőben lévő tanár kérelmek
+     */
     pendingTeacherRequests() {
       return this.establishmentRequests.filter(req => req.role === 'teacher');
     },
     
-    // Szűrt diák kérelmek
+    /**
+     * Keresés alapján szűrt diák kérelmek listája
+     */
     filteredStudentRequests() {
       if (!this.searchQuery) return this.pendingStudentRequests;
       
@@ -1471,7 +1499,9 @@ export default {
       });
     },
     
-    // Szűrt tanár kérelmek
+    /**
+     * Keresés alapján szűrt tanár kérelmek listája
+     */
     filteredTeacherRequests() {
       if (!this.searchQuery) return this.pendingTeacherRequests;
       
@@ -1487,21 +1517,33 @@ export default {
       });
     },
 
+    /**
+     * Az aktuálisan aktív fülön látható kérelmek
+     */
     visibleRequests() {
       return this.activeRequestTab === 'students'
         ? this.filteredStudentRequests
         : this.filteredTeacherRequests;
     },
 
+    /**
+     * A látható kérelmek közül kijelölt elemek listája
+     */
     selectedVisibleRequests() {
       const selectedIds = new Set(this.selectedRequestIds.map(id => Number(id)));
       return this.visibleRequests.filter(request => selectedIds.has(Number(request.id)));
     },
 
+    /**
+     * Kijelölt látható kérelmek száma
+     */
     selectedVisibleRequestCount() {
       return this.selectedVisibleRequests.length;
     },
 
+    /**
+     * Ellenőrzi, hogy minden látható kérelem ki van-e jelölve
+     */
     allVisibleRequestsSelected() {
       if (!this.visibleRequests.length) {
         return false;
@@ -1514,12 +1556,16 @@ export default {
   },
   
   methods: {
-    // Felhasználó lekérése ID alapján
+    /**
+     * Felhasználó objektum lekérése az összes felhasználó közül ID alapján
+     */
     getUserById(userId) {
       return this.allUsers.find(u => u.id === userId) || null;
     },
     
-    // Felhasználó kezdőbetűi
+    /**
+     * Felhasználó monogramjának lekérése
+     */
     getUserInitials(user) {
       const displayName = this.getDisplayName(user);
       if (!displayName) return '?';
@@ -1531,6 +1577,9 @@ export default {
         .substring(0, 2);
     },
 
+    /**
+     * Megjelenítendő név lekérése (alias előnyben részesítése a valós névvel szemben)
+     */
     getDisplayName(user) {
       const alias = (user?.alias || '').toString().trim();
       if (alias !== '') {
@@ -1540,7 +1589,9 @@ export default {
       return (user?.name || '').toString().trim();
     },
     
-    // Dátum formázás
+    /**
+     * Dátum formázása magyar lokalizáció szerint
+     */
     formatDate(date) {
       if (!date) return 'Ismeretlen';
       return new Date(date).toLocaleDateString('hu-HU', {
@@ -1552,6 +1603,9 @@ export default {
       });
     },
 
+    /**
+     * Osztály megnevezésének formázása (pl. "9.A")
+     */
     formatClassDisplayName(classItem) {
       const grade = classItem?.grade;
       const className = (classItem?.name || '').toString().trim();
@@ -1563,6 +1617,9 @@ export default {
       return className || 'Névtelen osztály';
     },
 
+    /**
+     * Osztály megnevezésének tömör formázása
+     */
     formatCompactClassDisplayName(classItem) {
       const grade = classItem?.grade;
       const className = (classItem?.name || '').toString().trim();
@@ -1574,6 +1631,9 @@ export default {
       return className || 'Nincs beállítva';
     },
 
+    /**
+     * Diák osztályának megjelenítése
+     */
     getStudentClassDisplay(student) {
       if (!student) return 'Nincs beállítva';
 
@@ -1585,6 +1645,9 @@ export default {
       return 'Nincs beállítva';
     },
 
+    /**
+     * Tanár által vitt osztályok listájának megjelenítése
+     */
     getTeacherClassesDisplay(teacher) {
       if (!teacher || !this.classes?.length) {
         return 'Nincs beállítva';
@@ -1601,6 +1664,9 @@ export default {
       return labels.join(', ');
     },
 
+    /**
+     * Osztály maximális kapacitásának lekérése
+     */
     getClassCapacity(classItem) {
       const capacity = Number(classItem?.capacity);
 
@@ -1611,30 +1677,48 @@ export default {
       return 30;
     },
 
+    /**
+     * Osztálynév bevitelének tisztítása (csak betűk engedélyezése)
+     */
     sanitizeClassNameInput() {
       this.newClass.name = String(this.newClass.name || '')
         .replace(/[^a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ]/g, '')
         .slice(0, 5);
     },
 
+    /**
+     * Osztálynév bevitelének tisztítása szerkesztéskor
+     */
     sanitizeClassEditNameInput() {
       this.classEditForm.name = String(this.classEditForm.name || '')
         .replace(/[^a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ]/g, '')
         .slice(0, 5);
     },
 
+    /**
+     * Felhasználói menü láthatóságának váltása
+     */
     toggleUserMenu() {
       this.showUserMenu = !this.showUserMenu;
     },
 
+    /**
+     * Megerősítő kérdés megjelenítése toast segítségével
+     */
     askForConfirmation(message) {
       return toast.confirm(message);
     },
 
+    /**
+     * Kérelem azonosítójának normalizálása
+     */
     normalizeRequestId(request) {
       return Number(request?.id ?? request?.request_id);
     },
 
+    /**
+     * Ellenőrzi, hogy egy adott kérelem ki van-e jelölve
+     */
     isRequestSelected(request) {
       const requestId = this.normalizeRequestId(request);
       if (!requestId) {
@@ -1644,6 +1728,9 @@ export default {
       return this.selectedRequestIds.includes(requestId);
     },
 
+    /**
+     * Egy kérelem kijelölésének váltása
+     */
     toggleRequestSelection(request) {
       const requestId = this.normalizeRequestId(request);
       if (!requestId) {
@@ -1657,6 +1744,9 @@ export default {
       }
     },
 
+    /**
+     * Minden látható kérelem kijelölése vagy kijelölés megszüntetése
+     */
     toggleSelectAllVisibleRequests() {
       if (this.allVisibleRequestsSelected) {
         const visibleIds = new Set(this.visibleRequests.map(request => this.normalizeRequestId(request)));
@@ -1674,15 +1764,24 @@ export default {
       this.selectedRequestIds = Array.from(mergedIds);
     },
 
+    /**
+     * Kijelölések törlése
+     */
     clearRequestSelection() {
       this.selectedRequestIds = [];
     },
 
+    /**
+     * Kijelölések szinkronizálása a valóban létező függő kérelmekkel
+     */
     syncRequestSelectionWithPendingList() {
       const pendingIds = new Set(this.establishmentRequests.map(request => this.normalizeRequestId(request)));
       this.selectedRequestIds = this.selectedRequestIds.filter(id => pendingIds.has(Number(id)));
     },
 
+    /**
+     * Több kérelem együttes feldolgozása (elfogadás/elutasítás)
+     */
     async processRequests(action, requests, { notify = true } = {}) {
       if (!Array.isArray(requests) || !requests.length) {
         return { success: false, processedCount: 0 };
@@ -1727,11 +1826,17 @@ export default {
       return { success: true, processedCount: requestIds.length };
     },
 
+    /**
+     * Csatlakozási kérelmek fogadásának ki/bekapcsolása
+     */
     handleJoinRequestAvailabilityToggle(event) {
       const nextValue = Boolean(event?.target?.checked);
       this.updateJoinRequestAvailability(nextValue);
     },
 
+    /**
+     * Frissíti a backend-en a csatlakozási kérelmek fogadásának állapotát
+     */
     async updateJoinRequestAvailability(nextValue) {
       try {
         const token =
@@ -1769,7 +1874,9 @@ export default {
       }
     },
     
-    // Adatok betöltése
+    /**
+     * Összes intézményi adat betöltése (alap adatok, kérelmek, felhasználók, osztályok)
+     */
     async loadInstitutionData() {
       try {
         const token =
@@ -1785,7 +1892,7 @@ export default {
 
         this.user.institution_id = Number(institutionId);
 
-        // Intézmény adatok
+        // Intézményi alap adatok lekérése
         const instResponse = await axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -1803,6 +1910,7 @@ export default {
         };
         this.institutionOwnerId = Number(institutionData.user_id) || null;
 
+        // Csatlakozási kérelem fogadás állapotának lekérése
         const joinRequestAvailabilityResponse = await axios.get(
           `http://127.0.0.1:8000/api/establishment/${institutionId}/join-requests/availability`,
           {
@@ -1812,7 +1920,7 @@ export default {
 
         this.acceptsJoinRequests = Boolean(joinRequestAvailabilityResponse?.data?.accepts_join_requests);
 
-        // Kérelmek betöltése a létező végpontokról (diák + tanár)
+        // Függő kérelmek lekérése (külön végponton a diákok és tanárok)
         const [studentRequestsResponse, teacherRequestsResponse] = await Promise.all([
           axios.get(`http://127.0.0.1:8000/api/establishment/${institutionId}/requests/students`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -1827,10 +1935,7 @@ export default {
           ...(teacherRequestsResponse.data.data || [])
         ];
 
-        // Kérelmek egyesítése, user adatokkal
-        // Támogatjuk mindkét backend formátumot:
-        // - request.user: { id, name, email }
-        // - request.name + request.email
+        // Kérelmek feldolgozása a komponens formátumára
         this.establishmentRequests = allRequests.map(request => {
           const resolvedRequestId = request.id ?? request.request_id ?? null;
           const resolvedUserId = request.user_id ?? request.user?.id ?? null;
@@ -1853,18 +1958,13 @@ export default {
         });
         this.syncRequestSelectionWithPendingList();
 
+        // További entitások betöltése
         await this.loadCollabEvents(institutionId);
-
-        // Diákok és tanárok betöltése (akik már csatlakoztak)
         await this.loadInstitutionUsers(institutionId);
-
-        // Osztályok betöltése
         await this.loadClasses(institutionId);
-
-        // Diákok osztályainak hozzárendelése (pl. 11B)
         await this.loadStudentClassAssignments(institutionId);
 
-        // Statisztikák frissítése
+        // Statisztikai összegzés
         this.updateStats();
 
       } catch (error) {
@@ -1873,6 +1973,9 @@ export default {
       }
     },
 
+    /**
+     * Intézmény beállítási modal megnyitása és űrlap előtöltése
+     */
     openInstitutionSettingsModal() {
       this.institutionSettingsError = '';
       this.selectedNewOwnerUserId = '';
@@ -1887,12 +1990,18 @@ export default {
       this.showInstitutionSettingsModal = true;
     },
 
+    /**
+     * Intézmény beállítási modal bezárása és ideiglenes állapot törlése
+     */
     closeInstitutionSettingsModal() {
       this.showInstitutionSettingsModal = false;
       this.institutionSettingsError = '';
       this.selectedNewOwnerUserId = '';
     },
 
+    /**
+     * Intézményi adatok mentése a backend felé
+     */
     async saveInstitutionSettings() {
       const establishmentId = Number(this.user?.institution_id);
       const token = localStorage.getItem('esemenyter_token') || sessionStorage.getItem('esemenyter_token');
@@ -1941,6 +2050,9 @@ export default {
       }
     },
 
+    /**
+     * Tulajdonjog átadása a kiválasztott tanárnak
+     */
     async transferInstitutionOwnership() {
       const establishmentId = Number(this.user?.institution_id);
       const newOwnerUserId = Number(this.selectedNewOwnerUserId);
@@ -1985,6 +2097,9 @@ export default {
       }
     },
 
+    /**
+     * Globális esemény meghívások betöltése az intézményhez
+     */
     async loadCollabEvents(institutionId) {
       try {
         const token =
@@ -2014,6 +2129,9 @@ export default {
       }
     },
 
+    /**
+     * Célcsoport választó modal megnyitása egy globális eseményhez
+     */
     async openCollabTargetModal(eventItem) {
       const establishmentId = Number(this.user?.institution_id);
 
@@ -2040,6 +2158,9 @@ export default {
       this.showCollabTargetModal = true;
     },
 
+    /**
+     * Célcsoport választó modal bezárása és állapot alaphelyzetbe állítása
+     */
     closeCollabTargetModal() {
       this.showCollabTargetModal = false;
       this.selectedCollabEvent = null;
@@ -2048,6 +2169,9 @@ export default {
       this.collabTargetModalError = '';
     },
 
+    /**
+     * Elfogadáskor értesítendő felhasználói lista előállítása a választott célcsoport alapján
+     */
     resolveCollabAcceptanceUserIds() {
       const classesById = new Map(
         this.classes.map(classItem => [Number(classItem.id), classItem])
@@ -2093,6 +2217,9 @@ export default {
       return this.resolveInstitutionUserIdsForCollabAcceptance();
     },
 
+    /**
+     * Felhasználói azonosítók normalizálása, duplikációk kiszűrése és saját felhasználó hozzáadása
+     */
     normalizeUserIdsForCollabAcceptance(userIds) {
       const normalizedUserIds = (userIds || []).map(userId => Number(userId)).filter(Number.isFinite);
       const currentUserId = Number(this.user?.id);
@@ -2104,6 +2231,9 @@ export default {
       return Array.from(new Set(normalizedUserIds));
     },
 
+    /**
+     * Globális esemény elfogadása a modalban kiválasztott célcsoporttal
+     */
     async approveCollabEventWithTargeting() {
       const eventId = Number(this.selectedCollabEvent?.id);
       if (!eventId) {
@@ -2125,6 +2255,9 @@ export default {
       }
     },
 
+    /**
+     * Globális esemény meghívás elfogadása vagy elutasítása
+     */
     async handleCollabEventRequest(eventId, action, usersOverride = null) {
       try {
         const token =
@@ -2192,6 +2325,9 @@ export default {
       }
     },
 
+    /**
+     * Teljes intézményi felhasználói azonosító lista előállítása globális elfogadáshoz
+     */
     resolveInstitutionUserIdsForCollabAcceptance() {
       const userIds = [
         ...this.students.map(user => Number(user?.id)).filter(Number.isFinite),
@@ -2206,6 +2342,9 @@ export default {
       return Array.from(new Set(userIds));
     },
     
+    /**
+     * Intézményhez tartozó diákok és tanárok betöltése
+     */
     async loadInstitutionUsers(institutionId) {
       try {
         const token =
@@ -2227,7 +2366,9 @@ export default {
       }
     },
     
-    // Osztályok betöltése intézmény ID alapján
+    /**
+     * Osztályok betöltése intézmény azonosító alapján
+     */
     async loadClasses(institutionId) {
       try {
         const token =
@@ -2245,6 +2386,9 @@ export default {
       }
     },
 
+    /**
+     * Diákok osztály-hozzárendeléseinek szinkronizálása az osztálytagságok alapján
+     */
     async loadStudentClassAssignments(institutionId) {
       try {
         if (!this.students.length || !this.classes.length) {
@@ -2287,7 +2431,9 @@ export default {
       }
     },
     
-    // Statisztikák frissítése
+    /**
+     * Statisztikai számlálók frissítése a betöltött listák alapján
+     */
     updateStats() {
       this.stats = {
         totalStudents: this.students.length,
@@ -2296,7 +2442,9 @@ export default {
       };
     },
     
-    // Új osztály létrehozása
+    /**
+     * Új osztály létrehozása validálás után
+     */
     async createClass() {
       this.classErrors = {};
  
@@ -2368,7 +2516,9 @@ export default {
       }
     },
     
-    // Osztály szerkesztése
+    /**
+     * Osztály szerkesztő modal megnyitása a kiválasztott osztállyal
+     */
     async editClass(classItem) {
       this.editingClass = { ...classItem };
       this.classEditForm = {
@@ -2384,6 +2534,9 @@ export default {
       await this.loadClassEditMembers();
     },
 
+    /**
+     * Osztály szerkesztő modal bezárása és állapot törlése
+     */
     closeClassEditModal() {
       this.showClassEditModal = false;
       this.editingClass = null;
@@ -2398,6 +2551,9 @@ export default {
       this.classEditError = '';
     },
 
+    /**
+     * Osztály adatainak mentése (név, évfolyam, kapacitás)
+     */
     async saveClassDetails() {
       const establishmentId = Number(this.user?.institution_id);
       const classId = Number(this.editingClass?.id);
@@ -2468,6 +2624,9 @@ export default {
       }
     },
 
+    /**
+     * Szerkesztett osztály tagjainak betöltése
+     */
     async loadClassEditMembers() {
       const establishmentId = Number(this.user?.institution_id);
       const classId = Number(this.editingClass?.id);
@@ -2487,6 +2646,9 @@ export default {
       }
     },
 
+    /**
+     * Osztályfőnök mentése a szerkesztett osztályhoz
+     */
     async saveClassTeacher() {
       const teacherId = Number(this.classEditNewTeacherId);
       if (!teacherId) {
@@ -2520,6 +2682,9 @@ export default {
       }
     },
 
+    /**
+     * Kiválasztott diákok hozzáadása az aktuálisan szerkesztett osztályhoz
+     */
     async addStudentsToClass() {
       if (!this.classEditAddStudentIds.length) {
         this.classEditError = 'Válassz legalább egy diákot!';
@@ -2554,6 +2719,9 @@ export default {
       }
     },
 
+    /**
+     * Diák eltávolítása az aktuálisan szerkesztett osztályból
+     */
     async removeStudentFromClass(member) {
       const establishmentId = Number(this.user?.institution_id);
       const classId = Number(this.editingClass?.id);
@@ -2587,7 +2755,9 @@ export default {
       }
     },
     
-    // Osztály törlése
+    /**
+     * Osztály törlése megerősítés után
+     */
     async deleteClass(classItem) {
       const classId = Number(classItem?.id);
       const establishmentId = Number(this.user?.institution_id);
@@ -2632,7 +2802,9 @@ export default {
       }
     },
     
-    // Kérelem kezelés
+    /**
+     * Kérelem hozzárendelési modal megnyitása és alapadatok előkészítése
+     */
     showClassAssignmentModal(request) {
       // Ellenőrizzük, hogy van-e user adat
       const user = this.getUserById(request.user_id);
@@ -2653,12 +2825,18 @@ export default {
       this.showAssignmentModal = true;
     },
     
+    /**
+     * Hozzárendelési modal bezárása
+     */
     closeAssignmentModal() {
       this.showAssignmentModal = false;
       this.selectedRequest = null;
       this.selectedClassId = '';
     },
 
+    /**
+     * Diák jelenlegi osztályazonosítójának meghatározása osztálytagság alapján
+     */
     async findStudentCurrentClassId(studentUserId) {
       const token =
         localStorage.getItem('esemenyter_token') ||
@@ -2692,6 +2870,9 @@ export default {
       return '';
     },
 
+    /**
+     * Tanár jelenlegi osztályazonosítójának meghatározása
+     */
     async findTeacherCurrentClassId(teacherUserId) {
       if (!teacherUserId || !this.classes.length) {
         return '';
@@ -2701,6 +2882,9 @@ export default {
       return foundClass ? String(foundClass.id) : '';
     },
 
+    /**
+     * Diák osztálymódosító modal bezárása és állapot törlése
+     */
     async closeEditUserClassModal() {
       this.showEditStudentClassModal = false;
       this.selectedStudentForClassEdit = null;
@@ -2710,6 +2894,9 @@ export default {
       this.isUpdatingStudentClass = false;
     },
 
+    /**
+     * Tanár osztálymódosító modal bezárása és állapot törlése
+     */
     async closeEditTeacherClassModal() {
       this.showEditTeacherClassModal = false;
       this.selectedTeacherForClassEdit = null;
@@ -2719,6 +2906,9 @@ export default {
       this.isUpdatingTeacherClass = false;
     },
     
+    /**
+     * Egyedi csatlakozási kérelem elfogadása opcionális osztály-hozzárendeléssel
+     */
     async approveRequest() {
       try {
         if (this.isApprovingRequest) {
@@ -2801,6 +2991,9 @@ export default {
       }
     },
     
+    /**
+     * Egyedi csatlakozási kérelem elutasítása
+     */
     async rejectRequest(request) {
       const user = request.user || this.getUserById(request.user_id);
       const isConfirmed = await this.askForConfirmation(`Biztosan elutasítja ${user?.name || 'a felhasználó'} csatlakozási kérelmét?`);
@@ -2823,6 +3016,9 @@ export default {
       }
     },
 
+    /**
+     * Kijelölt kérelmek tömeges elfogadása
+     */
     async bulkApproveSelectedRequests() {
       if (!this.selectedVisibleRequestCount || this.isBulkProcessingRequests) {
         return;
@@ -2845,6 +3041,9 @@ export default {
       }
     },
 
+    /**
+     * Kijelölt kérelmek tömeges elutasítása
+     */
     async bulkRejectSelectedRequests() {
       if (!this.selectedVisibleRequestCount || this.isBulkProcessingRequests) {
         return;
@@ -2867,7 +3066,9 @@ export default {
       }
     },
     
-    // Felhasználó műveletek
+    /**
+     * Diák osztálymódosító modal megnyitása
+     */
     async editUserClass(user) {
       try {
         this.selectedStudentForClassEdit = user;
@@ -2885,6 +3086,9 @@ export default {
       }
     },
 
+    /**
+     * Diák osztályváltoztatás mentése
+     */
     async saveUserClassChange() {
       try {
         if (this.isUpdatingStudentClass) {
@@ -2962,6 +3166,9 @@ export default {
       }
     },
 
+    /**
+     * Diák eltávolítása az intézményből
+     */
     async removeStudentFromInstitution(student) {
       const studentUserId = Number(student?.id);
       const studentRecordId = Number(student?.student_id);
@@ -3003,6 +3210,9 @@ export default {
       }
     },
     
+    /**
+     * Tanár osztálymódosító modal megnyitása
+     */
     async editTeacherClasses(teacher) {
       try {
         this.selectedTeacherForClassEdit = teacher;
@@ -3020,6 +3230,9 @@ export default {
       }
     },
 
+    /**
+     * Tanár osztályváltoztatás mentése
+     */
     async saveTeacherClassChange() {
       try {
         if (this.isUpdatingTeacherClass) {
@@ -3092,6 +3305,9 @@ export default {
       }
     },
 
+    /**
+     * Tanár jogosultsági szintjének váltása (tanár/admin)
+     */
     async toggleTeacherRole(teacher) {
       const staffId = Number(teacher?.staff_id)
       const teacherUserId = Number(teacher?.id)
@@ -3128,6 +3344,9 @@ export default {
       }
     },
 
+    /**
+     * Tanár eltávolítása az intézményből
+     */
     async removeTeacherFromInstitution(teacher) {
       const teacherUserId = Number(teacher?.id);
       const establishmentId = Number(this.user?.institution_id);
@@ -3173,27 +3392,40 @@ export default {
       }
     },
     
-    // Értesítés megjelenítése
+    /**
+     * Egységes toast értesítés megjelenítése
+     */
     showNotification(message, type = 'success') {
       const safeType = ['success', 'error', 'warning', 'info'].includes(type) ? type : 'info';
       toast[safeType](message, 3500);
     },
     
-    // Scroll kezelés
+    /**
+     * Oldal tetejére görgetés
+     */
     scrollToTop() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     
+    /**
+     * Görgetési állapot kezelése a lebegő gombhoz
+     */
     handleScroll() {
       this.showScrollTop = window.scrollY > 300;
     },
 
+    /**
+     * Külső kattintás figyelése a felhasználói menü bezárásához
+     */
     handleDocumentClick(e) {
       if (!e.target.closest('.user-profile')) {
         this.showUserMenu = false;
       }
     },
     
+    /**
+     * Kijelentkezés és kliensoldali session adatok törlése
+     */
     async logout() {
       try {
         const token =
@@ -3217,6 +3449,9 @@ export default {
       }
     },
     
+    /**
+     * Bejelentkezési állapot ellenőrzése és jogosultság alapú átirányítás
+     */
     async checkLoginStatus() {
       const savedUser =
         localStorage.getItem('esemenyter_user') ||
@@ -3309,13 +3544,15 @@ export default {
 
 }
 
+/* Fő elrendezés és háttér */
 .institution-dashboard {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(to top, #5873eb, rgba(0,0,0,0.4));
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   width: 100%;
 }
 
+/* Reszponzív konténer */
 .container {
   max-width: 1400px;
   margin: 0 auto;
@@ -3324,9 +3561,10 @@ export default {
 
 /* Header stílusok */
 .main-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(180deg, rgba(8, 14, 30, 0.92) 0%, rgba(11, 20, 42, 0.82) 100%);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.22);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -3358,8 +3596,9 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(148, 163, 184, 0.08));
+  border: 1px solid rgba(191, 219, 254, 0.28);
+  box-shadow: 0 10px 20px rgba(2, 6, 23, 0.28);
   overflow: hidden;
 }
 
@@ -3379,21 +3618,19 @@ export default {
 .site-title {
   font-size: 24px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #f8fafc;
+  text-shadow: 0 2px 10px rgba(15, 23, 42, 0.42);
   margin: 0;
 }
 
 .site-subtitle {
   margin: 0;
   font-size: 14px;
-  color: #64748b;
+  color: rgba(226, 232, 240, 0.84);
   font-weight: 500;
 }
 
-/* User profile */
+/* Felhasználói profil szekció */
 .user-profile {
   position: relative;
 }
@@ -3405,17 +3642,20 @@ export default {
   cursor: pointer;
   padding: 5px 10px;
   border-radius: 50px;
-  transition: background 0.3s ease;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(191, 219, 254, 0.24);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .user-avatar:hover {
-  background: #f3f4f6;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(191, 219, 254, 0.42);
 }
 
 .avatar-circle {
   width: 45px;
   height: 45px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -3423,7 +3663,7 @@ export default {
   color: white;
   font-weight: 600;
   font-size: 18px;
-  box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.4);
 }
 
 .user-status {
@@ -3434,7 +3674,7 @@ export default {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid rgba(8, 14, 30, 0.92);
   position: absolute;
   bottom: 2px;
   right: 2px;
@@ -3442,10 +3682,10 @@ export default {
 
 .status-dot.online {
   background: #10b981;
-  box-shadow: 0 0 0 2px white;
+  box-shadow: 0 0 0 2px rgba(8, 14, 30, 0.92);
 }
 
-/* User menu */
+/* Felhasználói legördülő menü */
 .user-menu {
   position: absolute;
   top: 60px;
@@ -3460,19 +3700,19 @@ export default {
 
 .menu-header {
   padding: 20px;
-  background: linear-gradient(135deg, #667eea10, #764ba210);
+  background: linear-gradient(150deg, #5873eb, rgb(0 0 0));
   border-bottom: 1px solid #e5e7eb;
 }
 
 .menu-user-info h4 {
   margin: 0 0 5px 0;
-  color: #374151;
+  color: #e4e2e2;
   font-size: 16px;
 }
 
 .user-email {
   margin: 0;
-  color: #6b7280;
+  color: #b8b8b8;
   font-size: 14px;
 }
 
@@ -3558,12 +3798,12 @@ export default {
   opacity: 0;
 }
 
-/* Main content */
+/* Fő tartalom szekció */
 .main-content {
   padding: 40px 0;
 }
 
-/* Intézmény info card */
+/* Intézmény információs kártya */
 .institution-info-card {
   background: white;
   border-radius: 24px;
@@ -3685,7 +3925,7 @@ export default {
   color: #4f46e5;
 }
 
-/* Section headers */
+/* Szekció fejlécek */
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -3707,7 +3947,7 @@ export default {
   font-size: 26px;
 }
 
-/* Search */
+/* Keresés stílusok */
 .header-actions {
   display: flex;
   gap: 15px;
@@ -3797,7 +4037,7 @@ export default {
   width: 300px;
 }
 
-/* Request tabs */
+/* Kérelem kezelő fülek */
 .request-tabs {
   display: flex;
   gap: 10px;
@@ -3885,7 +4125,7 @@ export default {
   min-width: 180px;
 }
 
-/* Request cards */
+/* Kérelem kártyák szekció */
 .requests-section {
   background: white;
   border-radius: 24px;
@@ -4385,7 +4625,7 @@ export default {
   padding-top: 15px;
 }
 
-/* Connected users section */
+/* Csatlakozott felhasználók szekció */
 .connected-users-section {
   background: white;
   border-radius: 24px;
@@ -4502,7 +4742,7 @@ export default {
   padding-top: 15px;
 }
 
-/* Empty states */
+/* Üres állapotok stílusai */
 .empty-state {
   text-align: center;
   padding: 60px 20px;
@@ -4537,7 +4777,7 @@ export default {
   font-size: 40px;
 }
 
-/* Modal */
+/* Modal ablakok */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -4953,7 +5193,7 @@ export default {
   opacity: 0;
 }
 
-/* Floating Action Button */
+/* Lebegő műveleti gomb */
 .fab {
   position: fixed;
   bottom: 30px;

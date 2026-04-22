@@ -6,8 +6,12 @@ use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\EventShown;
 use App\Models\EventRequest;
+use App\Models\EventMessage;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use App\Models\ClassModel;
+use App\Models\Poll;
+use App\Models\PollAnswer;
 use Illuminate\Support\Facades\DB;
 
 class EventController extends Controller
@@ -170,7 +174,7 @@ class EventController extends Controller
                 return response()->json(['message' => 'nem jogosult'], 403);
             }
 
-            $event = DB::transaction(function () use ($user, $validated, $users, $isRecurring, $targetGroup) {
+            $event = Event::query()->getConnection()->transaction(function () use ($user, $validated, $users, $isRecurring, $targetGroup) {
                 if ($targetGroup === 'osztaly_szintu') {
                     $targetClassIdsSource = [];
                     if (array_key_exists('selected_class_ids', $validated)) {
@@ -272,7 +276,7 @@ class EventController extends Controller
                 return response()->json(['message' => 'nem jogosult'], 403);
             }
 
-            $event = DB::transaction(function () use ($user, $validated, $users, $collabIds, $targetGroup) {
+            $event = Event::query()->getConnection()->transaction(function () use ($user, $validated, $users, $collabIds, $targetGroup) {
                 if ($targetGroup === 'osztaly_szintu') {
                     $targetClassIdsSource = [];
                     if (array_key_exists('selected_class_ids', $validated)) {
@@ -443,7 +447,7 @@ class EventController extends Controller
 
         $eventId = $validated['event_id'];
 
-        DB::transaction(function () use ($validated, $establishmentId, $eventId) {
+        Event::query()->getConnection()->transaction(function () use ($validated, $establishmentId, $eventId) {
             //kérelem törlése
             EventRequest::where('event_id', $eventId)
                 ->where('establishment_id', $establishmentId)
@@ -503,7 +507,7 @@ class EventController extends Controller
             ->get();
 
         if ($events->isNotEmpty()) {
-            $creatorNames = DB::table('users')
+            $creatorNames = User::query()
                 ->whereIn('id', $events->pluck('user_id')->filter()->unique()->values())
                 ->pluck('name', 'id');
 
@@ -542,6 +546,7 @@ class EventController extends Controller
 
             //SZAKKÖR MÓDOSÍTÁS
             ->where('user_id', $user->id)
+            ->whereNull('banned_at')
             //
             ->distinct()
             ->pluck('event_id');
@@ -554,7 +559,7 @@ class EventController extends Controller
             ->get();
 
         if ($events->isNotEmpty()) {
-            $creatorNames = DB::table('users')
+            $creatorNames = User::query()
                 ->whereIn('id', $events->pluck('user_id')->filter()->unique()->values())
                 ->pluck('name', 'id');
 
@@ -590,25 +595,27 @@ class EventController extends Controller
         $commentCountsByEvent = collect();
 
         if (!empty($eventIds)) {
-            $feedbackStatsByEvent = DB::table('event_shows')
-                ->select(
-                    'event_id',
-                    DB::raw("SUM(CASE WHEN answer = 'y' THEN 1 ELSE 0 END) as attending_count"),
-                    DB::raw("SUM(CASE WHEN answer = 'n' THEN 1 ELSE 0 END) as not_attending_count")
-                )
+            $feedbackStatsByEvent = EventShown::query()
+                ->select('event_id')
+                ->selectRaw("SUM(CASE WHEN answer = 'y' THEN 1 ELSE 0 END) as attending_count")
+                ->selectRaw("SUM(CASE WHEN answer = 'n' THEN 1 ELSE 0 END) as not_attending_count")
                 ->whereIn('event_id', $eventIds)
+                ->whereNull('banned_at')
                 ->groupBy('event_id')
                 ->get()
                 ->keyBy('event_id');
 
-            $userFeedbackByEvent = DB::table('event_shows')
+            $userFeedbackByEvent = EventShown::query()
                 ->whereIn('event_id', $eventIds)
                 ->where('user_id', $user->id)
+                ->whereNull('banned_at')
                 ->pluck('answer', 'event_id');
 
-            $commentCountsByEvent = DB::table('event_messages')
-                ->select('event_id', DB::raw('COUNT(*) as comment_count'))
+            $commentCountsByEvent = EventMessage::query()
+                ->select('event_id')
+                ->selectRaw('COUNT(*) as comment_count')
                 ->whereIn('event_id', $eventIds)
+                ->where('is_important', false)
                 ->groupBy('event_id')
                 ->get()
                 ->keyBy('event_id');
@@ -772,30 +779,28 @@ class EventController extends Controller
 
         $canSeeEvent = EventShown::where('event_id', $eventId)
             ->where('user_id', $user->id)
-            ->exists();
+            ->first();
 
-        if (!$canSeeEvent) {
+        if (!$canSeeEvent || $canSeeEvent->banned_at !== null) {
             return response()->json(['message' => 'nem jogosult'], 403);
         }
 
-        DB::table('event_shows')->updateOrInsert(
+        EventShown::updateOrCreate(
             [
                 'event_id' => $eventId,
                 'user_id' => $user->id,
             ],
             [
                 'answer' => $validated['answer'],
-                'updated_at' => now(),
-                'created_at' => now(),
             ]
         );
 
-        $attendingCount = DB::table('event_shows')
+        $attendingCount = EventShown::query()
             ->where('event_id', $eventId)
             ->where('answer', 'y')
             ->count();
 
-        $notAttendingCount = DB::table('event_shows')
+        $notAttendingCount = EventShown::query()
             ->where('event_id', $eventId)
             ->where('answer', 'n')
             ->count();
@@ -839,19 +844,66 @@ class EventController extends Controller
             })
             ->where('event_shows.event_id', $eventId)
             ->where('event_shows.answer', 'y')
+            ->whereNull('event_shows.banned_at')
             ->select(
                 'users.id as user_id',
                 'users.name',
                 'users.email',
                 'event_shows.answer',
-                'event_shows.updated_at',
-                DB::raw('COALESCE(students.alias, staffs.alias) as alias')
+                'event_shows.updated_at'
             )
+            ->selectRaw('COALESCE(students.alias, staffs.alias) as alias')
             ->orderBy('users.name')
             ->get();
 
         return response()->json([
             'participants' => $participants,
+        ]);
+    }
+
+    // Az eseményre meghívott összes személy listázása (részvételi státusszal)
+    public function getAllEventInvitees(Request $request, int $eventId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'nem jogosult'], 401);
+        }
+
+        $event = Event::find($eventId);
+        if (!$event) {
+            return response()->json(['message' => 'Az esemény nem található.'], 404);
+        }
+
+        if ($event->user_id != $user->id) {
+            return response()->json(['message' => 'Csak a létrehozó láthatja a teljes listát.'], 403);
+        }
+
+        $invitees = DB::table('event_shows')
+            ->join('users', 'event_shows.user_id', '=', 'users.id')
+            ->leftJoin('students', function ($join) use ($event) {
+                $join->on('students.user_id', '=', 'users.id')
+                    ->where('students.establishment_id', '=', $event->establishment_id);
+            })
+            ->leftJoin('staffs', function ($join) use ($event) {
+                $join->on('staffs.user_id', '=', 'users.id')
+                    ->where('staffs.establishment_id', '=', $event->establishment_id);
+            })
+            ->where('event_shows.event_id', $eventId)
+            ->select(
+                'users.id as user_id',
+                'users.name',
+                'users.email',
+                'event_shows.answer',
+                'event_shows.banned_at',
+                'event_shows.updated_at'
+            )
+            ->selectRaw('COALESCE(students.alias, staffs.alias) as alias')
+            ->orderBy('users.name')
+            ->get();
+
+        return response()->json([
+            'invitees' => $invitees,
         ]);
     }
 
@@ -877,38 +929,54 @@ class EventController extends Controller
             return response()->json(['message' => 'A létrehozó nem tiltható ki az eseményből.'], 422);
         }
 
-        $wasParticipant = DB::table('event_shows')
+        $eventShown = EventShown::query()
             ->where('event_id', $eventId)
             ->where('user_id', $userId)
-            ->where('answer', 'y')
-            ->exists();
+            ->first();
 
-        if (!$wasParticipant) {
-            return response()->json(['message' => 'A felhasználó nem aktív résztvevő.'], 404);
+        if (!$eventShown) {
+            return response()->json(['message' => 'A felhasználó nem található az eseményen.'], 404);
         }
 
-        DB::table('event_shows')
+        if ($eventShown->banned_at !== null) {
+            return response()->json(['message' => 'A felhasználó már ki van tiltva.'], 422);
+        }
+
+        // Felhasználó kitiltása az adott eseményről
+        EventShown::query()
+            ->where('event_id', $eventId)
+            ->where('user_id', $userId)
+            ->update([
+                'answer' => 'NA',
+                'banned_at' => Carbon::now(),
+            ]);
+
+        EventMessage::query()
             ->where('event_id', $eventId)
             ->where('user_id', $userId)
             ->delete();
 
-        DB::table('event_messages')
-            ->where('event_id', $eventId)
-            ->where('user_id', $userId)
-            ->delete();
+        // Az eseményhez tartozó összes szavazás törlése
+        $pollIds = Poll::where('event_id', $eventId)->pluck('id');
+        if ($pollIds->isNotEmpty()) {
+            PollAnswer::whereIn('poll_id', $pollIds->toArray())
+                ->where('user_id', $userId)
+                ->delete();
+        }
 
-        $attendingCount = DB::table('event_shows')
+        $attendingCount = EventShown::query()
             ->where('event_id', $eventId)
             ->where('answer', 'y')
             ->count();
 
-        $notAttendingCount = DB::table('event_shows')
+        $notAttendingCount = EventShown::query()
             ->where('event_id', $eventId)
             ->where('answer', 'n')
             ->count();
 
-        $commentCount = DB::table('event_messages')
+        $commentCount = EventMessage::query()
             ->where('event_id', $eventId)
+            ->where('is_important', false)
             ->count();
 
         return response()->json([
@@ -917,6 +985,43 @@ class EventController extends Controller
             'not_attending_count' => $notAttendingCount,
             'comment_count' => $commentCount,
         ]);
+    }
+
+    // Kitiltás feloldása
+    public function unbanParticipant(Request $request, int $eventId, int $userId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'nem jogosult'], 401);
+        }
+
+        $event = Event::find($eventId);
+        if (!$event) {
+            return response()->json(['message' => 'Az esemény nem található.'], 404);
+        }
+
+        if ($event->user_id != $user->id) {
+            return response()->json(['message' => 'Csak a létrehozó oldhatja fel a tiltást.'], 403);
+        }
+
+        $eventShown = EventShown::query()
+            ->where('event_id', $eventId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$eventShown) {
+            return response()->json(['message' => 'A felhasználó nem található az eseményen.'], 404);
+        }
+
+        if ($eventShown->banned_at === null) {
+            return response()->json(['message' => 'A felhasználó nincs kitiltva.'], 422);
+        }
+
+        $eventShown->banned_at = null;
+        $eventShown->save();
+
+        return response()->json(['message' => 'A tiltás feloldva.'], 200);
     }
 
     // Chat engedélyezése vagy letiltása az eseményen
@@ -970,17 +1075,22 @@ class EventController extends Controller
         }
 
         $validated = $request->validate([
-            'action' => 'required|in:reschedule,cancel',
+            'action' => 'required|in:reschedule,cancel,update_details',
             'start_date' => 'nullable|required_if:action,reschedule|date',
             'end_date' => 'nullable|required_if:action,reschedule|date|after:start_date',
+            'description' => 'nullable|required_if:action,update_details|string',
+            'content' => 'nullable|string',
         ], [
             'action.required' => 'A művelet megadása kötelező.',
-            'action.in' => 'A művelet csak reschedule vagy cancel lehet.',
+            'action.in' => 'A művelet csak reschedule, cancel vagy update_details lehet.',
             'start_date.required_if' => 'Áthelyezésnél új kezdési időpont szükséges.',
             'start_date.date' => 'A kezdési időpont érvénytelen.',
             'end_date.required_if' => 'Áthelyezésnél új befejezési időpont szükséges.',
             'end_date.date' => 'A befejezési időpont érvénytelen.',
             'end_date.after' => 'A befejezésnek későbbinek kell lennie, mint a kezdés.',
+            'description.required_if' => 'A leírás megadása kötelező a részletek frissítéséhez.',
+            'description.string' => 'A leírásnak szövegnek kell lennie.',
+            'content.string' => 'A jegyzetnek szövegnek kell lennie.',
         ]);
 
         if ($validated['action'] === 'cancel') {
@@ -990,6 +1100,19 @@ class EventController extends Controller
 
             return response()->json([
                 'message' => 'Az alkalom elmaradtként jelölve.',
+            ]);
+        }
+
+        if ($validated['action'] === 'update_details') {
+            $event->description = trim((string) ($validated['description'] ?? ''));
+            $event->content = array_key_exists('content', $validated)
+                ? trim((string) ($validated['content'] ?? ''))
+                : $event->content;
+            $event->save();
+
+            return response()->json([
+                'message' => 'Az esemény leírása és jegyzete frissítve.',
+                'event' => $event,
             ]);
         }
 

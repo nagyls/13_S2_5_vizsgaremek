@@ -16,7 +16,7 @@
                 </div>
                 <div class="remember-forgot">
                     <label>
-                        <input type="checkbox" v-model="rememberMe" />Emlékezzen rám
+                        <input type="checkbox" v-model="rememberMe" />Emlékezz rám
                     </label>
                     <router-link to="/forgot-password" class="forgot-link">Elfelejtett jelszó?</router-link>
                 </div>
@@ -41,8 +41,14 @@ import logo2 from '../../assets/logo2.svg';
 import { API_BASE, getToken, hasLocalToken, getAuthHeaders, clearAuthStorage } from '../../services/api'
 
 export default {
+    /**
+     * Bejelentkezési oldal komponense hitelesítéshez és szerepkör alapú átirányításhoz.
+     */
   name: 'Login',
   
+    /**
+     * A bejelentkezési űrlap és felületi állapotok lokális adatai.
+     */
   data() {
     return {
       email: "",
@@ -55,10 +61,16 @@ export default {
   },
   
   methods: {
+        /**
+         * Jelszómező láthatóságának váltása.
+         */
     togglePassword() {
       this.showPassword = !this.showPassword;
     },
 
+                /**
+                 * Céloldal meghatározása felhasználói státusz és szerepkör alapján.
+                 */
         getRedirectPath(userData) {
             const requestedRole = userData?.requestedRole || '';
             const hasPendingApproval = Boolean(userData?.pendingApproval);
@@ -77,6 +89,9 @@ export default {
             return '/dashboard';
         },
 
+        /**
+         * Függőben lévő intézményi kérelem lekérdezése az aktuális felhasználóhoz.
+         */
         async fetchPendingRequest(token) {
             try {
                 const response = await axios.get(`${API_BASE}/establishment/requests/my-pending`, {
@@ -89,6 +104,9 @@ export default {
             }
         },
 
+        /**
+         * A lekért függő kérelmi adat ráillesztése a felhasználói állapotra.
+         */
         applyPendingRequestToUserData(userData, pendingRequest) {
             if (!pendingRequest) {
                 return userData;
@@ -108,6 +126,9 @@ export default {
             };
         },
 
+        /**
+         * Intézményi szerepkör lekérése adott intézmény azonosítóhoz.
+         */
         async fetchRole(token, establishmentId) {
             const numericEstablishmentId = Number(establishmentId);
             if (!Number.isFinite(numericEstablishmentId) || numericEstablishmentId <= 0) {
@@ -126,6 +147,9 @@ export default {
             }
         },
 
+        /**
+         * Hitelesítési adatok mentése a választott tárolóba (local/session).
+         */
         saveAuthData(userData, token) {
             if (this.rememberMe) {
                 localStorage.setItem('esemenyter_user', JSON.stringify(userData));
@@ -136,6 +160,9 @@ export default {
             }
         },
 
+        /**
+         * Aktuális intézmény azonosító mentése a megfelelő tárolóba.
+         */
         saveCurrentInstitution(institutionId) {
             if (!institutionId) return;
 
@@ -148,6 +175,9 @@ export default {
             }
         },
 
+    /**
+     * Bejelentkezés végrehajtása, felhasználói adatok betöltése és átirányítás.
+     */
     async login() {
       this.loading = true;
 
@@ -218,6 +248,9 @@ export default {
     }
   },
   
+    /**
+     * Ha már érvényes token van, automatikus munkamenet helyreállítás és átirányítás.
+     */
   mounted() {
         const token = getToken();
 
@@ -280,6 +313,7 @@ export default {
 };
 </script>
 
+/* Login komponens stílusai */
 <style scoped>
 * {
     box-sizing: border-box;
@@ -495,7 +529,7 @@ export default {
     }
 }
 
-/* logo */
+/* Logó szekció */
 .logo-icon {
     display: flex;
     justify-content: center;

@@ -1,10 +1,10 @@
 ﻿<template>
   <div class="user-dashboard">
-    <!-- HEADER -->
+    <!-- FŐ FEJLÉC ÉS NAVIGÁCIÓ -->
     <header class="main-header">
       <div class="container">
         <div class="header-content">
-          <!-- Logo -->
+          <!-- Logó szekció -->
           <div class="logo-section" @click="$router.push('/user-dashboard')">
             <div class="logo-icon">
               <img :src="logo2" alt="EseményTér logó" class="logo-image">
@@ -15,7 +15,7 @@
             </div>
           </div>
 
-          <!-- User menu -->
+          <!-- Felhasználói profil és lenyíló menü -->
           <div class="user-profile">
             <div class="user-avatar" @click="toggleUserMenu">
               <div class="avatar-circle">
@@ -71,10 +71,10 @@
       </div>
     </header>
 
-    <!-- MAIN CONTENT -->
+    <!-- FŐ TARTALOM -->
     <main class="main-content">
       <div class="container">
-        <!-- Welcome Hero -->
+        <!-- Üdvözlő hős szekció (Welcome Hero) -->
         <div class="welcome-section">
           <div class="welcome-card">
             <div class="welcome-icon">
@@ -82,7 +82,7 @@
             </div>
             <h2>{{ welcomeText }}</h2>
             <p class="welcome-text">
-              Sikeresen beállította a profil ját. Most már teljes mértékben használhatja az EseményTér funkcióit.
+              Sikeresen beállította a profilját. Most már teljes mértékben használhatja az EseményTér funkcióit.
             </p>
             <div class="role-indicator">
               <span class="role-label">Szerepköröd:</span>
@@ -91,7 +91,7 @@
           </div>
         </div>
 
-        <!-- Navigation Hub -->
+        <!-- Navigációs központ (Hub) -->
         <div class="nav-hub">
           <h3 class="hub-title">
             <i class='bx bx-compass'></i>
@@ -99,7 +99,7 @@
           </h3>
 
           <div class="nav-grid">
-            <!-- Események kártya (mindenkinek) -->
+            <!-- Események kártya -->
             <div class="nav-card" @click="goToEvents">
               <div class="card-icon events">
                 <i class='bx bx-calendar-star'></i>
@@ -113,6 +113,7 @@
               </div>
             </div>
 
+            <!-- Naptár kártya -->
             <div class="nav-card" @click="goToCalendar">
               <div class="card-icon calendar">
                 <i class='bx bx-calendar-week'></i>
@@ -126,7 +127,21 @@
               </div>
             </div>
 
-            <!-- Profil kártya (mindenkinek) -->
+            <!-- Esemény létrehozása (Csak Tanár/Admin) -->
+            <div v-if="canCreateEvent" class="nav-card" @click="goToEventCreator">
+              <div class="card-icon create-event">
+                <i class='bx bx-calendar-plus'></i>
+              </div>
+              <h4>Esemény létrehozása</h4>
+              <p>Új esemény rögzítése időponttal, leírással és részletekkel</p>
+              <div class="card-footer">
+                <span class="btn-text">
+                  Megnyitás <i class='bx bx-right-arrow-alt'></i>
+                </span>
+              </div>
+            </div>
+
+            <!-- Profil kártya -->
             <div class="nav-card" @click="goToProfile">
               <div class="card-icon profile">
                 <i class='bx bx-user-circle'></i>
@@ -140,7 +155,7 @@
               </div>
             </div>
 
-            <!-- Intézményvezetői felület (admin) -->
+            <!-- Intézményvezetői felület kártya (Csak Admin) -->
             <div
               v-if="user.role === 'admin'"
               class="nav-card"
@@ -157,22 +172,10 @@
                 </span>
               </div>
             </div>
-
-            <!-- További kártyák később bővíthetők -->
-            <!-- <div class="nav-card coming-soon">
-              <div class="card-icon soon">
-                <i class='bx bx-time'></i>
-              </div>
-              <h4>További funkciók</h4>
-              <p>Új lehetőségek hamarosan érkeznek</p>
-              <div class="card-footer">
-                <span class="badge-soon">Hamarosan</span>
-              </div>
-            </div> -->
           </div>
         </div>
 
-        <!-- Quick Info (opcionális) -->
+        <!-- Segítség szekció -->
         <div v-if="user.role === 'student' || user.role === 'teacher'" class="info-section">
           <div class="info-card">
             <i class='bx bx-info-circle'></i>
@@ -185,7 +188,7 @@
       </div>
     </main>
 
-    <!-- Floating Action Button -->
+    <!-- Úszó navigációs gomb (Vissza a tetejére) -->
     <button v-if="showScrollTop" class="fab" @click="scrollToTop">
       <i class='bx bx-chevron-up'></i>
     </button>
@@ -196,12 +199,18 @@
 import axios from 'axios';
 import logo2 from '../../assets/logo2.svg';
 
+/**
+ * UserDashboard komponens
+ * Ez a komponens szolgál a bejelentkezett felhasználók (Diák, Tanár, Admin) központi irányítópultjaként.
+ * Feladata a felhasználói adatok betöltése, a tagsági állapot ellenőrzése, és a főbb funkciók elérésének biztosítása.
+ */
 export default {
   name: 'UserDashboard',
 
   data() {
     return {
       logo2,
+      // Felhasználói adatok kezdeti állapota
       user: {
         id: null,
         name: '',
@@ -217,13 +226,17 @@ export default {
         teachingClasses: [],
         institution_id: null
       },
-      showUserMenu: false,
-      showScrollTop: false
+      showUserMenu: false,    // A fejlécben lévő profil menü láthatósága
+      showScrollTop: false    // A "Vissza a tetejére" gomb láthatósága
     }
   },
 
   computed: {
+    /**
+     * Létrehozza a felhasználó monogramját a nevéből (max 2 karakter).
+     */
     userInitials() {
+      if (!this.user.name) return '?';
       return this.user.name
         .split(' ')
         .map(word => word[0])
@@ -232,6 +245,9 @@ export default {
         .substring(0, 2);
     },
 
+    /**
+     * A szerepkör magyar megnevezése a felületen.
+     */
     roleDisplayName() {
       const roles = {
         'student': 'Diák',
@@ -241,44 +257,67 @@ export default {
       return roles[this.user.role] || this.user.role;
     },
 
+    /**
+     * Meghatározza, hogy a felhasználó formális szerepkörrel bír-e (Admin vagy Tanár).
+     */
     isFormal() {
       return this.user.role === 'admin' || this.user.role === 'teacher';
     },
 
+    /**
+     * Az üdvözlő szöveg generálása a szerepkör (tegezés/magázás) alapján.
+     */
     welcomeText() {
       const firstName = this.user.name.split(' ')[0];
       return this.isFormal ? `Üdvözlöm, ${firstName}!` : `Üdvözöllek, ${firstName}!`;
     },
 
+    /**
+     * A navigációs hub címe.
+     */
     navHubTitle() {
       return 'Hová szeretne menni?';
     },
 
+    /**
+     * Meghatározza, hogy a felhasználó jogosult-e események létrehozására.
+     */
+    canCreateEvent() {
+      return this.user.role === 'admin' || this.user.role === 'teacher';
+    },
+
+    /**
+     * A segítség szekció címe (tegezés/magázás alapján).
+     */
     helpTitle() {
       return this.isFormal ? 'Segítségre van szüksége?' : 'Segítségre van szükséged?';
     }
   },
 
   methods: {
+    /**
+     * Frissíti a helyi tárolókban (localStorage, sessionStorage) tárolt felhasználói adatokat.
+     */
     updateStoredUserState(updates) {
       const storages = [localStorage, sessionStorage];
 
       storages.forEach(storage => {
         const savedUserRaw = storage.getItem('esemenyter_user');
-        if (!savedUserRaw) {
-          return;
-        }
+        if (!savedUserRaw) return;
 
         try {
           const savedUser = JSON.parse(savedUserRaw);
           Object.assign(savedUser, updates);
           storage.setItem('esemenyter_user', JSON.stringify(savedUser));
         } catch (error) {
-          // Hibás storage érték esetén ne álljon le az oldal.
+          console.error('Hiba a storage frissítésekor:', error);
         }
       });
     },
 
+    /**
+     * Törli az intézményi tagságot a kliens oldalról és visszairányít a kezdő dashboardra.
+     */
     resetMembershipAndRedirectToDashboard() {
       this.user = {
         ...this.user,
@@ -302,6 +341,9 @@ export default {
       this.$router.replace('/dashboard');
     },
 
+    /**
+     * Betölti a felhasználói adatokat a tárolókból.
+     */
     loadUserData() {
       const savedUser =
         localStorage.getItem('esemenyter_user') ||
@@ -311,6 +353,7 @@ export default {
         localStorage.getItem('esemenyter_token') ||
         sessionStorage.getItem('esemenyter_token');
 
+      // Ha nincs mentett felhasználó vagy token, irány a kezdőoldal
       if (!savedUser || !token) {
         this.$router.push('/');
         return;
@@ -321,12 +364,12 @@ export default {
         if (userData.isLoggedIn) {
           this.user = { ...this.user, ...userData };
 
-          // Ha nincs szerepkör beállítva, irányítsuk vissza a dashboardra
+          // Ha nincs szerepkör beállítva, irányítsuk vissza a választó felületre
           if (!this.user.role) {
             this.$router.push('/dashboard');
             return;
           }
-          // Ellenőrizzük, hogy van-e függőben lévő kérelme
+          // Intézményi kérelem állapotának ellenőrzése
           this.checkPendingStatus();
         } else {
           this.$router.push('/');
@@ -334,32 +377,36 @@ export default {
       }
     },
 
+    /**
+     * Ellenőrzi, hogy a felhasználónak van-e aktív vagy függőben lévő tagsági kérelme.
+     * Ha a tagság megszűnt a szerver oldalon, kivezetjük a felületről.
+     */
     async checkPendingStatus() {
       try {
         const token =
           localStorage.getItem('esemenyter_token') ||
           sessionStorage.getItem('esemenyter_token');
 
-        if (!token) {
-          return;
-        }
+        if (!token) return;
 
+        // API lekérés a legfrissebb felhasználói adatokért
         const response = await axios.get('http://127.0.0.1:8000/api/user', {
           headers: { Authorization: `Bearer ${token}` }
         });
 
         const backendUser = response.data || {};
         const hasEstablishedMembership = Number(backendUser.establishment_id) > 0;
-        if (hasEstablishedMembership) {
-          return;
-        }
+        
+        // Ha már rögzített tag, minden rendben
+        if (hasEstablishedMembership) return;
 
-        // Ha az intézményi tagság megszűnt, a helyi role/státusz is törlendő.
+        // Ha nincs intézményi ID-ja a backend szerint, de a kliensen van szerepköre, akkor az elévült
         if (this.user.role === 'student' || this.user.role === 'teacher') {
           this.resetMembershipAndRedirectToDashboard();
           return;
         }
 
+        // Kérelem státuszának ellenőrzése
         const institutionId = Number(
           this.user.schoolId ||
           this.user.institution_id ||
@@ -372,6 +419,7 @@ export default {
           ['student', 'teacher'].includes(effectiveRole) &&
           Number.isFinite(institutionId) &&
           institutionId > 0;
+          
         if (!canHaveRequest) {
           this.resetMembershipAndRedirectToDashboard();
           return;
@@ -384,6 +432,7 @@ export default {
 
         const status = requestStatusResponse?.data?.status || '';
 
+        // Irányítás a kérelem állapota alapján
         if (status === 'pending') {
           this.$router.push('/pending-approval');
           return;
@@ -398,20 +447,30 @@ export default {
           this.resetMembershipAndRedirectToDashboard();
         }
       } catch (error) {
-        console.error('Hiba a függőben lévő kérelem ellenőrzésekor:', error);
+        console.error('Hiba a kérelem állapotának ellenőrzésekor:', error);
       }
     },
 
+    /**
+     * Felhasználói menü ki/be kapcsolása.
+     */
     toggleUserMenu() {
       this.showUserMenu = !this.showUserMenu;
     },
 
+    /**
+     * Navigációs metódusok a különböző felületekre.
+     */
     goToEvents() {
       this.$router.push('/events-list');
     },
 
     goToCalendar() {
       this.$router.push('/events-calendar');
+    },
+
+    goToEventCreator() {
+      this.$router.push('/event-creator');
     },
 
     goToProfile() {
@@ -422,6 +481,9 @@ export default {
       this.$router.push('/institution-dashboard');
     },
 
+    /**
+     * Kijelentkezési folyamat: API hívás és helyi adatok törlése.
+     */
     logout() {
       axios.delete('http://127.0.0.1:8000/api/logout')
         .finally(() => {
@@ -438,14 +500,23 @@ export default {
         });
     },
 
+    /**
+     * Sima görgetés az oldal tetejére.
+     */
     scrollToTop() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
+    /**
+     * Figyeli a görgetést a "Vissza a tetejére" gomb megjelenítéséhez.
+     */
     handleScroll() {
       this.showScrollTop = window.scrollY > 300;
     },
 
+    /**
+     * Bezárja a felhasználói menüt, ha a menün kívülre kattintanak.
+     */
     handleDocumentClick(event) {
       if (!event.target.closest('.user-profile')) {
         this.showUserMenu = false;
@@ -467,7 +538,9 @@ export default {
 </script>
 
 <style scoped>
-/* ===== Alap stílusok ===== */
+/* ============================================================
+   ALAP STÍLUSOK ÉS KONSTRUKCIÓ
+   ============================================================ */
 * {
   margin: 0;
   padding: 0;
@@ -476,7 +549,10 @@ export default {
 
 .user-dashboard {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background:
+    radial-gradient(circle at 12% 14%, rgba(88, 115, 235, 0.22), transparent 36%),
+    radial-gradient(circle at 88% 24%, rgba(56, 189, 248, 0.1), transparent 30%),
+    linear-gradient(135deg, #0a0f1c 0%, #1a3558 52%, #0f203d 100%);
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   width: 100%;
 }
@@ -487,9 +563,11 @@ export default {
   padding: 0 20px;
 }
 
-/* ===== FEJLÉC ===== */
+/* ============================================================
+   FŐ FEJLÉC (HEADER)
+   ============================================================ */
 .main-header {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(10, 15, 28, 0.74);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   padding: 16px 0;
@@ -503,9 +581,10 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  
 }
 
-/* Logo */
+/* Logó szekció stílusa */
 .logo-section {
   display: flex;
   align-items: center;
@@ -546,7 +625,7 @@ export default {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 55%, #c4b5fd 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -560,7 +639,9 @@ export default {
   font-weight: 500;
 }
 
-/* ===== USER PROFIL ===== */
+/* ============================================================
+   FELHASZNÁLÓI PROFIL ÉS AVATAR
+   ============================================================ */
 .user-profile {
   position: relative;
 }
@@ -609,7 +690,9 @@ export default {
   box-shadow: 0 0 0 2px white;
 }
 
-/* ===== USER MENÜ ===== */
+/* ============================================================
+   LENYÍLÓ FELHASZNÁLÓI MENÜ (DROPDOWN)
+   ============================================================ */
 .user-menu {
   position: absolute;
   top: calc(100% + 10px);
@@ -624,23 +707,26 @@ export default {
 
 .menu-header {
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(150deg, #5873eb, rgb(0 0 0));
   color: white;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .menu-user-info h4 {
   margin: 0 0 5px 0;
   font-size: 18px;
   font-weight: 600;
+  color: #e4e2e2;
 }
 
 .user-email {
   margin: 0;
   font-size: 14px;
   opacity: 0.9;
+  color: #b8b8b8;
 }
 
-/* Role badge a menüben */
+/* Role badge stílusok a menüben */
 .role-badge {
   display: inline-block;
   padding: 4px 12px;
@@ -661,8 +747,8 @@ export default {
 }
 
 .role-badge.admin {
-  background: rgba(139, 92, 246, 0.2);
-  color: #8b5cf6;
+  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
 }
 
 .menu-items {
@@ -712,7 +798,7 @@ export default {
   background: #fee2e2;
 }
 
-/* Animációk */
+/* Animációk (Áttűnések) */
 .slide-fade-enter-active,
 .slide-fade-leave-active {
   transition: all 0.3s ease;
@@ -724,12 +810,16 @@ export default {
   transform: translateY(-10px);
 }
 
-/* ===== MAIN CONTENT ===== */
+/* ============================================================
+   FŐ TARTALMI EGYSÉG (MAIN)
+   ============================================================ */
 .main-content {
   padding: 60px 0;
 }
 
-/* ===== WELCOME SECTION ===== */
+/* ============================================================
+   ÜDVÖZLŐ SZEKCIÓ (WELCOME HERO)
+   ============================================================ */
 .welcome-section {
   margin-bottom: 60px;
 }
@@ -744,6 +834,7 @@ export default {
   overflow: hidden;
 }
 
+/* Dekoratív elemek a kártya hátterében */
 .welcome-card::before {
   content: '';
   position: absolute;
@@ -818,6 +909,7 @@ export default {
   border-radius: 50px;
 }
 
+/* Szerepkör alapú színezés */
 .role-value.student {
   background: #10b98120;
   color: #10b981;
@@ -833,7 +925,9 @@ export default {
   color: #8b5cf6;
 }
 
-/* ===== NAVIGATION HUB ===== */
+/* ============================================================
+   NAVIGÁCIÓS HUB (GRÁD KÁRTYÁK)
+   ============================================================ */
 .nav-hub {
   margin-bottom: 60px;
 }
@@ -845,7 +939,7 @@ export default {
   gap: 10px;
   font-size: 28px;
   font-weight: 600;
-  color: #111827;
+  color: white;
   margin-bottom: 40px;
 }
 
@@ -881,16 +975,7 @@ export default {
   box-shadow: 0 30px 50px rgba(102, 126, 234, 0.2);
 }
 
-.nav-card.coming-soon {
-  cursor: default;
-  opacity: 0.7;
-}
-
-.nav-card.coming-soon:hover {
-  transform: none;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-}
-
+/* Kártya ikonok egyedi színezése */
 .card-icon {
   width: 80px;
   height: 80px;
@@ -918,14 +1003,14 @@ export default {
   box-shadow: 0 8px 20px rgba(8, 145, 178, 0.3);
 }
 
-.card-icon.institution {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+.card-icon.create-event {
+  background: linear-gradient(135deg, #f59e0b, #ea580c);
   box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
 }
 
-.card-icon.soon {
-  background: linear-gradient(135deg, #9ca3af, #6b7280);
-  box-shadow: 0 10px 20px rgba(156, 163, 175, 0.3);
+.card-icon.institution {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
 }
 
 .nav-card h4 {
@@ -961,17 +1046,9 @@ export default {
   gap: 12px;
 }
 
-.badge-soon {
-  display: inline-block;
-  padding: 6px 16px;
-  background: #f3f4f6;
-  color: #6b7280;
-  border-radius: 50px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* ===== INFO SECTION ===== */
+/* ============================================================
+   INFORMÁCIÓS SZEKCIÓ (SEGÍTSÉG)
+   ============================================================ */
 .info-section {
   max-width: 600px;
   margin: 0 auto;
@@ -996,7 +1073,7 @@ export default {
 .info-content h4 {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: white;
   margin-bottom: 4px;
 }
 
@@ -1006,7 +1083,9 @@ export default {
   margin: 0;
 }
 
-/* ===== FLOATING ACTION BUTTON ===== */
+/* ============================================================
+   ÚSZÓ AKCIÓGOMB (FAB)
+   ============================================================ */
 .fab {
   position: fixed;
   bottom: 30px;
@@ -1032,19 +1111,15 @@ export default {
   box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
 }
 
-/* ===== RESPONSIVE ===== */
+/* ============================================================
+   RESPONSIVE DESIGN (MOBIL ÉS TABLET)
+   ============================================================ */
 @media (max-width: 700px) {
   .main-header {
     padding: 12px 0;
   }
 
-  .header-content {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0;
-  }
-
+  /* Logó szöveg elrejtése mobilon a helytakarékosság miatt */
   .logo-text h1,
   .site-subtitle {
     display: none;
@@ -1057,23 +1132,6 @@ export default {
     transform: none;
   }
 
-  .menu-header {
-    padding: 12px 16px;
-  }
-
-  .menu-items {
-    padding: 6px 0;
-  }
-
-  .menu-item {
-    padding: 8px 12px;
-    font-size: 13px;
-  }
-
-  .menu-item i {
-    font-size: 16px;
-  }
-
   .welcome-card {
     padding: 32px 20px;
   }
@@ -1082,42 +1140,12 @@ export default {
     font-size: 28px;
   }
 
-  .welcome-text {
-    font-size: 16px;
-  }
-
-  .hub-title {
-    font-size: 24px;
-  }
-
   .nav-grid {
     gap: 20px;
-  }
-
-  .nav-card {
-    padding: 24px 20px;
-  }
-
-  .card-icon {
-    width: 60px;
-    height: 60px;
-    font-size: 30px;
-  }
-
-  .nav-card h4 {
-    font-size: 20px;
-  }
-
-  .nav-card p {
-    font-size: 14px;
   }
 }
 
 @media (max-width: 480px) {
-  .main-header {
-    padding: 8px 0;
-  }
-
   .main-content {
     padding: 40px 0;
   }
@@ -1135,17 +1163,8 @@ export default {
     gap: 4px;
   }
 
-  .hub-title {
-    font-size: 20px;
-  }
-
   .nav-grid {
     grid-template-columns: 1fr;
-  }
-
-  .info-card {
-    flex-direction: column;
-    text-align: center;
   }
 
   .fab {

@@ -189,22 +189,27 @@ export default {
   },
   
   methods: {
+    // Navigáció a bejelentkezési oldalra
     goToLogin() {
       this.$router.push('/login')
     },
     
+    // Navigáció a regisztrációs oldalra
     goToRegister() {
       this.$router.push('/register')
     },
     
+    // Simán görget a funkciók (Miért válassz minket?) szekcióhoz
     scrollToFeatures() {
       this.$refs.featuresSection?.scrollIntoView({ behavior: 'smooth' })
     },
     
+    // Simán visszagörget az oldal tetejére
     scrollToTop() {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     
+    // Figyeli a görgetést és bizonyos távolság után megjeleníti a segédgombot
     handleScroll() {
       this.showScrollTop = window.scrollY > 300
     }
@@ -213,14 +218,15 @@ export default {
   mounted() {
     window.addEventListener('scroll', this.handleScroll)
 
+    // Ha a felhasználó már be van jelentkezve, automatikusan irányítsuk a dashboardra
     const token = getToken()
-
     if (token && this.$route.path !== '/dashboard') {
       this.$router.push('/dashboard')
     }
   },
   
   beforeUnmount() {
+    // Eseményfigyelő eltávolítása a memóriaszivárgás megelőzése érdekében
     window.removeEventListener('scroll', this.handleScroll)
   }
 }
@@ -232,7 +238,10 @@ export default {
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
   width: 100%;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background:
+    radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.15), transparent 100%),
+    radial-gradient(circle at 85% 70%, rgba(255, 255, 255, 0.1), transparent 38%),
+    linear-gradient(135deg, #0a0f1c 0%, #1e3a5f 50%, #0a0f1c 100%);
 }
 
 .container {
@@ -241,10 +250,10 @@ export default {
   padding: 0 20px;
 }
 
-/* FEJLÉC */
+/* FEJLÉC ÉS LOGÓ SZEKCIÓ */
 .main-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(8, 14, 30, 0.86) 0%, rgba(11, 20, 42, 0.78) 100%);
+  backdrop-filter: blur(10px); /* Üveghatású elmosódás */
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   padding: 16px 0;
   position: sticky;
@@ -270,6 +279,7 @@ export default {
   opacity: 0.8;
 }
 
+/* Logó ikon doboza árnyékkal */
 .logo-icon {
   width: 50px;
   height: 50px;
@@ -289,6 +299,7 @@ export default {
   display: block;
 }
 
+/* Színátmenetes weboldal cím */
 .logo-text h1 {
   margin: 0;
   font-size: 24px;
@@ -306,50 +317,63 @@ export default {
   font-weight: 500;
 }
 
-/* Navigációs gombok */
+/* Navigációs gombok stílusa */
 .nav-buttons {
   display: flex;
   gap: 12px;
+  align-items: center;
 }
 
 .nav-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 10px 20px;
+  min-width: 140px;
+  min-height: 42px;
+  padding: 9px 16px;
   border-radius: 50px;
-  border: none;
+  border: 2px solid transparent;
   font-weight: 600;
   font-size: 14px;
+  letter-spacing: 0;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .login-btn {
-  background: transparent;
-  color: #4f46e5;
-  border: 2px solid #4f46e5;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e5e7eb;
+  border-color: rgba(148, 163, 184, 0.45);
+  box-shadow: none;
 }
 
 .login-btn:hover {
-  background: #4f46e5;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+  background: rgba(255, 255, 255, 0.14);
+  color: #f8fafc;
+  border-color: rgba(191, 219, 254, 0.65);
+  transform: translateY(-1px);
 }
 
 .register-btn {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c73ff 100%);
-  color: white;
-  border: 2px solid transparent;
+  background: #5b63f6;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(20, 28, 66, 0.25);
 }
 
 .register-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(20, 28, 66, 0.3);
 }
 
-/* ÜDVÖZLŐ SZEKCIÓ */
+.nav-btn:focus-visible {
+  outline: 3px solid rgba(191, 219, 254, 0.95);
+  outline-offset: 2px;
+}
+
+/* FŐ ÜDVÖZLŐ (HERO) SZEKCIÓ */
 .welcome-section {
   padding: 80px 0;
 }
@@ -361,6 +385,7 @@ export default {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
 }
 
+/* Kétoszlopos elrendezés: szöveg és lebegő kártyák */
 .hero-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -533,12 +558,12 @@ export default {
   font-size: 36px;
   font-weight: 700;
   margin-bottom: 16px;
-  color: #111827;
+  color: white;
 }
 
 .section-subtitle {
   font-size: 18px;
-  color: #6b7280;
+  color: #b7bac0;
   max-width: 600px;
   margin: 0 auto;
 }
@@ -786,9 +811,17 @@ export default {
   }
 
   .nav-buttons {
-    width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
+    width: auto;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .nav-btn {
+    min-width: 130px;
+    min-height: 40px;
+    padding: 8px 11px;
+    font-size: 14px;
   }
 
   .features-grid {
@@ -817,13 +850,24 @@ export default {
   }
 
   .nav-buttons {
-    flex-direction: column;
-    align-items: stretch;
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
   }
 
   .nav-btn {
-    width: 100%;
-    justify-content: center;
+    width: auto;
+    min-width: 0;
+    flex: 1;
+    max-width: 152px;
+    font-size: 13px;
+    padding: 7px 9px;
+  }
+
+  .nav-btn i {
+    font-size: 16px;
   }
 
   .hero-content {

@@ -12,6 +12,11 @@ class EventMessage extends Model
         'event_id',
         'user_id',
         'content',
+        'is_important',
+    ];
+
+    protected $casts = [
+        'is_important' => 'boolean',
     ];
 
     public function user()

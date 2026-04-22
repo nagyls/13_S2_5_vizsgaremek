@@ -26,3 +26,37 @@ export function clearAuthStorage() {
   sessionStorage.removeItem('esemenyter_token')
   sessionStorage.removeItem('CurrentInstitution')
 }
+
+/**
+ * Lekéri az aktuálisan kiválasztott intézmény azonosítóját.
+ *
+ * @param {Object|null} user Az aktuális felhasználó objektum (opcionális fallback-nek).
+ * @returns {number|null} Az intézmény azonosítója vagy null.
+ */
+export function getCurrentInstitutionId(user = null) {
+  const storedInstitutionId =
+    localStorage.getItem('CurrentInstitution') ||
+    sessionStorage.getItem('CurrentInstitution') ||
+    user?.institution_id ||
+    user?.establishment_id
+
+  const institutionId = Number(storedInstitutionId)
+  return Number.isFinite(institutionId) && institutionId > 0 ? institutionId : null
+}
+
+/**
+ * Esemény státuszának normalizálása
+ */
+export function normalizeEventStatus(status) {
+  const normalized = String(status || '').toLowerCase()
+
+  if (normalized === 'ongoing' || normalized === 'open' || normalized === 'upcoming') {
+    return 'open'
+  }
+
+  if (normalized === 'ended' || normalized === 'closed') {
+    return 'closed'
+  }
+
+  return 'open'
+}

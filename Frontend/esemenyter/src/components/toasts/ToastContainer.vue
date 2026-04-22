@@ -15,33 +15,64 @@
 <script>
 import Toast from './Toast.vue'
 
+// Konstansok a könnyebb módosíthatóság érdekében
+const MAX_CONCURRENT_TOASTS = 5;
+const DEFAULT_NOTIFICATION_DURATION = 4000;
+
 export default {
   name: 'ToastContainer',
   components: { Toast },
   data() {
-    return { toasts: [] }
+    return { 
+      toasts: [] 
+    }
   },
   methods: {
-    addToast(message, type = 'error', duration = 4000, meta = {}) {
-      const id = Date.now() + Math.random()
-      this.toasts.push({ id, message, type, duration, meta })
-      if (this.toasts.length > 5) this.toasts.shift()
-      return id
+    addToast(message, type = 'error', duration = DEFAULT_NOTIFICATION_DURATION, meta = {}) {
+      const id = Date.now() + Math.random();
+      const newToast = { id, message, type, duration, meta };
+
+      this.toasts.push(newToast);
+
+      // Korlátozzuk az egyszerre látható üzenetek számát
+      if (this.toasts.length > MAX_CONCURRENT_TOASTS) {
+        this.toasts.shift();
+      }
+
+      return id;
     },
+
     removeToast(id, payload) {
-      const index = this.toasts.findIndex(t => t.id === id)
-      if (index !== -1) {
-        const toast = this.toasts[index]
-        if (typeof toast?.meta?.resolve === 'function') {
-          toast.meta.resolve(Boolean(payload?.confirmed))
-        }
-        this.toasts.splice(index, 1)
+      const toastIndex = this.toasts.findIndex(t => t.id === id);
+      if (toastIndex === -1) return;
+
+      const toast = this.toasts[toastIndex];
+      this.resolveToastPromise(toast, payload);
+      this.toasts.splice(toastIndex, 1);
+    },
+
+    // Kezeli a megerősítő (confirm) ablakok aszinkron válaszát
+    resolveToastPromise(toast, payload) {
+      if (toast.meta && typeof toast.meta.resolve === 'function') {
+        toast.meta.resolve(Boolean(payload?.confirmed));
       }
     },
-    error(message, duration) { return this.addToast(message, 'error', duration) },
-    success(message, duration) { return this.addToast(message, 'success', duration) },
-    warning(message, duration) { return this.addToast(message, 'warning', duration) },
-    info(message, duration) { return this.addToast(message, 'info', duration) }
+
+    error(message, duration) { 
+      return this.addToast(message, 'error', duration); 
+    },
+
+    success(message, duration) { 
+      return this.addToast(message, 'success', duration); 
+    },
+
+    warning(message, duration) { 
+      return this.addToast(message, 'warning', duration); 
+    },
+
+    info(message, duration) { 
+      return this.addToast(message, 'info', duration); 
+    }
   }
 }
 </script>

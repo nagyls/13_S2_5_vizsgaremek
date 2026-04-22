@@ -8,7 +8,6 @@ use App\Models\PollOption;
 use App\Models\PollAnswer;
 use App\Models\Event;
 use App\Models\EventShown;
-use Illuminate\Support\Facades\DB;
 
 class PollController extends Controller
 {
@@ -29,6 +28,10 @@ class PollController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
+        if ($eventview && $eventview->banned_at !== null) {
+            return response()->json(['message' => 'Kitiltott felhasználó nem láthatja a szavazásokat.'], 403);
+        }
+
         $eventClosed = $this->isEventClosed($event);
 
         $isCreator = false;
@@ -41,7 +44,9 @@ class PollController extends Controller
             $hasOptedIn = true;
         }
 
-        if (!$isCreator && !$hasOptedIn) {
+        $canView = $isCreator || $eventview !== null;
+
+        if (!$canView) {
             return response()->json(['message' => 'nem jogosult!'], 403);
         }
 
@@ -121,7 +126,7 @@ class PollController extends Controller
             return response()->json(['message' => 'Legalább 2 különböző opció szükséges.'], 422);
         }
 
-        DB::transaction(function () use ($user, $validated, $uniqueOptions) {
+        Poll::query()->getConnection()->transaction(function () use ($user, $validated, $uniqueOptions) {
             // Határidő csak időzített szavazásnál értelmezett
             $deadline = null;
             if ($validated['is_timed']) {
@@ -171,8 +176,12 @@ class PollController extends Controller
         }
 
         $eventview = EventShown::where('event_id', $poll->event_id)->where('user_id', $user->id)->first();
-        if (!$eventview || $eventview->answer !== 'y') {
+        if (!$eventview || $eventview->banned_at !== null || $eventview->answer !== 'y') {
             return response()->json(['message' => 'nem jogosult!'], 403);
+        }
+
+        if ($eventview->banned_at !== null) {
+            return response()->json(['message' => 'Kitiltottál ettől az eseménytől, nem szavazhatsz.'], 403);
         }
 
         if (!$poll->hasStarted()) {
@@ -258,7 +267,7 @@ class PollController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$isCreator && (!$eventview || $eventview->answer !== 'y')) {
+        if (!$isCreator && (!$eventview || $eventview->banned_at !== null || $eventview->answer !== 'y')) {
             return response()->json(['message' => 'nem jogosult!'], 403);
         }
 
