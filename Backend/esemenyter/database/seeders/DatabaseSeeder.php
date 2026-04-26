@@ -536,17 +536,13 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $this->seedWeeklyOccurrencesFromParent($weeklyEventId, $establishmentId, $visibleUserIds);
+        $weeklyOccurrenceIds = $this->seedWeeklyOccurrencesFromParent($weeklyEventId, $establishmentId, $visibleUserIds);
 
-        for ($i = 0; $i < 3; $i++) {
-            DB::table('event_messages')->insert([
-                'event_id' => $eventId,
-                'user_id' => $studentUserIds[$i],
-                'content' => 'Teszt komment ' . ($i + 1) . ' - ' . $namePrefix,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
+        $this->seedCommentsForEvents(
+            array_merge([$eventId, $globalEventId, $openEventId, $weeklyEventId], $weeklyOccurrenceIds),
+            $visibleUserIds,
+            $namePrefix
+        );
 
         $pollId = (int) DB::table('polls')->insertGetId([
             'event_id' => $eventId,
@@ -807,24 +803,13 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $this->seedWeeklyOccurrencesFromParent($weeklyEventId, $genericEstablishmentId, $visibleUsers);
+        $genericWeeklyOccurrenceIds = $this->seedWeeklyOccurrencesFromParent($weeklyEventId, $genericEstablishmentId, $visibleUsers);
 
-        DB::table('event_messages')->insert([
-            [
-                'event_id' => $globalEventId,
-                'user_id' => $genericStudentIds[0],
-                'content' => 'Generic komment 1',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'event_id' => $globalEventId,
-                'user_id' => $genericStudentIds[1],
-                'content' => 'Generic komment 2',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
+        $this->seedCommentsForEvents(
+            array_merge([$localEventId, $globalEventId, $openEventId, $weeklyEventId], $genericWeeklyOccurrenceIds),
+            $visibleUsers,
+            'Generic'
+        );
 
         $openPollId = (int) DB::table('polls')->insertGetId([
             'event_id' => $localEventId,
@@ -1038,15 +1023,23 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $this->seedWeeklyOccurrencesFromParent($secondWeeklyEventId, $secondGenericEstablishmentId, [$anotherGenericAdminId]);
+        $secondWeeklyOccurrenceIds = $this->seedWeeklyOccurrencesFromParent($secondWeeklyEventId, $secondGenericEstablishmentId, [$anotherGenericAdminId]);
+
+        $this->seedCommentsForEvents(
+            array_merge([$secondEndedLocalEventId, $secondGlobalEventId, $secondOpenEventId, $secondWeeklyEventId], $secondWeeklyOccurrenceIds),
+            [$anotherGenericAdminId],
+            'Generic 2'
+        );
     }
 
-    private function seedWeeklyOccurrencesFromParent(int $parentEventId, int $establishmentId, array $visibleUserIds): void
+    private function seedWeeklyOccurrencesFromParent(int $parentEventId, int $establishmentId, array $visibleUserIds): array
     {
         $parent = DB::table('events')->where('id', $parentEventId)->first();
         if (!$parent) {
-            return;
+            return [];
         }
+
+        $occurrenceIds = [];
 
         $startDate = Carbon::parse((string) $parent->start_date);
         $endDate = Carbon::parse((string) $parent->end_date);
@@ -1091,8 +1084,31 @@ class DatabaseSeeder extends Seeder
                 ]);
             }
 
+            $occurrenceIds[] = $occurrenceId;
+
             $nextStart->addWeek();
             $nextEnd->addWeek();
+        }
+
+        return $occurrenceIds;
+    }
+
+    private function seedCommentsForEvents(array $eventIds, array $userIds, string $label): void
+    {
+        if ($eventIds === [] || $userIds === []) {
+            return;
+        }
+
+        foreach ($eventIds as $eventId) {
+            for ($i = 0; $i < 4; $i++) {
+                DB::table('event_messages')->insert([
+                    'event_id' => (int) $eventId,
+                    'user_id' => (int) $userIds[$i % count($userIds)],
+                    'content' => $label . ' komment ' . ($i + 1),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
     }
 }
