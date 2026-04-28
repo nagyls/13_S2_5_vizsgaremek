@@ -133,37 +133,28 @@
             <p class="footer-tagline">
               Az iskolai események digitális otthona
             </p>
-            <div class="social-links">
-              <a href="#" class="social-link"><i class='bx bxl-facebook'></i></a>
-              <a href="#" class="social-link"><i class='bx bxl-twitter'></i></a>
-              <a href="#" class="social-link"><i class='bx bxl-instagram'></i></a>
-              <a href="#" class="social-link"><i class='bx bxl-linkedin'></i></a>
-            </div>
           </div>
           
           <div class="footer-links">
-            <div class="link-column">
-              <h5>Termék</h5>
-              <a href="#">Funkciók</a>
-              <a href="#">Árak</a>
-              <a href="#">Gyakori kérdések</a>
+            <div class="link-column contact-column">
+              <h5>Kapcsolat</h5>
+              <p>nagylevedsamuel@gmail.com</p>
+              <p>+36 70 426 0259</p>
             </div>
-            <div class="link-column">
-              <h5>Rólunk</h5>
-              <a href="#">Cégünk</a>
-              <a href="#">Karrier</a>
-              <a href="#">Blog</a>
-            </div>
-            <div class="link-column">
+            
+            <!-- középső oszlop szándékosan üres (vagy ide jöhet később hírlevél/CTA) -->
+            <div class="link-column middle-column" aria-hidden="true"></div>
+            
+            <div class="link-column legal-column">
               <h5>Jogi információk</h5>
-              <a href="/privacy">Adatvédelem</a>
-              <a href="#">Felhasználási feltételek</a>
+              <router-link to="/privacy">Adatvédelem</router-link>
+              <router-link to="/aszf">Általános szerződési feltételek</router-link>
             </div>
-          </div>
+           </div>
         </div>
         
         <div class="footer-bottom">
-          <p>&copy; 2024 EseményTér. Minden jog fenntartva.</p>
+          <p>&copy; 2024 EseményTér</p>
         </div>
       </div>
     </footer>
@@ -629,8 +620,8 @@ export default {
 .footer-content {
   display: grid;
   grid-template-columns: 1fr 2fr;
-  gap: 60px;
-  margin-bottom: 40px;
+  gap: 40px;
+  margin-bottom: 24px;
 }
 
 .footer-brand {
@@ -684,15 +675,42 @@ export default {
 
 .footer-links {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 40px;
+  /* contact | spacer | legal — spacer can be used later for newsletter etc.
+     using auto columns for the side columns keeps them close to their content */
+  grid-template-columns: auto 1fr auto;
+  gap: 20px; /* tighter horizontal spacing */
 }
 
 .link-column h5 {
   font-size: 18px;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin-bottom: 12px; /* reduce vertical gap under heading */
   color: white;
+}
+
+.link-column {
+  justify-self: end;
+  text-align: left;
+}
+
+.contact-column { justify-self: start; text-align: left; }
+.middle-column { justify-self: center; text-align: center; }
+.legal-column  { justify-self: end;   text-align: left; }
+
+@media (max-width: 1024px) {
+  .link-column {
+    justify-self: start;
+    text-align: left;
+  }
+
+  .footer-links > .link-column {
+    grid-column: auto;
+  }
+}
+
+.link-column p {
+  color: #9ca3af;
+  margin-bottom: 8px; /* tighter spacing between lines */
 }
 
 .link-column a {
@@ -711,7 +729,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 30px;
+  padding-top: 16px; /* reduce space between divider line and bottom text */
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   color: #9ca3af;
   font-size: 14px;
