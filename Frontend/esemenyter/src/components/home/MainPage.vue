@@ -42,7 +42,7 @@
                 </h1>
                 <p class="hero-description">
                   Az EseményTér egy olyan platform, ahol tanárok, diákok 
-                  zökkenőmentesen együttmlűködhetnek. <br> Hozzon létre eseményeket, szavazzatok közösen,
+                  zökkenőmentesen együttműködhetnek. <br> Hozzon létre eseményeket, szavazzatok közösen,
                   vagy egyszerűen tartsa naprakészen magát!
                 </p>
                 <div class="hero-actions">

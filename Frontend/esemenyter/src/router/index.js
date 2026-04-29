@@ -61,7 +61,7 @@ const routes = [
     path: '/privacy',
     name: 'privacy',
     component: Privacy,
-    meta: { title: 'Adatvédelemi nyilatkozat' }
+    meta: { title: 'Adatvédelmi nyilatkozat' }
   },
   {
     path: '/',
@@ -100,7 +100,7 @@ const routes = [
     path: '/events-list',
     name: 'events-list',
     component: EventsList,
-    meta: { title: 'Eventek listázása' }
+    meta: { title: 'Események listázása' }
   },
   {
     path: '/events-calendar',
